@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net7.0</TargetFramework>
+		<LangVersion>preview</LangVersion>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<Nullable>enable</Nullable>
+		<Configurations>Release;Debug</Configurations>
+		<Platforms>x64</Platforms>
+		<OutputType>Exe</OutputType>
+		<Product>Core</Product>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Ben.Demystifier" Version="0.4.1" />
+		<PackageReference Include="CommandLineParser" Version="2.8.0" />
+		<PackageReference Include="Costura.Fody" Version="5.7.0" PrivateAssets="All" />
+		<PackageReference Include="GitInfo" Version="2.2.0" />
+		<PackageReference Include="InlineIL.Fody" Version="1.7.1" PrivateAssets="All" />
+		<PackageReference Include="K4os.Compression.LZ4" Version="1.2.16" />
+		<PackageReference Include="K4os.Compression.LZ4.Streams" Version="1.2.16" />
+		<PackageReference Include="NullGuard.Fody" Version="3.1.0" PrivateAssets="All" />
+		<PackageReference Include="Spectre.Console" Version="0.44.0" />
+		<PackageReference Include="System.Collections.Immutable" Version="6.0.0" />
+		<PackageReference Include="System.Memory" Version="4.5.4" />
+		<PackageReference Include="System.Reflection.Metadata" Version="6.0.1" />
+		<PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="6.0.0" />
+		<PackageReference Include="ThisAssembly.AssemblyInfo" Version="1.0.9" />
+		<PackageReference Include="Wcwidth" Version="0.6.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Core.Generators\Core.Generators.csproj" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Remove="Local\Entities\DefaultLocales\en-EN.lson" />
+		<EmbeddedResource Include="Locales\Entities\DefaultLocales\en.lson" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Folder Include="Registries\Collections.Pooled" />
+	</ItemGroup>
+
+</Project>
