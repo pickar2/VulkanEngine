@@ -82,6 +82,13 @@ public abstract class SimpleRegistry<TEventManager, TMainType> : IRegistry<TMain
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public TMainType GetOrFirst(string identifier) => _registry.GetOrFirst(identifier);
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool ContainsKey(string identifier)
+	{
+		using var upgradableReadLock = _registry.Lock.UpgradableReadLock();
+		return _registry.ContainsKeyUnsafe(identifier);
+	}
 
 	// Realization
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

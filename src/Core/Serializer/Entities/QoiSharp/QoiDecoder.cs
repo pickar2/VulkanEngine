@@ -12,8 +12,8 @@ public static class QoiDecoder
 		data.Length.ThrowIfGreaterOrEqualsThan(QoiCodec.HeaderSize + QoiCodec.Padding.Length);
 		QoiCodec.IsValidMagic(data[..4]).ThrowIfFalse($"Invalid file magic");
 
-		int width = ((data[4] << 24) | (data[5] << 16) | (data[6] << 8) | data[7]).ThrowIfNotEquals(0);
-		int height = ((data[8] << 24) | (data[9] << 16) | (data[10] << 8) | data[11]).ThrowIfNotEquals(0).ThrowIfLessThan(QoiCodec.MaxPixels / width);
+		int width = ((data[4] << 24) | (data[5] << 16) | (data[6] << 8) | data[7]).ThrowIfEquals(0);
+		int height = ((data[8] << 24) | (data[9] << 16) | (data[10] << 8) | data[11]).ThrowIfEquals(0).ThrowIfLessThan(QoiCodec.MaxPixels / width);
 		byte channels = data[12].ThrowIfNotInRange<byte>(3, 4);
 		var colorSpace = (ColorSpace) data[13];
 		byte[] pixels = new byte[width * height * channels];

@@ -13,5 +13,5 @@ public sealed class ConfigCategory : ComplexRegistry<DefaultEventManager<IComple
 	// ReSharper disable once UnusedMember.Local
 	private ConfigCategory(Patcher patcher) : base(patcher) {}
 	public ConfigCategory(NamespacedName identifier) : base(identifier) { }
-	protected override void MainTypeCreator<T>(NamespacedName namespacedName, out IComplexEntry entry) => entry = new Config<T>();
+	protected override void MainTypeCreator<T>(NamespacedName identifier, out IComplexEntry entry) => entry = new Config<T> { Identifier = identifier };
 }

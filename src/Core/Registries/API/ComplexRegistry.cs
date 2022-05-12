@@ -56,6 +56,13 @@ public abstract class ComplexRegistry<TEventManager, TMainType> : IComplexRegist
 		value = result ? entry.Get<T>() : default;
 		return result;
 	}
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool ContainsKey(string identifier)
+	{
+		using var upgradableReadLock = _registry.Lock.UpgradableReadLock();
+		return _registry.ContainsKeyUnsafe(identifier);
+	}
 
 	public void Dispose()
 	{
@@ -64,7 +71,7 @@ public abstract class ComplexRegistry<TEventManager, TMainType> : IComplexRegist
 	}
 
 	// T is provided for support ComplexRegistry that have generic interface as TMainType argument.
-	protected abstract void MainTypeCreator<T>(NamespacedName namespacedName, out TMainType entry);
+	protected abstract void MainTypeCreator<T>(NamespacedName identifier, out TMainType entry);
 
 	// Custom overloads
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -91,7 +98,7 @@ public abstract class ComplexRegistry<TEventManager, TMainType> : IComplexRegist
 	private bool Register<T>(NamespacedName identifier, T value, Assembly callingAssembly)
 	{
 		using var upgradableReadLock = _registry.Lock.UpgradableReadLock();
-		if (!_registry.ContainsKeyUnsafe(identifier)) return false;
+		if (_registry.ContainsKeyUnsafe(identifier)) return false;
 
 		MainTypeCreator<T>(identifier, out var entry);
 		entry.Set(value);

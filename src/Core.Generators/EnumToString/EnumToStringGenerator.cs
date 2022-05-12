@@ -30,7 +30,7 @@ namespace Core
 			             throw new NullReferenceException();
 			string symbolName = $"{symbol.ContainingSymbol}.{symbol.Name}";
 
-			string modifier = (Accessibility) Math.Min((int) symbol.DeclaredAccessibility, (int) symbol.ContainingSymbol.DeclaredAccessibility) switch
+			string? modifier = (Accessibility) Math.Min((int) symbol.DeclaredAccessibility, (int) symbol.ContainingSymbol.DeclaredAccessibility) switch
 			{
 				Accessibility.Internal => "internal",
 				Accessibility.Public => "public",

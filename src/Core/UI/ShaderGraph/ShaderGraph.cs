@@ -128,7 +128,7 @@ public class ShaderGraph
 
 		// Console.Out.WriteLine(graph.CompileGraph());
 
-		var dotsBgMaterialFactory = UiMaterialManager.GetFactory("friendly:dots_background_material");
+		var dotsBgMaterialFactory = UiMaterialManager.GetFactory("core:dots_background_material");
 		var bgFragMat = dotsBgMaterialFactory.Create();
 		bgFragMat.MarkForUpdate();
 
@@ -165,10 +165,10 @@ public unsafe class UiShaderNode
 	// 	// Coordinates->Z = (short) (10 + (Id * 3));
 	// 	// _pos.MarkForUpdate();
 	//
-	// 	var fragColorFactory = UiMaterialManager.GetFactory("friendly:color_material");
-	// 	var vertMaterialFactory = UiMaterialManager.GetFactory("friendly:default_vertex_material");
-	// 	var lineMaterialFactory = UiMaterialManager.GetFactory("friendly:pixel_coordinates_material");
-	// 	var borderMaterialFactory = UiMaterialManager.GetFactory("friendly:dynamic_border_material");
+	// 	var fragColorFactory = UiMaterialManager.GetFactory("core:color_material");
+	// 	var vertMaterialFactory = UiMaterialManager.GetFactory("core:default_vertex_material");
+	// 	var lineMaterialFactory = UiMaterialManager.GetFactory("core:pixel_coordinates_material");
+	// 	var borderMaterialFactory = UiMaterialManager.GetFactory("core:dynamic_border_material");
 	//
 	// 	var vertMaterial = vertMaterialFactory.Create();
 	// 	vertMaterial.MarkForUpdate();

@@ -32,8 +32,8 @@ public static partial class UiManager
 		Root.AddChild(mainControl);
 
 		var bg = new CustomBox();
-		bg.VertMaterial = UiMaterialManager.GetFactory("friendly:default_vertex_material").Create();
-		bg.FragMaterial = UiMaterialManager.GetFactory("friendly:dots_background_material").Create();
+		bg.VertMaterial = UiMaterialManager.GetFactory("core:default_vertex_material").Create();
+		bg.FragMaterial = UiMaterialManager.GetFactory("core:dots_background_material").Create();
 		bg.Selectable = false;
 		mainControl.AddChild(bg);
 
@@ -190,11 +190,11 @@ public static partial class UiManager
 			OffsetZ = 0
 		};
 
-		box.FragMaterial = UiMaterialManager.GetFactory("friendly:color_material").Create();
+		box.FragMaterial = UiMaterialManager.GetFactory("core:color_material").Create();
 		*box.FragMaterial.GetData<int>() = RandomColor();
 		box.FragMaterial.MarkForUpdate();
 
-		box.VertMaterial = UiMaterialManager.GetFactory("friendly:transform_material").Create();
+		box.VertMaterial = UiMaterialManager.GetFactory("core:transform_material").Create();
 		*box.VertMaterial.GetData<Matrix4x4>() = transform.Compile();
 		box.VertMaterial.MarkForUpdate();
 
@@ -209,11 +209,11 @@ public static partial class UiManager
 			OffsetZ = 1
 		};
 
-		box2.FragMaterial = UiMaterialManager.GetFactory("friendly:color_material").Create();
+		box2.FragMaterial = UiMaterialManager.GetFactory("core:color_material").Create();
 		*box2.FragMaterial.GetData<int>() = RandomColor();
 		box2.FragMaterial.MarkForUpdate();
 
-		box2.VertMaterial = UiMaterialManager.GetFactory("friendly:transform_material").Create();
+		box2.VertMaterial = UiMaterialManager.GetFactory("core:transform_material").Create();
 		*box2.VertMaterial.GetData<Matrix4x4>() = transform2.Compile();
 		box2.VertMaterial.MarkForUpdate();
 

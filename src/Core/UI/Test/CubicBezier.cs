@@ -73,12 +73,12 @@ public unsafe class UiCubicBezier
 			t += step;
 		}
 
-		var colorFactory = UiMaterialManager.GetFactory("friendly:bezier_gradient_material");
+		var colorFactory = UiMaterialManager.GetFactory("core:bezier_gradient_material");
 		var blackColorMat = colorFactory.Create();
 		*blackColorMat.GetData<(int, int, float)>() = (Color.Purple.ToArgb(), Color.DarkBlue.ToArgb(), 0.2f);
 		blackColorMat.MarkForUpdate();
 
-		var coordinatesFactory = UiMaterialManager.GetFactory("friendly:pixel_coordinates_material");
+		var coordinatesFactory = UiMaterialManager.GetFactory("core:pixel_coordinates_material");
 		for (int index = 0; index < Quads.Count; index++)
 		{
 			var quad = Quads[index];

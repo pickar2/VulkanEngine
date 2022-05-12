@@ -36,9 +36,9 @@ public static unsafe partial class UiRenderer
 		InitMaterialSystem();
 		InitGlobalData();
 
-		ProjectionMatrixHolder = GlobalData.GetOrDefault("friendly:projection-matrix");
-		FrameIndexHolder = GlobalData.GetOrDefault("friendly:frame-index");
-		MousePositionHolder = GlobalData.GetOrDefault("friendly:mouse-position");
+		ProjectionMatrixHolder = GlobalData.GetOrDefault("core:projection-matrix");
+		FrameIndexHolder = GlobalData.GetOrDefault("core:frame-index");
+		MousePositionHolder = GlobalData.GetOrDefault("core:mouse-position");
 
 		Context.Window.OnCursorPosition += (xPos, yPos) => *MousePositionHolder.Get<Vec2I>() = new Vec2I {X = (int) xPos, Y = (int) yPos};
 
@@ -70,13 +70,13 @@ public static unsafe partial class UiRenderer
 
 	private static void InitExtremeTestScene()
 	{
-		var colorMaterial = UiMaterialManager.GetFactory("friendly:color_material");
-		var vertexMaterial = UiMaterialManager.GetFactory("friendly:default_vertex_material");
-		var transformMaterial = UiMaterialManager.GetFactory("friendly:transform_material");
-		var coolMaterial = UiMaterialManager.GetFactory("friendly:cool_material");
-		var bigGradientMaterial = UiMaterialManager.GetFactory("friendly:big_gradient_material");
-		var coordinatesMaterial = UiMaterialManager.GetFactory("friendly:coordinates_material");
-		var followCursorMaterial = UiMaterialManager.GetFactory("friendly:follow_cursor_material");
+		var colorMaterial = UiMaterialManager.GetFactory("core:color_material");
+		var vertexMaterial = UiMaterialManager.GetFactory("core:default_vertex_material");
+		var transformMaterial = UiMaterialManager.GetFactory("core:transform_material");
+		var coolMaterial = UiMaterialManager.GetFactory("core:cool_material");
+		var bigGradientMaterial = UiMaterialManager.GetFactory("core:big_gradient_material");
+		var coordinatesMaterial = UiMaterialManager.GetFactory("core:coordinates_material");
+		var followCursorMaterial = UiMaterialManager.GetFactory("core:follow_cursor_material");
 
 		var cursorVertMat = followCursorMaterial.Create();
 		cursorVertMat.MarkForUpdate();
@@ -195,7 +195,7 @@ public static unsafe partial class UiRenderer
 			}
 
 			int randomIndex = random.Next(0, Components.Count);
-			var colorMaterialFactory = UiMaterialManager.GetFactory("friendly:color_material");
+			var colorMaterialFactory = UiMaterialManager.GetFactory("core:color_material");
 			var colorMat = colorMaterialFactory.Create();
 			Components[randomIndex].FragMaterial = colorMat;
 			colorMat.GetData<ColorMaterialData>()->Color = Color.Blue.ToArgb();

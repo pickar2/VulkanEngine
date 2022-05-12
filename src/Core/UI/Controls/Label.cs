@@ -9,8 +9,8 @@ namespace Core.UI.Controls;
 
 public class Label : StackPanel
 {
-	private static readonly MaterialDataFactory UvMaterial = UiMaterialManager.GetFactory("friendly:texture_uv_material");
-	private static readonly MaterialDataFactory FontMaterial = UiMaterialManager.GetFactory("friendly:font_material");
+	private static readonly MaterialDataFactory UvMaterial = UiMaterialManager.GetFactory("core:texture_uv_material");
+	private static readonly MaterialDataFactory FontMaterial = UiMaterialManager.GetFactory("core:font_material");
 
 	public Label() => Scale = new Vector2<float>(0.5f);
 

@@ -2,8 +2,8 @@
 
 public class ColoredBox : CustomBox
 {
-	private static readonly MaterialDataFactory DefaultVertexMaterial = UiMaterialManager.GetFactory("friendly:default_vertex_material");
-	private static readonly MaterialDataFactory ColorMaterial = UiMaterialManager.GetFactory("friendly:color_material");
+	private static readonly MaterialDataFactory DefaultVertexMaterial = UiMaterialManager.GetFactory("core:default_vertex_material");
+	private static readonly MaterialDataFactory ColorMaterial = UiMaterialManager.GetFactory("core:color_material");
 
 	public unsafe int Color
 	{
