@@ -9,6 +9,7 @@
 		<Platforms>x64</Platforms>
 		<OutputType>Exe</OutputType>
 		<Product>Core</Product>
+    	<EnablePreviewFeatures>true</EnablePreviewFeatures>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -28,7 +29,21 @@
 		<PackageReference Include="ThisAssembly.AssemblyInfo" Version="1.0.9" />
 		<PackageReference Include="Wcwidth" Version="0.6.0" />
 	</ItemGroup>
+	
+	<ItemGroup>
+		<PackageReference Include="Silk.NET.Vulkan" Version="2.15.0" />
+		<PackageReference Include="Silk.NET.Vulkan.Extensions.EXT" Version="2.15.0" />
+		<PackageReference Include="Silk.NET.Vulkan.Extensions.KHR" Version="2.15.0" />
+		<PackageReference Include="Silk.NET.Windowing" Version="2.15.0" />
+		<PackageReference Include="Silk.NET.Input" Version="2.15.0" />
+	</ItemGroup>
 
+	<ItemGroup>
+		<None Update="Native\Libs\*.dll" CopyToOutputDirectory="Always" />
+		<Folder Include="Native" />
+		<None Include="Assets\**\*.*" CopyToOutputDirectory="Always" />
+	</ItemGroup>
+	
 	<ItemGroup>
 		<ProjectReference Include="..\Core.Generators\Core.Generators.csproj" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
 	</ItemGroup>
@@ -40,6 +55,10 @@
 
 	<ItemGroup>
 		<Folder Include="Registries\Collections.Pooled" />
+	</ItemGroup>
+	
+	<ItemGroup>
+		<ProjectReference Include="..\SimpleMath\SimpleMath.csproj" />
 	</ItemGroup>
 
 </Project>

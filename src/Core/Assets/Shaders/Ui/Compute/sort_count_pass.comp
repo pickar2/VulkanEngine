@@ -1,0 +1,52 @@
+﻿#version 460
+
+#extension GL_AMD_gpu_shader_int16 : enable
+
+#define WORKGROUP_SIZE 32
+#include "../Generated/material_constants.glsl"
+
+layout (local_size_x = WORKGROUP_SIZE, local_size_y = 1, local_size_z = 1) in;
+
+#include "../Default/constants.glsl"
+#include "../Default/structs.glsl"
+
+layout(std430, set = 0, binding = 0) buffer dataArray {
+	UiElementData data[];
+};
+
+layout(set = 1, binding = 0) buffer counters1Buffer {
+	int counters1[];
+};
+
+readonly layout(set = 1, binding = 1) buffer counters2Buffer {
+	int counters2[];
+};
+
+readonly layout(set = 1, binding = 2) buffer offsetsBuffer {
+	int offsets[];
+};
+
+readonly layout(set = 1, binding = 3) uniform count_const {
+	int count;
+	int z_count;
+	int width;
+	int height;
+};
+
+#include "../Default/functions.glsl"
+
+void main() {
+	if (gl_GlobalInvocationID.x >= count) return;
+
+	UiElementData d = data[gl_GlobalInvocationID.x];
+
+	Pos pos = calcFullPos(d);
+
+//	if (pos.x + d.width < 0 || pos.y + d.height < 0 || pos.x >= width || pos.y >= height) {
+//		data[gl_GlobalInvocationID.x].flags |= OFFSCREEN;
+//		return;
+//	}
+//	data[gl_GlobalInvocationID.x].flags &= ~OFFSCREEN;
+
+	atomicAdd(counters1[int(pos.z)], 1);
+}
