@@ -36,10 +36,6 @@ internal static class Program
 			Logger.Warn.Message($"DEBUG MODE IS ENABLED");
 
 		Window.Window window = new();
-		Action<Config<string>, Mapper> test = ((config, mapper) => { });
-		// (test is Action<IEntry, Mapper>).ThrowIfFalse($"WHAAAAAT");
-		var test1 = Unsafe.As<Action<Config<string>, Mapper>, Action<IEntry, Mapper>>(ref test);
-		App.Get<ConfigRegistry>().SaveStates();
 		window.OnKeyUp += key =>
 		{
 			if (key == Key.Escape) window.Close();
@@ -103,7 +99,7 @@ internal static class Program
 		window.Dispose();
 
 		SpinWait.SpinUntil(() => !App.Get<DevConsoleRegistry>().IsAlive);
-		// App.Get<ConfigRegistry>().SaveStates();
+		App.Get<ConfigRegistry>().SaveStates();
 		Logger.Info.Message($"END");
 	}
 }
