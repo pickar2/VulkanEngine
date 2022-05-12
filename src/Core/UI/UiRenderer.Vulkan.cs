@@ -207,7 +207,8 @@ public static unsafe partial class UiRenderer
 
 			Context.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Graphics, _pipelineLayout, 0, 1, _texturesSet.AsPointer(), null);
 			Context.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Graphics, _pipelineLayout, 1, 1, _globalDataSet.AsPointer(), null);
-			Context.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Graphics, _pipelineLayout, 2, 1, _componentDataSets[imageIndex].AsPointer(), null);
+			Context.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Graphics, _pipelineLayout, 2, 1, _componentDataSets[imageIndex].AsPointer(),
+				null);
 
 			Context.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Graphics, _pipelineLayout, 3, 1, _vertexMaterialDataSet.AsPointer(), null);
 			Context.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Graphics, _pipelineLayout, 4, 1, _fragmentMaterialDataSet.AsPointer(), null);

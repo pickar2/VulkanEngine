@@ -1,31 +1,31 @@
 ﻿// rectangle
 struct UiElementData { // 64 bytes (aligned for 4 bytes)
-	float baseX;
-	float baseY;
+    float baseX;
+    float baseY;
 
-	float localX;
-	float localY;
+    float localX;
+    float localY;
 
-	int16_t baseZ;
-	int16_t localZ;
+    int16_t baseZ;
+    int16_t localZ;
 
-	float width;
-	float height;
+    float width;
+    float height;
 
-	float maskStartX;
-	float maskStartY;
+    float maskStartX;
+    float maskStartY;
 
-	float maskEndX;
-	float maskEndY;
+    float maskEndX;
+    float maskEndY;
 
-	int16_t vertexMaterialType;
-	int16_t fragmentMaterialType;
+    int16_t vertexMaterialType;
+    int16_t fragmentMaterialType;
 
-	int vertexDataIndex;
-	int fragmentDataIndex;
+    int vertexDataIndex;
+    int fragmentDataIndex;
 
-	int flags;
-	int transformationIndex;
+    int flags;
+    int transformationIndex;
 };
 
 // flags:
@@ -78,8 +78,8 @@ struct UiElementData { // 64 bytes (aligned for 4 bytes)
 //};
 
 struct Pos {
-	float x;
-	float y;
+    float x;
+    float y;
 
-	int16_t z;
+    int16_t z;
 };

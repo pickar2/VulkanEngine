@@ -4,7 +4,6 @@ using Core.Registries.API;
 using Core.Registries.CoreTypes;
 using Core.Registries.Entities;
 using Core.Registries.EventManagerTypes;
-using Core.Serializer.Entities.MapperWorkers;
 using Core.Utils;
 using Silk.NET.Vulkan;
 using static Core.Native.VMA.VulkanMemoryAllocator;

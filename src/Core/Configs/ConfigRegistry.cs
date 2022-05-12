@@ -12,11 +12,13 @@ public sealed class ConfigRegistry : SimpleRegistry<DefaultEventManager<ConfigCa
 {
 	private static readonly NamespacedName Registry = NamespacedName.CreateWithCoreNamespace("registry");
 	private static readonly NamespacedName Developer = NamespacedName.CreateWithCoreNamespace("developer");
-	
+
 	// ReSharper disable once UnusedMember.Local
-	private ConfigRegistry(Mapper mapper) : base(mapper) {}
+	private ConfigRegistry(Mapper mapper) : base(mapper) { }
+
 	// ReSharper disable once UnusedMember.Local
-	private ConfigRegistry(Patcher patcher) : base(patcher) {}
+	private ConfigRegistry(Patcher patcher) : base(patcher) { }
+
 	public ConfigRegistry() : base(NamespacedName.CreateWithCoreNamespace("configs")) =>
 		Register(new ConfigCategory(NamespacedName.CreateWithCoreNamespace("registry")));
 
@@ -40,7 +42,7 @@ public sealed class ConfigRegistry : SimpleRegistry<DefaultEventManager<ConfigCa
 				() => File.Exists(App.RecoveryKeyFile)
 					? new FileStream(App.RecoveryKeyFile, FileMode.Truncate)
 					: Stream.Null);
-			
+
 			File.Move(fileName, App.AppStateFile, true);
 		}
 		catch

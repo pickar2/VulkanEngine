@@ -19,7 +19,7 @@ public static partial class UiManager
 		infoPanel.AddChild(infoBox);
 		AfterUpdate += () =>
 		{
-			infoBox.Control = (TopControl is not null && TopControl.Selectable) ? TopControl : null;
+			infoBox.Control = TopControl is not null && TopControl.Selectable ? TopControl : null;
 
 			var screenSize = new Vector2<float>(Context.Window.WindowWidth, Context.Window.WindowHeight);
 			infoPanel.UpdateControl(new Vector2<float>(1), screenSize);

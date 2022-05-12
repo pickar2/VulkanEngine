@@ -33,7 +33,7 @@ public enum TargetEnvironment : byte
 	/// <summary>
 	/// SPIR-V under WebGPU semantics.
 	/// </summary>
-	WebGPU,
+	WebGPU
 	// Default = Vulkan
 }
 
@@ -116,6 +116,7 @@ public enum ShaderKind : byte
 	GeometryShader,
 	TessControlShader,
 	TessEvaluationShader,
+
 	// GlslVertexShader = VertexShader,
 	// GlslFragmentShader = FragmentShader,
 	// GlslComputeShader = ComputeShader,
@@ -136,6 +137,7 @@ public enum ShaderKind : byte
 	MissShader,
 	IntersectionShader,
 	CallableShader,
+
 	// GlslRaygenShader = RaygenShader,
 	// GlslAnyhitShader = AnyhitShader,
 	// GlslClosesthitShader = ClosesthitShader,
@@ -150,6 +152,7 @@ public enum ShaderKind : byte
 	GlslDefaultCallableShader,
 	TaskShader,
 	MeshShader,
+
 	// GlslTaskShader = TaskShader,
 	// GlslMeshShader = MeshShader,
 	GlslDefaultTaskShader,

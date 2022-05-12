@@ -20,7 +20,7 @@ public class ScrollView : UiControl
 			OffsetZ = 1
 		};
 		AddChild(_horizontalSlider);
-		_horizontalSlider.OnDragStart((control, pos) => {});
+		_horizontalSlider.OnDragStart((control, pos) => { });
 		_horizontalSlider.OnDragMove((control, from, to) =>
 		{
 			var offset = to - from;
@@ -28,7 +28,7 @@ public class ScrollView : UiControl
 			ScrollOffset.Max(new Vector2<float>(0)).Min(new Vector2<float>(1));
 		});
 	}
-	
+
 	public override void ComputeSizeAndArea(Vector2<float> maxSize)
 	{
 		maxSize.Min(Size);
@@ -38,6 +38,7 @@ public class ScrollView : UiControl
 			child.ComputeSizeAndArea(new Vector2<float>(float.PositiveInfinity));
 			_maxAreaInside.Max(child.ComputedArea);
 		}
+
 		ComputedSize = maxSize * ComputedScale;
 		ComputedArea = maxSize * ComputedScale;
 		_maxAreaInside -= Size;
@@ -50,7 +51,7 @@ public class ScrollView : UiControl
 			child.BasePos = CombinedPos;
 			child.BaseZ = CombinedZ;
 
-			child.LocalPos = (child.Offset - ScrollOffset * _maxAreaInside) * ComputedScale;
+			child.LocalPos = (child.Offset - (ScrollOffset * _maxAreaInside)) * ComputedScale;
 			child.LocalZ = child.OffsetZ;
 
 			switch (Overflow)
@@ -71,6 +72,7 @@ public class ScrollView : UiControl
 			child.ArrangeAndChildren(area);
 		}
 
-		_horizontalSlider.LocalPos = new Vector2<float>(ScrollOffset.X * (Size.X - _horizontalSlider.Size.X), ComputedArea.Y - _horizontalSlider.Size.Y) * ComputedScale;
+		_horizontalSlider.LocalPos = new Vector2<float>(ScrollOffset.X * (Size.X - _horizontalSlider.Size.X), ComputedArea.Y - _horizontalSlider.Size.Y) *
+		                             ComputedScale;
 	}
 }

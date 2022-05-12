@@ -28,7 +28,7 @@ public class Font
 
 	public FontPage[] Pages { get; set; } = Array.Empty<FontPage>();
 	protected readonly Dictionary<char, FontCharacter> Characters = new();
-	
+
 	public void SetCharacter(char ch, FontCharacter character) => Characters[ch] = character;
 	public FontCharacter GetCharacter(char ch) => Characters.GetValueOrDefault(ch, Characters[(char) 0]);
 }

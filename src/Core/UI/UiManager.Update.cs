@@ -18,10 +18,10 @@ public static partial class UiManager
 	public static void Update()
 	{
 		EventsUpdate();
-		
+
 		var screenSize = new Vector2<float>(Context.Window.WindowWidth, Context.Window.WindowHeight);
 		Root.UpdateControl(new Vector2<float>(1), screenSize);
-		
+
 		EventsAfterUpdate();
 	}
 
@@ -46,10 +46,11 @@ public static partial class UiManager
 					topZ = child.CombinedZ;
 				}
 			}
+
 			if (topControl == null) break;
 			startControl = topControl;
 		}
-		
+
 		return startControl;
 	}
 

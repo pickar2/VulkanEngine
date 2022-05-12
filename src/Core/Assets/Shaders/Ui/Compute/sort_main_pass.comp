@@ -11,52 +11,52 @@ layout (local_size_x = WORKGROUP_SIZE, local_size_y = 1, local_size_z = 1) in;
 #include "../Default/structs.glsl"
 
 readonly layout(std430, set = 0, binding = 0) buffer dataArray {
-	UiElementData data[];
+    UiElementData data[];
 };
 
 readonly layout(set = 1, binding = 0) buffer counters1Buffer {
-	int counters1[];
+    int counters1[];
 };
 
 layout(set = 1, binding = 1) buffer counters2Buffer {
-	int counters2[];
+    int counters2[];
 };
 
 readonly layout(set = 1, binding = 2) buffer offsetsBuffer {
-	int offsets[];
+    int offsets[];
 };
 
 readonly layout(set = 1, binding = 3) uniform count_const {
-	int count;
-	int z_count;
+    int count;
+    int z_count;
 };
 
 writeonly layout(std430, set = 2, binding = 0) buffer indicesArray {
-	int indices[];
+    int indices[];
 };
 
 #include "../Default/functions.glsl"
 
 void main() {
-	if (gl_GlobalInvocationID.x >= count) return;
+    if (gl_GlobalInvocationID.x >= count) return;
 
-	int id = int(gl_GlobalInvocationID.x);
+    int id = int(gl_GlobalInvocationID.x);
 
-	UiElementData d = data[gl_GlobalInvocationID.x];
+    UiElementData d = data[gl_GlobalInvocationID.x];
 
-	if ((d.flags & DISABLED) != ZERO || (d.flags & OFFSCREEN) != ZERO) {
-		return;
-	}
-	Pos pos = calcFullPos(d);
+    if ((d.flags & DISABLED) != ZERO || (d.flags & OFFSCREEN) != ZERO) {
+        return;
+    }
+    Pos pos = calcFullPos(d);
 
-	int z = int(pos.z);
-	int index = offsets[z] * 6 + atomicAdd(counters2[z], 6);
-	int id4 = id * 4;
+    int z = int(pos.z);
+    int index = offsets[z] * 6 + atomicAdd(counters2[z], 6);
+    int id4 = id * 4;
 
-	indices[index] = 0 + id4;
-	indices[index+1] = 1 + id4;
-	indices[index+2] = 2 + id4;
-	indices[index+3] = 3 + id4;
-	indices[index+4] = 2 + id4;
-	indices[index+5] = 1 + id4;
+    indices[index] = 0 + id4;
+    indices[index+1] = 1 + id4;
+    indices[index+2] = 2 + id4;
+    indices[index+3] = 3 + id4;
+    indices[index+4] = 2 + id4;
+    indices[index+5] = 1 + id4;
 }

@@ -20,7 +20,7 @@ public sealed class UiMaterialManager : SimpleRegistry<NoneEventManager<Material
 
 	public static MaterialDataFactory GetFactory(string name)
 	{
-		if (!Instance.TryGetValue(name, out var factory)) 
+		if (!Instance.TryGetValue(name, out var factory))
 			throw new ArgumentException($"Tried to get unknown material factory `{name}`.").AsExpectedException();
 		return factory;
 	}

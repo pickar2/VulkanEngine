@@ -12,6 +12,7 @@ namespace Core.Logs;
 public sealed class LoggerRegistry : IRegistry<IEntry>
 {
 	internal const string LogDateFormat = "HH:mm:ss.fff";
+
 	private readonly ILogHandler[] _handlers =
 	{
 		new ConsoleLogHandler(),

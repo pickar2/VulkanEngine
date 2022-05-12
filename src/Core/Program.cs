@@ -1,5 +1,4 @@
-﻿using System;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Threading;
 using Core.General;
 using Core.UI;
@@ -16,7 +15,7 @@ namespace Core;
 internal static class Program
 {
 	public static LoggerRegistry Logger = default!;
-	
+
 	private static void Main(string[] args)
 	{
 		var stopwatch = new Stopwatch();
@@ -24,11 +23,10 @@ internal static class Program
 		string appName = App.Configuration.AppName;
 		stopwatch.Stop();
 		Logger = App.Get<LoggerRegistry>();
-		
+
 		Logger.Info.Message($"START");
-		
-		Logger.Info.Message($"Version of {appName} is {App.Configuration.Version}. Ticks: {
-			stopwatch.ElapsedTicks}. Time: {stopwatch.ElapsedMilliseconds}ms.");
+
+		Logger.Info.Message($"Version of {appName} is {App.Configuration.Version}. Ticks: {stopwatch.ElapsedTicks}. Time: {stopwatch.ElapsedMilliseconds}ms.");
 
 		if (VulkanOptions.DebugMode)
 			Logger.Warn.Message($"DEBUG MODE IS ENABLED");
@@ -96,9 +94,9 @@ internal static class Program
 
 		vulkanContext.Dispose();
 		window.Dispose();
-		
+
 		SpinWait.SpinUntil(() => !App.Get<DevConsoleRegistry>().IsAlive);
-		
+
 		Logger.Info.Message($"END");
 	}
 }

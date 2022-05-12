@@ -3,14 +3,14 @@
 //size=4
 
 struct texture_material_struct { // 4 bytes
-	int textureId;
+    int textureId;
 };
 
 readonly layout(std430, set = 4, binding = texture_material_binding) buffer texture_material_buffer {
-	texture_material_struct texture_material_data[];
+    texture_material_struct texture_material_data[];
 };
 
 void texture_material(UiElementData data) {
-	texture_material_struct mat = texture_material_data[data.fragmentDataIndex];
-	outColor = texture(textures[mat.textureId], fragTexCoord);
+    texture_material_struct mat = texture_material_data[data.fragmentDataIndex];
+    outColor = texture(textures[mat.textureId], fragTexCoord);
 }

@@ -1,6 +1,5 @@
 ﻿using System;
 using Silk.NET.Vulkan;
-using Semaphore = Silk.NET.Vulkan.Semaphore;
 
 namespace Core.General;
 

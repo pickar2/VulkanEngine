@@ -233,7 +233,8 @@ public unsafe class Context : IDisposable
 				scores[device] = GetDeviceScore(device);
 			}
 
-			if (scores.Count == 0) throw new NotSupportedException($"Failed to find suitable GPU: \r\n{string.Join("\r\n", reasons.Values)}").AsExpectedException();
+			if (scores.Count == 0)
+				throw new NotSupportedException($"Failed to find suitable GPU: \r\n{string.Join("\r\n", reasons.Values)}").AsExpectedException();
 
 			PhysicalDevice = (from entry in scores orderby entry.Value descending select entry.Key).First();
 		}

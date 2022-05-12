@@ -62,7 +62,7 @@ public static class Deserializer
 			case 0: // The versions are same
 			{
 				var entry = accessor.MapNew<T>(new Mapper(swh));
-				var identifierSetter = (Action<T, NamespacedName>)IdentifierSetter;
+				var identifierSetter = (Action<T, NamespacedName>) IdentifierSetter;
 				identifierSetter(entry, NamespacedName.UnsafeCreateWithFullName(@namespace, name));
 				return entry;
 			}

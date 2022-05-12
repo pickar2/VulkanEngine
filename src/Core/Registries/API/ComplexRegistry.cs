@@ -56,7 +56,7 @@ public abstract class ComplexRegistry<TEventManager, TMainType> : IComplexRegist
 		value = result ? entry.Get<T>() : default;
 		return result;
 	}
-	
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool ContainsKey(string identifier)
 	{

@@ -28,8 +28,10 @@ public static class VulkanOptions
 		if (reset || !VulkanStates.TryGetValue<bool>(DebugModeName.FullName, out _)) VulkanStates.RegisterOrUpdate(DebugModeName, false);
 		if (reset || !VulkanStates.TryGetValue<int>(GpuIdName.FullName, out _)) VulkanStates.RegisterOrUpdate(GpuIdName, -1);
 		if (reset || !VulkanStates.TryGetValue<bool>(MsaaEnabledName.FullName, out _)) VulkanStates.RegisterOrUpdate(MsaaEnabledName, true);
-		if (reset || !VulkanStates.TryGetValue<SampleCountFlags>(MsaaSamplesName.FullName, out _)) VulkanStates.RegisterOrUpdate(MsaaSamplesName, SampleCountFlags.SampleCount2Bit);
-		if (reset || !VulkanStates.TryGetValue<PresentModeKHR>(PresentModeName.FullName, out _)) VulkanStates.RegisterOrUpdate(PresentModeName, PresentModeKHR.PresentModeMailboxKhr);
+		if (reset || !VulkanStates.TryGetValue<SampleCountFlags>(MsaaSamplesName.FullName, out _))
+			VulkanStates.RegisterOrUpdate(MsaaSamplesName, SampleCountFlags.SampleCount2Bit);
+		if (reset || !VulkanStates.TryGetValue<PresentModeKHR>(PresentModeName.FullName, out _))
+			VulkanStates.RegisterOrUpdate(PresentModeName, PresentModeKHR.PresentModeMailboxKhr);
 
 		// App.Get<ConfigRegistry>().SaveStates();
 	}

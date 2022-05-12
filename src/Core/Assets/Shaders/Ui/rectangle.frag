@@ -18,7 +18,7 @@ layout(location = 0) out vec4 outColor;
 layout(set = 0, binding = 0) uniform sampler2D textures[];
 
 readonly layout(std430, set = 2, binding = 0) buffer dataArray {
-	UiElementData data[];
+    UiElementData data[];
 };
 
 #include "Default/functions.glsl"
@@ -28,14 +28,14 @@ readonly layout(std430, set = 2, binding = 0) buffer dataArray {
 #include "Generated/fragment_includes.glsl"
 
 void main() {
-	UiElementData d = data[componentIndex];
+    UiElementData d = data[componentIndex];
 
-	Pos pos = calcFullPos(d);
-	vec2 pixelPos = fragCoord;
-	if (!isPointInside(pixelPos, vec2(d.maskStartX, d.maskStartY), vec2(d.maskEndX, d.maskEndY))) {
-		outColor = vec4(0);
-		return;
-	}
+    Pos pos = calcFullPos(d);
+    vec2 pixelPos = fragCoord;
+    if (!isPointInside(pixelPos, vec2(d.maskStartX, d.maskStartY), vec2(d.maskEndX, d.maskEndY))) {
+        outColor = vec4(0);
+        return;
+    }
 
-	fragmentSwitch(d);
+    fragmentSwitch(d);
 }

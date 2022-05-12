@@ -53,7 +53,7 @@ public abstract unsafe class UiControlOneComponent : UiControl
 			Component.MarkForUpdate();
 		}
 	}
-	
+
 	public override Vector2<float> ComputedSize
 	{
 		get => Component.GetData()->Size;
@@ -63,7 +63,7 @@ public abstract unsafe class UiControlOneComponent : UiControl
 			Component.MarkForUpdate();
 		}
 	}
-	
+
 	public override Vector2<float> MaskStart
 	{
 		get => Component.GetData()->MaskStart;
@@ -73,7 +73,7 @@ public abstract unsafe class UiControlOneComponent : UiControl
 			Component.MarkForUpdate();
 		}
 	}
-	
+
 	public override Vector2<float> MaskEnd
 	{
 		get => Component.GetData()->MaskEnd;
@@ -83,7 +83,7 @@ public abstract unsafe class UiControlOneComponent : UiControl
 			Component.MarkForUpdate();
 		}
 	}
-	
+
 	public override void Dispose()
 	{
 		Component.FragMaterial.Dispose();

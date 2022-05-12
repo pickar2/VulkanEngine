@@ -24,18 +24,12 @@ public class DockPanel : UiControl
 		AddChild(control);
 		_docks[control] = dock;
 	}
-	
+
 	public void SetDock(UiControl control, Dock dock) => _docks[control] = dock;
 
-	public override void ComputeSizeAndArea(Vector2<float> maxSize)
-	{
-		
-	}
+	public override void ComputeSizeAndArea(Vector2<float> maxSize) { }
 
-	public override void ArrangeAndChildren(Vector2<float> area)
-	{
-		
-	}
+	public override void ArrangeAndChildren(Vector2<float> area) { }
 }
 
 public enum Dock

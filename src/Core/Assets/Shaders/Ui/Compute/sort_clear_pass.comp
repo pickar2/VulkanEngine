@@ -6,26 +6,26 @@
 layout (local_size_x = WORKGROUP_SIZE, local_size_y = 1, local_size_z = 1) in;
 
 layout(set = 0, binding = 0) buffer counters1Buffer {
-	int counters1[];
+    int counters1[];
 };
 
 layout(set = 0, binding = 1) buffer counters2Buffer {
-	int counters2[];
+    int counters2[];
 };
 
 layout(set = 0, binding = 2) buffer offsetsBuffer {
-	int offsets[];
+    int offsets[];
 };
 
 layout(set = 0, binding = 3) uniform count_const {
-	int count;
-	int z_count;
+    int count;
+    int z_count;
 };
 
 void main() {
-	if (gl_GlobalInvocationID.x >= z_count) return;
+    if (gl_GlobalInvocationID.x >= z_count) return;
 
-	counters1[gl_GlobalInvocationID.x] = 0;
-	counters2[gl_GlobalInvocationID.x] = 0;
-	offsets[gl_GlobalInvocationID.x] = 0;
+    counters1[gl_GlobalInvocationID.x] = 0;
+    counters2[gl_GlobalInvocationID.x] = 0;
+    offsets[gl_GlobalInvocationID.x] = 0;
 }

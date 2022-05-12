@@ -11,7 +11,7 @@ const vec3 LightColor = vec3(0.4, 0.4, 0.2);
 const float LightPower = 1000;
 
 void main() {
-	float cosTheta = clamp(dot(fragNormal, lightDirection), 0, 1);
+    float cosTheta = clamp(dot(fragNormal, lightDirection), 0, 1);
 
-	outColor = vec4(fragColor * LightColor * LightPower * cosTheta * distanceSquared, 1);
+    outColor = vec4(fragColor * LightColor * LightPower * cosTheta * distanceSquared, 1);
 }

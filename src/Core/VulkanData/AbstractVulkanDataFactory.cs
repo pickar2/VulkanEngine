@@ -115,7 +115,7 @@ public abstract unsafe class AbstractVulkanDataFactory<TDataHolder> : IVulkanDat
 			if (ComponentCount >= MaxComponents) DoubleBufferSize();
 			index = ComponentCount++;
 		}
-		
+
 		new Span<byte>(_materialData + (index * ComponentSize), ComponentSize).Fill(0);
 
 		return new TDataHolder

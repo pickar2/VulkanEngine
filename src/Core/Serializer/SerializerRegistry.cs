@@ -4,7 +4,6 @@ using System.IO;
 using Core.Registries.CoreTypes;
 using Core.Registries.Entities;
 using Core.Serializer.Entities;
-using Core.Serializer.Entities.Accessors;
 using K4os.Compression.LZ4;
 using K4os.Compression.LZ4.Streams;
 
