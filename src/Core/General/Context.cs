@@ -24,20 +24,20 @@ public static class FeatureExtension
 public unsafe class Context : IDisposable
 {
 	public static readonly Vk Vk = Vk.GetApi();
-	public static VulkanConfig Config;
-	public static Window.Window Window;
+	public static VulkanConfig Config = default!;
+	public static Window.Window Window = default!;
 
-	public static Compiler Compiler;
+	public static Compiler Compiler = default!;
 
-	public static KhrSwapchain KhrSwapchain;
-	public static KhrSurface KhrSurface;
-	public static KhrSynchronization2 KhrSynchronization2;
-	public static ExtDebugUtils ExtDebugUtils;
+	public static KhrSwapchain KhrSwapchain = default!;
+	public static KhrSurface KhrSurface = default!;
+	public static KhrSynchronization2 KhrSynchronization2 = default!;
+	public static ExtDebugUtils ExtDebugUtils = default!;
 
 	public static Instance Instance;
-	public static DebugUtilsMessenger DebugMessenger;
+	public static DebugUtilsMessenger DebugMessenger = default!;
 	public static PhysicalDevice PhysicalDevice;
-	public static QueueFamilies Queues;
+	public static QueueFamilies Queues = default!;
 	public static Device Device;
 	public static SurfaceKHR Surface;
 	public static nint VmaHandle;
@@ -46,8 +46,8 @@ public unsafe class Context : IDisposable
 
 	public static bool IsIntegratedGpu;
 
-	public static event Action AfterVulkanInit;
-	public static event Action OnVulkanDispose;
+	public static event Action? AfterVulkanInit;
+	public static event Action? OnVulkanDispose;
 
 	public Context(VulkanConfig config, Window.Window window)
 	{
@@ -191,7 +191,7 @@ public unsafe class Context : IDisposable
 		var set = new HashSet<string>((int) count);
 		for (int i = 0; i < count; i++)
 		{
-			string str = Marshal.PtrToStringUTF8((nint) availableExtensions[i].ExtensionName);
+			string? str = Marshal.PtrToStringUTF8((nint) availableExtensions[i].ExtensionName);
 			if (str is not null) set.Add(str);
 		}
 
@@ -265,7 +265,7 @@ public unsafe class Context : IDisposable
 		var set = new HashSet<string>((int) count);
 		for (int i = 0; i < count; i++)
 		{
-			string str = Marshal.PtrToStringUTF8((nint) availableExtensions[i].ExtensionName);
+			string? str = Marshal.PtrToStringUTF8((nint) availableExtensions[i].ExtensionName);
 			if (str is not null) set.Add(str);
 		}
 
@@ -353,12 +353,7 @@ public unsafe class Context : IDisposable
 		KhrSurface.GetPhysicalDeviceSurfacePresentModes(device, Surface, &presentModeCount,
 			presentModes[0].AsPointer());
 
-		return new SwapchainDetails
-		{
-			SurfaceCapabilities = capabilities,
-			SurfaceFormats = formats,
-			PresentModes = presentModes
-		};
+		return new SwapchainDetails(capabilities, formats, presentModes);
 	}
 
 	private bool CheckDeviceSwapchain(PhysicalDevice device, StringBuilder sb)
@@ -417,8 +412,8 @@ public unsafe class Context : IDisposable
 	private void FindQueueFamilies(PhysicalDevice device)
 	{
 		var graphics = new QueueFamily {Index = 0};
-		QueueFamily compute = null;
-		QueueFamily transfer = null;
+		QueueFamily? compute = null;
+		QueueFamily? transfer = null;
 
 		uint count = 0;
 		Vk.GetPhysicalDeviceQueueFamilyProperties(device, &count, null);
@@ -444,7 +439,7 @@ public unsafe class Context : IDisposable
 		compute ??= graphics;
 		transfer ??= graphics;
 
-		Queues = new QueueFamilies {Graphics = graphics, Transfer = transfer, Compute = compute};
+		Queues = new QueueFamilies(graphics, transfer, compute);
 	}
 
 	private void CreateLogicalDevice()

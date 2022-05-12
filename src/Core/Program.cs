@@ -15,7 +15,7 @@ namespace Core;
 
 internal static class Program
 {
-	public static LoggerRegistry Logger;
+	public static LoggerRegistry Logger = default!;
 	
 	private static void Main(string[] args)
 	{

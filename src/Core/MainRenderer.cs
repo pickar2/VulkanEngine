@@ -22,15 +22,15 @@ public static unsafe class MainRenderer
 	// private static Frame[] _images = new Frame[FrameOverlap];
 	private static int _imageIndex;
 
-	private static CommandPool[] _commandPools;
-	private static CommandBuffer[] _primaryCommandBuffers;
+	private static CommandPool[] _commandPools = default!;
+	private static CommandBuffer[] _primaryCommandBuffers = default!;
 
-	public static event Action<int, int> BeforeDrawFrame;
-	public static event Action<int, int> AfterDrawFrame;
+	public static event Action<int, int>? BeforeDrawFrame;
+	public static event Action<int, int>? AfterDrawFrame;
 
-	public static event Func<int, CommandBuffer> FillCommandBuffers;
+	public static event Func<int, CommandBuffer>? FillCommandBuffers;
 
-	private static PooledList<Fence>[] _fences;
+	private static PooledList<Fence>[] _fences = default!;
 
 	private static bool _framebufferResized;
 

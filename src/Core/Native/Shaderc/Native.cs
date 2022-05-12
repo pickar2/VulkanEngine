@@ -79,7 +79,7 @@ public struct SpirVVersion : IEquatable<SpirVVersion>
 
 	public override int GetHashCode() => version.GetHashCode();
 
-	public override bool Equals(object obj) => obj is SpirVVersion sv && Equals(sv);
+	public override bool Equals(object? obj) => obj is SpirVVersion sv && Equals(sv);
 
 	public SpirVVersion(uint version) => this.version = version;
 
@@ -413,7 +413,7 @@ internal static class NativeMethods
 	// value_length should be 0u.
 	[DllImport(lib, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
 	internal static extern void shaderc_compile_options_add_macro_definition(IntPtr options, string name,
-		ulong name_length, string value, ulong value_length);
+		ulong name_length, string? value, ulong value_length);
 
 	// Sets the source language.  The default is GLSL.
 	[DllImport(lib, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]

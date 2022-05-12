@@ -13,10 +13,10 @@ public unsafe partial class UiRenderer
 	private const int ZCount = 2048;
 	private const int CountDataSize = 16;
 
-	private static VulkanShader _sortClearPass;
-	private static VulkanShader _sortCountPass;
-	private static VulkanShader _sortOffsetsPass;
-	private static VulkanShader _sortMainPass;
+	private static VulkanShader _sortClearPass = default!;
+	private static VulkanShader _sortCountPass = default!;
+	private static VulkanShader _sortOffsetsPass = default!;
+	private static VulkanShader _sortMainPass = default!;
 
 	private static DescriptorSetLayout _sortCountersLayout;
 	private static DescriptorPool _sortCountersPool;
@@ -24,21 +24,21 @@ public unsafe partial class UiRenderer
 
 	private static DescriptorSetLayout _sortIndicesLayout;
 	private static DescriptorPool _sortIndicesPool;
-	private static DescriptorSet[] _sortIndicesSets;
+	private static DescriptorSet[] _sortIndicesSets = default!;
 
-	private static VulkanPipeline _sortClearPipeline;
-	private static VulkanPipeline _sortCountPipeline;
-	private static VulkanPipeline _sortOffsetsPipeline;
-	private static VulkanPipeline _sortMainPipeline;
+	private static VulkanPipeline _sortClearPipeline = default!;
+	private static VulkanPipeline _sortCountPipeline = default!;
+	private static VulkanPipeline _sortOffsetsPipeline = default!;
+	private static VulkanPipeline _sortMainPipeline = default!;
 
-	private static CommandPool[] _sortCommandPools;
-	private static CommandBuffer[] _sortCommandBuffers;
+	private static CommandPool[] _sortCommandPools = default!;
+	private static CommandBuffer[] _sortCommandBuffers = default!;
 
-	private static VulkanBuffer _counters1Buffer;
-	private static VulkanBuffer _counters2Buffer;
-	private static VulkanBuffer _offsetsBuffer;
-	private static VulkanBuffer _countBufferCpu;
-	private static VulkanBuffer _countBuffer;
+	private static VulkanBuffer _counters1Buffer = default!;
+	private static VulkanBuffer _counters2Buffer = default!;
+	private static VulkanBuffer _offsetsBuffer = default!;
+	private static VulkanBuffer _countBufferCpu = default!;
+	private static VulkanBuffer _countBuffer = default!;
 
 	private static int _sortDirty;
 

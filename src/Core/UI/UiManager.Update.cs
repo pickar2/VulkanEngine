@@ -32,11 +32,11 @@ public static partial class UiManager
 		control.ArrangeAndChildren(area);
 	}
 
-	public static UiControl TopControlOnPos(Vector2<float> point, UiControl startControl)
+	public static UiControl? TopControlOnPos(Vector2<float> point, UiControl? startControl)
 	{
 		while (startControl != null && startControl.Children.Count > 0)
 		{
-			UiControl topControl = null;
+			UiControl? topControl = null;
 			short topZ = -1;
 			foreach (var child in startControl.Children)
 			{

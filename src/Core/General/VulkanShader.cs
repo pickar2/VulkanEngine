@@ -5,13 +5,19 @@ namespace Core.General;
 
 public unsafe class VulkanShader : IDisposable
 {
-	public ShaderModule VulkanModule { get; init; }
-	public Native.SpirvReflect.ShaderModule ReflectModule { get; init; }
+	public ShaderModule VulkanModule { get; }
+	public Native.SpirvReflect.ShaderModule ReflectModule { get; }
+
+	public VulkanShader(ShaderModule vulkanModule, Native.SpirvReflect.ShaderModule reflectModule)
+	{
+		VulkanModule = vulkanModule;
+		ReflectModule = reflectModule;
+	}
 
 	public void Dispose()
 	{
 		Context.Vk.DestroyShaderModule(Context.Device, VulkanModule, null);
-		ReflectModule.Dispose();
+		ReflectModule?.Dispose();
 		GC.SuppressFinalize(this);
 	}
 }

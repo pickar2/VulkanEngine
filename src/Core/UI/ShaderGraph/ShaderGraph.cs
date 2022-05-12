@@ -15,8 +15,8 @@ public class ShaderGraph
 
 	private int id = 0;
 
-	public string Identifier { get; set; }
-	public string Type { get; set; }
+	public string Identifier { get; set; } = default!;
+	public string Type { get; set; } = default!;
 
 	public List<(ShaderResourceType, string)> StructFields = new();
 

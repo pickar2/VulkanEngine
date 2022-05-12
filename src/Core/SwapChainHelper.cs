@@ -12,20 +12,20 @@ public static unsafe class SwapchainHelper
 	// private static SwapchainKHR _oldSwapchain;
 
 	public static SwapchainKHR Swapchain;
-	public static Image[] SwapchainImages;
-	public static ImageView[] SwapchainImageViews;
+	public static Image[] SwapchainImages = default!;
+	public static ImageView[] SwapchainImageViews = default!;
 	public static Format Format;
 	public static Extent2D Extent;
 	public static uint ImageCount;
 	public static int ImageCountInt;
 
 	public static RenderPass RenderPass;
-	public static VulkanImage ColorImage;
-	public static VulkanImage DepthImage;
-	public static Framebuffer[] FrameBuffers;
+	public static VulkanImage ColorImage = default!;
+	public static VulkanImage DepthImage = default!;
+	public static Framebuffer[] FrameBuffers = default!;
 
-	public static event Action OnCleanupSwapchain;
-	public static event Action OnRecreateSwapchain;
+	public static event Action? OnCleanupSwapchain;
+	public static event Action? OnRecreateSwapchain;
 
 	public static void CreateSwapchainObjects()
 	{

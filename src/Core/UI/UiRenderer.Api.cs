@@ -21,7 +21,7 @@ public static unsafe partial class UiRenderer
 
 	private static List<VulkanImage> _textures = new();
 
-	public static Font Consolas;
+	public static Font? Consolas;
 
 	public struct Vec2I
 	{
@@ -29,7 +29,7 @@ public static unsafe partial class UiRenderer
 		public int Y;
 	}
 
-	public static StructHolder MousePositionHolder;
+	public static StructHolder? MousePositionHolder;
 
 	private static void InitApi()
 	{

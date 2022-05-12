@@ -124,8 +124,8 @@ public unsafe class MultipleStructDataFactory : SimpleRegistry<NoneEventManager<
 
 public unsafe class StructHolder : IEntry
 {
-	public NamespacedName Identifier { get; init; }
-	public MultipleStructDataFactory Factory { get; init; }
+	public NamespacedName Identifier { get; init; } = default!;
+	public MultipleStructDataFactory Factory { get; init; } = default!;
 
 	public int Size { get; init; }
 	public int Offset { get; init; }

@@ -10,12 +10,12 @@ namespace Core.UI;
 public static partial class UiManager
 {
 	public static Vector2<float> MousePos { get; private set; }
-	public static UiControl TopControl { get; private set; }
+	public static UiControl? TopControl { get; private set; }
 
-	public static event Action BeforeUpdate;
-	public static event Action AfterUpdate;
+	public static event Action? BeforeUpdate;
+	public static event Action? AfterUpdate;
 	
-	private static UiControl _draggedControl;
+	private static UiControl? _draggedControl;
 
 	public delegate void OnHoverDelegate(UiControl control, Vector2<float> pos);
 	public delegate void OnClickDelegate(UiControl control, MouseButton button, Vector2<float> pos);
@@ -69,7 +69,7 @@ public static partial class UiManager
 		if (OnClickStartDelegates.TryGetValue(TopControl, out var clickStart)) clickStart.Invoke(TopControl, button, MousePos);
 	}
 
-	private static void OnTopControlChanged(UiControl newTopControl)
+	private static void OnTopControlChanged(UiControl? newTopControl)
 	{
 		if (TopControl is not null && OnHoverEndDelegates.TryGetValue(TopControl, out var hoverEnd)) hoverEnd.Invoke(TopControl, MousePos);
 		TopControl = newTopControl;

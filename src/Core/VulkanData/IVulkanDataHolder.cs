@@ -2,7 +2,7 @@
 
 public class VulkanDataHolder : IVulkanDataHolder
 {
-	public IVulkanDataFactory VulkanDataFactory { get; init; }
+	public IVulkanDataFactory VulkanDataFactory { get; init; } = default!;
 	public int VulkanDataIndex { get; init; }
 
 	public unsafe TDataStruct* GetData<TDataStruct>() where TDataStruct : unmanaged => VulkanDataFactory.GetPointerToData<TDataStruct>(VulkanDataIndex);

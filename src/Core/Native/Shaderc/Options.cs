@@ -9,21 +9,21 @@ using System.Runtime.InteropServices;
 
 namespace Core.Native.Shaderc;
 
-public class IncludeResolutionEventArgs : EventArgs
-{
-	public readonly string Source;
-	public readonly string Include;
-	public readonly IncludeType Type;
-	public string ResolvedName;
-	public string ResolvedContent;
-
-	internal IncludeResolutionEventArgs(string source, string include, IncludeType type)
-	{
-		Source = source;
-		Include = include;
-		Type = type;
-	}
-}
+// public class IncludeResolutionEventArgs : EventArgs
+// {
+// 	public readonly string Source;
+// 	public readonly string Include;
+// 	public readonly IncludeType Type;
+// 	public string ResolvedName;
+// 	public string ResolvedContent;
+//
+// 	internal IncludeResolutionEventArgs(string source, string include, IncludeType type)
+// 	{
+// 		Source = source;
+// 		Include = include;
+// 		Type = type;
+// 	}
+// }
 
 public class Options : IDisposable, ICloneable
 {
@@ -79,7 +79,7 @@ public class Options : IDisposable, ICloneable
 	{
 		if (incType == IncludeType.Relative)
 		{
-			incFile = Path.Combine(Path.GetDirectoryName(sourcePath), includePath);
+			incFile = Path.Combine(Path.GetDirectoryName(sourcePath).ThrowIfNullable(), includePath);
 			if (File.Exists(incFile))
 			{
 				using (var sr = new StreamReader(incFile))
@@ -164,7 +164,7 @@ public class Options : IDisposable, ICloneable
 	/// </remarks>
 	/// <param name="name">Name.</param>
 	/// <param name="value">Value.</param>
-	public void AddMacroDefinition(string name, string value = null) =>
+	public void AddMacroDefinition(string name, string? value = null) =>
 		NativeMethods.shaderc_compile_options_add_macro_definition(
 			handle, name, (ulong) name.Length, value, string.IsNullOrEmpty(value) ? 0 : (ulong) value.Length);
 

@@ -1,14 +1,15 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace Core.UI.Fonts;
 
 public class Font
 {
-	public string Face { get; set; }
+	public string Face { get; set; } = String.Empty;
 	public int Size { get; set; }
 	public bool Bold { get; set; }
 	public bool Italic { get; set; }
-	public string Charset { get; set; }
+	public string Charset { get; set; } = String.Empty;
 	public bool Unicode { get; set; }
 	public int StretchH { get; set; }
 	public bool Smooth { get; set; }
@@ -25,7 +26,7 @@ public class Font
 
 	public int CharCount { get; set; }
 
-	public FontPage[] Pages { get; set; }
+	public FontPage[] Pages { get; set; } = Array.Empty<FontPage>();
 	protected readonly Dictionary<char, FontCharacter> Characters = new();
 	
 	public void SetCharacter(char ch, FontCharacter character) => Characters[ch] = character;
@@ -35,7 +36,7 @@ public class Font
 public class FontPage
 {
 	public int Id { get; set; }
-	public string TextureName { get; set; }
+	public string TextureName { get; set; } = String.Empty;
 }
 
 public class FontCharacter

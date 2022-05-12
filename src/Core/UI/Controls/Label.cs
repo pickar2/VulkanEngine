@@ -45,7 +45,7 @@ public class Label : StackPanel
 
 		foreach (char ch in _text)
 		{
-			var character = UiRenderer.Consolas.GetCharacter(ch);
+			var character = UiRenderer.Consolas!.GetCharacter(ch);
 
 			var box = new CustomBox();
 

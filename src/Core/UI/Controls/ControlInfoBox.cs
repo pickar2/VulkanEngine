@@ -6,11 +6,11 @@ namespace Core.UI.Controls;
 
 public class ControlInfoBox : AbsolutePanel
 {
-	private UiControl _control;
+	private UiControl? _control;
 
 	public ControlInfoBox() => OffsetZ = 2047;
 
-	public UiControl Control
+	public UiControl? Control
 	{
 		get => _control;
 		set

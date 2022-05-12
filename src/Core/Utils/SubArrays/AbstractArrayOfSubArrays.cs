@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace Core.Utils.SubArrays;
@@ -24,7 +25,7 @@ public abstract class ArrayOfSubArrays : AbstractArrayOfSubArrays
 		return SubArrays[key];
 	}
 
-	public override bool TryGetData(int key, out SubArrayData data) => SubArrays.TryGetValue(key, out data);
+	public override bool TryGetData(int key, [MaybeNullWhen(false)] out SubArrayData data) => SubArrays.TryGetValue(key, out data);
 }
 
 public abstract class FixedKeyCountAOSA : AbstractArrayOfSubArrays
@@ -60,7 +61,7 @@ public abstract class FixedKeyCountAOSA : AbstractArrayOfSubArrays
 	{
 		if (KeyAbsenceMask[key])
 		{
-			data = null;
+			data = default!;
 			return false;
 		}
 
@@ -91,7 +92,7 @@ public abstract unsafe class AbstractArrayOfSubArrays
 
 	public abstract SubArrayData GetData(int key);
 	public abstract SubArrayData GetOrCreateData(int key);
-	public abstract bool TryGetData(int key, out SubArrayData data);
+	public abstract bool TryGetData(int key, [MaybeNullWhen(false)] out SubArrayData data);
 
 	public KeyedPointerAccessor[] BulkInsert<TDataStruct>(int key, TDataStruct[] dataStructs) where TDataStruct : unmanaged
 	{
@@ -306,7 +307,7 @@ public static class ListExtensions
 
 public class SubArrayData
 {
-	public AbstractArrayOfSubArrays Storage { get; init; }
+	public AbstractArrayOfSubArrays Storage { get; init; } = default!;
 	public int Key { get; init; }
 
 	public int StartByteIndex { get; set; }
@@ -322,7 +323,7 @@ public class SubArrayData
 
 public class KeyedPointerAccessor
 {
-	public SubArrayData Data { get; init; }
+	public SubArrayData Data { get; init; } = default!;
 	public int Index { get; init; }
 
 	public unsafe TDataStruct* GetPointerToData<TDataStruct>() where TDataStruct : unmanaged =>

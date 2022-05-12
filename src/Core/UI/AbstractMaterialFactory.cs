@@ -1,6 +1,5 @@
 ﻿using Core.Registries.CoreTypes;
 using Core.Registries.Entities;
-using Core.Serializer.Entities.MapperWorkers;
 using Core.VulkanData;
 using Silk.NET.Vulkan;
 
@@ -22,6 +21,6 @@ public class MaterialDataFactory : AbstractVulkanDataFactory<MaterialDataHolder>
 
 public class MaterialDataHolder : VulkanDataHolder
 {
-	public MaterialDataFactory MaterialFactory => VulkanDataFactory as MaterialDataFactory;
+	public MaterialDataFactory MaterialFactory => (VulkanDataFactory as MaterialDataFactory)!;
 	public short MaterialId => MaterialFactory.Index;
 }

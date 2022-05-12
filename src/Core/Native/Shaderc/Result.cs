@@ -39,8 +39,7 @@ public class Result : IDisposable
 	/// Returns a null-terminated string that contains any error messages generated
 	/// during the compilation.
 	/// </summary>
-	public string ErrorMessage =>
-		Marshal.PtrToStringAnsi(NativeMethods.shaderc_result_get_error_message(handle));
+	public string? ErrorMessage => Marshal.PtrToStringAnsi(NativeMethods.shaderc_result_get_error_message(handle));
 
 	/// <summary>
 	/// Returns a pointer to the start of the compilation output data bytes, either

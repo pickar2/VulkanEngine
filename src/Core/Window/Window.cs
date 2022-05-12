@@ -19,12 +19,12 @@ public unsafe class Window : IDisposable
 
 	public delegate void OnScrollDelegate(float xoffset, float yoffset);
 
-	public event OnKeyDelegate OnKeyDown;
-	public event OnKeyDelegate OnKeyUp;
-	public event OnCursorPositionDelegate OnCursorPosition;
-	public event OnMouseButtonDelegate OnMouseUp;
-	public event OnMouseButtonDelegate OnMouseDown;
-	public event OnScrollDelegate OnScroll;
+	public event OnKeyDelegate? OnKeyDown;
+	public event OnKeyDelegate? OnKeyUp;
+	public event OnCursorPositionDelegate? OnCursorPosition;
+	public event OnMouseButtonDelegate? OnMouseUp;
+	public event OnMouseButtonDelegate? OnMouseDown;
+	public event OnScrollDelegate? OnScroll;
 
 	private readonly IWindow _window;
 	private readonly IInputContext _input;

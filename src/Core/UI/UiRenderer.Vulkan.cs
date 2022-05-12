@@ -31,31 +31,31 @@ public static unsafe partial class UiRenderer
 
 	private static DescriptorSet _texturesSet;
 	private static DescriptorSet _globalDataSet;
-	private static DescriptorSet[] _componentDataSets;
+	private static DescriptorSet[] _componentDataSets = default!;
 
 	private static DescriptorSet _vertexMaterialDataSet;
 	private static DescriptorSet _fragmentMaterialDataSet;
 
-	private static CommandPool[] _commandPools;
-	private static CommandBuffer[] _commandBuffers;
+	private static CommandPool[] _commandPools = default!;
+	private static CommandBuffer[] _commandBuffers = default!;
 
 	private static PipelineLayout _pipelineLayout;
-	private static Pipeline[] _pipelines;
+	private static Pipeline[] _pipelines = default!;
 
-	private static VulkanBuffer[] _indexBuffers;
-	private static VulkanBuffer _indirectBuffer;
+	private static VulkanBuffer[] _indexBuffers = default!;
+	private static VulkanBuffer _indirectBuffer = default!;
 
-	private static VulkanShader _vertexShader;
-	private static VulkanShader _fragmentShader;
+	private static VulkanShader _vertexShader = default!;
+	private static VulkanShader _fragmentShader = default!;
 
 	private static Sampler _sampler;
 
 	private static int _dirty;
 
-	public static MultipleStructDataFactory GlobalData;
+	public static MultipleStructDataFactory GlobalData = default!;
 
-	public static StructHolder ProjectionMatrixHolder;
-	public static StructHolder FrameIndexHolder;
+	public static StructHolder ProjectionMatrixHolder = default!;
+	public static StructHolder FrameIndexHolder = default!;
 
 	public static void Init()
 	{

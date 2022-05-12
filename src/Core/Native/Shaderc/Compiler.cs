@@ -16,7 +16,7 @@ public class Compiler : IDisposable
 	/// Initializes a new instance of the <see cref="T:Vulkan.Shaderc.Compiler"/> class.
 	/// If `Options` is null, a default one will be created with Includes resolution enabled.
 	/// </summary>
-	public Compiler(Options options = null)
+	public Compiler(Options? options = null)
 	{
 		handle = NativeMethods.shaderc_compiler_initialize();
 		if (handle == IntPtr.Zero)

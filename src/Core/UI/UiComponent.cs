@@ -8,8 +8,8 @@ namespace Core.UI;
 
 public unsafe class UiComponent : VulkanDataHolder
 {
-	private MaterialDataHolder _vertMaterial;
-	private MaterialDataHolder _fragMaterial;
+	private MaterialDataHolder _vertMaterial = default!;
+	private MaterialDataHolder _fragMaterial = default!;
 
 	public MaterialDataHolder VertMaterial
 	{

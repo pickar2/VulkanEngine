@@ -382,7 +382,7 @@ public static unsafe class Utils
 			$"Failed to create shader module {path}");
 		shader.Dispose();
 
-		return new VulkanShader {VulkanModule = vulkanShaderModule, ReflectModule = spirvShaderModule};
+		return new VulkanShader(vulkanShaderModule, spirvShaderModule);
 	}
 
 	public static Native.Shaderc.Result CompileShader(string path, ShaderKind shaderKind)
@@ -481,7 +481,7 @@ public static unsafe class Utils
 		CommandBuffers.EndSingleTimeCommands(ref commandBuffer, GraphicsCommandPool, Queues.Graphics);
 	}
 
-	public static VulkanPipeline CreateComputePipeline(VulkanShader shader, DescriptorSetLayout[] layouts, PushConstantRange[] pushConstantRanges = null)
+	public static VulkanPipeline CreateComputePipeline(VulkanShader shader, DescriptorSetLayout[] layouts, PushConstantRange[]? pushConstantRanges = null)
 	{
 		pushConstantRanges ??= Array.Empty<PushConstantRange>();
 
