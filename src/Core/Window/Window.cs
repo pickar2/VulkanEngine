@@ -96,12 +96,12 @@ public unsafe class Window : IDisposable
 	public void Run()
 	{
 		_stopwatch.Start();
-		_window.Run((Action) (() =>
+		_window.Run(() =>
 		{
 			_window.DoEvents();
 			if (!_window.IsClosing)
 				_window.DoUpdate();
-		}));
+		});
 		_window.DoEvents();
 		_window.Reset();
 	}

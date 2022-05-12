@@ -13,7 +13,7 @@ public class ShaderGraph
 
 	public readonly Dictionary<IShaderNode, UiShaderNode> UiShaderNodes = new();
 
-	private int id = 0;
+	private int _id;
 
 	public string Identifier { get; set; } = default!;
 	public string Type { get; set; } = default!;
@@ -79,7 +79,7 @@ public class ShaderGraph
 	public void AddNode(IShaderNode node)
 	{
 		_shaderNodes.Add(node);
-		UiShaderNodes[node] = new UiShaderNode(this, node, id++);
+		UiShaderNodes[node] = new UiShaderNode(this, node, _id++);
 	}
 
 	public static void Link(IHasOutputs outputNode, int outputIndex, IHasInputs inputNode, int inputIndex)
@@ -140,7 +140,7 @@ public class ShaderGraph
 	}
 }
 
-public unsafe class UiShaderNode
+public class UiShaderNode
 {
 	public ShaderGraph ShaderGraph { get; }
 	public IShaderNode Node { get; }

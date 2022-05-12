@@ -40,7 +40,7 @@ public abstract class SimpleRegistry<TEventManager, TMainType> : IRegistry<TMain
 		EventManager.Dispose();
 	}
 
-	public NamespacedName Identifier { get; init; }
+	public NamespacedName Identifier { get; init; } = default!;
 
 	public IEnumerableRegistry<TMainType> Enumerator => _registry.Enumerator;
 

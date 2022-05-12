@@ -1,6 +1,11 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Threading;
+using Core.Configs.Entities;
 using Core.General;
+using Core.Registries.CoreTypes;
+using Core.Serializer.Entities.MapperWorkers;
 using Core.UI;
 using Core.Utils;
 using Core.Utils.Features;
@@ -16,7 +21,7 @@ internal static class Program
 {
 	public static LoggerRegistry Logger = default!;
 
-	private static void Main(string[] args)
+	private static void Main()
 	{
 		var stopwatch = new Stopwatch();
 		stopwatch.Start();
@@ -27,12 +32,14 @@ internal static class Program
 		Logger.Info.Message($"START");
 
 		Logger.Info.Message($"Version of {appName} is {App.Configuration.Version}. Ticks: {stopwatch.ElapsedTicks}. Time: {stopwatch.ElapsedMilliseconds}ms.");
-
 		if (VulkanOptions.DebugMode)
 			Logger.Warn.Message($"DEBUG MODE IS ENABLED");
 
 		Window.Window window = new();
-
+		Action<Config<string>, Mapper> test = ((config, mapper) => { });
+		// (test is Action<IEntry, Mapper>).ThrowIfFalse($"WHAAAAAT");
+		var test1 = Unsafe.As<Action<Config<string>, Mapper>, Action<IEntry, Mapper>>(ref test);
+		App.Get<ConfigRegistry>().SaveStates();
 		window.OnKeyUp += key =>
 		{
 			if (key == Key.Escape) window.Close();
@@ -96,7 +103,7 @@ internal static class Program
 		window.Dispose();
 
 		SpinWait.SpinUntil(() => !App.Get<DevConsoleRegistry>().IsAlive);
-
+		// App.Get<ConfigRegistry>().SaveStates();
 		Logger.Info.Message($"END");
 	}
 }

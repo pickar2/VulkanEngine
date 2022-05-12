@@ -101,8 +101,14 @@ internal static class DefaultConvertersHelper
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static void WriteEnum<T>(this in SWH swh, ref T value, Type type)
 	{
-		int convertedValue = (int) Unsafe.As<T, ValueType>(ref value);
-		swh.WriteStruct(ref convertedValue, typeof(int));
+		Shell<T> s;
+		s.Enum = value;
+		unsafe
+		{
+			int* pi = &s.IntValue;
+			pi += 1;
+			swh.WriteStruct(ref *pi, typeof(int));
+		}
 	}
 
 	private struct Shell<T>

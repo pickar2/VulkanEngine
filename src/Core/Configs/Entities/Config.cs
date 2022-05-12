@@ -18,7 +18,7 @@ public sealed class Config<T> : IComplexEntry
 	private Config(Patcher patcher) { }
 	public Config() { }
 
-	public NamespacedName Identifier { get; init; }
+	public NamespacedName Identifier { get; init; } = default!;
 
 	public T1 Get<T1>() =>
 		_value is T1 result ? result : throw new ArgumentException($"Can't cast from {_value?.GetType()} to {typeof(T)}").AsExpectedException();

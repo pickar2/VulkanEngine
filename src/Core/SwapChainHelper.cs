@@ -56,7 +56,7 @@ public static unsafe class SwapchainHelper
 	public static void RecreateSwapchain()
 	{
 		Context.Vk.DeviceWaitIdle(Context.Device);
-		Context.Window.IWindow?.DoEvents();
+		Context.Window.IWindow.DoEvents();
 		if (Context.Window.IsClosing) { return; }
 
 		CleanupSwapchain();
@@ -67,8 +67,8 @@ public static unsafe class SwapchainHelper
 
 	public static void Dispose()
 	{
-		ColorImage?.Dispose();
-		DepthImage?.Dispose();
+		ColorImage.Dispose();
+		DepthImage.Dispose();
 	}
 
 	public static void CreateRenderPass()

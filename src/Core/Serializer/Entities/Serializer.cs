@@ -24,6 +24,7 @@ internal static class Serializer
 		if (type.IsAbstract || type.IsInterface)
 		{
 			type = value!.GetType();
+			swh.WriteClass(type, BaseTypes.Type);
 			goto SerializeChain;
 		}
 

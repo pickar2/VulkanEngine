@@ -36,7 +36,7 @@ public static unsafe class MainRenderer
 
 	public static void Init()
 	{
-		Context.Window.IWindow.Resize += vec => _framebufferResized = true;
+		Context.Window.IWindow.Resize += _ => _framebufferResized = true;
 
 		SwapchainHelper.CreateSwapchainObjects();
 

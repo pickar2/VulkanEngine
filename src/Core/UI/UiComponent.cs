@@ -107,7 +107,7 @@ public struct UiComponentData
 }
 
 [Flags]
-public enum UiComponentFlags : int
+public enum UiComponentFlags
 {
 	Disabled = 1 << 0,
 	HasTransformation = 1 << 3,

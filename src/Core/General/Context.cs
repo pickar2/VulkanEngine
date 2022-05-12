@@ -55,7 +55,7 @@ public unsafe class Context : IDisposable
 		Window = window;
 		KhrSurface = new KhrSurface(Vk.Context);
 
-		var options = new Options(true);
+		var options = new Options(enableIncludes:true);
 		options.EnableDebugInfo();
 		options.Optimization = OptimizationLevel.Performance;
 		options.TargetSpirVVersion = new SpirVVersion(1, 5);

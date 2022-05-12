@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections;
-using System.Dynamic;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using Core.Serializer.Entities.MapperWorkers;
 
 namespace Core.Serializer.Entities.Accessors;
@@ -20,12 +20,11 @@ public abstract class MapperAccessor
 
 	private static readonly Type PatcherType = typeof(Patcher);
 	private static readonly Type[] PatcherCreatorTypes = {PatcherType};
-	private static readonly Type DynamicMetaObjectType = typeof(IDynamicMetaObjectProvider);
 
 	public virtual T MapNew<T>(in Mapper mapper) => throw new NotSupportedException();
 	public virtual void MapNew<T>(T obj, in Mapper mapper) => throw new NotSupportedException();
-	public virtual T PatchNew<T>(Patcher patcher) => throw new NotSupportedException();
-	public virtual void PatchNew<T>(T obj, Patcher patcher) => throw new NotSupportedException();
+	public virtual T PatchNew<T>(in Patcher patcher) => throw new NotSupportedException();
+	public virtual void PatchNew<T>(T obj, in Patcher patcher) => throw new NotSupportedException();
 
 	/// <summary>
 	///     Provides a type-specific accessor, allowing by-name access for all objects of that type
@@ -52,7 +51,6 @@ public abstract class MapperAccessor
 
 	private static MapperAccessor CreateNew(Type type)
 	{
-		DynamicMetaObjectType.IsAssignableFrom(type).ThrowIfTrue($"DynamicMetaObjectType not supported");
 		type.IsAbstract.ThrowIfTrue($"Abstract type not supported, because can't create instance of this type");
 
 		ConstructorInfo? serializerCtor = null;
@@ -132,10 +130,10 @@ public abstract class MapperAccessor
 
 	private sealed class DelegateAccessor : MapperAccessor
 	{
-		private readonly Delegate _patcherCaller;
-		private readonly Delegate _patcherCreator;
-		private readonly Delegate _serializerCaller;
-		private readonly Delegate _serializerCreator;
+		private Delegate _patcherCaller;
+		private Delegate _patcherCreator;
+		private Delegate _serializerCaller;
+		private Delegate _serializerCreator;
 
 		public DelegateAccessor(
 			Delegate serializerCreator,
@@ -145,9 +143,32 @@ public abstract class MapperAccessor
 			(_serializerCreator, _patcherCreator, _serializerCaller, _patcherCaller) =
 			(serializerCreator, patcherCreator, serializerCaller, patcherCaller);
 
-		public override T MapNew<T>(in Mapper mapper) => ((Func<Mapper, T>) _serializerCreator)(mapper);
-		public override void MapNew<T>(T obj, in Mapper mapper) => ((Action<T, Mapper>) _serializerCaller)(obj, mapper);
-		public override T PatchNew<T>(Patcher patcher) => ((Func<Patcher, T>) _patcherCreator)(patcher);
-		public override void PatchNew<T>(T obj, Patcher patcher) => ((Action<T, Patcher>) _patcherCaller)(obj, patcher);
+		public override T MapNew<T>(in Mapper mapper)
+		{
+			if (_serializerCreator is not Func<Mapper, T> serializerCreator)
+				serializerCreator = Unsafe.As<Delegate, Func<Mapper, T>>(ref _serializerCreator);
+			return serializerCreator(mapper);
+		}
+
+		public override void MapNew<T>(T obj, in Mapper mapper)
+		{
+			if (_serializerCaller is not Action<T, Mapper> serializerCaller)
+				serializerCaller = Unsafe.As<Delegate, Action<T, Mapper>>(ref _serializerCaller);
+			serializerCaller(obj, mapper);
+		}
+
+		public override T PatchNew<T>(in Patcher patcher)
+		{
+			if (_patcherCreator is not Func<Patcher, T> patcherCreator)
+				patcherCreator =  Unsafe.As<Delegate, Func<Patcher, T>>(ref _patcherCreator);
+			return patcherCreator(patcher);
+		}
+
+		public override void PatchNew<T>(T obj, in Patcher patcher)
+		{
+			if (_patcherCaller is not Action<T, Patcher> patcherCaller)
+				patcherCaller = Unsafe.As<Delegate, Action<T, Patcher>>(ref _patcherCaller);
+			patcherCaller(obj, patcher);
+		}
 	}
 }

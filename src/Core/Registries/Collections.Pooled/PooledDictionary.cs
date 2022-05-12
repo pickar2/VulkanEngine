@@ -77,7 +77,7 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 		mapper.MapField(ref _size);
 		if (mapper.OperationType == OperationType.Serialize)
 		{
-			var type = Comparer!.GetType();
+			var type = Comparer.GetType();
 			mapper.MapField(ref type);
 			int count = _count - _freeCount;
 			mapper.MapField(ref count);
@@ -112,6 +112,7 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 		mapper.MapField(ref _version);
 	}
 
+	// ReSharper disable once UnusedParameter.Local
 	protected PooledDictionary(Patcher patcher) { }
 
 	/// <summary>
@@ -161,7 +162,7 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 				var entries = pooled._entries;
 				for (int i = 0; i < count; i++)
 				{
-					if (entries[i].HashCode >= 0)
+					if (entries![i].HashCode >= 0)
 					{
 						TryInsert(entries[i].Key, entries[i].Value, InsertionBehavior.ThrowOnExisting);
 					}
@@ -240,7 +241,7 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 	/// <summary>
 	///     The <see cref="IEqualityComparer{TKey}" /> used to compare keys in this dictionary.
 	/// </summary>
-	public IEqualityComparer<TKey> Comparer { get; private set; }
+	public IEqualityComparer<TKey> Comparer { get; private set; } = EqualityComparer<TKey>.Default;
 
 	/// <summary>
 	///     The keys in this dictionary.
@@ -272,9 +273,11 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 			{
 				for (int i = 0; i < _count; i++)
 				{
-					if (_entries[i].HashCode >= 0)
+					if (_entries![i].HashCode >= 0)
 					{
-						dictEntryArray[index++] = new DictionaryEntry(_entries[i].Key, _entries[i].Value);
+						dictEntryArray[index++] = new DictionaryEntry(
+							_entries[i].Key ?? throw new NullReferenceException("Key is nullable.").AsExpectedException(),
+							_entries[i].Value);
 					}
 				}
 
@@ -287,7 +290,7 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 					var entries = _entries;
 					for (int i = 0; i < count; i++)
 					{
-						if (entries[i].HashCode >= 0)
+						if (entries![i].HashCode >= 0)
 						{
 							objects[index++] = new KeyValuePair<TKey, TValue>(entries[i].Key, entries[i].Value);
 						}
@@ -337,7 +340,7 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 			int i = FindEntry(tKey);
 			if (i >= 0)
 			{
-				return _entries[i].Value;
+				return _entries![i].Value;
 			}
 
 			return null;
@@ -403,7 +406,7 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 		get
 		{
 			int i = FindEntry(key);
-			if (i >= 0) return _entries[i].Value;
+			if (i >= 0) return _entries![i].Value;
 			ThrowHelper.ThrowKeyNotFoundException(key);
 			return default!;
 		}
@@ -430,13 +433,13 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 	bool ICollection<KeyValuePair<TKey, TValue>>.Contains(KeyValuePair<TKey, TValue> keyValuePair)
 	{
 		int i = FindEntry(keyValuePair.Key);
-		return i >= 0 && EqualityComparer<TValue>.Default.Equals(_entries[i].Value, keyValuePair.Value);
+		return i >= 0 && EqualityComparer<TValue>.Default.Equals(_entries![i].Value, keyValuePair.Value);
 	}
 
 	bool ICollection<KeyValuePair<TKey, TValue>>.Remove(KeyValuePair<TKey, TValue> keyValuePair)
 	{
 		int i = FindEntry(keyValuePair.Key);
-		if (i < 0 || !EqualityComparer<TValue>.Default.Equals(_entries[i].Value, keyValuePair.Value)) return false;
+		if (i < 0 || !EqualityComparer<TValue>.Default.Equals(_entries![i].Value, keyValuePair.Value)) return false;
 		Remove(keyValuePair.Key);
 		return true;
 	}
@@ -451,7 +454,7 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 		_freeList = -1;
 		_freeCount = 0;
 		_size = 0;
-		Array.Clear(_entries, 0, count);
+		Array.Clear(_entries!, 0, count);
 		_version++;
 	}
 
@@ -478,7 +481,7 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 		int i = buckets[bucket] - 1;
 		while (i >= 0)
 		{
-			ref var entry = ref entries[i];
+			ref var entry = ref entries![i];
 
 			if (entry.HashCode == hashCode && Comparer.Equals(entry.Key, key))
 			{
@@ -521,7 +524,7 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 		int i = FindEntry(key);
 		if (i >= 0)
 		{
-			value = _entries[i].Value;
+			value = _entries![i].Value;
 			return true;
 		}
 
@@ -614,7 +617,7 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 		{
 			for (int i = 0; i < _count; i++)
 			{
-				if (entries[i].HashCode >= 0 && entries[i].Value == null) return true;
+				if (entries![i].HashCode >= 0 && entries[i].Value == null) return true;
 			}
 		}
 		else
@@ -624,7 +627,7 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 				// ValueType: Devirtualize with EqualityComparer<TValue>.Default intrinsic
 				for (int i = 0; i < _count; i++)
 				{
-					if (entries[i].HashCode >= 0 && EqualityComparer<TValue>.Default.Equals(entries[i].Value, value)) return true;
+					if (entries![i].HashCode >= 0 && EqualityComparer<TValue>.Default.Equals(entries[i].Value, value)) return true;
 				}
 			}
 			else
@@ -635,7 +638,7 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 				var defaultComparer = EqualityComparer<TValue>.Default;
 				for (int i = 0; i < _count; i++)
 				{
-					if (entries[i].HashCode >= 0 && defaultComparer.Equals(entries[i].Value, value)) return true;
+					if (entries![i].HashCode >= 0 && defaultComparer.Equals(entries[i].Value, value)) return true;
 				}
 			}
 		}
@@ -659,7 +662,7 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 		var entries = _entries;
 		for (int i = 0; i < count; i++)
 		{
-			if (entries[i].HashCode >= 0)
+			if (entries![i].HashCode >= 0)
 			{
 				array[index++] = new KeyValuePair<TKey, TValue>(entries[i].Key, entries[i].Value);
 			}
@@ -680,7 +683,7 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 		int collisionCount = 0;
 		var comparer = Comparer;
 
-		int hashCode = comparer.GetHashCode(key) & Lower31BitMask;
+		int hashCode = comparer.GetHashCode(key!) & Lower31BitMask;
 		// Value in _buckets is 1-based
 		i = buckets[hashCode % length] - 1;
 		do
@@ -688,7 +691,7 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 			// Should be a while loop https://github.com/dotnet/coreclr/issues/15476
 			// Test in if to drop range check for following array access
 			if ((uint) i >= (uint) length ||
-			    (entries[i].HashCode == hashCode && comparer.Equals(entries[i].Key, key)))
+			    (entries![i].HashCode == hashCode && comparer.Equals(entries[i].Key, key)))
 			{
 				break;
 			}
@@ -729,7 +732,7 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 		var comparer = Comparer;
 		int size = _size;
 
-		int hashCode = comparer.GetHashCode(key) & Lower31BitMask;
+		int hashCode = comparer.GetHashCode(key!) & Lower31BitMask;
 
 		int collisionCount = 0;
 		ref int bucket = ref _buckets![hashCode % size];
@@ -745,7 +748,7 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 				break;
 			}
 
-			if (entries[i].HashCode == hashCode && comparer.Equals(entries[i].Key, key))
+			if (entries![i].HashCode == hashCode && comparer.Equals(entries[i].Key, key))
 			{
 				if (behavior == InsertionBehavior.OverwriteExisting)
 				{
@@ -796,7 +799,7 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 			entries = _entries;
 		}
 
-		ref var entry = ref entries[index];
+		ref var entry = ref entries![index];
 
 		if (updateFreeList)
 		{
@@ -898,14 +901,14 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 		int[] buckets = _buckets!;
 		var entries = _entries;
 		int collisionCount = 0;
-		int hashCode = Comparer.GetHashCode(key) & Lower31BitMask;
+		int hashCode = Comparer.GetHashCode(key!) & Lower31BitMask;
 		int bucket = hashCode % _size;
 		int last = -1;
 		// Value in buckets is 1-based
 		int i = buckets[bucket] - 1;
 		while (i >= 0)
 		{
-			ref var entry = ref entries[i];
+			ref var entry = ref entries![i];
 
 			if (entry.HashCode == hashCode && Comparer.Equals(entry.Key, key))
 			{
@@ -1008,8 +1011,8 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 		int newSize = HashHelpers.GetPrime(capacity);
 
 		var oldEntries = _entries;
-		int[] oldBuckets = _buckets;
-		int currentCapacity = oldEntries == null ? 0 : oldEntries.Length;
+		int[] oldBuckets = _buckets.ThrowIfNullable();
+		int currentCapacity = oldEntries?.Length ?? 0;
 		if (newSize >= currentCapacity)
 			return;
 
@@ -1021,11 +1024,11 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 		int count = 0;
 		for (int i = 0; i < oldCount; i++)
 		{
-			int hashCode = oldEntries[i].HashCode;
+			int hashCode = oldEntries![i].HashCode;
 			if (hashCode >= 0)
 			{
 #pragma warning disable IDE0059 // Value assigned to symbol is never used
-				ref var entry = ref entries[count];
+				ref var entry = ref entries![count];
 #pragma warning restore IDE0059
 				entry = oldEntries[i];
 				int bucket = hashCode % newSize;
@@ -1041,12 +1044,12 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 		_size = newSize;
 		_freeCount = 0;
 		SBucketPool.Return(oldBuckets);
-		SEntryPool.Return(entries);
+		SEntryPool.Return(entries!);
 	}
 
 	private void ReturnArrays()
 	{
-		if (_entries.Length > 0)
+		if (_entries!.Length > 0)
 		{
 			try
 			{
@@ -1113,7 +1116,7 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 			// dictionary.count+1 could be negative if dictionary.count is int.MaxValue
 			while ((uint) _index < (uint) _dictionary._count)
 			{
-				ref var entry = ref _dictionary._entries[_index++];
+				ref var entry = ref _dictionary._entries![_index++];
 
 				if (entry.HashCode < 0) continue;
 
@@ -1233,7 +1236,7 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 				{
 					for (int i = 0; i < count; i++)
 					{
-						if (entries[i].HashCode >= 0) objects[index++] = entries[i].Key!;
+						if (entries![i].HashCode >= 0) objects[index++] = entries[i].Key!;
 					}
 				}
 				catch (ArrayTypeMismatchException)
@@ -1259,7 +1262,7 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 			var entries = _dictionary._entries;
 			for (int i = 0; i < count; i++)
 			{
-				if (entries[i].HashCode >= 0) array[index++] = entries[i].Key;
+				if (entries![i].HashCode >= 0) array[index++] = entries[i].Key;
 			}
 		}
 
@@ -1316,7 +1319,7 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 
 				while ((uint) _index < (uint) _dictionary._count)
 				{
-					ref var entry = ref _dictionary._entries[_index++];
+					ref var entry = ref _dictionary._entries![_index++];
 
 					if (entry.HashCode < 0) continue;
 					Current = entry.Key;
@@ -1387,7 +1390,7 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 					{
 						for (int i = 0; i < count; i++)
 						{
-							if (entries[i].HashCode >= 0) objects[index++] = entries[i].Value!;
+							if (entries![i].HashCode >= 0) objects[index++] = entries[i].Value!;
 						}
 					}
 					catch (ArrayTypeMismatchException)
@@ -1419,7 +1422,7 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 			var entries = _dictionary._entries;
 			for (int i = 0; i < count; i++)
 			{
-				if (entries[i].HashCode >= 0) array[index++] = entries[i].Value;
+				if (entries![i].HashCode >= 0) array[index++] = entries[i].Value;
 			}
 		}
 
@@ -1468,7 +1471,7 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 
 				while ((uint) _index < (uint) _dictionary._count)
 				{
-					ref var entry = ref _dictionary._entries[_index++];
+					ref var entry = ref _dictionary._entries![_index++];
 
 					if (entry.HashCode < 0) continue;
 					Current = entry.Value;

@@ -35,7 +35,7 @@ public abstract class ComplexRegistry<TEventManager, TMainType> : IComplexRegist
 		set => _registry.SetSelectedKey(value, Assembly.GetCallingAssembly());
 	}
 
-	public NamespacedName Identifier { get; init; }
+	public NamespacedName Identifier { get; init; } = default!;
 	public IEnumerableRegistry<TMainType> Enumerator => _registry.Enumerator;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
