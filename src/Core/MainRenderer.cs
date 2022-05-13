@@ -34,7 +34,7 @@ public static unsafe class MainRenderer
 
 	private static bool _framebufferResized;
 	
-	public static float Time { get; private set; }
+	public static long TimeMs { get; private set; }
 
 	public static void Init()
 	{
@@ -99,7 +99,7 @@ public static unsafe class MainRenderer
 			sw.Restart();
 			if (lag < MsPerUpdate) continue;
 
-			Time = sw3.ElapsedMilliseconds;
+			TimeMs = sw3.ElapsedMilliseconds;
 
 			double fps = Maths.Round(1000 / lag, 1);
 			double frameTime = Maths.Round(sw2.ElapsedTicks / 10000d, 2);

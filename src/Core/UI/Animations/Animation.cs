@@ -1,28 +1,33 @@
 ﻿using System;
+using System.Diagnostics;
+using System.Drawing;
+using System.Numerics;
+using Core.Utils;
 using SimpleMath.Vectors;
 
 namespace Core.UI.Animations;
 
-public class Animation<TAnimatedValue> where TAnimatedValue : struct, INumber<TAnimatedValue>
+public class Animation
 {
 	public IAnimationCurve Curve = default!;
 	public AnimationType Type = AnimationType.RepeatFromStart;
-	public float Duration;
-	public float StartTime;
 	public float AnimationOffset;
+	public long Duration;
+	public long StartDelay;
 
-	public TAnimatedValue StartValue;
-	public TAnimatedValue EndValue;
+	public IValueInterpolator Interpolator = default!;
 
-	public Action<TAnimatedValue> ValueSetter = default!;
+	private readonly Stopwatch _stopwatch = new();
+	private readonly Action _updateDelegate;
+	private long _startTime;
 
-	private Action _updateDelegate;
+	public Animation() => _updateDelegate = () => Update(_stopwatch.ElapsedMilliseconds);
 
-	public Animation() => _updateDelegate = () => Update(MainRenderer.Time);
-
-	private void Update(float time)
+	private void Update(long time)
 	{
-		float fullTime = (time - StartTime) / Duration + AnimationOffset;
+		if (_startTime > time) return;
+		
+		float fullTime = (float) (time - _startTime) / Duration + AnimationOffset;
 		float normalizedTime = Type switch
 		{
 			AnimationType.OneTime => (float) Math.Min(fullTime, 1.0),
@@ -32,53 +37,87 @@ public class Animation<TAnimatedValue> where TAnimatedValue : struct, INumber<TA
 		};
 
 		var value = Curve.Interpolate(normalizedTime);
-		ValueSetter.Invoke(AnimationValueTypes.Interpolate(StartValue, EndValue, value));
+		Interpolator.Update(value);
 	}
 
 	public void Start()
 	{
-		StartTime = MainRenderer.Time;
+		_stopwatch.Start();
+		_startTime = StartDelay;
 		UiManager.BeforeUpdate += _updateDelegate;
 	}
 
-	public void Stop() => UiManager.BeforeUpdate -= _updateDelegate;
+	public void Stop()
+	{
+		_stopwatch.Stop();
+		UiManager.BeforeUpdate -= _updateDelegate;
+	}
+
+	public void Reset()
+	{
+		_stopwatch.Reset();
+		Interpolator.Update(0);
+	}
+
+	public void Restart()
+	{
+		Reset();
+		Start();
+	}
 }
 
 public enum AnimationType {
 	OneTime, RepeatFromStart, RepeatAndReverse
 }
 
-public static class AnimationValueTypes
+public interface IValueInterpolator
 {
-	// private static readonly Dictionary<Type, IValueInterpolator<object>> Dictionary = new()
-	// {
-	// 	{typeof(float), new FloatInterpolator()},
-	// 	{typeof(Vector2<float>), new Vector2FInterpolator()}
-	// };
+	public void Update(float x);
+}
 
-	public static T Interpolate<T>(T start, T end, float normalizedValue) where T : INumber<T>
+public abstract class ValueInterpolator<TValue> : IValueInterpolator
+{
+	public TValue Start, End;
+	public Action<TValue> ValueUpdater;
+
+	protected ValueInterpolator(TValue start, TValue end, Action<TValue> valueUpdater)
 	{
-		var type = typeof(T);
-		if (type == typeof(float))
-		{
-			return T.Create(new FloatInterpolator().Interpolate(float.Create(start), float.Create(end), normalizedValue));
-		}
-
-		throw new ArgumentException().AsExpectedException();
+		Start = start;
+		End = end;
+		ValueUpdater = valueUpdater;
 	}
+
+	public void Update(float x) => ValueUpdater.Invoke(Interpolate(x));
+
+	public abstract TValue Interpolate(float x);
 }
 
-public interface IValueInterpolator<TAnimatedValue> where TAnimatedValue : struct
+public class NumberInterpolator<T> : ValueInterpolator<T> where T : struct, INumber<T>
 {
-	public TAnimatedValue Interpolate(TAnimatedValue start, TAnimatedValue end, float normalizedValue);
+	public NumberInterpolator(T start, T end, Action<T> valueUpdater) : base(start, end, valueUpdater) { }
+	public override T Interpolate(float x) => T.Create((1.0f - x) * float.Create(Start) + x * float.Create(End));
 }
 
-public class FloatInterpolator : IValueInterpolator<float> {
-	public float Interpolate(float start, float end, float normalizedValue) => (1.0f - normalizedValue) * start + normalizedValue * end;
+public class Vector2Interpolator<T> : ValueInterpolator<Vector2<T>> where T : struct, INumber<T>
+{
+	public Vector2Interpolator(Vector2<T> start, Vector2<T> end, Action<Vector2<T>> valueUpdater) : base(start, end, valueUpdater) { }
+
+	public override Vector2<T> Interpolate(float x) => new(T.Create((1.0f - x) * float.Create(Start.X) + x * float.Create(End.X)),
+		T.Create((1.0f - x) * float.Create(Start.Y) + x * float.Create(End.Y)));
 }
 
-public class Vector2FInterpolator : IValueInterpolator<Vector2<float>> {
-	public Vector2<float> Interpolate(Vector2<float> start, Vector2<float> end, float normalizedValue) => 
-		new((1.0f - normalizedValue) * start.X + normalizedValue * end.X,
-			(1.0f - normalizedValue) * start.Y + normalizedValue * end.Y);
+public class RGBInterpolator : ValueInterpolator<Color>
+{
+	public RGBInterpolator(Color start, Color end, Action<Color> valueUpdater) : base(start, end, valueUpdater) { }
+	public override Color Interpolate(float x)
+	{
+		int a = Lerp(Start.A, End.A, x);
+		int r = Lerp(Start.R, End.R, x);
+		int g = Lerp(Start.G, End.G, x);
+		int b = Lerp(Start.B, End.B, x);
+		
+		return Color.FromArgb(a, r, g,b);
+	}
+
+	private static byte Lerp(byte start, byte end, float x) => (byte) ((1.0f - x) * start + x * end);
 }

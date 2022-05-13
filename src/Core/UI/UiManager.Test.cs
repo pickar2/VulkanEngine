@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Drawing;
 using System.Linq;
 using System.Numerics;
 using Core.General;
@@ -16,16 +17,16 @@ public static partial class UiManager
 	private static void InitTestScene()
 	{
 		// off root control example
-		var infoPanel = new AbsolutePanel();
-		var infoBox = new ControlInfoBox();
-		infoPanel.AddChild(infoBox);
-		AfterUpdate += () =>
-		{
-			infoBox.Control = TopControl is not null && TopControl.Selectable ? TopControl : null;
-
-			var screenSize = new Vector2<float>(Context.Window.WindowWidth, Context.Window.WindowHeight);
-			infoPanel.UpdateControl(new Vector2<float>(1), screenSize);
-		};
+		// var infoPanel = new AbsolutePanel();
+		// var infoBox = new ControlInfoBox();
+		// infoPanel.AddChild(infoBox);
+		// AfterUpdate += () =>
+		// {
+		// 	infoBox.Control = TopControl is not null && TopControl.Selectable ? TopControl : null;
+		//
+		// 	var screenSize = new Vector2<float>(Context.Window.WindowWidth, Context.Window.WindowHeight);
+		// 	infoPanel.UpdateControl(new Vector2<float>(1), screenSize);
+		// };
 
 		var mainControl = new AbsolutePanel();
 		// mainControl.Selectable = false;
@@ -257,54 +258,60 @@ public static partial class UiManager
 		parent.AddChild(box2);
 
 		var startOffsetX = box1.Offset.X;
-		var animation1 = new Animation<float>
+		var animation1 = new Animation
 		{
 			Curve = DefaultCurves.EaseInOutSine,
 			Type = AnimationType.RepeatAndReverse,
-			StartValue = 0,
-			EndValue = 75,
-			Duration = 1000,
-			ValueSetter = (f => box1.Offset.X = f + startOffsetX)
+			Duration = 2000,
+			AnimationOffset = 1,
+			Interpolator = new NumberInterpolator<float>(0, 75, f => box1.Offset.X = f + startOffsetX)
 		};
 		
 		var startOffsetY = box1.Offset.Y;
-		var animation2 = new Animation<float>
+		var animation2 = new Animation
 		{
 			Curve = DefaultCurves.EaseInOutSine,
 			Type = AnimationType.RepeatAndReverse,
-			StartValue = 0,
-			EndValue = 75,
 			Duration = 1000,
-			AnimationOffset = 0.5f,
-			ValueSetter = (f => box1.Offset.Y = f + startOffsetY)
+			StartDelay = 500,
+			Interpolator = new NumberInterpolator<float>(0, 75, f => box1.Offset.Y = f + startOffsetY)
 		};
 		
-		var startOffsetY2 = box2.Offset.Y;
-		var animation3 = new Animation<float>
+		var startOffsetY2 = box2.Offset;
+		var animation3 = new Animation
 		{
 			Curve = DefaultCurves.Linear,
 			Type = AnimationType.OneTime,
-			StartValue = 0,
-			EndValue = 75,
 			Duration = 3000,
-			ValueSetter = (f => box2.Offset.Y = f + startOffsetY2)
+			Interpolator = new Vector2Interpolator<float>((0, 0), (75, 150), f => box2.Offset = f + startOffsetY2)
+		};
+
+		var startColor = box1.Color;
+		var animationColor = new Animation
+		{
+			Curve = DefaultCurves.EaseInOutSine,
+			Type = AnimationType.RepeatAndReverse,
+			Duration = 1000,
+			Interpolator = new RGBInterpolator(Color.FromArgb(startColor), Color.FromArgb(RandomColor()), c => box1.Color = c.ToArgb())
 		};
 
 		bool started = false;
-		button.OnClickEnd((contol, button, pos) =>
+		button.OnClickEnd((contol, mb, pos) =>
 		{
-			if (button != MouseButton.Left) return;
+			if (mb != MouseButton.Left) return;
 			if (!started)
 			{
 				animation1.Start();
 				animation2.Start();
 				animation3.Start();
+				animationColor.Start();
 			}
 			else
 			{
-				animation1.Stop();
-				animation2.Stop();
-				animation3.Stop();
+				animation1.Reset();
+				animation2.Reset();
+				animation3.Reset();
+				animationColor.Reset();
 			}
 			started = !started;
 		});
