@@ -8,7 +8,7 @@ public class ScrollView : UiControl
 {
 	public Vector2<float> ScrollOffset;
 
-	private UiControl _horizontalSlider;
+	private readonly UiControl _horizontalSlider;
 	private Vector2<float> _maxAreaInside;
 
 	public ScrollView()

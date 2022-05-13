@@ -2,9 +2,11 @@
 using System.Linq;
 using System.Numerics;
 using Core.General;
+using Core.UI.Animations;
 using Core.UI.Controls;
 using Core.UI.Controls.Panels;
 using Core.UI.Transforms;
+using Silk.NET.Input;
 using SimpleMath.Vectors;
 
 namespace Core.UI;
@@ -42,6 +44,7 @@ public static partial class UiManager
 		WrapPanelTest(mainControl);
 		// DockPanelTest(mainControl);
 		Transform3DTest(mainControl);
+		AnimationTest(mainControl);
 	}
 
 	private static readonly Random Random = new(1234);
@@ -182,8 +185,10 @@ public static partial class UiManager
 		parent.AddChild(panel);
 
 		var transform = new Transform3D()
+			.Scale((0.5f, 0.5f, 1.0f))
 			.Translate((-0.5f, -0.5f, 0))
-			.RotateY(0.3f);
+			.RotateY(0.3f)
+			.Translate((0.5f, 0.5f, 0));
 
 		var box = new CustomBox
 		{
@@ -201,8 +206,10 @@ public static partial class UiManager
 		panel.AddChild(box);
 
 		var transform2 = new Transform3D()
+			.Scale((0.5f, 0.5f, 1.0f))
 			.Translate((-0.5f, -0.5f, 0))
-			.RotateY(-0.1f);
+			.RotateY(-0.15f)
+			.Translate((0.5f, 0.5f, 0));
 
 		var box2 = new CustomBox
 		{
@@ -218,5 +225,87 @@ public static partial class UiManager
 		box2.VertMaterial.MarkForUpdate();
 
 		panel.AddChild(box2);
+	}
+
+	private static unsafe void AnimationTest(UiControl parent)
+	{
+		var button = new ColoredBox
+		{
+			Color = RandomColor(),
+			Size = (100, 50),
+			Offset = (700, 350),
+			OffsetZ = 10
+		};
+		parent.AddChild(button);
+
+		var box1 = new ColoredBox
+		{
+			Color = RandomColor(),
+			Size = (75, 75),
+			Offset = (900, 150),
+			OffsetZ = 10
+		};
+		parent.AddChild(box1);
+
+		var box2 = new ColoredBox
+		{
+			Color = RandomColor(),
+			Size = (75, 75),
+			Offset = (900, 300),
+			OffsetZ = 10
+		};
+		parent.AddChild(box2);
+
+		var startOffsetX = box1.Offset.X;
+		var animation1 = new Animation<float>
+		{
+			Curve = DefaultCurves.Linear,
+			Type = AnimationType.RepeatAndReverse,
+			StartValue = 0,
+			EndValue = 75,
+			Duration = 1000,
+			ValueSetter = (f => box1.Offset.X = f + startOffsetX)
+		};
+		
+		var startOffsetY = box1.Offset.Y;
+		var animation2 = new Animation<float>
+		{
+			Curve = DefaultCurves.Linear,
+			Type = AnimationType.RepeatFromStart,
+			StartValue = 0,
+			EndValue = 75,
+			Duration = 1000,
+			ValueSetter = (f => box1.Offset.Y = f + startOffsetY)
+		};
+		
+		var startOffsetY2 = box2.Offset.Y;
+		var animation3 = new Animation<float>
+		{
+			Curve = DefaultCurves.Linear,
+			Type = AnimationType.OneTime,
+			StartValue = 0,
+			EndValue = 75,
+			Duration = 3000,
+			ValueSetter = (f => box2.Offset.Y = f + startOffsetY2)
+		};
+
+		bool started = false;
+		button.OnClickEnd((contol, button, pos) =>
+		{
+			if (button != MouseButton.Left) return;
+			if (!started)
+			{
+				animation1.Start();
+				animation2.Start();
+				animation3.Start();
+			}
+			else
+			{
+				animation1.Stop();
+				animation2.Stop();
+				animation3.Stop();
+			}
+			started = !started;
+		});
 	}
 }

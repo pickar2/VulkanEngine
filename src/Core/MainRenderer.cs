@@ -33,6 +33,8 @@ public static unsafe class MainRenderer
 	private static PooledList<Fence>[] _fences = default!;
 
 	private static bool _framebufferResized;
+	
+	public static float Time { get; private set; }
 
 	public static void Init()
 	{
@@ -78,6 +80,9 @@ public static unsafe class MainRenderer
 		var sw2 = new Stopwatch();
 		sw.Start();
 
+		var sw3 = new Stopwatch();
+		sw3.Start();
+
 		var fpsLabel = new Label {Offset = (10, 10), OffsetZ = 30};
 		var frameTimeLabel = new Label {Offset = (10, 26), OffsetZ = 31};
 
@@ -93,6 +98,8 @@ public static unsafe class MainRenderer
 			lag += sw.ElapsedTicks / 10000d;
 			sw.Restart();
 			if (lag < MsPerUpdate) continue;
+
+			Time = sw3.ElapsedMilliseconds;
 
 			double fps = Maths.Round(1000 / lag, 1);
 			double frameTime = Maths.Round(sw2.ElapsedTicks / 10000d, 2);

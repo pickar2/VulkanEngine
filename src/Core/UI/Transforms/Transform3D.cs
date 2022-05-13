@@ -38,4 +38,10 @@ public class Transform3D
 		Steps.Add(Matrix4x4.CreateRotationZ(radians));
 		return this;
 	}
+
+	public Transform3D Scale(Vector3<float> vector)
+	{
+		Steps.Add(Matrix4x4.CreateScale(vector.X, vector.Y, vector.Z));
+		return this;
+	}
 }
