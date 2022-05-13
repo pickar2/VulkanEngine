@@ -9,6 +9,7 @@ public class Animation<TAnimatedValue> where TAnimatedValue : struct, INumber<TA
 	public AnimationType Type = AnimationType.RepeatFromStart;
 	public float Duration;
 	public float StartTime;
+	public float AnimationOffset;
 
 	public TAnimatedValue StartValue;
 	public TAnimatedValue EndValue;
@@ -21,7 +22,7 @@ public class Animation<TAnimatedValue> where TAnimatedValue : struct, INumber<TA
 
 	private void Update(float time)
 	{
-		float fullTime = (time - StartTime) / Duration;
+		float fullTime = (time - StartTime) / Duration + AnimationOffset;
 		float normalizedTime = Type switch
 		{
 			AnimationType.OneTime => (float) Math.Min(fullTime, 1.0),
@@ -73,11 +74,11 @@ public interface IValueInterpolator<TAnimatedValue> where TAnimatedValue : struc
 }
 
 public class FloatInterpolator : IValueInterpolator<float> {
-	public float Interpolate(float start, float end, float normalizedValue) => Math.Max(1.0f - normalizedValue, 0.0f) * start + normalizedValue * end;
+	public float Interpolate(float start, float end, float normalizedValue) => (1.0f - normalizedValue) * start + normalizedValue * end;
 }
 
 public class Vector2FInterpolator : IValueInterpolator<Vector2<float>> {
 	public Vector2<float> Interpolate(Vector2<float> start, Vector2<float> end, float normalizedValue) => 
-		new(Math.Max(1.0f - normalizedValue, 0.0f) * start.X + normalizedValue * end.X,
-			Math.Max(1.0f - normalizedValue, 0.0f) * start.Y + normalizedValue * end.Y);
+		new((1.0f - normalizedValue) * start.X + normalizedValue * end.X,
+			(1.0f - normalizedValue) * start.Y + normalizedValue * end.Y);
 }
