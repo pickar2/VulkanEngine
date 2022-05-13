@@ -22,15 +22,15 @@ public class Animation<TAnimatedValue> where TAnimatedValue : struct, INumber<TA
 
 	private void Update(float time)
 	{
+		float fullTime = (time - StartTime) / Duration;
 		float normalizedTime = Type switch
 		{
-			AnimationType.OneTime => (float) Math.Min((time - StartTime) / Duration, 1.0),
-			AnimationType.RepeatFromStart => ((time - StartTime) / Duration) % 1.0f,
-			AnimationType.RepeatAndReverse => (float) (Math.Sin(Math.PI * (time - StartTime) / Duration) + 1) / 2,
+			AnimationType.OneTime => (float) Math.Min(fullTime, 1.0),
+			AnimationType.RepeatFromStart => fullTime % 1.0f,
+			AnimationType.RepeatAndReverse => (float) Math.Abs((fullTime + 1) % 2.0 - 1), // for smooth use (Math.Sin(Math.PI * (fullTime - 0.5)) + 1) / 2
 			_ => throw new ArgumentOutOfRangeException().AsExpectedException()
 		};
 
-		// Program.Logger.Info.Message($"{StartTime}, {time}, {normalizedTime}");
 		var value = Curve.Interpolate(normalizedTime);
 		ValueSetter.Invoke(AnimationValueTypes.Interpolate(StartValue, EndValue, value));
 	}
