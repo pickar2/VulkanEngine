@@ -2,7 +2,6 @@
 using System.Drawing;
 using System.Linq;
 using System.Numerics;
-using Core.General;
 using Core.UI.Animations;
 using Core.UI.Controls;
 using Core.UI.Controls.Panels;
@@ -257,7 +256,7 @@ public static partial class UiManager
 		};
 		parent.AddChild(box2);
 
-		var startOffsetX = box1.Offset.X;
+		float startOffsetX = box1.Offset.X;
 		var animation1 = new Animation
 		{
 			Curve = DefaultCurves.EaseInOutSine,
@@ -266,8 +265,8 @@ public static partial class UiManager
 			AnimationOffset = 1,
 			Interpolator = new NumberInterpolator<float>(0, 75, f => box1.Offset.X = f + startOffsetX)
 		};
-		
-		var startOffsetY = box1.Offset.Y;
+
+		float startOffsetY = box1.Offset.Y;
 		var animation2 = new Animation
 		{
 			Curve = DefaultCurves.EaseInOutSine,
@@ -276,7 +275,7 @@ public static partial class UiManager
 			StartDelay = 500,
 			Interpolator = new NumberInterpolator<float>(0, 75, f => box1.Offset.Y = f + startOffsetY)
 		};
-		
+
 		var startOffsetY2 = box2.Offset;
 		var animation3 = new Animation
 		{
@@ -286,13 +285,13 @@ public static partial class UiManager
 			Interpolator = new Vector2Interpolator<float>((0, 0), (75, 150), f => box2.Offset = f + startOffsetY2)
 		};
 
-		var startColor = box1.Color;
+		int startColor = box1.Color;
 		var animationColor = new Animation
 		{
 			Curve = DefaultCurves.EaseInOutSine,
 			Type = AnimationType.RepeatAndReverse,
 			Duration = 1000,
-			Interpolator = new RGBInterpolator(Color.FromArgb(startColor), Color.FromArgb(RandomColor()), c => box1.Color = c.ToArgb())
+			Interpolator = new RGBInterpolator(Color.FromArgb(startColor), Color.Red, c => box1.Color = c.ToArgb())
 		};
 
 		bool started = false;
@@ -313,6 +312,7 @@ public static partial class UiManager
 				animation3.Reset();
 				animationColor.Reset();
 			}
+
 			started = !started;
 		});
 	}
