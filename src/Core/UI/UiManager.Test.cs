@@ -270,10 +270,10 @@ public static partial class UiManager
 		var startOffsetY = box1.Offset.Y;
 		var animation2 = new Animation<float>
 		{
-			Curve = DefaultCurves.Linear,
-			Type = AnimationType.RepeatFromStart,
-			StartValue = 0,
-			EndValue = 75,
+			Curve = DefaultCurves.EaseInSine,
+			Type = AnimationType.RepeatAndReverse,
+			StartValue = 75,
+			EndValue = 0,
 			Duration = 1000,
 			ValueSetter = (f => box1.Offset.Y = f + startOffsetY)
 		};

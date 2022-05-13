@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using SimpleMath.Vectors;
 
 namespace Core.UI.Animations;
@@ -27,7 +26,7 @@ public class Animation<TAnimatedValue> where TAnimatedValue : struct, INumber<TA
 		{
 			AnimationType.OneTime => (float) Math.Min(fullTime, 1.0),
 			AnimationType.RepeatFromStart => fullTime % 1.0f,
-			AnimationType.RepeatAndReverse => (float) Math.Abs((fullTime + 1) % 2.0 - 1), // for smooth use (Math.Sin(Math.PI * (fullTime - 0.5)) + 1) / 2
+			AnimationType.RepeatAndReverse => (float) Math.Abs((fullTime + 1) % 2.0 - 1),
 			_ => throw new ArgumentOutOfRangeException().AsExpectedException()
 		};
 
