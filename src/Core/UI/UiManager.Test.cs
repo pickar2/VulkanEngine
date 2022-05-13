@@ -6,6 +6,7 @@ using Core.UI.Animations;
 using Core.UI.Controls;
 using Core.UI.Controls.Panels;
 using Core.UI.Transforms;
+using Core.Utils;
 using Silk.NET.Input;
 using SimpleMath.Vectors;
 
@@ -256,34 +257,13 @@ public static partial class UiManager
 		};
 		parent.AddChild(box2);
 
-		float startOffsetX = box1.Offset.X;
-		var animation1 = new Animation
-		{
-			Curve = DefaultCurves.EaseInOutSine,
-			Type = AnimationType.RepeatAndReverse,
-			Duration = 2000,
-			AnimationOffset = 1,
-			Interpolator = new NumberInterpolator<float>(0, 75, f => box1.Offset.X = f + startOffsetX)
-		};
+		var animation1 = Animation.OfNumber(() => ref box1.Offset.X, box1.Offset.X, box1.Offset.X + 75, 2000, animationOffset: 1,
+			type: AnimationType.RepeatAndReverse, curve: DefaultCurves.EaseInOutSine);
 
-		float startOffsetY = box1.Offset.Y;
-		var animation2 = new Animation
-		{
-			Curve = DefaultCurves.EaseInOutSine,
-			Type = AnimationType.RepeatAndReverse,
-			Duration = 1000,
-			StartDelay = 500,
-			Interpolator = new NumberInterpolator<float>(0, 75, f => box1.Offset.Y = f + startOffsetY)
-		};
+		var animation2 = Animation.OfNumber(() => ref box1.Offset.Y, box1.Offset.Y, box1.Offset.Y + 75, 1000, startDelay: 500,
+			type: AnimationType.RepeatAndReverse, curve: DefaultCurves.EaseInOutSine);
 
-		var startOffsetY2 = box2.Offset;
-		var animation3 = new Animation
-		{
-			Curve = DefaultCurves.Linear,
-			Type = AnimationType.OneTime,
-			Duration = 3000,
-			Interpolator = new Vector2Interpolator<float>((0, 0), (75, 150), f => box2.Offset = f + startOffsetY2)
-		};
+		var animation3 = Animation.OfVector2(() => ref box2.Offset, box2.Offset, box2.Offset + (75, 150), 3000);
 
 		int startColor = box1.Color;
 		var animationColor = new Animation
