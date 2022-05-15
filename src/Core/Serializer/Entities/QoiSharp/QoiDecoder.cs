@@ -9,11 +9,11 @@ public static class QoiDecoder
 {
 	public static QoiImage Decode(ReadOnlySpan<byte> data)
 	{
-		data.Length.ThrowIfGreaterOrEqualsThan(QoiCodec.HeaderSize + QoiCodec.Padding.Length);
+		data.Length.ThrowIfLessThan(QoiCodec.HeaderSize + QoiCodec.Padding.Length);
 		QoiCodec.IsValidMagic(data[..4]).ThrowIfFalse($"Invalid file magic");
 
 		int width = ((data[4] << 24) | (data[5] << 16) | (data[6] << 8) | data[7]).ThrowIfEquals(0);
-		int height = ((data[8] << 24) | (data[9] << 16) | (data[10] << 8) | data[11]).ThrowIfEquals(0).ThrowIfLessThan(QoiCodec.MaxPixels / width);
+		int height = ((data[8] << 24) | (data[9] << 16) | (data[10] << 8) | data[11]).ThrowIfEquals(0).ThrowIfGreaterThan(QoiCodec.MaxPixels / width);
 		byte channels = data[12].ThrowIfNotInRange<byte>(3, 4);
 		var colorSpace = (ColorSpace) data[13];
 		byte[] pixels = new byte[width * height * channels];

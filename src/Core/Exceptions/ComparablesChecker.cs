@@ -11,7 +11,7 @@ public static class ComparablesChecker
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static T ThrowIfGreaterOrEqualsThan<T>(this T value, in T value1, [CallerArgumentExpression("value")] string? callerName = null)
 	{
-		if (Comparer<T>.Default.Compare(value, value1) <= 0)
+		if (Comparer<T>.Default.Compare(value, value1) >= 0)
 			throw new ArgumentOutOfRangeException(callerName, value, $"Value greater or equals than {value1}").AsExpectedException();
 
 		return value;
@@ -20,7 +20,7 @@ public static class ComparablesChecker
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static T ThrowIfLessOrEqualsThan<T>(this T value, in T value1, [CallerArgumentExpression("value")] string? callerName = null)
 	{
-		if (Comparer<T>.Default.Compare(value, value1) >= 0)
+		if (Comparer<T>.Default.Compare(value, value1) <= 0)
 			throw new ArgumentOutOfRangeException(callerName, value, $"Value less or equals than {value1}").AsExpectedException();
 
 		return value;
@@ -29,7 +29,7 @@ public static class ComparablesChecker
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static T ThrowIfGreaterThan<T>(this T value, in T value1, [CallerArgumentExpression("value")] string? callerName = null)
 	{
-		if (Comparer<T>.Default.Compare(value, value1) < 0)
+		if (Comparer<T>.Default.Compare(value, value1) > 0)
 			throw new ArgumentOutOfRangeException(callerName, value, $"Value greater than {value1}").AsExpectedException();
 
 		return value;
@@ -38,7 +38,7 @@ public static class ComparablesChecker
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static T ThrowIfLessThan<T>(this T value, in T value1, [CallerArgumentExpression("value")] string? callerName = null)
 	{
-		if (Comparer<T>.Default.Compare(value, value1) > 0)
+		if (Comparer<T>.Default.Compare(value, value1) < 0)
 			throw new ArgumentOutOfRangeException(callerName, value, $"Value less than {value1}").AsExpectedException();
 
 		return value;
