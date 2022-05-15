@@ -43,11 +43,11 @@ public unsafe class DebugUtilsMessenger : IDisposable
 		if (_suppressedDebugMessageIDs.Contains((uint) pCallbackData->MessageIdNumber)) return Vk.False;
 
 		if ((messageSeverity & DebugUtilsMessageSeverityInfoBitExt) != 0)
-			Program.Logger.Info.Message($"{messageTypes} {Marshal.PtrToStringAnsi((nint) pCallbackData->PMessage)}");
+			App.Logger.Info.Message($"{messageTypes} {Marshal.PtrToStringAnsi((nint) pCallbackData->PMessage)}");
 		else if ((messageSeverity & DebugUtilsMessageSeverityWarningBitExt) != 0)
-			Program.Logger.Warn.Message($"{messageTypes} {Marshal.PtrToStringAnsi((nint) pCallbackData->PMessage)}");
+			App.Logger.Warn.Message($"{messageTypes} {Marshal.PtrToStringAnsi((nint) pCallbackData->PMessage)}");
 		else if ((messageSeverity & DebugUtilsMessageSeverityErrorBitExt) != 0)
-			Program.Logger.Error.Message($"{messageTypes} {Marshal.PtrToStringAnsi((nint) pCallbackData->PMessage)}");
+			App.Logger.Error.Message($"{messageTypes} {Marshal.PtrToStringAnsi((nint) pCallbackData->PMessage)}");
 
 		return Vk.False;
 	}

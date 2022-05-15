@@ -94,7 +94,7 @@ public unsafe class Context : IDisposable
 		GraphicsCommandPool = CreateCommandPool(0, Queues.Graphics);
 		DisposalQueue.EnqueueInGlobal(() => Vk.DestroyCommandPool(Device, GraphicsCommandPool, null));
 
-		Program.Logger.Info.Message($"VULKAN INITIALIZED");
+		App.Logger.Info.Message($"VULKAN INITIALIZED");
 		AfterVulkanInit?.Invoke();
 	}
 
@@ -251,7 +251,7 @@ public unsafe class Context : IDisposable
 		}
 
 		Vk.GetPhysicalDeviceProperties2(PhysicalDevice, out var properties);
-		Program.Logger.Info.Message($"Physical Device: {GetDeviceString(properties)}");
+		App.Logger.Info.Message($"Physical Device: {GetDeviceString(properties)}");
 
 		IsIntegratedGpu = properties.Properties.DeviceType == PhysicalDeviceType.IntegratedGpu;
 	}

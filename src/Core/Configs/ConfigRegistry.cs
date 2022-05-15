@@ -36,7 +36,7 @@ public sealed class ConfigRegistry : SimpleRegistry<DefaultEventManager<ConfigCa
 
 		try
 		{
-			SerializerRegistry.Instance.Serialize(
+			App.Serializer.Serialize(
 				File.Create(fileName),
 				this, CompressionLevel.L00_FAST,
 				() => File.Exists(App.RecoveryKeyFile)
@@ -55,7 +55,7 @@ public sealed class ConfigRegistry : SimpleRegistry<DefaultEventManager<ConfigCa
 	internal void TryToCreateStates()
 	{
 		if (File.Exists(App.AppStateFile)) return;
-		SerializerRegistry.Instance.Serialize(
+		App.Serializer.Serialize(
 			File.Create(App.AppStateFile),
 			this, CompressionLevel.L00_FAST,
 			() => File.Exists(App.RecoveryKeyFile)
@@ -67,7 +67,7 @@ public sealed class ConfigRegistry : SimpleRegistry<DefaultEventManager<ConfigCa
 	{
 		var refObj = this;
 		if (File.Exists(App.AppStateFile))
-			SerializerRegistry.Instance.Deserialize(File.OpenRead(App.AppStateFile),
+			App.Serializer.Deserialize(File.OpenRead(App.AppStateFile),
 				ref refObj,
 				() => File.Exists(App.RecoveryKeyFile)
 					? File.OpenRead(App.RecoveryKeyFile)

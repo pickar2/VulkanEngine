@@ -32,7 +32,7 @@ public readonly struct DebugLevel : ILogLevel
 	public void Message([InterpolatedStringHandlerArgument("")] ref InterpolatedLoggerHandler<DebugLevel> message)
 	{
 		if (message.IsDefault) return;
-		LoggerRegistry.Instance.CallLogHandlers(LogLevel.Debug, message.ToString());
+		App.Logger.CallLogHandlers(LogLevel.Debug, message.ToString());
 	}
 }
 
@@ -44,7 +44,7 @@ public readonly struct InfoLevel : ILogLevel
 	public void Message([InterpolatedStringHandlerArgument("")] ref InterpolatedLoggerHandler<InfoLevel> message)
 	{
 		if (message.IsDefault) return;
-		LoggerRegistry.Instance.CallLogHandlers(LogLevel.Info, message.ToString());
+		App.Logger.CallLogHandlers(LogLevel.Info, message.ToString());
 	}
 }
 
@@ -56,7 +56,7 @@ public readonly struct WarnLevel : ILogLevel
 	public void Message([InterpolatedStringHandlerArgument("")] ref InterpolatedLoggerHandler<WarnLevel> message)
 	{
 		if (message.IsDefault) return;
-		LoggerRegistry.Instance.CallLogHandlers(LogLevel.Warn, message.ToString());
+		App.Logger.CallLogHandlers(LogLevel.Warn, message.ToString());
 	}
 }
 
@@ -68,7 +68,7 @@ public readonly struct ErrorLevel : ILogLevel
 	public void Message([InterpolatedStringHandlerArgument("")] ref InterpolatedLoggerHandler<ErrorLevel> message)
 	{
 		if (message.IsDefault) return;
-		LoggerRegistry.Instance.CallLogHandlers(LogLevel.Error, message.ToString());
+		App.Logger.CallLogHandlers(LogLevel.Error, message.ToString());
 	}
 }
 
@@ -80,14 +80,14 @@ public readonly struct FatalLevel : ILogLevel
 	public void Message([InterpolatedStringHandlerArgument("")] ref InterpolatedLoggerHandler<FatalLevel> message)
 	{
 		if (message.IsDefault) return;
-		LoggerRegistry.Instance.CallLogHandlers(LogLevel.Fatal, message.ToString());
+		App.Logger.CallLogHandlers(LogLevel.Fatal, message.ToString());
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Message(Exception exception)
 	{
-		if (LoggerRegistry.Instance.LevelsSwitcher >> (int) LogLevel.Fatal <= 0) return;
-		LoggerRegistry.Instance.CallLogHandlers(LogLevel.Fatal, exception);
+		if (App.Logger.LevelsSwitcher >> (int) LogLevel.Fatal <= 0) return;
+		App.Logger.CallLogHandlers(LogLevel.Fatal, exception);
 	}
 }
 

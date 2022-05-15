@@ -33,29 +33,42 @@ public static class App
 	// Files
 	internal static readonly string AppStateFile = Path.Combine(AppFolderPath, "configs.cache");
 	internal static readonly string RecoveryKeyFile = Path.Combine(AppFolderPath, "recovery-key.cache");
+	
+	// Default registries
+	// ReSharper disable once MemberCanBePrivate.Global
+	public static readonly LoggerRegistry Logger;
+	// ReSharper disable once MemberCanBePrivate.Global
+	public static readonly SerializerRegistry Serializer;
+	// ReSharper disable once MemberCanBePrivate.Global
+	public static readonly ConfigRegistry Configs;
+	// ReSharper disable once MemberCanBePrivate.Global
+	public static readonly LocaleRegistry Locales;
+	// ReSharper disable once MemberCanBePrivate.Global
+	public static readonly CacheFileRegistry Cache;
+	
 
 	static App()
 	{
-		Register(LoggerRegistry.Instance);
+		Register(Logger = LoggerRegistry.Instance);
 		AppDomain.CurrentDomain.UnhandledException += (_, args) =>
 		{
 			var exception = (Exception) args.ExceptionObject;
-			LoggerRegistry.Instance.Fatal.Message(exception);
+			App.Logger.Fatal.Message(exception);
 
 			// TODO: Send data to server
 			if (!exception.IsExpectedException()) { }
 
 			Environment.Exit(0);
 		};
-		LoggerRegistry.Instance.Info.Message($"{Configuration.AppName}: {Configuration.Version}, {Configuration.GitLastCommitHash}");
+		Logger.Info.Message($"{Configuration.AppName}: {Configuration.Version}, {Configuration.GitLastCommitHash}");
 		Register(ModRegistry.Instance);
-		Register(SerializerRegistry.Instance);
-		Register(ConfigRegistry.Instance);
-		ConfigRegistry.Instance.LoadStates();
-		LoggerRegistry.Instance.UpdateConfiguration();
+		Register(Serializer = SerializerRegistry.Instance);
+		Register(Configs = ConfigRegistry.Instance);
+		Configs.LoadStates();
+		Logger.UpdateConfiguration();
 		Register(DevConsoleRegistry.Instance);
-		Register(LocaleRegistry.Instance);
-		Register(CacheFileRegistry.Instance);
+		Register(Locales = LocaleRegistry.Instance);
+		Register(Cache = CacheFileRegistry.Instance);
 		ModRegistry.Instance.InitializeMods();
 
 		foreach ((string _, var registry) in Registries)

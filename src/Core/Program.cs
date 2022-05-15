@@ -19,21 +19,17 @@ namespace Core;
 
 internal static class Program
 {
-	public static LoggerRegistry Logger = default!;
-
 	private static void Main()
 	{
 		var stopwatch = new Stopwatch();
 		stopwatch.Start();
 		string appName = App.Configuration.AppName;
 		stopwatch.Stop();
-		Logger = App.Get<LoggerRegistry>();
+		App.Logger.Info.Message($"START");
 
-		Logger.Info.Message($"START");
-
-		Logger.Info.Message($"Version of {appName} is {App.Configuration.Version}. Ticks: {stopwatch.ElapsedTicks}. Time: {stopwatch.ElapsedMilliseconds}ms.");
+		App.Logger.Info.Message($"Version of {appName} is {App.Configuration.Version}. Ticks: {stopwatch.ElapsedTicks}. Time: {stopwatch.ElapsedMilliseconds}ms.");
 		if (VulkanOptions.DebugMode)
-			Logger.Warn.Message($"DEBUG MODE IS ENABLED");
+			App.Logger.Warn.Message($"DEBUG MODE IS ENABLED");
 
 		Window.Window window = new();
 		window.OnKeyUp += key =>
@@ -100,6 +96,6 @@ internal static class Program
 
 		SpinWait.SpinUntil(() => !App.Get<DevConsoleRegistry>().IsAlive);
 		App.Get<ConfigRegistry>().SaveStates();
-		Logger.Info.Message($"END");
+		App.Logger.Info.Message($"END");
 	}
 }

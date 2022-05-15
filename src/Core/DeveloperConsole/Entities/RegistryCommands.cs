@@ -47,7 +47,7 @@ internal static class RegistryCommands
 	internal static Renderable SetState(string[]? args)
 	{
 		args.ThrowIfNullable().Length.ThrowIfNotEquals(3);
-		var category = ConfigRegistry.Instance.GetOrDefault(args![0]).ThrowIfNullable("Category not found");
+		var category = App.Configs.GetOrDefault(args![0]).ThrowIfNullable("Category not found");
 		object value = category.GetOrDefault<object>(args[1]).ThrowIfNullable("State entry not found");
 
 		try
@@ -65,7 +65,7 @@ internal static class RegistryCommands
 
 	internal static Renderable SaveStates()
 	{
-		ConfigRegistry.Instance.SaveStates();
+		App.Configs.SaveStates();
 		return new Text("Saved.");
 	}
 }

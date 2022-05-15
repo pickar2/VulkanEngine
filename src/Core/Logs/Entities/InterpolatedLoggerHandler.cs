@@ -15,7 +15,7 @@ public ref struct InterpolatedLoggerHandler<TLogHandler> where TLogHandler : ILo
 		out bool shouldAppend,
 		[CallerMemberName] string callerMemberName = "")
 	{
-		if (LoggerRegistry.Instance.LevelsSwitcher >> (int) logHandler.LogLevel > 0)
+		if (App.Logger.LevelsSwitcher >> (int) logHandler.LogLevel > 0)
 		{
 			_callerMemberName = callerMemberName;
 			_innerHandler = new DefaultInterpolatedStringHandler(literalLength, formattedCount);

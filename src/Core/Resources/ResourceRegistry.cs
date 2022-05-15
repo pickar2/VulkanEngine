@@ -36,7 +36,7 @@ public sealed class ResourceRegistry : IRegistry<ResourceCategory>
 		category.TryGetValue(resourceName, out _).ThrowIfFalse($"Resource not found!");
 
 		using var memoryStream = new MemoryStream();
-		SerializerRegistry.Instance.Serialize(memoryStream, value, CompressionLevel.L03_HC);
+		App.Serializer.Serialize(memoryStream, value, CompressionLevel.L03_HC);
 		var resource = new Resource
 		{
 			Identifier = resourceName,
@@ -62,7 +62,7 @@ public sealed class ResourceRegistry : IRegistry<ResourceCategory>
 		string categoryPath = Path.Combine(resourcesDir, categoryName);
 
 		File.Exists(categoryPath).ThrowIfFalse($"File that describe category doesn't exists");
-		_deserializedCategories.Add(categoryKey, category = SerializerRegistry.Instance.Deserialize<ResourceCategory>(File.OpenRead(categoryPath))!);
+		_deserializedCategories.Add(categoryKey, category = App.Serializer.Deserialize<ResourceCategory>(File.OpenRead(categoryPath))!);
 
 		return category;
 	}
@@ -74,7 +74,7 @@ public sealed class ResourceRegistry : IRegistry<ResourceCategory>
 		// string filePath = Path.Combine(AppCore.CachePath, assembly.AssemblyNamespace(), name);
 		// if (!File.Exists(filePath)) return false;
 		//
-		// SerializerRegistry.Instance.Serialize(File.OpenWrite(filePath), value, CompressionLevel.L00_FAST);
+		// App.Serializer.Serialize(File.OpenWrite(filePath), value, CompressionLevel.L00_FAST);
 		true;
 
 	[MethodImpl(MethodImplOptions.NoInlining)]

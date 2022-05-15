@@ -25,14 +25,14 @@ public sealed class CacheFileRegistry : IRegistry<IEntry>
 		string filePath = Path.Combine(namespaceDir, name);
 		if (File.Exists(filePath)) return false;
 
-		SerializerRegistry.Instance.Serialize(File.OpenWrite(filePath), value, CompressionLevel.L00_FAST);
+		App.Serializer.Serialize(File.OpenWrite(filePath), value, CompressionLevel.L00_FAST);
 		return true;
 	}
 
 	public T? GetOrDefault<T>(string @namespace, string name)
 	{
 		string filePath = Path.Combine(App.CachePath, @namespace, name);
-		return File.Exists(filePath) ? SerializerRegistry.Instance.Deserialize<T>(File.OpenRead(filePath)) : default;
+		return File.Exists(filePath) ? App.Serializer.Deserialize<T>(File.OpenRead(filePath)) : default;
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
@@ -43,7 +43,7 @@ public sealed class CacheFileRegistry : IRegistry<IEntry>
 		string filePath = Path.Combine(App.CachePath, assembly.AssemblyNamespace(), name);
 		if (!File.Exists(filePath)) return false;
 
-		SerializerRegistry.Instance.Serialize(File.OpenWrite(filePath), value, CompressionLevel.L00_FAST);
+		App.Serializer.Serialize(File.OpenWrite(filePath), value, CompressionLevel.L00_FAST);
 		return true;
 	}
 

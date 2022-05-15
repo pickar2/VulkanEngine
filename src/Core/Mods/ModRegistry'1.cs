@@ -24,14 +24,14 @@ internal sealed partial class ModRegistry : OrderedLiLiSimpleRegistry<DefaultEve
 		scanFolders:
 		foreach (string modPath in modPathes)
 		{
-			LoggerRegistry.Instance.Info.Message($"{modPath} start loading.");
+			App.Logger.Info.Message($"{modPath} start loading.");
 			try
 			{
 				var modAssembly = Assembly.LoadFrom(modPath);
 				var modAttribute = modAssembly.GetCustomAttribute<ModAttribute>();
 				if (modAttribute is null)
 				{
-					LoggerRegistry.Instance.Warn.Message($"Must be ModAttribute in assembly.");
+					App.Logger.Warn.Message($"Must be ModAttribute in assembly.");
 					goto scanFolders;
 				}
 
