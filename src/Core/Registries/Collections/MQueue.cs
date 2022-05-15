@@ -17,6 +17,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
+using Core.Registries.Collections.DebugViews;
 using Core.Serializer.Entities.MapperWorkers;
 
 namespace Core.Registries.Collections.Pooled;
@@ -29,7 +30,7 @@ namespace Core.Registries.Collections.Pooled;
 [DebuggerTypeProxy(typeof(QueueDebugView<>))]
 [DebuggerDisplay("Count = {Count}")]
 [Serializable]
-public class PooledQueue<T> : ICollection, IReadOnlyCollection<T>, IDisposable
+public class MQueue<T> : ICollection, IReadOnlyCollection<T>, IDisposable
 {
 	private const int MinimumGrow = 4;
 	private const int GrowFactor = 200; // double each time
@@ -43,7 +44,7 @@ public class PooledQueue<T> : ICollection, IReadOnlyCollection<T>, IDisposable
 	private int _tail; // The index at which to enqueue if the queue isn't full.
 	private int _version;
 
-	public PooledQueue(Mapper mapper)
+	protected MQueue(Mapper mapper)
 	{
 		mapper.MapField(ref _tail);
 		mapper.MapField(ref _head);
@@ -53,15 +54,16 @@ public class PooledQueue<T> : ICollection, IReadOnlyCollection<T>, IDisposable
 		_pool = ArrayPool<T>.Shared;
 	}
 
-	public PooledQueue(Patcher patcher) { }
+#pragma warning disable CS8618
+	// ReSharper disable once UnusedParameter.Local
+	protected MQueue(Patcher patcher) { }
+#pragma warning restore CS8618
 
 	/// <summary>
 	///     The number of items in the queue.
 	/// </summary>
 	public int Count { get; private set; }
-
 	bool ICollection.IsSynchronized => false;
-
 	object ICollection.SyncRoot
 	{
 		get
@@ -77,29 +79,13 @@ public class PooledQueue<T> : ICollection, IReadOnlyCollection<T>, IDisposable
 
 	void ICollection.CopyTo(Array array, int index)
 	{
-		if (array.Rank != 1)
-		{
-			ThrowHelper.ThrowArgumentException(ExceptionResource.Rank_MultiDimNotSupported,
-				ExceptionArgument.array);
-		}
-
-		if (array.GetLowerBound(0) != 0)
-		{
-			ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_NonZeroLowerBound,
-				ExceptionArgument.array);
-		}
+		array.Rank.ThrowIfNotEquals(1);
+		array.GetLowerBound(0).ThrowIfNotEquals(0);
 
 		int arrayLen = array.Length;
-		if ((uint) index > (uint) arrayLen)
-		{
-			ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index,
-				ExceptionResource.ArgumentOutOfRange_Index);
-		}
-
-		if (arrayLen - index < Count)
-		{
-			ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
-		}
+		index.ThrowIfNegative()
+			.ThrowIfGreaterThan(arrayLen)
+			.ThrowIfGreaterThan(arrayLen - Count);
 
 		int numToCopy = Count;
 		if (numToCopy == 0) return;
@@ -111,20 +97,18 @@ public class PooledQueue<T> : ICollection, IReadOnlyCollection<T>, IDisposable
 			numToCopy -= firstPart;
 
 			if (numToCopy > 0)
-			{
 				Array.Copy(_array, 0, array, index + _array.Length - _head, numToCopy);
-			}
 		}
-		catch (ArrayTypeMismatchException)
+		catch (ArrayTypeMismatchException exception)
 		{
-			ThrowHelper.ThrowArgumentException_Argument_InvalidArrayType();
+			throw exception.AsExpectedException();
 		}
 	}
 
 	IEnumerator IEnumerable.GetEnumerator() => new Enumerator(this);
 
 	// void IDeserializationCallback.OnDeserialization(object sender) =>
-	// 	// We can't serialize array pools, so deserialized PooledQueue will
+	// 	// We can't serialize array pools, so deserialized MQueue will
 	// 	// have to use the shared pool, even if they were using a custom pool
 	// 	// before serialization.
 	// 	_pool = ArrayPool<T>.Shared;
@@ -160,19 +144,11 @@ public class PooledQueue<T> : ICollection, IReadOnlyCollection<T>, IDisposable
 	/// </summary>
 	public void CopyTo(T[] array, int arrayIndex)
 	{
-		if ((uint) arrayIndex > (uint) array.Length)
-		{
-			ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.arrayIndex,
-				ExceptionResource.ArgumentOutOfRange_Index);
-		}
+		arrayIndex.ThrowIfNegative()
+			.ThrowIfGreaterThan(array.Length);
 
 		int arrayLen = array.Length;
-		if (arrayLen - arrayIndex < Count)
-		{
-			ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
-		}
-
-		int numToCopy = Count;
+		int numToCopy = Count.ThrowIfEquals(arrayLen - arrayIndex);
 		if (numToCopy == 0) return;
 
 		int firstPart = Math.Min(_array.Length - _head, numToCopy);
@@ -462,12 +438,12 @@ public class PooledQueue<T> : ICollection, IReadOnlyCollection<T>, IDisposable
 	[SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Justification = "not an expected scenario")]
 	public struct Enumerator : IEnumerator<T>
 	{
-		private readonly PooledQueue<T> _q;
+		private readonly MQueue<T> _q;
 		private readonly int _version;
 		private int _index; // -1 = not started, -2 = ended/disposed
 		private T _currentElement;
 
-		internal Enumerator(PooledQueue<T> q)
+		internal Enumerator(MQueue<T> q)
 		{
 			_q = q;
 			_version = q._version;
@@ -483,9 +459,7 @@ public class PooledQueue<T> : ICollection, IReadOnlyCollection<T>, IDisposable
 
 		public bool MoveNext()
 		{
-			if (_version != _q._version)
-				ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
-
+			_version.ThrowIfNotEquals(_q._version);
 			if (_index == -2)
 				return false;
 
@@ -534,19 +508,17 @@ public class PooledQueue<T> : ICollection, IReadOnlyCollection<T>, IDisposable
 
 		private void ThrowEnumerationNotStartedOrEnded()
 		{
-			Debug.Assert(_index is -1 or -2);
-			if (_index == -1)
-				ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumNotStarted();
-			else
-				ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumEnded();
+			_index.ThrowIfEquals(-1)
+				.ThrowIfEquals(-2);
+
+			throw new InvalidOperationException().AsExpectedException();
 		}
 
 		object IEnumerator.Current => Current!;
 
 		void IEnumerator.Reset()
 		{
-			if (_version != _q._version)
-				ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
+			_version.ThrowIfNotEquals(_q._version);
 			_index = -1;
 			_currentElement = default!;
 		}
@@ -555,59 +527,49 @@ public class PooledQueue<T> : ICollection, IReadOnlyCollection<T>, IDisposable
 	#region Constructors
 
 	/// <summary>
-	///     Initializes a new instance of the <see cref="PooledQueue{T}" /> class that is empty and has the default initial capacity.
+	///     Initializes a new instance of the <see cref="MQueue{T}" /> class that is empty and has the default initial capacity.
 	/// </summary>
-	public PooledQueue() : this(ArrayPool<T>.Shared) { }
+	public MQueue() : this(ArrayPool<T>.Shared) { }
 
 	/// <summary>
-	///     Initializes a new instance of the <see cref="PooledQueue{T}" /> class that is empty and has the default initial capacity.
+	///     Initializes a new instance of the <see cref="MQueue{T}" /> class that is empty and has the default initial capacity.
 	/// </summary>
-	public PooledQueue(ArrayPool<T> customPool)
+	public MQueue(ArrayPool<T> customPool)
 	{
 		_pool = customPool;
 		_array = Array.Empty<T>();
 	}
 
 	/// <summary>
-	///     Initializes a new instance of the <see cref="PooledQueue{T}" /> class that is empty and has the specified initial capacity.
+	///     Initializes a new instance of the <see cref="MQueue{T}" /> class that is empty and has the specified initial capacity.
 	/// </summary>
-	public PooledQueue(int capacity) : this(capacity, ArrayPool<T>.Shared) { }
+	public MQueue(int capacity) : this(capacity, ArrayPool<T>.Shared) { }
 
 	/// <summary>
-	///     Initializes a new instance of the <see cref="PooledQueue{T}" /> class that is empty and has the specified initial capacity.
+	///     Initializes a new instance of the <see cref="MQueue{T}" /> class that is empty and has the specified initial capacity.
 	/// </summary>
-	public PooledQueue(int capacity, ArrayPool<T> customPool)
+	public MQueue(int capacity, ArrayPool<T> customPool)
 	{
-		if (capacity < 0)
-		{
-			ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity,
-				ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
-		}
-
 		_pool = customPool;
-		_array = _pool.Rent(capacity);
+		_array = _pool.Rent(capacity.ThrowIfLessThan(0));
 	}
 
 	/// <summary>
-	///     Initializes a new instance of the <see cref="PooledQueue{T}" /> class that contains elements copied from the specified
+	///     Initializes a new instance of the <see cref="MQueue{T}" /> class that contains elements copied from the specified
 	///     collection and has sufficient capacity to accommodate the number of elements copied.
 	/// </summary>
-	public PooledQueue(IEnumerable<T> enumerable) : this(enumerable, ArrayPool<T>.Shared) { }
+	public MQueue(IEnumerable<T> enumerable) : this(enumerable, ArrayPool<T>.Shared) { }
 
 	/// <summary>
-	///     Initializes a new instance of the <see cref="PooledQueue{T}" /> class that contains elements copied from the specified
+	///     Initializes a new instance of the <see cref="MQueue{T}" /> class that contains elements copied from the specified
 	///     collection and has sufficient capacity to accommodate the number of elements copied.
 	/// </summary>
-	public PooledQueue(IEnumerable<T> enumerable, ArrayPool<T> customPool)
+	public MQueue(IEnumerable<T> enumerable, ArrayPool<T> customPool)
 	{
 		_pool = customPool;
 
 		switch (enumerable)
 		{
-			case null:
-				ThrowHelper.ThrowArgumentNullException(ExceptionArgument.enumerable);
-				break;
-
 			case ICollection<T> collection:
 				if (collection.Count == 0)
 				{
@@ -624,7 +586,7 @@ public class PooledQueue<T> : ICollection, IReadOnlyCollection<T>, IDisposable
 				break;
 
 			default:
-				using (var list = new PooledList<T>(enumerable))
+				using (var list = new MList<T>(enumerable))
 				{
 					_array = _pool.Rent(list.Count);
 					list.Span.CopyTo(_array);
@@ -637,28 +599,28 @@ public class PooledQueue<T> : ICollection, IReadOnlyCollection<T>, IDisposable
 	}
 
 	/// <summary>
-	///     Initializes a new instance of the <see cref="PooledQueue{T}" /> class that contains elements copied from the specified
+	///     Initializes a new instance of the <see cref="MQueue{T}" /> class that contains elements copied from the specified
 	///     array and has sufficient capacity to accommodate the number of elements copied.
 	/// </summary>
-	public PooledQueue(T[] array) : this(array.AsSpan(), ArrayPool<T>.Shared) { }
+	public MQueue(T[] array) : this(array.AsSpan(), ArrayPool<T>.Shared) { }
 
 	/// <summary>
-	///     Initializes a new instance of the <see cref="PooledQueue{T}" /> class that contains elements copied from the specified
+	///     Initializes a new instance of the <see cref="MQueue{T}" /> class that contains elements copied from the specified
 	///     array and has sufficient capacity to accommodate the number of elements copied.
 	/// </summary>
-	public PooledQueue(T[] array, ArrayPool<T> customPool) : this(array.AsSpan(), customPool) { }
+	public MQueue(T[] array, ArrayPool<T> customPool) : this(array.AsSpan(), customPool) { }
 
 	/// <summary>
-	///     Initializes a new instance of the <see cref="PooledQueue{T}" /> class that contains elements copied from the specified
+	///     Initializes a new instance of the <see cref="MQueue{T}" /> class that contains elements copied from the specified
 	///     span and has sufficient capacity to accommodate the number of elements copied.
 	/// </summary>
-	public PooledQueue(ReadOnlySpan<T> span) : this(span, ArrayPool<T>.Shared) { }
+	public MQueue(ReadOnlySpan<T> span) : this(span, ArrayPool<T>.Shared) { }
 
 	/// <summary>
-	///     Initializes a new instance of the <see cref="PooledQueue{T}" /> class that contains elements copied from the specified
+	///     Initializes a new instance of the <see cref="MQueue{T}" /> class that contains elements copied from the specified
 	///     span and has sufficient capacity to accommodate the number of elements copied.
 	/// </summary>
-	public PooledQueue(ReadOnlySpan<T> span, ArrayPool<T> customPool)
+	public MQueue(ReadOnlySpan<T> span, ArrayPool<T> customPool)
 	{
 		_pool = customPool;
 		_array = _pool.Rent(span.Length);
@@ -668,4 +630,43 @@ public class PooledQueue<T> : ICollection, IReadOnlyCollection<T>, IDisposable
 	}
 
 	#endregion
+}
+
+public static partial class ConverterExtensions
+{
+	/// <summary>
+	///     Creates an instance of MQueue from the given items.
+	/// </summary>
+	public static MQueue<T> ToMQueue<T>(this IEnumerable<T> items)
+		=> new(items);
+
+	/// <summary>
+	///     Creates an instance of MQueue from the given items.
+	/// </summary>
+	public static MQueue<T> ToMQueue<T>(this ReadOnlySpan<T> span)
+		=> new(span);
+
+	/// <summary>
+	///     Creates an instance of MQueue from the given items.
+	/// </summary>
+	public static MQueue<T> ToMQueue<T>(this Span<T> span)
+		=> new(span);
+
+	/// <summary>
+	///     Creates an instance of MQueue from the given items.
+	/// </summary>
+	public static MQueue<T> ToMQueue<T>(this ReadOnlyMemory<T> memory)
+		=> new(memory.Span);
+
+	/// <summary>
+	///     Creates an instance of MQueue from the given items.
+	/// </summary>
+	public static MQueue<T> ToMQueue<T>(this Memory<T> memory)
+		=> new(memory.Span);
+
+	/// <summary>
+	///     Creates an instance of MQueue from the given items.
+	/// </summary>
+	public static MQueue<T> ToMQueue<T>(this T[] array)
+		=> new(array.AsSpan());
 }

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Core.Registries.Collections.UnsafeLinkedListAPI;
+using Core.Registries.Collections;
 using Core.Registries.CoreTypes;
 using Core.Registries.Entities;
 using Core.Serializer.Entities.MapperWorkers;
@@ -108,7 +108,7 @@ public abstract class OrderedLiLiSimpleRegistry<TEventManager, TMainType> : IReg
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public UnsafeLinkedList<TMainType>.UnsafeEnumerator GetEnumerator() => _registry.GetEnumerator();
+	public MLinkedList<TMainType>.UnsafeEnumerator GetEnumerator() => _registry.GetEnumerator();
 
 	// Sugar
 	[MethodImpl(MethodImplOptions.NoInlining)]

@@ -7,10 +7,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.Serialization;
 
-namespace Core.Registries.Collections.Pooled;
+namespace Core.Registries.Collections.Comparers;
 
 /// <summary>
-///     NonRandomizedStringEqualityComparer is the comparer used by default with the PooledDictionary.
+///     NonRandomizedStringEqualityComparer is the comparer used by default with the MDictionary.
 ///     We use NonRandomizedStringEqualityComparer as default comparer as it doesnt use the randomized string hashing which
 ///     keeps the performance not affected till we hit collision threshold and then we switch to the comparer which is using
 ///     randomized string hashing.

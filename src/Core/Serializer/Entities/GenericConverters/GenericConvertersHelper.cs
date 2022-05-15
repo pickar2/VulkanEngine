@@ -22,11 +22,11 @@ internal static class GenericConvertersHelper
 	private static readonly Dictionary<Type, (Type? Unmanaged, Type? Managed)> GenericConverters = new()
 	{
 		{typeof(Nullable<>), (typeof(NullableStructConverter<>), null)},
-		{typeof(Dictionary<,>), (null, typeof(DictionaryClassConverter<,>))},
-		{typeof(List<>), (null, typeof(ListClassConverter<>))},
-		{typeof(Stack<>), (null, typeof(StackClassConverter<>))},
-		{typeof(Queue<>), (null, typeof(QueueClassConverter<>))},
-		{typeof(HashSet<>), (null, typeof(HashSetClassConverter<>))},
+		{typeof(Dictionary<,>), (null, typeof(ObsoleteThrowClassConverter<,>))},
+		{typeof(List<>), (null, typeof(ObsoleteThrowClassConverter<>))},
+		{typeof(Stack<>), (null, typeof(ObsoleteThrowClassConverter<>))},
+		{typeof(Queue<>), (null, typeof(ObsoleteThrowClassConverter<>))},
+		{typeof(HashSet<>), (null, typeof(ObsoleteThrowClassConverter<>))},
 		{typeof(KeyValuePair<,>), (typeof(KeyValuePairStructConverter<,>), typeof(KeyValuePairClassConverter<,>))},
 		{typeof(Tuple<>), (typeof(Tuple1StructConverter<>), typeof(Tuple1ClassConverter<>))},
 		{typeof(Tuple<,>), (typeof(Tuple2StructConverter<,>), typeof(Tuple2ClassConverter<,>))},

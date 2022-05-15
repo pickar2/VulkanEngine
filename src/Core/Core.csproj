@@ -54,10 +54,6 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Folder Include="Registries\Collections.Pooled" />
-    </ItemGroup>
-
-    <ItemGroup>
         <ProjectReference Include="..\SimpleMath\SimpleMath.csproj" />
     </ItemGroup>
 

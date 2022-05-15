@@ -1,5 +1,6 @@
 ﻿using Core.Locales.Entities;
 using Core.Registries.API;
+using Core.Registries.Collections;
 using Core.Registries.Entities;
 using Core.Registries.EventManagerTypes;
 
@@ -7,7 +8,7 @@ namespace Core.Locales;
 
 public sealed class LocaleRegistry : SimpleRegistry<DefaultEventManager<Locale>, Locale>
 {
-	private static readonly PooledDictionary<string, string> Translates = new();
+	private static readonly MDictionary<string, string> Translates = new();
 
 	private LocaleRegistry() : base(NamespacedName.CreateWithCoreNamespace("locales"))
 	{

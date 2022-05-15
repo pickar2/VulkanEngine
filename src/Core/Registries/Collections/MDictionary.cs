@@ -8,15 +8,17 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
+using Core.Registries.Collections.Comparers;
+using Core.Registries.Collections.DebugViews;
 using Core.Registries.CoreTypes;
 using Core.Registries.Entities;
 using Core.Serializer.Entities;
 using Core.Serializer.Entities.MapperWorkers;
 
-namespace Core.Registries.Collections.Pooled;
+namespace Core.Registries.Collections;
 
 /// <summary>
-///     Used internally to control behavior of insertion into a <see cref="PooledDictionary{TKey, TValue}" />.
+///     Used internally to control behavior of insertion into a <see cref="MDictionary{TKey,TValue}" />.
 /// </summary>
 internal enum InsertionBehavior : byte
 {
@@ -37,14 +39,14 @@ internal enum InsertionBehavior : byte
 }
 
 /// <remarks>
-///     A <see cref="PooledDictionary{TKey,TValue}" /> can support multiple readers concurrently, as long as the collection is not modified.
+///     A <see cref="MDictionary{TKey,TValue}" /> can support multiple readers concurrently, as long as the collection is not modified.
 ///     Even so, enumerating through a collection is intrinsically not a thread-safe procedure.
 ///     In the rare case where an enumeration contends with write accesses, the collection must be locked during the entire enumeration.
 ///     To allow the collection to be accessed by multiple threads for reading and writing, you must implement your own synchronization.
 /// </remarks>
 [DebuggerTypeProxy(typeof(IDictionaryDebugView<,>))]
 [DebuggerDisplay("Count = {Count}")]
-public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictionary, IReadOnlyDictionary<TKey, TValue>, IEntry, IDisposable
+public class MDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictionary, IReadOnlyDictionary<TKey, TValue>, IEntry, IDisposable
 {
 	// store lower 31 bits of hash code
 	private const int Lower31BitMask = 0x7FFFFFFF;
@@ -72,7 +74,7 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 	private ValueCollection? _values;
 	private int _version;
 
-	protected PooledDictionary(Mapper mapper)
+	protected MDictionary(Mapper mapper)
 	{
 		mapper.MapField(ref _size);
 		if (mapper.OperationType == OperationType.Serialize)
@@ -113,50 +115,50 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 	}
 
 	// ReSharper disable once UnusedParameter.Local
-	protected PooledDictionary(Patcher patcher) { }
+	protected MDictionary(Patcher patcher) { }
 
 	/// <summary>
-	///     Creates a new instance of PooledDictionary.
+	///     Creates a new instance of MDictionary.
 	/// </summary>
-	public PooledDictionary() : this(0, EqualityComparer<TKey>.Default) { }
+	public MDictionary() : this(0, EqualityComparer<TKey>.Default) { }
 
 	/// <summary>
-	///     Creates a new instance of PooledDictionary.
+	///     Creates a new instance of MDictionary.
 	/// </summary>
-	public PooledDictionary(int capacity) : this(capacity, EqualityComparer<TKey>.Default) { }
+	public MDictionary(int capacity) : this(capacity, EqualityComparer<TKey>.Default) { }
 
 	/// <summary>
-	///     Creates a new instance of PooledDictionary.
+	///     Creates a new instance of MDictionary.
 	/// </summary>
-	public PooledDictionary(IEqualityComparer<TKey> comparer) : this(0, comparer) { }
+	public MDictionary(IEqualityComparer<TKey> comparer) : this(0, comparer) { }
 
 	/// <summary>
-	///     Creates a new instance of PooledDictionary.
+	///     Creates a new instance of MDictionary.
 	/// </summary>
-	public PooledDictionary(int capacity, IEqualityComparer<TKey> comparer)
+	public MDictionary(int capacity, IEqualityComparer<TKey> comparer)
 	{
 		if (capacity.ThrowIfNegative() > 0) Initialize(capacity);
 		Comparer = comparer;
 	}
 
 	/// <summary>
-	///     Creates a new instance of PooledDictionary.
+	///     Creates a new instance of MDictionary.
 	/// </summary>
-	public PooledDictionary(IDictionary<TKey, TValue> dictionary) : this(dictionary, EqualityComparer<TKey>.Default) { }
+	public MDictionary(IDictionary<TKey, TValue> dictionary) : this(dictionary, EqualityComparer<TKey>.Default) { }
 
 	/// <summary>
-	///     Creates a new instance of PooledDictionary.
+	///     Creates a new instance of MDictionary.
 	/// </summary>
-	public PooledDictionary(IDictionary<TKey, TValue> dictionary, IEqualityComparer<TKey> comparer) :
+	public MDictionary(IDictionary<TKey, TValue> dictionary, IEqualityComparer<TKey> comparer) :
 		this(dictionary.Count, comparer)
 	{
 		switch (dictionary)
 		{
-			// It is likely that the passed-in dictionary is PooledDictionary<TKey,TValue>. When this is the case,
+			// It is likely that the passed-in dictionary is MDictionary<TKey,TValue>. When this is the case,
 			// avoid the enumerator allocation and overhead by looping through the entries array directly.
-			// We only do this when dictionary is PooledDictionary<TKey,TValue> and not a subclass, to maintain
+			// We only do this when dictionary is MDictionary<TKey,TValue> and not a subclass, to maintain
 			// back-compat with subclasses that may have overridden the enumerator behavior.
-			case PooledDictionary<TKey, TValue> pooled:
+			case MDictionary<TKey, TValue> pooled:
 			{
 				int count = pooled._count;
 				var entries = pooled._entries;
@@ -179,15 +181,15 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 	}
 
 	/// <summary>
-	///     Creates a new instance of PooledDictionary.
+	///     Creates a new instance of MDictionary.
 	/// </summary>
-	public PooledDictionary(IEnumerable<KeyValuePair<TKey, TValue>> collection)
+	public MDictionary(IEnumerable<KeyValuePair<TKey, TValue>> collection)
 		: this(collection, EqualityComparer<TKey>.Default) { }
 
 	/// <summary>
-	///     Creates a new instance of PooledDictionary.
+	///     Creates a new instance of MDictionary.
 	/// </summary>
-	public PooledDictionary(IEnumerable<KeyValuePair<TKey, TValue>> collection, IEqualityComparer<TKey> comparer) :
+	public MDictionary(IEnumerable<KeyValuePair<TKey, TValue>> collection, IEqualityComparer<TKey> comparer) :
 		this((collection as ICollection<KeyValuePair<TKey, TValue>>)?.Count ?? 0, comparer)
 	{
 		foreach (var pair in collection)
@@ -195,15 +197,15 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 	}
 
 	/// <summary>
-	///     Creates a new instance of PooledDictionary.
+	///     Creates a new instance of MDictionary.
 	/// </summary>
-	public PooledDictionary(IEnumerable<(TKey key, TValue value)> collection)
+	public MDictionary(IEnumerable<(TKey key, TValue value)> collection)
 		: this(collection, EqualityComparer<TKey>.Default) { }
 
 	/// <summary>
-	///     Creates a new instance of PooledDictionary.
+	///     Creates a new instance of MDictionary.
 	/// </summary>
-	public PooledDictionary(IEnumerable<(TKey key, TValue value)> collection, IEqualityComparer<TKey> comparer)
+	public MDictionary(IEnumerable<(TKey key, TValue value)> collection, IEqualityComparer<TKey> comparer)
 		: this((collection as ICollection<(TKey, TValue)>)?.Count ?? 0, comparer)
 	{
 		foreach (var (key, value) in collection)
@@ -211,27 +213,27 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 	}
 
 	/// <summary>
-	///     Creates a new instance of PooledDictionary.
+	///     Creates a new instance of MDictionary.
 	/// </summary>
-	public PooledDictionary((TKey key, TValue value)[] array)
+	public MDictionary((TKey key, TValue value)[] array)
 		: this(array.AsSpan(), EqualityComparer<TKey>.Default) { }
 
 	/// <summary>
-	///     Creates a new instance of PooledDictionary.
+	///     Creates a new instance of MDictionary.
 	/// </summary>
-	public PooledDictionary((TKey key, TValue value)[] array, IEqualityComparer<TKey> comparer)
+	public MDictionary((TKey key, TValue value)[] array, IEqualityComparer<TKey> comparer)
 		: this(array.AsSpan(), comparer) { }
 
 	/// <summary>
-	///     Creates a new instance of PooledDictionary.
+	///     Creates a new instance of MDictionary.
 	/// </summary>
-	public PooledDictionary(ReadOnlySpan<(TKey key, TValue value)> span)
+	public MDictionary(ReadOnlySpan<(TKey key, TValue value)> span)
 		: this(span, EqualityComparer<TKey>.Default) { }
 
 	/// <summary>
-	///     Creates a new instance of PooledDictionary.
+	///     Creates a new instance of MDictionary.
 	/// </summary>
-	public PooledDictionary(ReadOnlySpan<(TKey key, TValue value)> span, IEqualityComparer<TKey> comparer)
+	public MDictionary(ReadOnlySpan<(TKey key, TValue value)> span, IEqualityComparer<TKey> comparer)
 		: this(span.Length, comparer)
 	{
 		foreach (var (key, value) in span)
@@ -255,14 +257,12 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 
 	void ICollection.CopyTo(Array array, int index)
 	{
-		if (array.Rank != 1)
-			ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankMultiDimNotSupported);
-		if (array.GetLowerBound(0) != 0)
-			ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_NonZeroLowerBound);
-		if ((uint) index > (uint) array.Length)
-			ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
-		if (array.Length - index < Count)
-			ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
+		array.Rank.ThrowIfNotEquals(1);
+		array.GetLowerBound(0)
+			.ThrowIfNotEquals(0);
+		index.ThrowIfNegative()
+			.ThrowIfGreaterThan(array.Length)
+			.ThrowIfGreaterThan(array.Length - Count);
 
 		switch (array)
 		{
@@ -273,12 +273,10 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 			{
 				for (int i = 0; i < _count; i++)
 				{
-					if (_entries![i].HashCode >= 0)
-					{
-						dictEntryArray[index++] = new DictionaryEntry(
-							_entries[i].Key ?? throw new NullReferenceException("Key is nullable.").AsExpectedException(),
-							_entries[i].Value);
-					}
+					if (_entries![i].HashCode < 0) continue;
+					dictEntryArray[index++] = new DictionaryEntry(
+						_entries[i].Key ?? throw new NullReferenceException("Key is nullable.").AsExpectedException(),
+						_entries[i].Value);
 				}
 
 				break;
@@ -290,21 +288,18 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 					var entries = _entries;
 					for (int i = 0; i < count; i++)
 					{
-						if (entries![i].HashCode >= 0)
-						{
-							objects[index++] = new KeyValuePair<TKey, TValue>(entries[i].Key, entries[i].Value);
-						}
+						if (entries![i].HashCode < 0) continue;
+						objects[index++] = new KeyValuePair<TKey, TValue>(entries[i].Key, entries[i].Value);
 					}
 				}
-				catch (ArrayTypeMismatchException)
+				catch (ArrayTypeMismatchException exception)
 				{
-					ThrowHelper.ThrowArgumentException_Argument_InvalidArrayType();
+					throw exception.AsExpectedException();
 				}
 
 				break;
 			default:
-				ThrowHelper.ThrowArgumentException_Argument_InvalidArrayType();
-				break;
+				throw new ArgumentOutOfRangeException(nameof(array), "InvalidArrayType").AsExpectedException();
 		}
 	}
 
@@ -324,34 +319,31 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 	}
 
 	bool IDictionary.IsFixedSize => false;
-
 	bool IDictionary.IsReadOnly => false;
 
 	ICollection IDictionary.Keys => Keys;
-
 	ICollection IDictionary.Values => Values;
 
 	object? IDictionary.this[object key]
 	{
 		get
 		{
-			if (key is not TKey tKey) return null;
+			if (key is not TKey tKey)
+				throw new ArgumentException($"Can't cast {key.GetType()} to {typeof(TKey)}")
+					.AsExpectedException();
 
 			int i = FindEntry(tKey);
-			if (i >= 0)
-			{
-				return _entries![i].Value;
-			}
-
-			return null;
+			if (i >= 0) return _entries![i].Value!;
+			throw new ArgumentException($"Can't find {nameof(key)} in dictionary.").AsExpectedException();
 		}
 		set
 		{
-			ThrowHelper.IfNullAndNullsAreIllegalThenThrow<TValue>(value, ExceptionArgument.value);
 			if (key is not TKey tKey)
-				throw new ArgumentException().AsExpectedException();
-			if (value is not TValue tValue)
-				throw new ArgumentException().AsExpectedException();
+				throw new ArgumentException($"Can't cast {key.GetType()} to {typeof(TKey)}")
+					.AsExpectedException();
+			if (value.ThrowIfNullable() is not TValue tValue)
+				throw new ArgumentException($"Can't cast {value!.GetType()} to {typeof(TValue)}")
+					.AsExpectedException();
 
 			this[tKey] = tValue;
 		}
@@ -359,25 +351,15 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 
 	void IDictionary.Add(object key, object? value)
 	{
-		ThrowHelper.IfNullAndNullsAreIllegalThenThrow<TValue>(value, ExceptionArgument.value);
-
-		try
-		{
-			var tempKey = (TKey) key;
-
-			try
-			{
-				Add(tempKey, (TValue) value!);
-			}
-			catch (InvalidCastException)
-			{
-				ThrowHelper.ThrowWrongValueTypeArgumentException(value, typeof(TValue));
-			}
-		}
-		catch (InvalidCastException)
-		{
-			ThrowHelper.ThrowWrongKeyTypeArgumentException(key, typeof(TKey));
-		}
+		if (key is not TKey castedKey)
+			throw new ArgumentException($"Can't cast {nameof(key)} {key.GetType()} to {typeof(TKey)}")
+				.AsExpectedException();
+		
+		if (value.ThrowIfNullable() is not TValue castedValue)
+			throw new ArgumentException($"Can't cast {nameof(value)} {value!.GetType()} to {typeof(TValue)}")
+				.AsExpectedException();
+		
+		Add(castedKey, castedValue);
 	}
 
 	bool IDictionary.Contains(object key) => key is TKey tKey && ContainsKey(tKey);
@@ -385,17 +367,14 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 
 	void IDictionary.Remove(object key)
 	{
-		if (key is TKey tKey)
-			Remove(tKey);
+		if (key is TKey tKey) Remove(tKey);
 	}
 
 	/// <summary>
 	///     The number of items in the dictionary.
 	/// </summary>
 	public int Count => _count - _freeCount;
-
 	ICollection<TKey> IDictionary<TKey, TValue>.Keys => _keys ??= new KeyCollection(this);
-
 	ICollection<TValue> IDictionary<TKey, TValue>.Values => _values ??= new ValueCollection(this);
 
 	/// <summary>
@@ -407,15 +386,9 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 		{
 			int i = FindEntry(key);
 			if (i >= 0) return _entries![i].Value;
-			ThrowHelper.ThrowKeyNotFoundException(key);
-			return default!;
+			throw new ArgumentException($"Key not found exception {key}").AsExpectedException();
 		}
-		set
-		{
-			if (value is null) throw new ArgumentNullException();
-			bool modified = TryInsert(key, value, InsertionBehavior.OverwriteExisting);
-			Debug.Assert(modified);
-		}
+		set => TryInsert(key, value, InsertionBehavior.OverwriteExisting).ThrowIfFalse($"");
 	}
 
 	/// <summary>
@@ -458,11 +431,9 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 		_version++;
 	}
 
-	public bool ContainsKey(TKey key)
-		=> FindEntry(key) >= 0;
-
-	IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator()
-		=> new Enumerator(this, Enumerator.KeyValuePair);
+	public bool ContainsKey(TKey key) => FindEntry(key) >= 0;
+	IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator() =>
+		new Enumerator(this, Enumerator.KeyValuePair);
 
 	// The overload Remove(TKey key, out TValue value) is a copy of this method with one additional
 	// statement to copy the value for entry being removed into the output parameter.
@@ -482,17 +453,17 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 		while (i >= 0)
 		{
 			ref var entry = ref entries![i];
-
 			if (entry.HashCode == hashCode && Comparer.Equals(entry.Key, key))
 			{
-				if (last < 0)
+				switch (last)
 				{
-					// Value in buckets is 1-based
-					buckets[bucket] = entry.Next + 1;
-				}
-				else
-				{
-					entries[last].Next = entry.Next;
+					case < 0:
+						// Value in buckets is 1-based
+						buckets[bucket] = entry.Next + 1;
+						break;
+					default:
+						entries[last].Next = entry.Next;
+						break;
 				}
 
 				entry.HashCode = -1;
@@ -506,14 +477,10 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 
 			last = i;
 			i = entry.Next;
-			if (collisionCount >= _size)
-			{
-				// The chain of entries forms a loop; which means a concurrent update has happened.
-				// Break out of the loop and throw, rather than looping forever.
-				ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
-			}
 
-			collisionCount++;
+			// The chain of entries forms a loop; which means a concurrent update has happened.
+			// Break out of the loop and throw, rather than looping forever.
+			collisionCount = collisionCount.ThrowIfGreaterOrEqualsThan(_size) + 1;
 		}
 
 		return false;
@@ -533,12 +500,8 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 	}
 
 	bool ICollection<KeyValuePair<TKey, TValue>>.IsReadOnly => false;
-
-	void ICollection<KeyValuePair<TKey, TValue>>.CopyTo(KeyValuePair<TKey, TValue>[] array, int index)
-		=> CopyTo(array, index);
-
-	IEnumerator IEnumerable.GetEnumerator()
-		=> new Enumerator(this, Enumerator.KeyValuePair);
+	void ICollection<KeyValuePair<TKey, TValue>>.CopyTo(KeyValuePair<TKey, TValue>[] array, int index) => CopyTo(array, index);
+	IEnumerator IEnumerable.GetEnumerator() => new Enumerator(this, Enumerator.KeyValuePair);
 
 	public void Dispose()
 	{
@@ -550,7 +513,6 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 	}
 
 	public NamespacedName Identifier { get; init; } = DictIdentifier;
-
 	IEnumerable<TKey> IReadOnlyDictionary<TKey, TValue>.Keys => _keys ??= new KeyCollection(this);
 	IEnumerable<TValue> IReadOnlyDictionary<TKey, TValue>.Values => _values ??= new ValueCollection(this);
 
@@ -580,9 +542,7 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 			TryInsert(key, value, InsertionBehavior.ThrowOnExisting);
 	}
 
-	public void AddRange((TKey key, TValue value)[] array)
-		=> AddRange(array.AsSpan());
-
+	public void AddRange((TKey key, TValue value)[] array) => AddRange(array.AsSpan());
 	public void AddOrUpdate(TKey key, TValue addValue, Func<TKey, TValue, TValue> updater)
 	{
 		if (TryGetValue(key, out var value))
@@ -624,11 +584,9 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 		{
 			if (default(TValue) != null)
 			{
-				// ValueType: Devirtualize with EqualityComparer<TValue>.Default intrinsic
+				// ValueType: devirtualize with EqualityComparer<TValue>.Default intrinsic
 				for (int i = 0; i < _count; i++)
-				{
 					if (entries![i].HashCode >= 0 && EqualityComparer<TValue>.Default.Equals(entries[i].Value, value)) return true;
-				}
 			}
 			else
 			{
@@ -637,9 +595,7 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 				// So cache in a local rather than get EqualityComparer per loop iteration
 				var defaultComparer = EqualityComparer<TValue>.Default;
 				for (int i = 0; i < _count; i++)
-				{
 					if (entries![i].HashCode >= 0 && defaultComparer.Equals(entries[i].Value, value)) return true;
-				}
 			}
 		}
 
@@ -648,24 +604,15 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 
 	private void CopyTo(KeyValuePair<TKey, TValue>[] array, int index)
 	{
-		if ((uint) index > (uint) array.Length)
-		{
-			ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
-		}
-
-		if (array.Length - index < Count)
-		{
-			ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
-		}
+		index.ThrowIfGreaterThan(array.Length);
+		Count.ThrowIfGreaterThan(array.Length - index);
 
 		int count = _count;
 		var entries = _entries;
 		for (int i = 0; i < count; i++)
 		{
-			if (entries![i].HashCode >= 0)
-			{
-				array[index++] = new KeyValuePair<TKey, TValue>(entries[i].Key, entries[i].Value);
-			}
+			if (entries![i].HashCode < 0) continue;
+			array[index++] = new KeyValuePair<TKey, TValue>(entries[i].Key, entries[i].Value);
 		}
 	}
 
@@ -675,8 +622,7 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 	{
 		int i = -1;
 		int length = _size;
-		if (length <= 0)
-			return i;
+		if (length <= 0) return i;
 
 		int[] buckets = _buckets!;
 		var entries = _entries;
@@ -697,14 +643,7 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 			}
 
 			i = entries[i].Next;
-			if (collisionCount >= length)
-			{
-				// The chain of entries forms a loop; which means a concurrent update has happened.
-				// Break out of the loop and throw, rather than looping forever.
-				ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
-			}
-
-			collisionCount++;
+			collisionCount = collisionCount.ThrowIfGreaterOrEqualsThan(length) + 1;
 		} while (true);
 
 		return i;
@@ -743,37 +682,29 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 		{
 			// Should be a while loop https://github.com/dotnet/coreclr/issues/15476
 			// Test uint in if rather than loop condition to drop range check for following array access
-			if ((uint) i >= (uint) size)
-			{
-				break;
-			}
+			if ((uint) i >= (uint) size) break;
 
 			if (entries![i].HashCode == hashCode && comparer.Equals(entries[i].Key, key))
 			{
-				if (behavior == InsertionBehavior.OverwriteExisting)
+				switch (behavior)
 				{
-					entries[i].Value = value;
-					_version++;
-					return true;
+					case InsertionBehavior.OverwriteExisting:
+						entries[i].Value = value;
+						_version++;
+						return true;
+					case InsertionBehavior.ThrowOnExisting:
+						throw new ArgumentException($"Duplicate of key: {key}").AsExpectedException();
+					case InsertionBehavior.None:
+					default:
+						throw new ArgumentOutOfRangeException(nameof(behavior), behavior, null).AsExpectedException();
 				}
-
-				if (behavior == InsertionBehavior.ThrowOnExisting)
-				{
-					ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(key);
-				}
-
-				return false;
 			}
 
 			i = entries[i].Next;
-			if (collisionCount >= size)
-			{
-				// The chain of entries forms a loop; which means a concurrent update has happened.
-				// Break out of the loop and throw, rather than looping forever.
-				ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
-			}
 
-			collisionCount++;
+			// The chain of entries forms a loop; which means a concurrent update has happened.
+			// Break out of the loop and throw, rather than looping forever.
+			collisionCount = collisionCount.ThrowIfGreaterOrEqualsThan(size) + 1;
 		} while (true);
 
 		bool updateFreeList = false;
@@ -934,14 +865,9 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 
 			last = i;
 			i = entry.Next;
-			if (collisionCount >= _size)
-			{
-				// The chain of entries forms a loop; which means a concurrent update has happened.
-				// Break out of the loop and throw, rather than looping forever.
-				ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
-			}
-
-			collisionCount++;
+			// The chain of entries forms a loop; which means a concurrent update has happened.
+			// Break out of the loop and throw, rather than looping forever.
+			collisionCount = collisionCount.ThrowIfGreaterOrEqualsThan(_size) + 1;
 		}
 
 		value = default!;
@@ -975,10 +901,8 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 	/// </summary>
 	public int EnsureCapacity(int capacity)
 	{
-		if (capacity < 0)
-			ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity);
 		int currentCapacity = _size;
-		if (currentCapacity >= capacity)
+		if (currentCapacity >= capacity.ThrowIfNegative())
 			return currentCapacity;
 		_version++;
 		if (_buckets == null || _size == 0)
@@ -996,8 +920,7 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 	///     dictionary.Clear();
 	///     dictionary.TrimExcess();
 	/// </summary>
-	public void TrimExcess()
-		=> TrimExcess(Count);
+	public void TrimExcess() => TrimExcess(Count);
 
 	/// <summary>
 	///     Sets the capacity of this dictionary to hold up 'capacity' entries without any further expansion of its backing storage
@@ -1006,9 +929,7 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 	/// </summary>
 	public void TrimExcess(int capacity)
 	{
-		if (capacity < Count)
-			throw new ArgumentOutOfRangeException(nameof(capacity));
-		int newSize = HashHelpers.GetPrime(capacity);
+		int newSize = HashHelpers.GetPrime(capacity.ThrowIfLessThan(Count));
 
 		var oldEntries = _entries;
 		int[] oldBuckets = _buckets.ThrowIfNullable();
@@ -1025,19 +946,17 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 		for (int i = 0; i < oldCount; i++)
 		{
 			int hashCode = oldEntries![i].HashCode;
-			if (hashCode >= 0)
-			{
+			if (hashCode < 0) continue;
 #pragma warning disable IDE0059 // Value assigned to symbol is never used
-				ref var entry = ref entries![count];
+			ref var entry = ref entries![count];
 #pragma warning restore IDE0059
-				entry = oldEntries[i];
-				int bucket = hashCode % newSize;
-				// Value in _buckets is 1-based
-				entry.Next = buckets[bucket] - 1;
-				// Value in _buckets is 1-based
-				buckets[bucket] = count + 1;
-				count++;
-			}
+			entry = oldEntries[i];
+			int bucket = hashCode % newSize;
+			// Value in _buckets is 1-based
+			entry.Next = buckets[bucket] - 1;
+			// Value in _buckets is 1-based
+			buckets[bucket] = count + 1;
+			count++;
 		}
 
 		_count = count;
@@ -1087,7 +1006,7 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 
 	public struct Enumerator : IEnumerator<KeyValuePair<TKey, TValue>>, IDictionaryEnumerator
 	{
-		private readonly PooledDictionary<TKey, TValue> _dictionary;
+		private readonly MDictionary<TKey, TValue> _dictionary;
 		private readonly int _version;
 		private int _index;
 		private KeyValuePair<TKey, TValue> _current;
@@ -1096,7 +1015,7 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 		internal const int DictEntry = 1;
 		internal const int KeyValuePair = 2;
 
-		internal Enumerator(PooledDictionary<TKey, TValue> dictionary, int getEnumeratorRetType)
+		internal Enumerator(MDictionary<TKey, TValue> dictionary, int getEnumeratorRetType)
 		{
 			_dictionary = dictionary;
 			_version = dictionary._version;
@@ -1107,11 +1026,8 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 
 		public bool MoveNext()
 		{
-			if (_version != _dictionary._version)
-			{
-				ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
-			}
-
+			_version.ThrowIfNotEquals(_dictionary._version);
+			
 			// Use unsigned comparison since we set index to dictionary.count+1 when the enumeration ends.
 			// dictionary.count+1 could be negative if dictionary.count is int.MaxValue
 			while ((uint) _index < (uint) _dictionary._count)
@@ -1129,23 +1045,19 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 			return false;
 		}
 
-		public KeyValuePair<TKey, TValue> Current => _current;
+		public readonly KeyValuePair<TKey, TValue> Current => _current;
 
 		public void Dispose() { }
 
-		object IEnumerator.Current
+		readonly object IEnumerator.Current
 		{
 			get
 			{
-				if (_index == 0 || _index == _dictionary._count + 1)
-				{
-					ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen();
-				}
+				_index.ThrowIfEquals(0)
+					.ThrowIfEquals(_dictionary._count + 1);
 
 				if (_getEnumeratorRetType == DictEntry)
-				{
 					return new DictionaryEntry(_current.Key!, _current.Value);
-				}
 
 				return new KeyValuePair<TKey, TValue>(_current.Key, _current.Value);
 			}
@@ -1153,11 +1065,7 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 
 		void IEnumerator.Reset()
 		{
-			if (_version != _dictionary._version)
-			{
-				ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
-			}
-
+			_version.ThrowIfNotEquals(_dictionary._version);
 			_index = 0;
 			_current = new KeyValuePair<TKey, TValue>();
 		}
@@ -1166,10 +1074,8 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 		{
 			get
 			{
-				if (_index == 0 || _index == _dictionary._count + 1)
-				{
-					ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen();
-				}
+				_index.ThrowIfEquals(0)
+					.ThrowIfEquals(_dictionary._count + 1);
 
 				return new DictionaryEntry(_current.Key!, _current.Value);
 			}
@@ -1179,10 +1085,8 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 		{
 			get
 			{
-				if (_index == 0 || _index == _dictionary._count + 1)
-				{
-					ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen();
-				}
+				_index.ThrowIfEquals(0)
+					.ThrowIfEquals(_dictionary._count + 1);
 
 				return _current.Key!;
 			}
@@ -1192,10 +1096,8 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 		{
 			get
 			{
-				if (_index == 0 || _index == _dictionary._count + 1)
-				{
-					ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen();
-				}
+				_index.ThrowIfEquals(0)
+					.ThrowIfEquals(_dictionary._count + 1);
 
 				return _current.Value!;
 			}
@@ -1206,20 +1108,17 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 	[DebuggerDisplay("Count = {Count}")]
 	public sealed class KeyCollection : ICollection<TKey>, ICollection, IReadOnlyCollection<TKey>
 	{
-		private readonly PooledDictionary<TKey, TValue> _dictionary;
+		private readonly MDictionary<TKey, TValue> _dictionary;
 
-		public KeyCollection(PooledDictionary<TKey, TValue> dictionary) => _dictionary = dictionary ?? throw new ArgumentNullException(nameof(dictionary));
+		public KeyCollection(MDictionary<TKey, TValue> dictionary) => _dictionary = dictionary ?? throw new ArgumentNullException(nameof(dictionary));
 
 		void ICollection.CopyTo(Array array, int index)
 		{
-			if (array.Rank != 1)
-				ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankMultiDimNotSupported);
-			if (array.GetLowerBound(0) != 0)
-				ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_NonZeroLowerBound);
-			if ((uint) index > (uint) array.Length)
-				ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
-			if (array.Length - index < _dictionary.Count)
-				ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
+			array.Rank.ThrowIfNotEquals(1);
+			array.GetLowerBound(0).ThrowIfNotEquals(0);
+			index.ThrowIfNegative()
+				.ThrowIfGreaterThan(array.Length)
+				.ThrowIfGreaterThan(array.Length - _dictionary.Count);
 
 			if (array is TKey[] keys)
 			{
@@ -1235,13 +1134,11 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 				try
 				{
 					for (int i = 0; i < count; i++)
-					{
 						if (entries![i].HashCode >= 0) objects[index++] = entries[i].Key!;
-					}
 				}
-				catch (ArrayTypeMismatchException)
+				catch (ArrayTypeMismatchException exception)
 				{
-					ThrowHelper.ThrowArgumentException_Argument_InvalidArrayType();
+					throw exception.AsExpectedException();
 				}
 			}
 		}
@@ -1252,109 +1149,81 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 
 		public void CopyTo(TKey[] array, int index)
 		{
-			if (index < 0 || index > array.Length)
-				ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
-
-			if (array.Length - index < _dictionary.Count)
-				ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
+			index.ThrowIfNegative()
+				.ThrowIfGreaterThan(array.Length)
+				.ThrowIfGreaterThan(array.Length - _dictionary.Count);
 
 			int count = _dictionary._count;
 			var entries = _dictionary._entries;
 			for (int i = 0; i < count; i++)
-			{
 				if (entries![i].HashCode >= 0) array[index++] = entries[i].Key;
-			}
 		}
 
 		public int Count => _dictionary.Count;
 
 		bool ICollection<TKey>.IsReadOnly => true;
-
-		void ICollection<TKey>.Add(TKey item)
-			=> ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_KeyCollectionSet);
-
-		void ICollection<TKey>.Clear()
-			=> ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_KeyCollectionSet);
-
-		bool ICollection<TKey>.Contains(TKey item)
-			=> _dictionary.ContainsKey(item);
-
-		bool ICollection<TKey>.Remove(TKey item)
-		{
-			ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_KeyCollectionSet);
-			return false;
-		}
-
-		IEnumerator<TKey> IEnumerable<TKey>.GetEnumerator()
-			=> new Enumerator(_dictionary);
-
-		IEnumerator IEnumerable.GetEnumerator()
-			=> new Enumerator(_dictionary);
-
+		void ICollection<TKey>.Add(TKey item) => new NotSupportedException().AsExpectedException();
+		void ICollection<TKey>.Clear() => new NotSupportedException().AsExpectedException();
+		bool ICollection<TKey>.Contains(TKey item) => _dictionary.ContainsKey(item);
+		bool ICollection<TKey>.Remove(TKey item) => throw new NotSupportedException().AsExpectedException();
+		IEnumerator<TKey> IEnumerable<TKey>.GetEnumerator() => new Enumerator(_dictionary);
+		IEnumerator IEnumerable.GetEnumerator() => new Enumerator(_dictionary);
 		public Enumerator GetEnumerator() => new(_dictionary);
 
 		// ReSharper disable once MemberHidesStaticFromOuterClass
 		public struct Enumerator : IEnumerator<TKey>
 		{
-			private readonly PooledDictionary<TKey, TValue> _dictionary;
+			private readonly MDictionary<TKey, TValue> _dictionary;
 			private int _index;
 			private readonly int _version;
 
-			internal Enumerator(PooledDictionary<TKey, TValue> dictionary)
+			internal Enumerator(MDictionary<TKey, TValue> dictionary)
 			{
 				_dictionary = dictionary;
 				_version = dictionary._version;
 				_index = 0;
-				Current = default!;
+				_current = default;
 			}
 
 			public void Dispose() { }
 
 			public bool MoveNext()
 			{
-				if (_version != _dictionary._version)
-				{
-					ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
-				}
+				_version.ThrowIfNotEquals(_dictionary._version);
 
 				while ((uint) _index < (uint) _dictionary._count)
 				{
 					ref var entry = ref _dictionary._entries![_index++];
 
 					if (entry.HashCode < 0) continue;
-					Current = entry.Key;
+					_current = entry.Key;
 					return true;
 				}
 
 				_index = _dictionary._count + 1;
-				Current = default!;
+				_current = default;
 				return false;
 			}
 
-			public TKey Current { get; private set; }
+			private TKey? _current;
+			public readonly TKey Current => _current ?? throw new ArgumentNullException().AsExpectedException();
 
-			object IEnumerator.Current
+			readonly object IEnumerator.Current
 			{
 				get
 				{
-					if (_index == 0 || _index == _dictionary._count + 1)
-					{
-						ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen();
-					}
-
+					_index.ThrowIfEquals(0)
+						.ThrowIfEquals(_dictionary._count + 1);
+					
 					return Current!;
 				}
 			}
 
 			void IEnumerator.Reset()
 			{
-				if (_version != _dictionary._version)
-				{
-					ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
-				}
-
+				_version.ThrowIfNotEquals(_dictionary._version);
 				_index = 0;
-				Current = default!;
+				_current = default;
 			}
 		}
 	}
@@ -1363,19 +1232,16 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 	[DebuggerDisplay("Count = {Count}")]
 	public sealed class ValueCollection : ICollection<TValue>, ICollection, IReadOnlyCollection<TValue>
 	{
-		private readonly PooledDictionary<TKey, TValue> _dictionary;
-		public ValueCollection(PooledDictionary<TKey, TValue> dictionary) => _dictionary = dictionary;
+		private readonly MDictionary<TKey, TValue> _dictionary;
+		public ValueCollection(MDictionary<TKey, TValue> dictionary) => _dictionary = dictionary;
 
 		void ICollection.CopyTo(Array array, int index)
 		{
-			if (array.Rank != 1)
-				ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankMultiDimNotSupported);
-			if (array.GetLowerBound(0) != 0)
-				ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_NonZeroLowerBound);
-			if ((uint) index > (uint) array.Length)
-				ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
-			if (array.Length - index < _dictionary.Count)
-				ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
+			array.Rank.ThrowIfNotEquals(1);
+			array.GetLowerBound(0).ThrowIfNotEquals(0);
+			index.ThrowIfNegative()
+				.ThrowIfGreaterThan(array.Length);
+			_dictionary._count.ThrowIfGreaterThan(array.Length - index);
 
 			switch (array)
 			{
@@ -1389,57 +1255,40 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 					try
 					{
 						for (int i = 0; i < count; i++)
-						{
 							if (entries![i].HashCode >= 0) objects[index++] = entries[i].Value!;
-						}
 					}
-					catch (ArrayTypeMismatchException)
+					catch (ArrayTypeMismatchException exception)
 					{
-						ThrowHelper.ThrowArgumentException_Argument_InvalidArrayType();
+						throw exception.AsExpectedException();
 					}
 
 					break;
 				}
 				default:
-					ThrowHelper.ThrowArgumentException_Argument_InvalidArrayType();
-					break;
+					throw new ArgumentOutOfRangeException(nameof(array));
 			}
 		}
 
 		bool ICollection.IsSynchronized => false;
-
 		object ICollection.SyncRoot => ((ICollection) _dictionary).SyncRoot;
 
 		public void CopyTo(TValue[] array, int index)
 		{
-			if (index < 0 || index > array.Length)
-				ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
-
-			if (array.Length - index < _dictionary.Count)
-				ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
+			index.ThrowIfNegative()
+				.ThrowIfGreaterThan(array.Length)
+				.ThrowIfGreaterThan(array.Length - _dictionary.Count);
 
 			int count = _dictionary._count;
 			var entries = _dictionary._entries;
 			for (int i = 0; i < count; i++)
-			{
 				if (entries![i].HashCode >= 0) array[index++] = entries[i].Value;
-			}
 		}
 
 		public int Count => _dictionary.Count;
-
 		bool ICollection<TValue>.IsReadOnly => true;
-
-		void ICollection<TValue>.Add(TValue item)
-			=> ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ValueCollectionSet);
-
-		bool ICollection<TValue>.Remove(TValue item)
-		{
-			ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ValueCollectionSet);
-			return false;
-		}
-
-		void ICollection<TValue>.Clear() => ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ValueCollectionSet);
+		void ICollection<TValue>.Add(TValue item) => throw new NotSupportedException().AsExpectedException();
+		bool ICollection<TValue>.Remove(TValue item) => throw new NotSupportedException().AsExpectedException();
+		void ICollection<TValue>.Clear() => throw new NotSupportedException().AsExpectedException();
 		bool ICollection<TValue>.Contains(TValue item) => _dictionary.ContainsValue(item);
 		IEnumerator<TValue> IEnumerable<TValue>.GetEnumerator() => new Enumerator(_dictionary);
 		IEnumerator IEnumerable.GetEnumerator() => new Enumerator(_dictionary);
@@ -1448,51 +1297,46 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 		// ReSharper disable once MemberHidesStaticFromOuterClass
 		public struct Enumerator : IEnumerator<TValue>
 		{
-			private readonly PooledDictionary<TKey, TValue> _dictionary;
+			private readonly MDictionary<TKey, TValue> _dictionary;
 			private int _index;
 			private readonly int _version;
 
-			internal Enumerator(PooledDictionary<TKey, TValue> dictionary)
+			internal Enumerator(MDictionary<TKey, TValue> dictionary)
 			{
 				_dictionary = dictionary;
 				_version = dictionary._version;
 				_index = 0;
-				Current = default!;
+				_current = default;
 			}
 
 			public void Dispose() { }
 
 			public bool MoveNext()
 			{
-				if (_version != _dictionary._version)
-				{
-					ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
-				}
-
+				_version.ThrowIfNotEquals(_dictionary._version);
 				while ((uint) _index < (uint) _dictionary._count)
 				{
 					ref var entry = ref _dictionary._entries![_index++];
 
 					if (entry.HashCode < 0) continue;
-					Current = entry.Value;
+					_current = entry.Value;
 					return true;
 				}
 
 				_index = _dictionary._count + 1;
-				Current = default!;
+				_current = default;
 				return false;
 			}
 
-			public TValue Current { get; private set; }
+			private TValue? _current;
+			public readonly TValue Current => _current ?? throw new ArgumentNullException().AsExpectedException();
 
-			object IEnumerator.Current
+			readonly object IEnumerator.Current
 			{
 				get
 				{
-					if (_index == 0 || _index == _dictionary._count + 1)
-					{
-						ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen();
-					}
+					_index.ThrowIfEquals(0)
+						.ThrowIfEquals(_dictionary._count + 1);
 
 					return Current!;
 				}
@@ -1500,14 +1344,158 @@ public class PooledDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictio
 
 			void IEnumerator.Reset()
 			{
-				if (_version != _dictionary._version)
-				{
-					ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
-				}
-
+				_version.ThrowIfNotEquals(_dictionary._version);
 				_index = 0;
-				Current = default!;
+				_current = default;
 			}
 		}
 	}
+}
+
+public static partial class ConverterExtensions
+{
+	/// <summary>
+	///     Creates a <see cref="MDictionary{TKey,TValue}" /> from an <see cref="IEnumerable{TSource}" /> according to specified
+	///     key selector and element selector functions, as well as a comparer.
+	/// </summary>
+	public static MDictionary<TKey, TValue> ToMDictionary<TSource, TKey, TValue>(this IEnumerable<TSource> source,
+		Func<TSource, TKey> keySelector, Func<TSource, TValue> valueSelector, IEqualityComparer<TKey> comparer)
+	{
+		var dict = new MDictionary<TKey, TValue>((source as ICollection<TSource>)?.Count ?? 0, comparer);
+		foreach (var item in source)
+			dict.Add(keySelector(item), valueSelector(item));
+
+		return dict;
+	}
+
+	/// <summary>
+	///     Creates a <see cref="MDictionary{TKey,TValue}" /> from a <see cref="ReadOnlySpan{TSource}" /> according to specified
+	///     key selector and element selector functions, as well as a comparer.
+	/// </summary>
+	public static MDictionary<TKey, TValue> ToMDictionary<TSource, TKey, TValue>(this ReadOnlySpan<TSource> source,
+		Func<TSource, TKey> keySelector, Func<TSource, TValue> valueSelector, IEqualityComparer<TKey> comparer)
+	{
+		var dict = new MDictionary<TKey, TValue>(source.Length, comparer);
+		foreach (var item in source)
+			dict.Add(keySelector(item), valueSelector(item));
+
+		return dict;
+	}
+
+	/// <summary>
+	///     Creates a <see cref="MDictionary{TKey,TValue}" /> from a <see cref="Span{TSource}" /> according to specified
+	///     key selector and element selector functions, as well as a comparer.
+	/// </summary>
+	public static MDictionary<TKey, TValue> ToMDictionary<TSource, TKey, TValue>(this Span<TSource> source,
+		Func<TSource, TKey> keySelector, Func<TSource, TValue> valueSelector, IEqualityComparer<TKey> comparer) =>
+		ToMDictionary((ReadOnlySpan<TSource>) source, keySelector, valueSelector, comparer);
+
+	/// <summary>
+	///     Creates a <see cref="MDictionary{TKey,TValue}" /> from a <see cref="ReadOnlyMemory{TSource}" /> according to specified
+	///     key selector and element selector functions, as well as a comparer.
+	/// </summary>
+	public static MDictionary<TKey, TValue> ToMDictionary<TSource, TKey, TValue>(this ReadOnlyMemory<TSource> source,
+		Func<TSource, TKey> keySelector, Func<TSource, TValue> valueSelector, IEqualityComparer<TKey> comparer) =>
+		ToMDictionary(source.Span, keySelector, valueSelector, comparer);
+
+	/// <summary>
+	///     Creates a <see cref="MDictionary{TKey,TValue}" /> from a <see cref="Memory{TSource}" /> according to specified
+	///     key selector and element selector functions, as well as a comparer.
+	/// </summary>
+	public static MDictionary<TKey, TValue> ToMDictionary<TSource, TKey, TValue>(this Memory<TSource> source,
+		Func<TSource, TKey> keySelector, Func<TSource, TValue> valueSelector, IEqualityComparer<TKey> comparer) =>
+		ToMDictionary(source.Span, keySelector, valueSelector, comparer);
+
+	/// <summary>
+	///     Creates a <see cref="MDictionary{TKey,TValue}" /> from an <see cref="IEnumerable{TSource}" /> according to specified
+	///     key selector and comparer.
+	/// </summary>
+	public static MDictionary<TKey, TSource> ToMDictionary<TSource, TKey>(this IEnumerable<TSource> source,
+		Func<TSource, TKey> keySelector, IEqualityComparer<TKey> comparer)
+	{
+		var dict = new MDictionary<TKey, TSource>((source as ICollection<TSource>)?.Count ?? 0, comparer);
+		foreach (var item in source)
+			dict.Add(keySelector(item), item);
+
+		return dict;
+	}
+
+	/// <summary>
+	///     Creates a <see cref="MDictionary{TKey,TValue}" /> from an <see cref="ReadOnlySpan{TSource}" /> according to specified
+	///     key selector and comparer.
+	/// </summary>
+	public static MDictionary<TKey, TSource> ToMDictionary<TSource, TKey>(this ReadOnlySpan<TSource> source,
+		Func<TSource, TKey> keySelector, IEqualityComparer<TKey> comparer)
+	{
+		var dict = new MDictionary<TKey, TSource>(source.Length, comparer);
+		foreach (var item in source)
+			dict.Add(keySelector(item), item);
+
+		return dict;
+	}
+
+	/// <summary>
+	///     Creates a <see cref="MDictionary{TKey,TValue}" /> from an <see cref="Span{TSource}" /> according to specified
+	///     key selector and comparer.
+	/// </summary>
+	public static MDictionary<TKey, TSource> ToMDictionary<TSource, TKey>(this Span<TSource> source,
+		Func<TSource, TKey> keySelector, IEqualityComparer<TKey> comparer) =>
+		ToMDictionary((ReadOnlySpan<TSource>) source, keySelector, comparer);
+
+	/// <summary>
+	///     Creates a <see cref="MDictionary{TKey,TValue}" /> from an <see cref="ReadOnlyMemory{TSource}" /> according to specified
+	///     key selector and comparer.
+	/// </summary>
+	public static MDictionary<TKey, TSource> ToMDictionary<TSource, TKey>(this ReadOnlyMemory<TSource> source,
+		Func<TSource, TKey> keySelector, IEqualityComparer<TKey> comparer) =>
+		ToMDictionary(source.Span, keySelector, comparer);
+
+	/// <summary>
+	///     Creates a <see cref="MDictionary{TKey,TValue}" /> from an <see cref="Memory{TSource}" /> according to specified
+	///     key selector and comparer.
+	/// </summary>
+	public static MDictionary<TKey, TSource> ToMDictionary<TSource, TKey>(this Memory<TSource> source,
+		Func<TSource, TKey> keySelector, IEqualityComparer<TKey> comparer) =>
+		ToMDictionary(source.Span, keySelector, comparer);
+
+	/// <summary>
+	///     Creates a <see cref="MDictionary{TKey,TValue}" /> from a sequence of key/value tuples.
+	/// </summary>
+	public static MDictionary<TKey, TValue> ToMDictionary<TKey, TValue>(this IEnumerable<(TKey, TValue)> source,
+		IEqualityComparer<TKey> comparer) =>
+		new(source, comparer);
+
+	/// <summary>
+	///     Creates a <see cref="MDictionary{TKey,TValue}" /> from a sequence of KeyValuePair values.
+	/// </summary>
+	public static MDictionary<TKey, TValue> ToMDictionary<TKey, TValue>(this IEnumerable<KeyValuePair<TKey, TValue>> source,
+		IEqualityComparer<TKey> comparer) =>
+		new(source, comparer);
+
+	/// <summary>
+	///     Creates a <see cref="MDictionary{TKey,TValue}" /> from a sequence of key/value tuples.
+	/// </summary>
+	public static MDictionary<TKey, TValue> ToMDictionary<TKey, TValue>(this IEnumerable<Tuple<TKey, TValue>> source,
+		IEqualityComparer<TKey> comparer)
+	{
+		var dict = new MDictionary<TKey, TValue>((source as ICollection<Tuple<TKey, TValue>>)?.Count ?? 0, comparer);
+		foreach (var pair in source)
+			dict.Add(pair.Item1, pair.Item2);
+
+		return dict;
+	}
+
+	/// <summary>
+	///     Creates a <see cref="MDictionary{TKey,TValue}" /> from a span of key/value tuples.
+	/// </summary>
+	public static MDictionary<TKey, TValue> ToMDictionary<TKey, TValue>(this ReadOnlySpan<(TKey, TValue)> source,
+		IEqualityComparer<TKey> comparer) =>
+		new(source, comparer);
+
+	/// <summary>
+	///     Creates a <see cref="MDictionary{TKey,TValue}" /> from a span of key/value tuples.
+	/// </summary>
+	public static MDictionary<TKey, TValue> ToMDictionary<TKey, TValue>(this Span<(TKey, TValue)> source,
+		IEqualityComparer<TKey> comparer) =>
+		new(source, comparer);
 }

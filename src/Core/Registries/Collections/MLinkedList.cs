@@ -1,6 +1,10 @@
-﻿namespace Core.Registries.Collections.UnsafeLinkedListAPI;
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 
-public partial class UnsafeLinkedList<T>
+namespace Core.Registries.Collections;
+
+public class MLinkedList<T>
 {
 	public Node? Head { get; private set; }
 	public Node? Tail { get; private set; }
@@ -101,4 +105,32 @@ public partial class UnsafeLinkedList<T>
 	}
 
 	public UnsafeEnumerator GetEnumerator() => new(Head);
+	
+	public sealed class Node
+	{
+		internal Node? Next;
+		internal Node? Previous;
+		public T Value;
+
+		public Node(T value) => Value = value;
+
+		public bool IsExists => Next is not null || Previous is not null;
+	}
+	
+	public struct UnsafeEnumerator : IEnumerator<Node>
+	{
+		private readonly Node? _firstNode;
+		private Node? _current;
+		public readonly Node Current => _current.ThrowIfNullable();
+		readonly object IEnumerator.Current => Current;
+		// ReSharper disable once UnusedMember.Global
+		public UnsafeEnumerator() => throw new NotSupportedException().AsExpectedException();
+		internal UnsafeEnumerator(Node? firstNode) => (_firstNode, _current) = (firstNode, default!);
+
+		public bool MoveNext() =>
+			(_current = _current is null ? _firstNode : Current.Next) is not null;
+
+		public void Reset() => throw new ArgumentException().AsExpectedException();
+		public readonly void Dispose() { }
+	}
 }

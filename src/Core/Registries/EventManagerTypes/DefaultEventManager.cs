@@ -1,4 +1,5 @@
 ﻿using System.Threading;
+using Core.Registries.Collections;
 using Core.Registries.CoreTypes;
 
 namespace Core.Registries.EventManagerTypes;
@@ -6,7 +7,7 @@ namespace Core.Registries.EventManagerTypes;
 // ReSharper disable once ClassNeverInstantiated.Global
 public sealed class DefaultEventManager<TMainType> : IEventManager<TMainType> where TMainType : IEntry
 {
-	private readonly PooledDictionary<string, ElementChanged<TMainType>> _events = new();
+	private readonly MDictionary<string, ElementChanged<TMainType>> _events = new();
 	private readonly ReaderWriterLockSlim _lock = new();
 
 	void IEventManager<TMainType>.CallEvents(IRegistry<TMainType> registry, TMainType entry, ElementChangedType eventType)

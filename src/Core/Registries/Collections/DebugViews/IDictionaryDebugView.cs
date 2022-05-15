@@ -6,20 +6,21 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-namespace Core.Registries.Collections.Pooled;
+namespace Core.Registries.Collections.DebugViews;
 
-internal sealed class IDictionaryDebugView<K, V>
+// ReSharper disable once InconsistentNaming
+internal sealed class IDictionaryDebugView<TKey, TValue>
 {
-	private readonly IDictionary<K, V> _dict;
+	private readonly IDictionary<TKey, TValue> _dict;
 
-	public IDictionaryDebugView(IDictionary<K, V> dictionary) => _dict = dictionary ?? throw new ArgumentNullException(nameof(dictionary));
+	public IDictionaryDebugView(IDictionary<TKey, TValue> dictionary) => _dict = dictionary ?? throw new ArgumentNullException(nameof(dictionary));
 
 	[DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-	public KeyValuePair<K, V>[] Items
+	public KeyValuePair<TKey, TValue>[] Items
 	{
 		get
 		{
-			var items = new KeyValuePair<K, V>[_dict.Count];
+			var items = new KeyValuePair<TKey, TValue>[_dict.Count];
 			_dict.CopyTo(items, 0);
 			return items;
 		}

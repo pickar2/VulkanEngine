@@ -3,6 +3,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using Core.Registries.Collections;
 using Core.Registries.Entities;
 using Core.Serializer.Entities.MapperWorkers;
 using Core.Utils;
@@ -17,7 +18,7 @@ namespace Core.Registries.CoreTypes;
 internal sealed class DefaultCore<TMainType> : IRegistry<TMainType>, IDisposable
 	where TMainType : IEntry
 {
-	private readonly PooledDictionary<string, TMainType> _entries;
+	private readonly MDictionary<string, TMainType> _entries;
 	internal readonly ReaderWriterLockSlim Lock = new();
 
 	// ReSharper disable once UnusedMember.Local
@@ -35,7 +36,7 @@ internal sealed class DefaultCore<TMainType> : IRegistry<TMainType>, IDisposable
 	internal DefaultCore(NamespacedName identifier)
 	{
 		Identifier = identifier;
-		_entries = new PooledDictionary<string, TMainType>(StringComparer.Ordinal);
+		_entries = new MDictionary<string, TMainType>(StringComparer.Ordinal);
 	}
 
 	public void Dispose() => Lock.Dispose();
@@ -122,16 +123,16 @@ internal sealed class DefaultCore<TMainType> : IRegistry<TMainType>, IDisposable
 		return _entries.Remove(identifier, out var result) ? result : default;
 	}
 
-	public PooledDictionary<string, TMainType>.Enumerator GetEnumerator() => _entries.GetEnumerator();
+	public MDictionary<string, TMainType>.Enumerator GetEnumerator() => _entries.GetEnumerator();
 }
 
 // Custom enumerator to avoid additional heap allocation from cast to IEnumerator interface
 public struct DefaultRegistryEnumerator<TEnumType> : IEnumerableRegistry<TEnumType> where TEnumType : IEntry
 {
-	private PooledDictionary<string, TEnumType>.Enumerator _enumerator;
+	private MDictionary<string, TEnumType>.Enumerator _enumerator;
 	public string Key => _enumerator.Current.Key;
 	public TEnumType Value => _enumerator.Current.Value;
-	public DefaultRegistryEnumerator(PooledDictionary<string, TEnumType>.Enumerator enumerator) => _enumerator = enumerator;
+	public DefaultRegistryEnumerator(MDictionary<string, TEnumType>.Enumerator enumerator) => _enumerator = enumerator;
 	public bool MoveNext() => _enumerator.MoveNext();
 }
 

@@ -1,4 +1,4 @@
-﻿using Core.Registries.Collections.UnsafeLinkedListAPI;
+﻿using Core.Registries.Collections;
 
 namespace Core.Registries.EventManagerTypes.PriorityEventManagerAPI;
 
@@ -8,7 +8,7 @@ public sealed partial class PriorityEventManager<TMainType>
 	{
 		internal string Identifier;
 		internal string[] BeforeEvents;
-		internal (UnsafeLinkedList<UnsafeLinkedList<EventData>.Node> List, UnsafeLinkedList<UnsafeLinkedList<EventData>.Node>.Node Node)[] AfterEvents;
+		internal (MLinkedList<MLinkedList<EventData>.Node> List, MLinkedList<MLinkedList<EventData>.Node>.Node Node)[] AfterEvents;
 		internal ElementChanged<TMainType> Method;
 		internal bool IsMarked;
 	}

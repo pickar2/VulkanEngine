@@ -18,6 +18,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using Core.Registries.Collections.DebugViews;
 
 namespace Core.Registries.Collections.Pooled;
 
@@ -27,7 +28,7 @@ namespace Core.Registries.Collections.Pooled;
 /// </summary>
 [DebuggerTypeProxy(typeof(StackDebugView<>))]
 [DebuggerDisplay("Count = {Count}")]
-public class PooledStack<T> : ICollection, IReadOnlyCollection<T>, IDisposable
+public class MStack<T> : ICollection, IReadOnlyCollection<T>, IDisposable
 {
 	private const int DefaultCapacity = 4;
 
@@ -49,7 +50,7 @@ public class PooledStack<T> : ICollection, IReadOnlyCollection<T>, IDisposable
 	{
 		get
 		{
-			if (_syncRoot == null)
+			if (_syncRoot is null)
 			{
 				Interlocked.CompareExchange<object>(ref _syncRoot!, new object(), null!);
 			}
@@ -60,42 +61,26 @@ public class PooledStack<T> : ICollection, IReadOnlyCollection<T>, IDisposable
 
 	void ICollection.CopyTo(Array array, int arrayIndex)
 	{
-		if (array.Rank != 1)
-		{
-			ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankMultiDimNotSupported);
-		}
-
-		if (array.GetLowerBound(0) != 0)
-		{
-			ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_NonZeroLowerBound, ExceptionArgument.array);
-		}
-
-		if (arrayIndex < 0 || arrayIndex > array.Length)
-		{
-			ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.arrayIndex);
-		}
-
-		if (array.Length - arrayIndex < Count)
-		{
-			ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
-		}
-
+		array.Rank.ThrowIfEquals(1);
+		array.GetLowerBound(0).ThrowIfNotEquals(0);
+		arrayIndex.ThrowIfNegative()
+			.ThrowIfGreaterThan(array.Length)
+			.ThrowIfGreaterThan(array.Length - Count);
 		try
 		{
 			Array.Copy(_array, 0, array, arrayIndex, Count);
 			Array.Reverse(array, arrayIndex, Count);
 		}
-		catch (ArrayTypeMismatchException)
+		catch (ArrayTypeMismatchException exception)
 		{
-			ThrowHelper.ThrowArgumentException_Argument_InvalidArrayType();
+			throw exception.AsExpectedException();
 		}
 	}
 
-	IEnumerator IEnumerable.GetEnumerator()
-		=> new Enumerator(this);
-
+	IEnumerator IEnumerable.GetEnumerator() => new Enumerator(this);
+	
 	// void IDeserializationCallback.OnDeserialization(object sender) =>
-	// 	// We can't serialize array pools, so deserialized PooledStacks will
+	// 	// We can't serialize array pools, so deserialized MStacks will
 	// 	// have to use the shared pool, even if they were using a custom pool
 	// 	// before serialization.
 	// 	_pool = ArrayPool<T>.Shared;
@@ -167,22 +152,11 @@ public class PooledStack<T> : ICollection, IReadOnlyCollection<T>, IDisposable
 	// Copies the stack into an array.
 	public void CopyTo(T[] array, int arrayIndex)
 	{
-		if (array == null)
-		{
-			ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
-		}
+		array.ThrowIfNotEquals(_array);
+		arrayIndex.ThrowIfNegative()
+			.ThrowIfGreaterThan(array.Length)
+			.ThrowIfGreaterThan(array.Length - Count);
 
-		if (arrayIndex < 0 || arrayIndex > array.Length)
-		{
-			ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.arrayIndex);
-		}
-
-		if (array.Length - arrayIndex < Count)
-		{
-			ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
-		}
-
-		Debug.Assert(array != _array);
 		int srcIndex = 0;
 		int dstIndex = arrayIndex + Count;
 		while (srcIndex < Count)
@@ -193,13 +167,8 @@ public class PooledStack<T> : ICollection, IReadOnlyCollection<T>, IDisposable
 
 	public void CopyTo(Span<T> span)
 	{
-		if (span.Length < Count)
-		{
-			ThrowHelper.ThrowArgumentException_DestinationTooShort();
-		}
-
 		int srcIndex = 0;
-		int dstIndex = Count;
+		int dstIndex = Count.ThrowIfGreaterThan(span.Length);
 		while (srcIndex < Count)
 		{
 			span[--dstIndex] = _array[srcIndex++];
@@ -207,11 +176,10 @@ public class PooledStack<T> : ICollection, IReadOnlyCollection<T>, IDisposable
 	}
 
 	/// <summary>
-	///     Returns an IEnumerator for this PooledStack.
+	///     Returns an IEnumerator for this MStack.
 	/// </summary>
 	/// <returns></returns>
-	public Enumerator GetEnumerator()
-		=> new(this);
+	public Enumerator GetEnumerator() => new(this);
 
 	public void TrimExcess()
 	{
@@ -223,23 +191,21 @@ public class PooledStack<T> : ICollection, IReadOnlyCollection<T>, IDisposable
 		}
 
 		int threshold = (int) (_array.Length * 0.9);
-		if (Count < threshold)
+		if (Count >= threshold) return;
+		var newArray = _pool.Rent(Count);
+		if (newArray.Length < _array.Length)
 		{
-			var newArray = _pool.Rent(Count);
-			if (newArray.Length < _array.Length)
-			{
-				Array.Copy(_array, newArray, Count);
-				ReturnArray(newArray);
-				_version++;
-			}
-			else
-			{
-				// The array from the pool wasn't any smaller than the one we already had,
-				// (we can only control minimum size) so return it and do nothing.
-				// If we create an exact-sized array not from the pool, we'll
-				// get an exception when returning it to the pool.
-				_pool.Return(newArray);
-			}
+			Array.Copy(_array, newArray, Count);
+			ReturnArray(newArray);
+			_version++;
+		}
+		else
+		{
+			// The array from the pool wasn't any smaller than the one we already had,
+			// (we can only control minimum size) so return it and do nothing.
+			// If we create an exact-sized array not from the pool, we'll
+			// get an exception when returning it to the pool.
+			_pool.Return(newArray);
 		}
 	}
 
@@ -253,14 +219,12 @@ public class PooledStack<T> : ICollection, IReadOnlyCollection<T>, IDisposable
 		var array = _array;
 
 		if ((uint) size >= (uint) array.Length)
-		{
 			ThrowForEmptyStack();
-		}
 
 		return array[size];
 	}
 
-	public bool TryPeek(out T result)
+	public bool TryPeek(out T? result)
 	{
 		int size = Count - 1;
 		var array = _array;
@@ -299,7 +263,7 @@ public class PooledStack<T> : ICollection, IReadOnlyCollection<T>, IDisposable
 		return item;
 	}
 
-	public bool TryPop(out T result)
+	public bool TryPop(out T? result)
 	{
 		int size = Count - 1;
 		var array = _array;
@@ -376,7 +340,7 @@ public class PooledStack<T> : ICollection, IReadOnlyCollection<T>, IDisposable
 
 	private void ReturnArray(T[]? replaceWith = null)
 	{
-		if (_array?.Length > 0)
+		if (_array.Length > 0)
 		{
 			try
 			{
@@ -395,14 +359,14 @@ public class PooledStack<T> : ICollection, IReadOnlyCollection<T>, IDisposable
 	}
 
 	[SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Justification = "not an expected scenario")]
-	public struct Enumerator : IEnumerator<T>, IEnumerator
+	public struct Enumerator : IEnumerator<T>
 	{
-		private readonly PooledStack<T> _stack;
+		private readonly MStack<T> _stack;
 		private readonly int _version;
 		private int _index;
-		private T _currentElement;
+		private T? _currentElement;
 
-		internal Enumerator(PooledStack<T> stack)
+		internal Enumerator(MStack<T> stack)
 		{
 			_stack = stack;
 			_version = stack._version;
@@ -414,49 +378,45 @@ public class PooledStack<T> : ICollection, IReadOnlyCollection<T>, IDisposable
 
 		public bool MoveNext()
 		{
-			bool retval;
-			if (_version != _stack._version) throw new InvalidOperationException("Collection was modified during enumeration.");
-			if (_index == -2)
+			bool returnValue;
+			if (_version != _stack._version)
+				throw new InvalidOperationException("Collection was modified during enumeration.").AsExpectedException();
+			switch (_index)
 			{
-				// First call to enumerator.
-				_index = _stack.Count - 1;
-				retval = _index >= 0;
-				if (retval)
-					_currentElement = _stack._array[_index];
-				return retval;
+				case -2:
+				{
+					// First call to enumerator.
+					_index = _stack.Count - 1;
+					returnValue = _index >= 0;
+					if (returnValue)
+						_currentElement = _stack._array[_index];
+					return returnValue;
+				}
+				case -1:
+					// End of enumeration.
+					return false;
 			}
 
-			if (_index == -1)
-			{
-				// End of enumeration.
-				return false;
-			}
-
-			retval = --_index >= 0;
-			if (retval)
-				_currentElement = _stack._array[_index];
-			else
-				_currentElement = default;
-			return retval;
+			returnValue = --_index >= 0;
+			_currentElement = returnValue ? _stack._array[_index] : default!;
+			return returnValue;
 		}
 
-		public T Current
+		public readonly T Current
 		{
 			get
 			{
-				if (_index < 0)
-					ThrowEnumerationNotStartedOrEnded();
-				return _currentElement;
+				if (_index < 0) ThrowEnumerationNotStartedOrEnded();
+				return _currentElement ?? throw new ArgumentNullException().AsExpectedException();
 			}
 		}
 
-		private void ThrowEnumerationNotStartedOrEnded()
+		private readonly void ThrowEnumerationNotStartedOrEnded()
 		{
 			Debug.Assert(_index is -1 or -2);
 			throw new InvalidOperationException(_index == -2 ? "Enumeration was not started." : "Enumeration has ended.");
 		}
-
-		object IEnumerator.Current => Current;
+		readonly object IEnumerator.Current => _currentElement ?? throw new ArgumentNullException().AsExpectedException();
 
 		void IEnumerator.Reset()
 		{
@@ -471,12 +431,12 @@ public class PooledStack<T> : ICollection, IReadOnlyCollection<T>, IDisposable
 	/// <summary>
 	///     Create a stack with the default initial capacity.
 	/// </summary>
-	public PooledStack() : this(ArrayPool<T>.Shared) { }
+	public MStack() : this(ArrayPool<T>.Shared) { }
 
 	/// <summary>
 	///     Create a stack with the default initial capacity.
 	/// </summary>
-	public PooledStack(ArrayPool<T> customPool)
+	public MStack(ArrayPool<T> customPool)
 	{
 		_pool = customPool;
 		_array = Array.Empty<T>();
@@ -486,44 +446,34 @@ public class PooledStack<T> : ICollection, IReadOnlyCollection<T>, IDisposable
 	///     Create a stack with a specific initial capacity.  The initial capacity
 	///     must be a non-negative number.
 	/// </summary>
-	public PooledStack(int capacity) : this(capacity, ArrayPool<T>.Shared) { }
+	public MStack(int capacity) : this(capacity, ArrayPool<T>.Shared) { }
 
 	/// <summary>
 	///     Create a stack with a specific initial capacity.  The initial capacity
 	///     must be a non-negative number.
 	/// </summary>
-	public PooledStack(int capacity, ArrayPool<T> customPool)
+	public MStack(int capacity, ArrayPool<T> customPool)
 	{
-		if (capacity < 0)
-		{
-			ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity,
-				ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
-		}
-
 		_pool = customPool;
-		_array = _pool.Rent(capacity);
+		_array = _pool.Rent(capacity.ThrowIfNegative());
 	}
 
 	/// <summary>
 	///     Fills a Stack with the contents of a particular collection.  The items are
 	///     pushed onto the stack in the same order they are read by the enumerator.
 	/// </summary>
-	public PooledStack(IEnumerable<T> enumerable) : this(enumerable, ArrayPool<T>.Shared) { }
+	public MStack(IEnumerable<T> enumerable) : this(enumerable, ArrayPool<T>.Shared) { }
 
 	/// <summary>
 	///     Fills a Stack with the contents of a particular collection.  The items are
 	///     pushed onto the stack in the same order they are read by the enumerator.
 	/// </summary>
-	public PooledStack(IEnumerable<T> enumerable, ArrayPool<T> customPool)
+	public MStack(IEnumerable<T> enumerable, ArrayPool<T> customPool)
 	{
 		_pool = customPool;
 
 		switch (enumerable)
 		{
-			case null:
-				ThrowHelper.ThrowArgumentNullException(ExceptionArgument.enumerable);
-				break;
-
 			case ICollection<T> collection:
 				if (collection.Count == 0)
 				{
@@ -539,7 +489,7 @@ public class PooledStack<T> : ICollection, IReadOnlyCollection<T>, IDisposable
 				break;
 
 			default:
-				using (var list = new PooledList<T>(enumerable))
+				using (var list = new MList<T>(enumerable))
 				{
 					_array = _pool.Rent(list.Count);
 					list.Span.CopyTo(_array);
@@ -554,25 +504,25 @@ public class PooledStack<T> : ICollection, IReadOnlyCollection<T>, IDisposable
 	///     Fills a Stack with the contents of a particular collection.  The items are
 	///     pushed onto the stack in the same order they are read by the enumerator.
 	/// </summary>
-	public PooledStack(T[] array) : this(array.AsSpan(), ArrayPool<T>.Shared) { }
+	public MStack(T[] array) : this(array.AsSpan(), ArrayPool<T>.Shared) { }
 
 	/// <summary>
 	///     Fills a Stack with the contents of a particular collection.  The items are
 	///     pushed onto the stack in the same order they are read by the enumerator.
 	/// </summary>
-	public PooledStack(T[] array, ArrayPool<T> customPool) : this(array.AsSpan(), customPool) { }
+	public MStack(T[] array, ArrayPool<T> customPool) : this(array.AsSpan(), customPool) { }
 
 	/// <summary>
 	///     Fills a Stack with the contents of a particular collection.  The items are
 	///     pushed onto the stack in the same order they are read by the enumerator.
 	/// </summary>
-	public PooledStack(ReadOnlySpan<T> span) : this(span, ArrayPool<T>.Shared) { }
+	public MStack(ReadOnlySpan<T> span) : this(span, ArrayPool<T>.Shared) { }
 
 	/// <summary>
 	///     Fills a Stack with the contents of a particular collection.  The items are
 	///     pushed onto the stack in the same order they are read by the enumerator.
 	/// </summary>
-	public PooledStack(ReadOnlySpan<T> span, ArrayPool<T> customPool)
+	public MStack(ReadOnlySpan<T> span, ArrayPool<T> customPool)
 	{
 		_pool = customPool;
 		_array = _pool.Rent(span.Length);
@@ -581,4 +531,43 @@ public class PooledStack<T> : ICollection, IReadOnlyCollection<T>, IDisposable
 	}
 
 	#endregion
+}
+
+public static partial class ConverterExtensions
+{
+	/// <summary>
+	///     Creates an instance of MStack from the given items.
+	/// </summary>
+	public static MStack<T> ToMStack<T>(this IEnumerable<T> items)
+		=> new(items);
+
+	/// <summary>
+	///     Creates an instance of MStack from the given items.
+	/// </summary>
+	public static MStack<T> ToMStack<T>(this T[] array)
+		=> new(array.AsSpan());
+
+	/// <summary>
+	///     Creates an instance of MStack from the given items.
+	/// </summary>
+	public static MStack<T> ToMStack<T>(this ReadOnlySpan<T> span)
+		=> new(span);
+
+	/// <summary>
+	///     Creates an instance of MStack from the given items.
+	/// </summary>
+	public static MStack<T> ToMStack<T>(this Span<T> span)
+		=> new(span);
+
+	/// <summary>
+	///     Creates an instance of MStack from the given items.
+	/// </summary>
+	public static MStack<T> ToMStack<T>(this ReadOnlyMemory<T> memory)
+		=> new(memory.Span);
+
+	/// <summary>
+	///     Creates an instance of MStack from the given items.
+	/// </summary>
+	public static MStack<T> ToMStack<T>(this Memory<T> memory)
+		=> new(memory.Span);
 }

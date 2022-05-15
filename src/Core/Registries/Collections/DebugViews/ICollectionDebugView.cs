@@ -6,8 +6,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-namespace Core.Registries.Collections.Pooled;
+namespace Core.Registries.Collections.DebugViews;
 
+// ReSharper disable once InconsistentNaming
 internal sealed class ICollectionDebugView<T>
 {
 	private readonly ICollection<T> _collection;
@@ -15,6 +16,7 @@ internal sealed class ICollectionDebugView<T>
 	public ICollectionDebugView(ICollection<T> collection) => _collection = collection ?? throw new ArgumentNullException(nameof(collection));
 
 	[DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+	// ReSharper disable once ReturnTypeCanBeEnumerable.Global
 	public T[] Items
 	{
 		get

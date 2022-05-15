@@ -2,8 +2,7 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
-using Core.Registries.Collections.OrderedLiLiDictionaryAPI;
-using Core.Registries.Collections.UnsafeLinkedListAPI;
+using Core.Registries.Collections;
 using Core.Registries.Entities;
 using Core.Serializer.Entities.MapperWorkers;
 using Core.Utils;
@@ -98,19 +97,19 @@ public sealed class OrderedLiLiCore<TMainType> : IRegistry<TMainType>, IDisposab
 		return _entries.Remove(identifier);
 	}
 
-	public UnsafeLinkedList<TMainType>.UnsafeEnumerator GetEnumerator() => _entries.GetEnumerator();
-	public PooledDictionary<string, UnsafeLinkedList<TMainType>.Node>.Enumerator GetOrderRegistryEnumerator() => _entries.GetDictEnumerator();
+	public MLinkedList<TMainType>.UnsafeEnumerator GetEnumerator() => _entries.GetEnumerator();
+	public MDictionary<string, MLinkedList<TMainType>.Node>.Enumerator GetOrderRegistryEnumerator() => _entries.GetDictEnumerator();
 }
 
 // Custom enumerator to avoid additional heap allocation from cast to IEnumerator interface
 // public struct OrderRegistryEnumerator<TEnumType> : IEnumerableRegistry<TEnumType> where TEnumType : IEntry
 // {
 // 	private readonly OrderedLiDictionary<string, TEnumType> _entries;
-// 	private PooledDictionary<string, int>.Enumerator _indexEnumerator;
+// 	private MDictionary<string, int>.Enumerator _indexEnumerator;
 // 	public string Key => _indexEnumerator.Current.Key;
 // 	public TEnumType Value => _entries[_indexEnumerator.Current.Value];
 //
-// 	public OrderRegistryEnumerator(PooledDictionary<string, int>.Enumerator indexEnumerator, OrderedLiDictionary<string, TEnumType> entries) =>
+// 	public OrderRegistryEnumerator(MDictionary<string, int>.Enumerator indexEnumerator, OrderedLiDictionary<string, TEnumType> entries) =>
 // 		(_indexEnumerator, _entries) = (indexEnumerator, entries);
 //
 // 	public bool MoveNext() => _indexEnumerator.MoveNext();

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using Core.Registries.Collections;
 using Core.Registries.CoreTypes;
 using Core.Registries.Entities;
 using Core.Serializer.Entities.MapperWorkers;
@@ -139,7 +140,7 @@ public abstract class ComplexRegistry<TEventManager, TMainType> : IComplexRegist
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public PooledDictionary<string, TMainType>.Enumerator GetEnumerator() => _registry.GetEnumerator();
+	public MDictionary<string, TMainType>.Enumerator GetEnumerator() => _registry.GetEnumerator();
 
 
 	// Sugar

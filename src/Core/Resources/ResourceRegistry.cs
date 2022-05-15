@@ -2,6 +2,7 @@
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using Core.Registries.Collections;
 using Core.Registries.CoreTypes;
 using Core.Registries.Entities;
 using Core.Resources.Entities;
@@ -11,7 +12,7 @@ namespace Core.Resources;
 
 public sealed class ResourceRegistry : IRegistry<ResourceCategory>
 {
-	private readonly PooledDictionary<string, ResourceCategory> _deserializedCategories = new(StringComparer.Ordinal);
+	private readonly MDictionary<string, ResourceCategory> _deserializedCategories = new(StringComparer.Ordinal);
 	// 1. Realtime category
 	// 2. Load category before register new resource to it
 	// 3. Save categories

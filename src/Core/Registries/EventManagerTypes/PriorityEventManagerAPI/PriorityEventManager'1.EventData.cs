@@ -1,4 +1,4 @@
-﻿using Core.Registries.Collections.UnsafeLinkedListAPI;
+﻿using Core.Registries.Collections;
 
 namespace Core.Registries.EventManagerTypes.PriorityEventManagerAPI;
 
@@ -6,7 +6,7 @@ public sealed partial class PriorityEventManager<TMainType>
 {
 	internal record struct EventData
 	{
-		internal readonly UnsafeLinkedList<UnsafeLinkedList<EventData>.Node> AfterAsBefore;
+		internal readonly MLinkedList<MLinkedList<EventData>.Node> AfterAsBefore;
 
 		// ReSharper disable once MemberHidesStaticFromOuterClass
 		internal Event Event;
@@ -16,7 +16,7 @@ public sealed partial class PriorityEventManager<TMainType>
 		{
 			HasEvent = false;
 			Event = default;
-			AfterAsBefore = new UnsafeLinkedList<UnsafeLinkedList<EventData>.Node>();
+			AfterAsBefore = new MLinkedList<MLinkedList<EventData>.Node>();
 		}
 	}
 }

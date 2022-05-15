@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using Core.Registries.Collections;
 using Core.Registries.CoreTypes;
 using Core.Registries.Entities;
 
@@ -36,7 +37,7 @@ public sealed class Locale : IEntry
 		}
 	}
 
-	public void ReFillData(PooledDictionary<string, string> dictionary)
+	public void ReFillData(MDictionary<string, string> dictionary)
 	{
 		dictionary.Clear();
 		foreach (var source in _sources)

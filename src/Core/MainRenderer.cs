@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using Core.General;
+using Core.Registries.Collections;
 using Core.UI;
 using Core.UI.Controls;
 using Core.Utils;
@@ -30,7 +31,7 @@ public static unsafe class MainRenderer
 
 	public static event Func<int, CommandBuffer>? FillCommandBuffers;
 
-	private static PooledList<Fence>[] _fences = default!;
+	private static MList<Fence>[] _fences = default!;
 
 	private static bool _framebufferResized;
 	
@@ -69,8 +70,8 @@ public static unsafe class MainRenderer
 
 		CreateFrames();
 
-		_fences = new PooledList<Fence>[SwapchainHelper.ImageCountInt];
-		for (int i = 0; i < _fences.Length; i++) _fences[i] = new PooledList<Fence>();
+		_fences = new MList<Fence>[SwapchainHelper.ImageCountInt];
+		for (int i = 0; i < _fences.Length; i++) _fences[i] = new MList<Fence>();
 	}
 
 	public static void RenderLoop()

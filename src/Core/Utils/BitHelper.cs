@@ -9,7 +9,7 @@ using System.Runtime.CompilerServices;
 
 namespace Core.Registries.Collections.Pooled;
 
-internal ref struct BitHelper
+internal readonly ref struct BitHelper
 {
 	private const int IntSize = sizeof(int) * 8;
 	private readonly Span<int> _span;

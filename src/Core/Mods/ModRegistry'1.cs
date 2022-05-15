@@ -3,6 +3,7 @@ using System.IO;
 using System.Reflection;
 using Core.Mods.Entities;
 using Core.Registries.API;
+using Core.Registries.Collections;
 using Core.Registries.Entities;
 using Core.Registries.EventManagerTypes;
 
@@ -10,7 +11,7 @@ namespace Core.Mods;
 
 internal sealed partial class ModRegistry : OrderedLiLiSimpleRegistry<DefaultEventManager<Mod>, Mod>
 {
-	private readonly PooledDictionary<Assembly, string> _modIdentifiers;
+	private readonly MDictionary<Assembly, string> _modIdentifiers;
 	internal readonly Assembly CoreAssembly;
 
 	private ModRegistry() : base(NamespacedName.CreateWithCoreNamespace("mods"))
@@ -19,7 +20,7 @@ internal sealed partial class ModRegistry : OrderedLiLiSimpleRegistry<DefaultEve
 		string[] modPathes = Directory.GetFiles(App.ModsPath,
 			"*.mod.dll",
 			SearchOption.AllDirectories);
-		_modIdentifiers = new PooledDictionary<Assembly, string>(modPathes.Length + 1);
+		_modIdentifiers = new MDictionary<Assembly, string>(modPathes.Length + 1);
 		scanFolders:
 		foreach (string modPath in modPathes)
 		{

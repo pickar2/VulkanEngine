@@ -5,14 +5,15 @@
 using System;
 using System.Diagnostics;
 
-namespace Core.Registries.Collections.Pooled;
+namespace Core.Registries.Collections.DebugViews;
 
 internal sealed class StackDebugView<T>
 {
-	private readonly PooledStack<T> _stack;
+	private readonly MStack<T> _stack;
 
-	public StackDebugView(PooledStack<T> stack) => _stack = stack ?? throw new ArgumentNullException(nameof(stack));
+	public StackDebugView(MStack<T> stack) => _stack = stack ?? throw new ArgumentNullException(nameof(stack));
 
 	[DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+	// ReSharper disable once ReturnTypeCanBeEnumerable.Global
 	public T[] Items => _stack.ToArray();
 }

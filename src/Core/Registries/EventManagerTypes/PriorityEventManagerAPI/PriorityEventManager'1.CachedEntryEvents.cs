@@ -1,5 +1,5 @@
 ﻿using System;
-using Core.Registries.Collections.OrderedLiLiDictionaryAPI;
+using Core.Registries.Collections;
 
 namespace Core.Registries.EventManagerTypes.PriorityEventManagerAPI;
 

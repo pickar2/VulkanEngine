@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Threading;
-using Core.Registries.Collections.UnsafeLinkedListAPI;
+using Core.Registries.Collections;
 using Core.Registries.CoreTypes;
 using Core.Utils;
 
@@ -9,7 +9,7 @@ namespace Core.Registries.EventManagerTypes.PriorityEventManagerAPI;
 
 public sealed partial class PriorityEventManager<TMainType> : IEventManager<TMainType> where TMainType : class, IEntry
 {
-	private readonly PooledDictionary<string, CachedEntryEvents> _events = new(StringComparer.Ordinal);
+	private readonly MDictionary<string, CachedEntryEvents> _events = new(StringComparer.Ordinal);
 	private readonly ReaderWriterLockSlim _lock = new();
 
 	void IEventManager<TMainType>.CallEvents(IRegistry<TMainType> registry, TMainType entry, ElementChangedType eventType)
@@ -29,7 +29,7 @@ public sealed partial class PriorityEventManager<TMainType> : IEventManager<TMai
 					GoDeeper(eventNode);
 
 			[StackTraceHidden]
-			void GoDeeper(UnsafeLinkedList<EventData>.Node node)
+			void GoDeeper(MLinkedList<EventData>.Node node)
 			{
 				// Iterate and insert before with reference check
 				// 1. eventNode.Value.Event.Value.BeforeEvents
@@ -39,7 +39,7 @@ public sealed partial class PriorityEventManager<TMainType> : IEventManager<TMai
 				// First stage
 				foreach (string valueBeforeEvent in node.Value.Event.BeforeEvents)
 				{
-					if (!cachedEntryEvents.Events.TryGetValue(valueBeforeEvent, out UnsafeLinkedList<EventData>.Node? newNode) ||
+					if (!cachedEntryEvents.Events.TryGetValue(valueBeforeEvent, out MLinkedList<EventData>.Node? newNode) ||
 					    !newNode!.Value.HasEvent) continue;
 
 					cachedEntryEvents.Events.InsertBefore(node, newNode);
@@ -78,15 +78,15 @@ public sealed partial class PriorityEventManager<TMainType> : IEventManager<TMai
 			Method = method,
 			BeforeEvents = beforeEvents ?? Array.Empty<string>(),
 			AfterEvents = afterEvents is null
-				? Array.Empty<(UnsafeLinkedList<UnsafeLinkedList<EventData>.Node> List,
-					UnsafeLinkedList<UnsafeLinkedList<EventData>.Node>.Node Node)>()
-				: new (UnsafeLinkedList<UnsafeLinkedList<EventData>.Node> List,
-					UnsafeLinkedList<UnsafeLinkedList<EventData>.Node>.Node Node)[afterEvents.Length]
+				? Array.Empty<(MLinkedList<MLinkedList<EventData>.Node> List,
+					MLinkedList<MLinkedList<EventData>.Node>.Node Node)>()
+				: new (MLinkedList<MLinkedList<EventData>.Node> List,
+					MLinkedList<MLinkedList<EventData>.Node>.Node Node)[afterEvents.Length]
 		};
 		if (!_events.TryGetValue(entryIdentifier, out var cacheEntryEvents))
 			_events.Add(entryIdentifier, cacheEntryEvents = new CachedEntryEvents());
 
-		if (!cacheEntryEvents.Events.TryGetValue(eventIdentifier, out UnsafeLinkedList<EventData>.Node? node))
+		if (!cacheEntryEvents.Events.TryGetValue(eventIdentifier, out MLinkedList<EventData>.Node? node))
 			node = cacheEntryEvents.Events.Add(eventIdentifier, new EventData());
 
 		if (node!.Value.HasEvent)
@@ -102,7 +102,7 @@ public sealed partial class PriorityEventManager<TMainType> : IEventManager<TMai
 			if (!cacheEntryEvents.Events.TryGetValue(afterEventName, out node))
 				node = cacheEntryEvents.Events.Add(afterEventName, new EventData());
 
-			var newNode = new UnsafeLinkedList<UnsafeLinkedList<EventData>.Node>.Node(node!);
+			var newNode = new MLinkedList<MLinkedList<EventData>.Node>.Node(node!);
 			node!.Value.AfterAsBefore.AddLast(newNode);
 			@event.AfterEvents[index] = (node.Value.AfterAsBefore, newNode);
 		}
@@ -113,7 +113,7 @@ public sealed partial class PriorityEventManager<TMainType> : IEventManager<TMai
 		using var writeLock = _lock.WriteLock();
 		if (!_events.TryGetValue(entryIdentifier, out var cachedEntryEvents))
 			return false;
-		if (!cachedEntryEvents.Events.TryGetValue(eventIdentifier, out UnsafeLinkedList<EventData>.Node? node))
+		if (!cachedEntryEvents.Events.TryGetValue(eventIdentifier, out MLinkedList<EventData>.Node? node))
 			return false;
 
 		if (!node!.Value.HasEvent) return false;

@@ -1,24 +1,24 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 
-namespace Core.Registries.Collections.OrderedLiDictionaryAPI;
+namespace Core.Registries.Collections;
 
 public class OrderedLiDictionary<TKey, TValue>
 {
 	private readonly List<TValue?> _entries;
-	private readonly PooledDictionary<TKey, int> _indexList;
+	private readonly MDictionary<TKey, int> _indexList;
 	private readonly Queue<int> _unRegisteredIndexes = new();
 
 	public OrderedLiDictionary(IEqualityComparer<TKey> comparer) =>
-		(_entries, _indexList) = (new List<TValue?>(), new PooledDictionary<TKey, int>(comparer));
+		(_entries, _indexList) = (new List<TValue?>(), new MDictionary<TKey, int>(comparer));
 
 	public OrderedLiDictionary(int capacity, IEqualityComparer<TKey> comparer) =>
-		(_entries, _indexList) = (new List<TValue?>(capacity), new PooledDictionary<TKey, int>(capacity, comparer));
+		(_entries, _indexList) = (new List<TValue?>(capacity), new MDictionary<TKey, int>(capacity, comparer));
 
-	public OrderedLiDictionary(PooledDictionary<TKey, int> sharedPool) =>
+	public OrderedLiDictionary(MDictionary<TKey, int> sharedPool) =>
 		(_entries, _indexList) = (new List<TValue?>(), sharedPool);
 
-	public OrderedLiDictionary(PooledDictionary<TKey, int> sharedPool, int capacity) =>
+	public OrderedLiDictionary(MDictionary<TKey, int> sharedPool, int capacity) =>
 		(_entries, _indexList) = (new List<TValue?>(capacity), sharedPool);
 
 	public int Count => _indexList.Count;
@@ -96,5 +96,5 @@ public class OrderedLiDictionary<TKey, TValue>
 	}
 
 	public List<TValue?>.Enumerator GetEnumerator() => _entries.GetEnumerator();
-	public PooledDictionary<TKey, int>.Enumerator GetDictEnumerator() => _indexList.GetEnumerator();
+	public MDictionary<TKey, int>.Enumerator GetDictEnumerator() => _indexList.GetEnumerator();
 }

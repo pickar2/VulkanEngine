@@ -1,43 +1,42 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Core.Registries.Collections.UnsafeLinkedListAPI;
 
-namespace Core.Registries.Collections.OrderedLiLiDictionaryAPI;
+namespace Core.Registries.Collections;
 
 public class OrderedLiLiDictionary<TKey, TValue>
 {
-	private readonly UnsafeLinkedList<TValue> _entries;
-	private readonly PooledDictionary<TKey, UnsafeLinkedList<TValue>.Node> _indexList;
+	private readonly MLinkedList<TValue> _entries;
+	private readonly MDictionary<TKey, MLinkedList<TValue>.Node> _indexList;
 
 	public OrderedLiLiDictionary(IEqualityComparer<TKey> comparer) =>
-		(_entries, _indexList) = (new UnsafeLinkedList<TValue>(), new PooledDictionary<TKey, UnsafeLinkedList<TValue>.Node>(comparer));
+		(_entries, _indexList) = (new MLinkedList<TValue>(), new MDictionary<TKey, MLinkedList<TValue>.Node>(comparer));
 
 	public int Count => _indexList.Count;
 	public bool IsEmpty => _entries.IsEmpty;
 
-	public UnsafeLinkedList<TValue>.Node Add(in TKey key, in TValue entry)
+	public MLinkedList<TValue>.Node Add(in TKey key, in TValue entry)
 	{
-		var node = new UnsafeLinkedList<TValue>.Node(entry);
+		var node = new MLinkedList<TValue>.Node(entry);
 		if (!_indexList.TryAdd(key, node)) throw new ArgumentException();
 		_entries.AddLast(node);
 
 		return node;
 	}
 
-	public void InsertBefore(UnsafeLinkedList<TValue>.Node node, UnsafeLinkedList<TValue>.Node newNode)
+	public void InsertBefore(MLinkedList<TValue>.Node node, MLinkedList<TValue>.Node newNode)
 	{
 		_entries.Remove(newNode);
 		_entries.AddBefore(node, newNode);
 	}
 
-	public void InsertAfter(UnsafeLinkedList<TValue>.Node node, UnsafeLinkedList<TValue>.Node newNode)
+	public void InsertAfter(MLinkedList<TValue>.Node node, MLinkedList<TValue>.Node newNode)
 	{
 		_entries.Remove(newNode);
 		_entries.AddAfter(node, newNode);
 	}
 
-	public bool TryGetValue(in TKey key, out UnsafeLinkedList<TValue>.Node? node) =>
+	public bool TryGetValue(in TKey key, out MLinkedList<TValue>.Node? node) =>
 		_indexList.TryGetValue(key, out node);
 
 	public bool TryGetValue(in TKey key, out TValue? node)
@@ -78,6 +77,6 @@ public class OrderedLiLiDictionary<TKey, TValue>
 	public TValue? FirstValueOrDefault() => _entries.Head is null ? default : _entries.Head.Value;
 	public TKey FirstKeyOrDefault() => _indexList.FirstOrDefault().Key;
 
-	public UnsafeLinkedList<TValue>.UnsafeEnumerator GetEnumerator() => _entries.GetEnumerator();
-	public PooledDictionary<TKey, UnsafeLinkedList<TValue>.Node>.Enumerator GetDictEnumerator() => _indexList.GetEnumerator();
+	public MLinkedList<TValue>.UnsafeEnumerator GetEnumerator() => _entries.GetEnumerator();
+	public MDictionary<TKey, MLinkedList<TValue>.Node>.Enumerator GetDictEnumerator() => _indexList.GetEnumerator();
 }

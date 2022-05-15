@@ -2,6 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Buffers;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using Core.Registries.Collections.Comparers;
+using Core.Registries.Collections.DebugViews;
+using Core.Serializer.Entities;
+using Core.Serializer.Entities.MapperWorkers;
+
 namespace Core.Registries.Collections.Pooled;
 
 /// <summary>
@@ -36,16 +47,16 @@ namespace Core.Registries.Collections.Pooled;
 ///     the same time.
 /// </remarks>
 /// <typeparam name="T"></typeparam>
-/*[DebuggerTypeProxy(typeof(ICollectionDebugView<>))]
+[DebuggerTypeProxy(typeof(ICollectionDebugView<>))]
 [DebuggerDisplay("Count = {Count}")]
 [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "By design")]
 [Serializable]
-public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDisposable
+public class MHashSet<T> : ISet<T>, IReadOnlyCollection<T>, IDisposable
 {
 	// store lower 31 bits of hash code
 	private const int Lower31BitMask = 0x7FFFFFFF;
 
-	// cutoff point, above which we won't do stackallocs. This corresponds to 100 integers.
+	// cutoff point, above which we won't do stackalloc. This corresponds to 100 integers.
 	private const int StackAllocThreshold = 100;
 
 	// when constructing a hashset from an existing collection, it may contain duplicates, 
@@ -61,9 +72,9 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 	// private const string ComparerName = "Comparer"; // Do not rename (binary serialization)
 	// private const string VersionName = "Version"; // Do not rename (binary serialization)
 
-	private static readonly ArrayPool<int> s_bucketPool = ArrayPool<int>.Shared;
-	private static readonly ArrayPool<Slot> s_slotPool = ArrayPool<Slot>.Shared;
-	private readonly bool _clearOnFree;
+	// ReSharper disable once StaticMemberInGenericType
+	private static readonly ArrayPool<int> SBucketPool = ArrayPool<int>.Shared;
+	private static readonly ArrayPool<Slot> SSlotPool = ArrayPool<Slot>.Shared;
 
 	// WARNING:
 	// It's important that the number of buckets be prime, and these arrays could exceed
@@ -71,117 +82,139 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 	// things will happen.
 	// Alternatively, use the private properties Buckets and Slots, which slice the
 	// arrays down to the correct length.
-	private int[] _buckets;
+	private int[]? _buckets;
 
 	private int _freeList;
 	private int _lastIndex;
-
-	private SerializationInfo _siInfo; // temporary variable needed during deserialization
 	private int _size;
-	private Slot[] _slots;
+	private Slot[]? _slots;
 	private int _version;
 
-	protected PooledSet(Mapper mapper)
+	protected MHashSet(Mapper mapper)
 	{
-		
-	}
-	
-	protected PooledSet(Patcher patcher) {}
-
-	/// <summary>
-	///     Deserialization callback.
-	/// </summary>
-	public virtual void OnDeserialization(object sender)
-	{
-		if (_siInfo == null)
+		mapper.MapField(ref _size);
+		if (mapper.OperationType == OperationType.Serialize)
 		{
-			// It might be necessary to call OnDeserialization from a container if the 
-			// container object also implements OnDeserialization. We can return immediately
-			// if this function is called twice. Note we set _siInfo to null at the end of this method.
-			return;
-		}
-
-		int capacity = _siInfo.GetInt32(CapacityName);
-		Comparer = (IEqualityComparer<T>) _siInfo.GetValue(ComparerName, typeof(IEqualityComparer<T>));
-		_freeList = -1;
-
-		if (capacity != 0)
-		{
-			Initialize(capacity);
-
-			var array = (T[]) _siInfo.GetValue(ElementsName, typeof(T[]));
-
-			if (array == null)
+			var type = Comparer!.GetType();
+			mapper.MapField(ref type);
+			mapper.MapProperty(Count);
+			int numCopied = 0;
+			for (int index = 0; index < _lastIndex && numCopied < Count; index++)
 			{
-				ThrowHelper.ThrowSerializationException(ExceptionResource.Serialization_MissingKeys);
-			}
-
-			// there are no resizes here because we already set capacity above
-			for (int i = 0; i < array.Length; i++)
-			{
-				AddIfNotPresent(array[i]);
+				if (_slots![index].HashCode < 0) continue;
+				mapper.MapField(ref _slots[index].Value);
+				numCopied++;
 			}
 		}
 		else
 		{
-			_buckets = null;
+			Type type = default!;
+			mapper.MapField(ref type);
+			Comparer = (IEqualityComparer<T>) Activator.CreateInstance(type, true)!;
+			if (_size != 0)
+				Initialize(_size);
+
+			Count = mapper.MapProperty(Count);
+			T value = default!;
+			for (int index = 0; index < Count; index++)
+			{
+				mapper.MapField(ref value);
+				AddIfNotPresent(value);
+			}
 		}
 
-		_version = _siInfo.GetInt32(VersionName);
-		_siInfo = null;
+		mapper.MapField(ref _version);
 	}
+	
+#pragma warning disable CS8618
+	// ReSharper disable once UnusedParameter.Local
+	protected MHashSet(Patcher patcher) {}
+#pragma warning restore CS8618
+	
+	// public virtual void OnDeserialization(object sender)
+	// {
+	//
+	// 	int capacity = _siInfo.GetInt32(CapacityName);
+	// 	Comparer = (IEqualityComparer<T>) _siInfo.GetValue(ComparerName, typeof(IEqualityComparer<T>));
+	// 	_freeList = -1;
+	//
+	// 	if (capacity != 0)
+	// 	{
+	// 		Initialize(capacity);
+	//
+	// 		var array = (T[]) _siInfo.GetValue(ElementsName, typeof(T[]));
+	//
+	// 		if (array == null)
+	// 		{
+	// 			ThrowHelper.ThrowSerializationException(ExceptionResource.Serialization_MissingKeys);
+	// 		}
+	//
+	// 		// there are no resizes here because we already set capacity above
+	// 		for (int i = 0; i < array.Length; i++)
+	// 		{
+	// 			AddIfNotPresent(array[i]);
+	// 		}
+	// 	}
+	// 	else
+	// 	{
+	// 		_buckets = null;
+	// 	}
+	//
+	// 	_version = _siInfo.GetInt32(VersionName);
+	// 	_siInfo = null;
+	// }
 	
 	/// <summary>
 	///     Gets object data for serialization.
 	/// </summary>
-	public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
-	{
-		if (info == null)
-		{
-			ThrowHelper.ThrowArgumentNullException(ExceptionArgument.info);
-		}
+	// public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
+	// {
+	// 	if (info == null)
+	// 	{
+	// 		ThrowHelper.ThrowArgumentNullException(ExceptionArgument.info);
+	// 	}
+	//
+	// 	info.AddValue(VersionName, _version); // need to serialize version to avoid problems with serializing while enumerating
+	// 	info.AddValue(ComparerName, Comparer, typeof(IEqualityComparer<T>));
+	// 	info.AddValue(CapacityName, _buckets == null ? 0 : _size);
+	//
+	// 	if (_buckets != null)
+	// 	{
+	// 		var array = new T[Count];
+	// 		CopyTo(array);
+	// 		info.AddValue(ElementsName, array, typeof(T[]));
+	// 	}
+	// }
 
-		info.AddValue(VersionName, _version); // need to serialize version to avoid problems with serializing while enumerating
-		info.AddValue(ComparerName, Comparer, typeof(IEqualityComparer<T>));
-		info.AddValue(CapacityName, _buckets == null ? 0 : _size);
-
-		if (_buckets != null)
-		{
-			var array = new T[Count];
-			CopyTo(array);
-			info.AddValue(ElementsName, array, typeof(T[]));
-		}
-	}
-
-	// used for set checking operations (using enumerables) that rely on counting
+	// used for set checking operations (using enumerable) that rely on counting
 	internal struct ElementCount
 	{
-		internal int uniqueCount;
-		internal int unfoundCount;
+		internal int UniqueCount;
+		internal int UnFoundCount;
 	}
 
 	internal struct Slot
 	{
-		internal int hashCode; // Lower 31 bits of hash code, -1 if unused
-		internal int next; // Index of next entry, -1 if last
-		internal T value;
+		internal int HashCode; // Lower 31 bits of hash code, -1 if unused
+		internal int Next; // Index of next entry, -1 if last
+		internal T Value;
 	}
 
 	/// <summary>
-	///     Enumerates the PooledSet.
+	///     Enumerates the MSet.
 	/// </summary>
-	public struct Enumerator : IEnumerator<T>, IEnumerator
+	public struct Enumerator : IEnumerator<T>
 	{
-		private readonly PooledSet<T> _set;
+		private readonly MHashSet<T> _hashSet;
 		private int _index;
 		private readonly int _version;
 
-		internal Enumerator(PooledSet<T> set)
+		internal Enumerator(MHashSet<T> hashSet)
 		{
-			_set = set;
+			_hashSet = hashSet;
 			_index = 0;
-			_version = set._version;
-			Current = default;
+			_version = hashSet._version;
+			_current = default;
 		}
 
 		void IDisposable.Dispose() { }
@@ -191,16 +224,13 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 		/// </summary>
 		public bool MoveNext()
 		{
-			if (_version != _set._version)
+			_version.ThrowIfNotEquals(_hashSet._version);
+				
+			while (_index < _hashSet._lastIndex)
 			{
-				ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
-			}
-
-			while (_index < _set._lastIndex)
-			{
-				if (_set._slots[_index].hashCode >= 0)
+				if (_hashSet._slots![_index].HashCode >= 0)
 				{
-					Current = _set._slots[_index].value;
+					_current = _hashSet._slots[_index].Value;
 					_index++;
 					return true;
 				}
@@ -208,62 +238,43 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 				_index++;
 			}
 
-			_index = _set._lastIndex + 1;
-			Current = default;
+			_index = _hashSet._lastIndex + 1;
+			_current = default;
 			return false;
 		}
 
-		/// <summary>
-		///     Gets the current element in the set.
-		/// </summary>
-		public T Current { get; private set; }
+		private T? _current;
+		public readonly T Current => _current ?? throw new ArgumentNullException().AsExpectedException();
 
-		object IEnumerator.Current
+		readonly object IEnumerator.Current
 		{
 			get
 			{
-				if (_index == 0 || _index == _set._lastIndex + 1)
-				{
-					ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen();
-				}
-
-				return Current;
+				_index.ThrowIfEquals(0)
+					.ThrowIfEquals(_hashSet._lastIndex + 1);
+				return Current!;
 			}
 		}
 
 		void IEnumerator.Reset()
 		{
-			if (_version != _set._version)
-			{
-				ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
-			}
-
+			_version.ThrowIfNotEquals(_hashSet._version);
 			_index = 0;
-			Current = default;
+			_current = default;
 		}
 	}
 
 	#region Constructors
 
 	/// <summary>
-	///     Creates a new instance of PooledSet.
+	///     Creates a new instance of MSet.
 	/// </summary>
-	public PooledSet() : this(ClearMode.Auto, EqualityComparer<T>.Default) { }
+	public MHashSet() : this(EqualityComparer<T>.Default) { }
 
 	/// <summary>
-	///     Creates a new instance of PooledSet.
+	///     Creates a new instance of MSet.
 	/// </summary>
-	public PooledSet(ClearMode clearMode) : this(clearMode, EqualityComparer<T>.Default) { }
-
-	/// <summary>
-	///     Creates a new instance of PooledSet.
-	/// </summary>
-	public PooledSet(IEqualityComparer<T> comparer) : this(ClearMode.Auto, comparer) { }
-
-	/// <summary>
-	///     Creates a new instance of PooledSet.
-	/// </summary>
-	public PooledSet(ClearMode clearMode, IEqualityComparer<T> comparer)
+	public MHashSet(IEqualityComparer<T>? comparer)
 	{
 		Comparer = comparer ?? EqualityComparer<T>.Default;
 		_lastIndex = 0;
@@ -271,73 +282,39 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 		_freeList = -1;
 		_version = 0;
 		_size = 0;
-		_clearOnFree = ShouldClear(clearMode);
 	}
 
 	/// <summary>
-	///     Creates a new instance of PooledSet.
+	///     Creates a new instance of MSet.
 	/// </summary>
-	public PooledSet(int capacity) : this(capacity, ClearMode.Auto, EqualityComparer<T>.Default) { }
+	public MHashSet(int capacity) : this(capacity, EqualityComparer<T>.Default) { }
 
 	/// <summary>
-	///     Creates a new instance of PooledSet.
+	///     Creates a new instance of MSet.
 	/// </summary>
-	public PooledSet(int capacity, ClearMode clearMode) : this(capacity, clearMode, EqualityComparer<T>.Default) { }
-
-	/// <summary>
-	///     Creates a new instance of PooledSet.
-	/// </summary>
-	public PooledSet(int capacity, IEqualityComparer<T> comparer) : this(capacity, ClearMode.Auto, comparer) { }
-
-	/// <summary>
-	///     Creates a new instance of PooledSet.
-	/// </summary>
-	public PooledSet(int capacity, ClearMode clearMode, IEqualityComparer<T> comparer) : this(clearMode, comparer)
+	public MHashSet(int capacity, IEqualityComparer<T> comparer) : this(comparer)
 	{
-		if (capacity < 0)
-		{
-			ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
-		}
-
-		if (capacity > 0)
-		{
-			Initialize(capacity);
-		}
+		if (capacity.ThrowIfNegative() <= 0) return;
+		Initialize(capacity);
 	}
 
 	/// <summary>
-	///     Creates a new instance of PooledSet.
+	///     Creates a new instance of MSet.
 	/// </summary>
-	public PooledSet(IEnumerable<T> collection)
-		: this(collection, ClearMode.Auto,
-			collection is PooledSet<T> ps ? ps.Comparer : collection is HashSet<T> hs ? hs.Comparer : EqualityComparer<T>.Default) { }
-
-	/// <summary>
-	///     Creates a new instance of PooledSet.
-	/// </summary>
-	public PooledSet(IEnumerable<T> collection, ClearMode clearMode)
-		: this(collection, clearMode,
-			collection is PooledSet<T> ps ? ps.Comparer : collection is HashSet<T> hs ? hs.Comparer : EqualityComparer<T>.Default) { }
-
-	/// <summary>
-	///     Creates a new instance of PooledSet.
-	/// </summary>
-	public PooledSet(IEnumerable<T> collection, IEqualityComparer<T> comparer)
-		: this(collection, ClearMode.Auto, comparer) { }
-
-	/// <summary>
-	///     Implementation Notes:
-	///     Since resizes are relatively expensive (require rehashing), this attempts to minimize
-	///     the need to resize by setting the initial capacity based on size of collection.
-	/// </summary>
-	public PooledSet(IEnumerable<T> collection, ClearMode clearMode, IEqualityComparer<T> comparer) : this(clearMode, comparer)
-	{
-		if (collection == null)
+	public MHashSet(IEnumerable<T> collection)
+		: this(collection, collection switch
 		{
-			ThrowHelper.ThrowArgumentNullException(ExceptionArgument.collection);
-		}
+			MHashSet<T> ps => ps.Comparer,
+			HashSet<T> hs => hs.Comparer,
+			_ => EqualityComparer<T>.Default
+		}) { }
 
-		if (collection is PooledSet<T> otherAsSet && AreEqualityComparersEqual(this, otherAsSet))
+	/// <summary>
+	///     Creates a new instance of MSet.
+	/// </summary>
+	public MHashSet(IEnumerable<T> collection, IEqualityComparer<T> comparer) : this(comparer)
+	{
+		if (collection is MHashSet<T> otherAsSet && AreEqualityComparersEqual(this, otherAsSet))
 		{
 			CopyFrom(otherAsSet);
 		}
@@ -359,75 +336,37 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 	}
 
 	/// <summary>
-	///     Creates a new instance of PooledSet.
+	///     Creates a new instance of MSet.
 	/// </summary>
-	public PooledSet(T[] array) : this(array.AsSpan(), ClearMode.Auto, null) { }
+	public MHashSet(T[] array) : this(array.AsSpan(), EqualityComparer<T>.Default) { }
 
 	/// <summary>
-	///     Creates a new instance of PooledSet.
+	///     Creates a new instance of MSet.
 	/// </summary>
-	public PooledSet(T[] array, ClearMode clearMode) : this(array.AsSpan(), clearMode, null) { }
+	public MHashSet(T[] array, IEqualityComparer<T> comparer) : this(array.AsSpan(), comparer) { }
 
 	/// <summary>
-	///     Creates a new instance of PooledSet.
+	///     Creates a new instance of MSet.
 	/// </summary>
-	public PooledSet(T[] array, IEqualityComparer<T> comparer) : this(array.AsSpan(), ClearMode.Auto, comparer) { }
+	public MHashSet(ReadOnlySpan<T> span) : this(span, EqualityComparer<T>.Default) { }
 
 	/// <summary>
-	///     Creates a new instance of PooledSet.
+	///     Creates a new instance of MSet.
 	/// </summary>
-	public PooledSet(T[] array, ClearMode clearMode, IEqualityComparer<T> comparer) : this(array.AsSpan(), clearMode, comparer) { }
-
-	/// <summary>
-	///     Creates a new instance of PooledSet.
-	/// </summary>
-	public PooledSet(ReadOnlySpan<T> span) : this(span, ClearMode.Auto, null) { }
-
-	/// <summary>
-	///     Creates a new instance of PooledSet.
-	/// </summary>
-	public PooledSet(ReadOnlySpan<T> span, ClearMode clearMode) : this(span, clearMode, null) { }
-
-	/// <summary>
-	///     Creates a new instance of PooledSet.
-	/// </summary>
-	public PooledSet(ReadOnlySpan<T> span, IEqualityComparer<T> comparer) : this(span, ClearMode.Auto, comparer) { }
-
-	/// <summary>
-	///     Creates a new instance of PooledSet.
-	/// </summary>
-	public PooledSet(ReadOnlySpan<T> span, ClearMode clearMode, IEqualityComparer<T> comparer) : this(clearMode, comparer)
+	public MHashSet(ReadOnlySpan<T> span, IEqualityComparer<T> comparer) : this(comparer)
 	{
 		// to avoid excess resizes, first set size based on collection's count. Collection
 		// may contain duplicates, so call TrimExcess if resulting hashset is larger than
 		// threshold
 		Initialize(span.Length);
-
 		UnionWith(span);
 
-		if (Count > 0 && _size / Count > ShrinkThreshold)
-		{
-			TrimExcess();
-		}
-	}
-
-	/// <summary>
-	///     Creates a new instance of PooledSet.
-	/// </summary>
-#pragma warning disable IDE0060 // Remove unused parameter
-	protected PooledSet(SerializationInfo info, StreamingContext context)
-#pragma warning restore IDE0060
-	{
-		// We can't do anything with the keys and values until the entire graph has been 
-		// deserialized and we have a reasonable estimate that GetHashCode is not going to 
-		// fail.  For the time being, we'll just cache this.  The graph is not valid until 
-		// OnDeserialization has been called.
-		_siInfo = info;
+		if (Count > 0 && _size / Count > ShrinkThreshold) TrimExcess();
 	}
 
 	// Initializes the HashSet from another HashSet with the same element type and
 	// equality comparer.
-	private void CopyFrom(PooledSet<T> source)
+	private void CopyFrom(MHashSet<T> source)
 	{
 		int count = source.Count;
 		if (count == 0)
@@ -443,11 +382,11 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 
 		if (threshold >= capacity)
 		{
-			_buckets = s_bucketPool.Rent(capacity);
+			_buckets = SBucketPool.Rent(capacity);
 			Array.Clear(_buckets, 0, _buckets.Length);
-			Array.Copy(source._buckets, _buckets, capacity);
-			_slots = s_slotPool.Rent(capacity);
-			Array.Copy(source._slots, _slots, capacity);
+			Array.Copy(source._buckets!, _buckets, capacity);
+			_slots = SSlotPool.Rent(capacity);
+			Array.Copy(source._slots!, _slots, capacity);
 
 			_lastIndex = source._lastIndex;
 			_freeList = source._freeList;
@@ -460,12 +399,10 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 			int index = 0;
 			for (int i = 0; i < lastIndex; ++i)
 			{
-				int hashCode = slots[i].hashCode;
-				if (hashCode >= 0)
-				{
-					AddValue(index, hashCode, slots[i].value);
-					++index;
-				}
+				int hashCode = slots![i].HashCode;
+				if (hashCode < 0) continue;
+				AddValue(index, hashCode, slots[i].Value);
+				++index;
 			}
 
 			Debug.Assert(index == count);
@@ -495,12 +432,12 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 	{
 		if (_lastIndex > 0)
 		{
-			Debug.Assert(_buckets != null, "_buckets was null but _lastIndex > 0");
+			// Debug.Assert(_buckets != null, "_buckets was null but _lastIndex > 0");
 
 			// clear the elements so that the gc can reclaim the references.
 			// clear only up to _lastIndex for _slots 
-			Array.Clear(_slots, 0, _lastIndex);
-			Array.Clear(_buckets, 0, _buckets.Length);
+			Array.Clear(_slots.ThrowIfNullable(), 0, _lastIndex);
+			Array.Clear(_buckets.ThrowIfNullable(), 0, _buckets!.Length);
 			_lastIndex = 0;
 			Count = 0;
 			_freeList = -1;
@@ -516,27 +453,16 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 	/// <returns>true if item contained; false if not</returns>
 	public bool Contains(T item)
 	{
-		if (_buckets != null)
+		if (_buckets == null) return false;
+		int collisionCount = 0;
+		int hashCode = InternalGetHashCode(item);
+		var slots = _slots;
+		// see note at "HashSet" level describing why "- 1" appears in for loop
+		for (int i = _buckets[hashCode % _size] - 1; i >= 0; i = slots[i].Next)
 		{
-			int collisionCount = 0;
-			int hashCode = InternalGetHashCode(item);
-			var slots = _slots;
-			// see note at "HashSet" level describing why "- 1" appears in for loop
-			for (int i = _buckets[hashCode % _size] - 1; i >= 0; i = slots[i].next)
-			{
-				if (slots[i].hashCode == hashCode && Comparer.Equals(slots[i].value, item))
-				{
-					return true;
-				}
-
-				if (collisionCount >= _size)
-				{
-					// The chain of entries forms a loop, which means a concurrent update has happened.
-					ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
-				}
-
-				collisionCount++;
-			}
+			if (slots![i].HashCode == hashCode && Comparer.Equals(slots[i].Value, item)) return true;
+			// The chain of entries forms a loop, which means a concurrent update has happened.
+			collisionCount = collisionCount.ThrowIfGreaterOrEqualsThan(_size);
 		}
 
 		// either _buckets is null or wasn't found
@@ -558,59 +484,47 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 	/// <returns>true if removed; false if not (i.e. if the item wasn't in the HashSet)</returns>
 	public bool Remove(T item)
 	{
-		if (_buckets != null)
+		if (_buckets == null) return false;
+		int hashCode = InternalGetHashCode(item);
+		int bucket = hashCode % _size;
+		int last = -1;
+		int collisionCount = 0;
+		var slots = _slots!;
+		for (int i = _buckets[bucket] - 1; i >= 0; last = i, i = slots[i].Next)
 		{
-			int hashCode = InternalGetHashCode(item);
-			int bucket = hashCode % _size;
-			int last = -1;
-			int collisionCount = 0;
-			var slots = _slots;
-			for (int i = _buckets[bucket] - 1; i >= 0; last = i, i = slots[i].next)
+			if (slots[i].HashCode == hashCode && Comparer.Equals(slots[i].Value, item))
 			{
-				if (slots[i].hashCode == hashCode && Comparer.Equals(slots[i].value, item))
+				if (last < 0)
 				{
-					if (last < 0)
-					{
-						// first iteration; update buckets
-						_buckets[bucket] = slots[i].next + 1;
-					}
-					else
-					{
-						// subsequent iterations; update 'next' pointers
-						slots[last].next = slots[i].next;
-					}
-
-					slots[i].hashCode = -1;
-					if (_clearOnFree)
-					{
-						slots[i].value = default;
-					}
-
-					slots[i].next = _freeList;
-
-					Count--;
-					_version++;
-					if (Count == 0)
-					{
-						_lastIndex = 0;
-						_freeList = -1;
-					}
-					else
-					{
-						_freeList = i;
-					}
-
-					return true;
+					// first iteration; update buckets
+					_buckets[bucket] = slots[i].Next + 1;
+				}
+				else
+				{
+					// subsequent iterations; update 'next' pointers
+					slots[last].Next = slots[i].Next;
 				}
 
-				if (collisionCount >= _size)
+				slots[i].HashCode = -1;
+				slots[i].Next = _freeList;
+
+				Count--;
+				_version++;
+				if (Count == 0)
 				{
-					// The chain of entries forms a loop, which means a concurrent update has happened.
-					ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
+					_lastIndex = 0;
+					_freeList = -1;
+				}
+				else
+				{
+					_freeList = i;
 				}
 
-				collisionCount++;
+				return true;
 			}
+			
+			// The chain of entries forms a loop, which means a concurrent update has happened.
+			collisionCount = collisionCount.ThrowIfGreaterOrEqualsThan(_size);
 		}
 
 		// either _buckets is null or wasn't found
@@ -621,12 +535,6 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 	///     Number of elements in this set
 	/// </summary>
 	public int Count { get; private set; }
-
-	/// <summary>
-	///     Returns the ClearMode behavior for the collection, denoting whether values are
-	///     cleared from internal arrays before returning them to the pool.
-	/// </summary>
-	public ClearMode ClearMode => _clearOnFree ? ClearMode.Always : ClearMode.Never;
 
 	/// <summary>
 	///     Whether this is readonly
@@ -654,7 +562,7 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 	#region HashSet methods
 
 	/// <summary>
-	///     Add item to this PooledSet. Returns bool indicating whether item was added (won't be
+	///     Add item to this MSet. Returns bool indicating whether item was added (won't be
 	///     added if already present)
 	/// </summary>
 	/// <param name="item"></param>
@@ -674,14 +582,14 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 	///     a value that has more complete data than the value you currently have, although their
 	///     comparer functions indicate they are equal.
 	/// </remarks>
-	public bool TryGetValue(T equalValue, out T actualValue)
+	public bool TryGetValue(T equalValue, out T? actualValue)
 	{
 		if (_buckets != null)
 		{
 			int i = InternalIndexOf(equalValue);
 			if (i >= 0)
 			{
-				actualValue = _slots[i].value;
+				actualValue = _slots![i].Value;
 				return true;
 			}
 		}
@@ -701,26 +609,18 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 	/// <param name="other">enumerable with items to add</param>
 	public void UnionWith(IEnumerable<T> other)
 	{
-		if (other == null)
-		{
-			ThrowHelper.ThrowArgumentNullException(ExceptionArgument.other);
-		}
-
 		foreach (var item in other)
-		{
 			AddIfNotPresent(item);
-		}
 	}
 
 	/// <summary>
-	///     Take the union of this PooledSet with other. Modifies this set.
+	///     Take the union of this MSet with other. Modifies this set.
 	/// </summary>
 	/// <param name="other"></param>
 	public void UnionWith(T[] other) => UnionWith((ReadOnlySpan<T>) other);
 
-
 	/// <summary>
-	///     Take the union of this PooledSet with other. Modifies this set.
+	///     Take the union of this MSet with other. Modifies this set.
 	/// </summary>
 	/// <param name="other">enumerable with items to add</param>
 	public void UnionWith(ReadOnlySpan<T> other)
@@ -746,22 +646,11 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 	/// <param name="other">enumerable with items to add </param>
 	public void IntersectWith(IEnumerable<T> other)
 	{
-		if (other == null)
-		{
-			ThrowHelper.ThrowArgumentNullException(ExceptionArgument.other);
-		}
-
 		// intersection of anything with empty set is empty set, so return if count is 0
-		if (Count == 0)
-		{
-			return;
-		}
+		if (Count == 0) return;
 
 		// set intersecting with itself is the same set
-		if (other == this)
-		{
-			return;
-		}
+		if (Equals(other, this)) return;
 
 		// if other is empty, intersection is empty set; remove all elements and we're done
 		// can only figure this out if implements ICollection<T>. (IEnumerable<T> has no count)
@@ -775,7 +664,7 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 
 			// faster if other is a hashset using same equality comparer; so check 
 			// that other is a hashset using the same equality comparer.
-			if (other is PooledSet<T> otherAsSet && AreEqualityComparersEqual(this, otherAsSet))
+			if (other is MHashSet<T> otherAsSet && AreEqualityComparersEqual(this, otherAsSet))
 			{
 				IntersectWithHashSetWithSameEC(otherAsSet);
 				return;
@@ -839,11 +728,6 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 	/// <param name="other">enumerable with items to remove</param>
 	public void ExceptWith(IEnumerable<T> other)
 	{
-		if (other == null)
-		{
-			ThrowHelper.ThrowArgumentNullException(ExceptionArgument.other);
-		}
-
 		// this is already the empty set; return
 		if (Count == 0)
 		{
@@ -851,7 +735,7 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 		}
 
 		// special case if other is this; a set minus itself is the empty set
-		if (other == this)
+		if (Equals(other, this))
 		{
 			Clear();
 			return;
@@ -859,9 +743,7 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 
 		// remove every element in other from this
 		foreach (var element in other)
-		{
 			Remove(element);
-		}
 	}
 
 	/// <summary>
@@ -876,11 +758,6 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 	/// <param name="other">enumerable with items to remove</param>
 	public void ExceptWith(ReadOnlySpan<T> other)
 	{
-		if (other == null)
-		{
-			ThrowHelper.ThrowArgumentNullException(ExceptionArgument.other);
-		}
-
 		// this is already the empty set; return
 		if (Count == 0)
 		{
@@ -900,11 +777,6 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 	/// <param name="other">enumerable with items to XOR</param>
 	public void SymmetricExceptWith(IEnumerable<T> other)
 	{
-		if (other == null)
-		{
-			ThrowHelper.ThrowArgumentNullException(ExceptionArgument.other);
-		}
-
 		// if set is empty, then symmetric difference is other
 		if (Count == 0)
 		{
@@ -913,28 +785,27 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 		}
 
 		// special case this; the symmetric difference of a set with itself is the empty set
-		if (other == this)
+		if (Equals(other, this))
 		{
 			Clear();
 			return;
 		}
 
-		// If other is a HashSet, it has unique elements according to its equality comparer,
-		// but if they're using different equality comparers, then assumption of uniqueness
-		// will fail. So first check if other is a hashset using the same equality comparer;
-		// symmetric except is a lot faster and avoids bit array allocations if we can assume
-		// uniqueness
-		if (other is PooledSet<T> otherAsSet && AreEqualityComparersEqual(this, otherAsSet))
+		switch (other)
 		{
-			SymmetricExceptWithUniqueHashSet(otherAsSet);
-		}
-		else if (other is HashSet<T> otherAsHs && AreEqualityComparersEqual(this, otherAsHs))
-		{
-			SymmetricExceptWithUniqueHashSet(otherAsHs);
-		}
-		else
-		{
-			SymmetricExceptWithEnumerable(other);
+			// If other is a HashSet, it has unique elements according to its equality comparer,
+			// but if they're using different equality comparers, then assumption of uniqueness
+			// will fail. So first check if other is a hashset using the same equality comparer;
+			// symmetric except is a lot faster and avoids bit array allocations if we can assume
+			// uniqueness
+			case MHashSet<T> otherAsSet when AreEqualityComparersEqual(this, otherAsSet):
+				break;
+			case HashSet<T> otherAsHs when AreEqualityComparersEqual(this, otherAsHs):
+				SymmetricExceptWithUniqueHashSet(otherAsHs);
+				break;
+			default:
+				SymmetricExceptWithEnumerable(other);
+				break;
 		}
 	}
 
@@ -976,53 +847,38 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 	/// <returns>true if this is a subset of other; false if not</returns>
 	public bool IsSubsetOf(IEnumerable<T> other)
 	{
-		if (other == null)
-		{
-			ThrowHelper.ThrowArgumentNullException(ExceptionArgument.other);
-		}
-
 		// The empty set is a subset of any set
-		if (Count == 0)
-		{
-			return true;
-		}
+		if (Count == 0) return true;
 
 		// Set is always a subset of itself
-		if (other == this)
-		{
-			return true;
-		}
+		if (Equals(other, this)) return true;
 
-		// faster if other has unique elements according to this equality comparer; so check 
-		// that other is a hashset using the same equality comparer.
-		if (other is PooledSet<T> otherAsSet && AreEqualityComparersEqual(this, otherAsSet))
+		switch (other)
 		{
-			// if this has more elements then it can't be a subset
-			if (Count > otherAsSet.Count)
+			// faster if other has unique elements according to this equality comparer; so check 
+			// that other is a hashset using the same equality comparer.
+			case MHashSet<T> otherAsSet when AreEqualityComparersEqual(this, otherAsSet):
 			{
-				return false;
+				// if this has more elements then it can't be a subset
+				return Count <= otherAsSet.Count && IsSubsetOfHashSetWithSameEC(otherAsSet);
+
+				// already checked that we're using same equality comparer. simply check that 
+				// each element in this is contained in other.
 			}
-
-			// already checked that we're using same equality comparer. simply check that 
-			// each element in this is contained in other.
-			return IsSubsetOfHashSetWithSameEC(otherAsSet);
-		}
-
-		if (other is HashSet<T> otherAsHs && AreEqualityComparersEqual(this, otherAsHs))
-		{
-			// if this has more elements then it can't be a subset
-			if (Count > otherAsHs.Count)
+			case HashSet<T> otherAsHs when AreEqualityComparersEqual(this, otherAsHs):
 			{
-				return false;
+				// if this has more elements then it can't be a subset
+				return Count <= otherAsHs.Count && IsSubsetOfHashSetWithSameEC(otherAsHs);
+
+				// already checked that we're using same equality comparer. simply check that 
+				// each element in this is contained in other.
 			}
-
-			// already checked that we're using same equality comparer. simply check that 
-			// each element in this is contained in other.
-			return IsSubsetOfHashSetWithSameEC(otherAsHs);
+			default:
+			{
+				var result = CheckUniqueAndUnFoundElements(other, false);
+				return result.UniqueCount == Count && result.UnFoundCount >= 0;
+			}
 		}
-
-		var result = CheckUniqueAndUnfoundElements(other, false);
-		return result.uniqueCount == Count && result.unfoundCount >= 0;
 	}
 
 	/// <summary>
@@ -1040,13 +896,10 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 	public bool IsSubsetOf(ReadOnlySpan<T> other)
 	{
 		// The empty set is a subset of any set
-		if (Count == 0)
-		{
-			return true;
-		}
+		if (Count == 0) return true;
 
-		var result = CheckUniqueAndUnfoundElements(other, false);
-		return result.uniqueCount == Count && result.unfoundCount >= 0;
+		var result = CheckUniqueAndUnFoundElements(other, false);
+		return result.UniqueCount == Count && result.UnFoundCount >= 0;
 	}
 
 	/// <summary>
@@ -1066,17 +919,8 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 	/// <returns>true if this is a proper subset of other; false if not</returns>
 	public bool IsProperSubsetOf(IEnumerable<T> other)
 	{
-		if (other == null)
-		{
-			ThrowHelper.ThrowArgumentNullException(ExceptionArgument.other);
-		}
-
 		// no set is a proper subset of itself.
-		if (other == this)
-		{
-			return false;
-		}
-
+		if (Equals(other, this)) return false;
 		if (other is ICollection<T> otherAsCollection)
 		{
 			// no set is a proper subset of an empty set
@@ -1091,35 +935,27 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 				return otherAsCollection.Count > 0;
 			}
 
-			// faster if other is a hashset (and we're using same equality comparer)
-			if (other is PooledSet<T> otherAsSet && AreEqualityComparersEqual(this, otherAsSet))
+			switch (other)
 			{
-				if (Count >= otherAsSet.Count)
+				// faster if other is a hashset (and we're using same equality comparer)
+				case MHashSet<T> otherAsSet when AreEqualityComparersEqual(this, otherAsSet):
 				{
-					return false;
+					// this has strictly less than number of items in other, so the following
+					// check suffices for proper subset.
+					return Count < otherAsSet.Count && IsSubsetOfHashSetWithSameEC(otherAsSet);
 				}
-
-				// this has strictly less than number of items in other, so the following
-				// check suffices for proper subset.
-				return IsSubsetOfHashSetWithSameEC(otherAsSet);
-			}
-
-			if (other is HashSet<T> otherAsHs && AreEqualityComparersEqual(this, otherAsHs))
-			{
-				// if this has more elements then it can't be a subset
-				if (Count > otherAsHs.Count)
+				case HashSet<T> otherAsHs when AreEqualityComparersEqual(this, otherAsHs):
 				{
-					return false;
+					// if this has more elements then it can't be a subset
+					// already checked that we're using same equality comparer. simply check that 
+					// each element in this is contained in other.
+					return Count <= otherAsHs.Count && IsSubsetOfHashSetWithSameEC(otherAsHs);
 				}
-
-				// already checked that we're using same equality comparer. simply check that 
-				// each element in this is contained in other.
-				return IsSubsetOfHashSetWithSameEC(otherAsHs);
 			}
 		}
 
-		var result = CheckUniqueAndUnfoundElements(other, false);
-		return result.uniqueCount == Count && result.unfoundCount > 0;
+		var result = CheckUniqueAndUnFoundElements(other, false);
+		return result.UniqueCount == Count && result.UnFoundCount > 0;
 	}
 
 	/// <summary>
@@ -1160,8 +996,8 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 			return other.Length > 0;
 		}
 
-		var result = CheckUniqueAndUnfoundElements(other, false);
-		return result.uniqueCount == Count && result.unfoundCount > 0;
+		var result = CheckUniqueAndUnFoundElements(other, false);
+		return result.UniqueCount == Count && result.UnFoundCount > 0;
 	}
 
 	/// <summary>
@@ -1179,46 +1015,29 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 	/// <returns>true if this is a superset of other; false if not</returns>
 	public bool IsSupersetOf(IEnumerable<T> other)
 	{
-		if (other == null)
-		{
-			ThrowHelper.ThrowArgumentNullException(ExceptionArgument.other);
-		}
-
 		// a set is always a superset of itself
-		if (other == this)
-		{
-			return true;
-		}
+		if (Equals(other, this)) return true;
 
-		// try to fall out early based on counts
-		if (other is ICollection<T> otherAsCollection)
+		switch (other)
 		{
-			// if other is the empty set then this is a superset
-			if (otherAsCollection.Count == 0)
-			{
+			// try to fall out early based on counts
+			case ICollection<T> {Count: 0}:
 				return true;
-			}
-
-			// try to compare based on counts alone if other is a hashset with
-			// same equality comparer
-			if (other is PooledSet<T> otherAsSet && AreEqualityComparersEqual(this, otherAsSet))
-			{
-				if (otherAsSet.Count > Count)
+			case ICollection<T>:
+				switch (other)
 				{
-					return false;
+					// try to compare based on counts alone if other is a hashset with
+					// same equality comparer
+					case MHashSet<T> otherAsSet when AreEqualityComparersEqual(this, otherAsSet) && otherAsSet.Count > Count:
+					case HashSet<T> otherAsHs when AreEqualityComparersEqual(this, otherAsHs) && otherAsHs.Count > Count:
+						return false;
+					default:
+						return ContainsAllElements(other);
 				}
-			}
-
-			if (other is HashSet<T> otherAsHs && AreEqualityComparersEqual(this, otherAsHs))
-			{
-				if (otherAsHs.Count > Count)
-				{
-					return false;
-				}
-			}
+			default:
+				// if other is the empty set then this is a superset
+				return ContainsAllElements(other);
 		}
-
-		return ContainsAllElements(other);
 	}
 
 	/// <summary>
@@ -1245,16 +1064,9 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 	/// </remarks>
 	/// <param name="other"></param>
 	/// <returns>true if this is a superset of other; false if not</returns>
-	public bool IsSupersetOf(ReadOnlySpan<T> other)
-	{
+	public bool IsSupersetOf(ReadOnlySpan<T> other) =>
 		// if other is the empty set then this is a superset
-		if (other.Length == 0)
-		{
-			return true;
-		}
-
-		return ContainsAllElements(other);
-	}
+		other.Length == 0 || ContainsAllElements(other);
 
 	/// <summary>
 	///     Checks if this is a proper superset of other (i.e. other strictly contained in this)
@@ -1277,22 +1089,11 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 	/// <returns>true if this is a proper superset of other; false if not</returns>
 	public bool IsProperSupersetOf(IEnumerable<T> other)
 	{
-		if (other == null)
-		{
-			ThrowHelper.ThrowArgumentNullException(ExceptionArgument.other);
-		}
-
 		// the empty set isn't a proper superset of any set.
-		if (Count == 0)
-		{
-			return false;
-		}
+		if (Count == 0) return false;
 
 		// a set is never a strict superset of itself
-		if (other == this)
-		{
-			return false;
-		}
+		if (Equals(other, this)) return false;
 
 		if (other is ICollection<T> otherAsCollection)
 		{
@@ -1303,33 +1104,25 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 				return true;
 			}
 
-			// faster if other is a hashset with the same equality comparer
-			if (other is PooledSet<T> otherAsSet && AreEqualityComparersEqual(this, otherAsSet))
+			switch (other)
 			{
-				if (otherAsSet.Count >= Count)
+				// faster if other is a hashset with the same equality comparer
+				case MHashSet<T> otherAsSet when AreEqualityComparersEqual(this, otherAsSet):
 				{
-					return false;
+					// now perform element check
+					return otherAsSet.Count < Count && ContainsAllElements(otherAsSet);
 				}
-
-				// now perform element check
-				return ContainsAllElements(otherAsSet);
-			}
-
-			if (other is HashSet<T> otherAsHs && AreEqualityComparersEqual(this, otherAsHs))
-			{
-				if (otherAsHs.Count >= Count)
+				case HashSet<T> otherAsHs when AreEqualityComparersEqual(this, otherAsHs):
 				{
-					return false;
+					// now perform element check
+					return otherAsHs.Count < Count && ContainsAllElements(otherAsHs);
 				}
-
-				// now perform element check
-				return ContainsAllElements(otherAsHs);
 			}
 		}
 
 		// couldn't fall out in the above cases; do it the long way
-		var result = CheckUniqueAndUnfoundElements(other, true);
-		return result.uniqueCount < Count && result.unfoundCount == 0;
+		var result = CheckUniqueAndUnFoundElements(other, true);
+		return result.UniqueCount < Count && result.UnFoundCount == 0;
 	}
 
 	/// <summary>
@@ -1379,8 +1172,8 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 		}
 
 		// couldn't fall out in the above cases; do it the long way
-		var result = CheckUniqueAndUnfoundElements(other, true);
-		return result.uniqueCount < Count && result.unfoundCount == 0;
+		var result = CheckUniqueAndUnFoundElements(other, true);
+		return result.UniqueCount < Count && result.UnFoundCount == 0;
 	}
 
 	/// <summary>
@@ -1390,29 +1183,13 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 	/// <returns>true if these have at least one common element; false if disjoint</returns>
 	public bool Overlaps(IEnumerable<T> other)
 	{
-		if (other == null)
-		{
-			ThrowHelper.ThrowArgumentNullException(ExceptionArgument.other);
-		}
-
-		if (Count == 0)
-		{
-			return false;
-		}
+		if (Count == 0) return false;
 
 		// set overlaps itself
-		if (other == this)
-		{
-			return true;
-		}
+		if (Equals(other, this)) return true;
 
 		foreach (var element in other)
-		{
-			if (Contains(element))
-			{
-				return true;
-			}
-		}
+			if (Contains(element)) return true;
 
 		return false;
 	}
@@ -1431,18 +1208,10 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 	/// <returns>true if these have at least one common element; false if disjoint</returns>
 	public bool Overlaps(ReadOnlySpan<T> other)
 	{
-		if (Count == 0)
-		{
-			return false;
-		}
+		if (Count == 0) return false;
 
 		for (int i = 0, len = other.Length; i < len; i++)
-		{
-			if (Contains(other[i]))
-			{
-				return true;
-			}
-		}
+			if (Contains(other[i])) return true;
 
 		return false;
 	}
@@ -1455,57 +1224,39 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 	/// <returns></returns>
 	public bool SetEquals(IEnumerable<T> other)
 	{
-		if (other == null)
-		{
-			ThrowHelper.ThrowArgumentNullException(ExceptionArgument.other);
-		}
-
 		// a set is equal to itself
-		if (other == this)
-		{
-			return true;
-		}
+		if (Equals(other, this)) return true;
 
-		// faster if other is a hashset and we're using same equality comparer
-		if (other is PooledSet<T> otherAsSet && AreEqualityComparersEqual(this, otherAsSet))
+		switch (other)
 		{
-			// attempt to return early: since both contain unique elements, if they have 
-			// different counts, then they can't be equal
-			if (Count != otherAsSet.Count)
+			// faster if other is a hashset and we're using same equality comparer
+			case MHashSet<T> otherAsSet when AreEqualityComparersEqual(this, otherAsSet):
 			{
-				return false;
+				// attempt to return early: since both contain unique elements, if they have 
+				// different counts, then they can't be equal
+				return Count == otherAsSet.Count && ContainsAllElements(otherAsSet);
+
+				// already confirmed that the sets have the same number of distinct elements, so if
+				// one is a superset of the other then they must be equal
 			}
-
-			// already confirmed that the sets have the same number of distinct elements, so if
-			// one is a superset of the other then they must be equal
-			return ContainsAllElements(otherAsSet);
-		}
-
-		if (other is HashSet<T> otherAsHs && AreEqualityComparersEqual(this, otherAsHs))
-		{
-			// attempt to return early: since both contain unique elements, if they have 
-			// different counts, then they can't be equal
-			if (Count != otherAsHs.Count)
+			case HashSet<T> otherAsHs when AreEqualityComparersEqual(this, otherAsHs):
 			{
-				return false;
+				// attempt to return early: since both contain unique elements, if they have 
+				// different counts, then they can't be equal
+				
+				// already confirmed that the sets have the same number of distinct elements, so if
+				// one is a superset of the other then they must be equal
+				return Count == otherAsHs.Count && ContainsAllElements(otherAsHs);
 			}
-
-			// already confirmed that the sets have the same number of distinct elements, so if
-			// one is a superset of the other then they must be equal
-			return ContainsAllElements(otherAsHs);
-		}
-
-		if (other is ICollection<T> otherAsCollection)
-		{
 			// if this count is 0 but other contains at least one element, they can't be equal
-			if (Count == 0 && otherAsCollection.Count > 0)
-			{
+			case ICollection<T> otherAsCollection when Count == 0 && otherAsCollection.Count > 0:
 				return false;
+			default:
+			{
+				var result = CheckUniqueAndUnFoundElements(other, true);
+				return result.UniqueCount == Count && result.UnFoundCount == 0;
 			}
 		}
-
-		var result = CheckUniqueAndUnfoundElements(other, true);
-		return result.uniqueCount == Count && result.unfoundCount == 0;
 	}
 
 	/// <summary>
@@ -1530,8 +1281,8 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 			return false;
 		}
 
-		var result = CheckUniqueAndUnfoundElements(other, true);
-		return result.uniqueCount == Count && result.unfoundCount == 0;
+		var result = CheckUniqueAndUnFoundElements(other, true);
+		return result.UniqueCount == Count && result.UnFoundCount == 0;
 	}
 
 	/// <summary>
@@ -1545,39 +1296,24 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 	/// </summary>
 	public void CopyTo(T[] array, int arrayIndex, int count)
 	{
-		if (array == null)
-		{
-			ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
-		}
-
 		// check array index valid index into array
-		if (arrayIndex < 0)
-		{
-			ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.arrayIndex, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
-		}
+		arrayIndex.ThrowIfNegative();
 
 		// also throw if count less than 0
-		if (count < 0)
-		{
-			ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
-		}
+		count.ThrowIfNegative();
 
 		// will array, starting at arrayIndex, be able to hold elements? Note: not
 		// checking arrayIndex >= array.Length (consistency with list of allowing
 		// count of 0; subsequent check takes care of the rest)
-		if (arrayIndex > array.Length || count > array.Length - arrayIndex)
-		{
-			ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
-		}
+		arrayIndex.ThrowIfGreaterThan(array.Length)
+			.ThrowIfGreaterThan(array.Length - count);
 
 		int numCopied = 0;
 		for (int i = 0; i < _lastIndex && numCopied < count; i++)
 		{
-			if (_slots[i].hashCode >= 0)
-			{
-				array[arrayIndex + numCopied] = _slots[i].value;
-				numCopied++;
-			}
+			if (_slots![i].HashCode < 0) continue;
+			array[arrayIndex + numCopied] = _slots[i].Value;
+			numCopied++;
 		}
 	}
 
@@ -1591,19 +1327,15 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 	/// </summary>
 	public void CopyTo(Span<T> span, int count)
 	{
-		if (span.Length < Count || span.Length < count)
-		{
-			ThrowHelper.ThrowArgumentException_DestinationTooShort();
-		}
+		span.Length.ThrowIfLessThan(Count)
+			.ThrowIfLessThan(count);
 
 		int numCopied = 0;
 		for (int i = 0; i < _lastIndex && numCopied < count; i++)
 		{
-			if (_slots[i].hashCode >= 0)
-			{
-				span[numCopied] = _slots[i].value;
-				numCopied++;
-			}
+			if (_slots![i].HashCode < 0) continue;
+			span[numCopied] = _slots[i].Value;
+			numCopied++;
 		}
 	}
 
@@ -1614,27 +1346,15 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 	/// <returns></returns>
 	public int RemoveWhere(Func<T, bool> match)
 	{
-		if (match == null)
-		{
-			ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
-		}
-
 		int numRemoved = 0;
 		for (int i = 0; i < _lastIndex; i++)
 		{
-			if (_slots[i].hashCode >= 0)
-			{
-				// cache value in case delegate removes it
-				var value = _slots[i].value;
-				if (match(value))
-				{
-					// check again that remove actually removed it
-					if (Remove(value))
-					{
-						numRemoved++;
-					}
-				}
-			}
+			if (_slots![i].HashCode < 0) continue;
+			// cache value in case delegate removes it
+			var value = _slots[i].Value;
+			if (!match(value)) continue;
+			// check again that remove actually removed it
+			if (Remove(value)) numRemoved++;
 		}
 
 		return numRemoved;
@@ -1651,8 +1371,7 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 	/// </summary>
 	public int EnsureCapacity(int capacity)
 	{
-		if (capacity < 0)
-			ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+		capacity.ThrowIfLessThan(0);
 		int currentCapacity = _slots == null ? 0 : _size;
 		if (currentCapacity >= capacity)
 			return currentCapacity;
@@ -1690,17 +1409,17 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 			// similar to IncreaseCapacity but moves down elements in case add/remove/etc
 			// caused fragmentation
 			int newSize = HashHelpers.GetPrime(Count);
-			var newSlots = s_slotPool.Rent(newSize);
-			int[] newBuckets = s_bucketPool.Rent(newSize);
+			var newSlots = SSlotPool.Rent(newSize);
+			int[] newBuckets = SBucketPool.Rent(newSize);
 
-			if (newSlots.Length >= _slots.Length || newBuckets.Length >= _buckets.Length)
+			if (newSlots.Length >= _slots!.Length || newBuckets.Length >= _buckets.Length)
 			{
 				// ArrayPool treats "newSize" as a minimum - if it gives us arrays that are as-big or bigger
 				// that what we already have, we're not really trimming any excess and may as well quit.
 				// We can't manually create exact-sized arrays unless we track that we did and avoid returning
 				// them to the ArrayPool, as that would throw an exception.
-				s_slotPool.Return(newSlots);
-				s_bucketPool.Return(newBuckets);
+				SSlotPool.Return(newSlots);
+				SBucketPool.Return(newBuckets);
 				return;
 			}
 
@@ -1711,13 +1430,13 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 			int newIndex = 0;
 			for (int i = 0; i < _lastIndex; i++)
 			{
-				if (_slots[i].hashCode >= 0)
+				if (_slots[i].HashCode >= 0)
 				{
 					newSlots[newIndex] = _slots[i];
 
 					// rehash
-					int bucket = newSlots[newIndex].hashCode % newSize;
-					newSlots[newIndex].next = newBuckets[bucket] - 1;
+					int bucket = newSlots[newIndex].HashCode % newSize;
+					newSlots[newIndex].Next = newBuckets[bucket] - 1;
 					newBuckets[bucket] = newIndex + 1;
 
 					newIndex++;
@@ -1743,8 +1462,8 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 	/// <summary>
 	///     Used for deep equality of HashSet testing
 	/// </summary>
-	public static IEqualityComparer<PooledSet<T>> CreateSetComparer()
-		=> new PooledSetEqualityComparer<T>();
+	public static IEqualityComparer<MHashSet<T>> CreateSetComparer()
+		=> new MSetEqualityComparer<T>();
 
 	/// <summary>
 	///     Initializes buckets and slots arrays. Uses suggested capacity by finding next prime
@@ -1756,9 +1475,9 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 		Debug.Assert(_buckets == null, "Initialize was called but _buckets was non-null");
 
 		_size = HashHelpers.GetPrime(capacity);
-		_buckets = s_bucketPool.Rent(_size);
+		_buckets = SBucketPool.Rent(_size);
 		Array.Clear(_buckets, 0, _buckets.Length);
-		_slots = s_slotPool.Rent(_size);
+		_slots = SSlotPool.Rent(_size);
 
 		return _size;
 	}
@@ -1772,15 +1491,8 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 	private void IncreaseCapacity()
 	{
 		Debug.Assert(_buckets != null, "IncreaseCapacity called on a set with no elements");
-
-		int newSize = HashHelpers.ExpandPrime(Count);
-		if (newSize <= Count)
-		{
-			ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_HSCapacityOverflow);
-		}
-
 		// Able to increase capacity; copy elements to larger array and rehash
-		SetCapacity(newSize);
+		SetCapacity(HashHelpers.ExpandPrime(Count).ThrowIfLessOrEqualsThan(Count));
 	}
 
 	/// <summary>
@@ -1809,8 +1521,8 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 		}
 		else
 		{
-			newSlots = s_slotPool.Rent(newSize);
-			newBuckets = s_bucketPool.Rent(newSize);
+			newSlots = SSlotPool.Rent(newSize);
+			newBuckets = SBucketPool.Rent(newSize);
 
 			Array.Clear(newBuckets, 0, newBuckets.Length);
 			if (_slots != null)
@@ -1823,8 +1535,8 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 
 		for (int i = 0; i < _lastIndex; i++)
 		{
-			int bucket = newSlots[i].hashCode % newSize;
-			newSlots[i].next = newBuckets[bucket] - 1;
+			int bucket = newSlots[i].HashCode % newSize;
+			newSlots[i].Next = newBuckets[bucket] - 1;
 			newBuckets[bucket] = i + 1;
 		}
 
@@ -1844,7 +1556,7 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 		{
 			try
 			{
-				s_slotPool.Return(_slots, _clearOnFree);
+				SSlotPool.Return(_slots);
 			}
 			catch (ArgumentException)
 			{
@@ -1856,7 +1568,7 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 		{
 			try
 			{
-				s_bucketPool.Return(_buckets);
+				SBucketPool.Return(_buckets);
 			}
 			catch (ArgumentException)
 			{
@@ -1868,16 +1580,6 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 		_buckets = null;
 	}
 
-	private static bool ShouldClear(ClearMode mode)
-	{
-#if NETCOREAPP2_1
-            return mode == ClearMode.Always
-                || (mode == ClearMode.Auto && RuntimeHelpers.IsReferenceOrContainsReferences<T>());
-#else
-		return mode != ClearMode.Never;
-#endif
-	}
-
 	/// <summary>
 	///     Adds value to HashSet if not contained already
 	///     Returns true if added and false if already present
@@ -1886,36 +1588,23 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 	/// <returns></returns>
 	private bool AddIfNotPresent(T value)
 	{
-		if (_buckets == null)
-		{
-			Initialize(0);
-		}
+		if (_buckets is null) Initialize(0);
 
 		int hashCode = InternalGetHashCode(value);
 		int bucket = hashCode % _size;
 		int collisionCount = 0;
-		var slots = _slots;
-		for (int i = _buckets[bucket] - 1; i >= 0; i = slots[i].next)
+		var slots = _slots!;
+		for (int i = _buckets![bucket] - 1; i >= 0; i = slots[i].Next)
 		{
-			if (slots[i].hashCode == hashCode && Comparer.Equals(slots[i].value, value))
-			{
-				return false;
-			}
-
-			if (collisionCount >= _size)
-			{
-				// The chain of entries forms a loop, which means a concurrent update has happened.
-				ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
-			}
-
-			collisionCount++;
+			if (slots[i].HashCode == hashCode && Comparer.Equals(slots[i].Value, value)) return false;
+			collisionCount = collisionCount.ThrowIfGreaterOrEqualsThan(_size);
 		}
 
 		int index;
 		if (_freeList >= 0)
 		{
 			index = _freeList;
-			_freeList = slots[index].next;
+			_freeList = slots[index].Next;
 		}
 		else
 		{
@@ -1931,9 +1620,9 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 			_lastIndex++;
 		}
 
-		slots[index].hashCode = hashCode;
-		slots[index].value = value;
-		slots[index].next = _buckets[bucket] - 1;
+		slots![index].HashCode = hashCode;
+		slots[index].Value = value;
+		slots[index].Next = _buckets[bucket] - 1;
 		_buckets[bucket] = index + 1;
 		Count++;
 		_version++;
@@ -1949,16 +1638,16 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 
 #if DEBUG
 		Debug.Assert(InternalGetHashCode(value) == hashCode);
-		for (int i = _buckets[bucket] - 1; i >= 0; i = _slots[i].next)
+		for (int i = _buckets![bucket] - 1; i >= 0; i = _slots[i].Next)
 		{
-			Debug.Assert(!Comparer.Equals(_slots[i].value, value));
+			Debug.Assert(!Comparer.Equals(_slots![i].Value, value));
 		}
 #endif
 
 		Debug.Assert(_freeList == -1);
-		_slots[index].hashCode = hashCode;
-		_slots[index].value = value;
-		_slots[index].next = _buckets[bucket] - 1;
+		_slots![index].HashCode = hashCode;
+		_slots[index].Value = value;
+		_slots[index].Next = _buckets[bucket] - 1;
 		_buckets[bucket] = index + 1;
 	}
 
@@ -1972,12 +1661,7 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 	private bool ContainsAllElements(IEnumerable<T> other)
 	{
 		foreach (var element in other)
-		{
-			if (!Contains(element))
-			{
-				return false;
-			}
-		}
+			if (!Contains(element)) return false;
 
 		return true;
 	}
@@ -1992,12 +1676,7 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 	private bool ContainsAllElements(ReadOnlySpan<T> other)
 	{
 		foreach (var element in other)
-		{
-			if (!Contains(element))
-			{
-				return false;
-			}
-		}
+			if (!Contains(element)) return false;
 
 		return true;
 	}
@@ -2012,15 +1691,10 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 	/// </summary>
 	/// <param name="other"></param>
 	/// <returns></returns>
-	private bool IsSubsetOfHashSetWithSameEC(PooledSet<T> other)
+	private bool IsSubsetOfHashSetWithSameEC(MHashSet<T> other)
 	{
 		foreach (var item in this)
-		{
-			if (!other.Contains(item))
-			{
-				return false;
-			}
-		}
+			if (!other.Contains(item)) return false;
 
 		return true;
 	}
@@ -2038,12 +1712,8 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 	private bool IsSubsetOfHashSetWithSameEC(HashSet<T> other)
 	{
 		foreach (var item in this)
-		{
 			if (!other.Contains(item))
-			{
 				return false;
-			}
-		}
 
 		return true;
 	}
@@ -2053,18 +1723,13 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 	///     because we can use other's Contains
 	/// </summary>
 	/// <param name="other"></param>
-	private void IntersectWithHashSetWithSameEC(PooledSet<T> other)
+	private void IntersectWithHashSetWithSameEC(MHashSet<T> other)
 	{
 		for (int i = 0; i < _lastIndex; i++)
 		{
-			if (_slots[i].hashCode >= 0)
-			{
-				var item = _slots[i].value;
-				if (!other.Contains(item))
-				{
-					Remove(item);
-				}
-			}
+			if (_slots![i].HashCode < 0) continue;
+			var item = _slots[i].Value;
+			if (!other.Contains(item)) Remove(item);
 		}
 	}
 
@@ -2077,14 +1742,9 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 	{
 		for (int i = 0; i < _lastIndex; i++)
 		{
-			if (_slots[i].hashCode >= 0)
-			{
-				var item = _slots[i].value;
-				if (!other.Contains(item))
-				{
-					Remove(item);
-				}
-			}
+			if (_slots![i].HashCode < 0) continue;
+			var item = _slots[i].Value;
+			if (!other.Contains(item)) Remove(item);
 		}
 	}
 
@@ -2105,7 +1765,7 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 
 		Span<int> span = stackalloc int[StackAllocThreshold];
 		var bitHelper = intArrayLength <= StackAllocThreshold
-			? new BitHelper(span.Slice(0, intArrayLength), true)
+			? new BitHelper(span[..intArrayLength], true)
 			: new BitHelper(new int[intArrayLength], false);
 
 		// mark if contains: find index of in slots array and mark corresponding element in bit array
@@ -2121,10 +1781,8 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 		// if anything unmarked, remove it. 
 		for (int i = bitHelper.FindFirstUnmarked(); (uint) i < (uint) originalLastIndex; i = bitHelper.FindFirstUnmarked(i + 1))
 		{
-			if (_slots[i].hashCode >= 0)
-			{
-				Remove(_slots[i].value);
-			}
+			if (_slots![i].HashCode >= 0)
+				Remove(_slots[i].Value);
 		}
 	}
 
@@ -2145,27 +1803,19 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 
 		Span<int> span = stackalloc int[StackAllocThreshold];
 		var bitHelper = intArrayLength <= StackAllocThreshold
-			? new BitHelper(span.Slice(0, intArrayLength), true)
+			? new BitHelper(span[..intArrayLength], true)
 			: new BitHelper(new int[intArrayLength], false);
 
 		// mark if contains: find index of in slots array and mark corresponding element in bit array
 		for (int i = 0, len = other.Length; i < len; i++)
 		{
 			int index = InternalIndexOf(other[i]);
-			if (index >= 0)
-			{
-				bitHelper.MarkBit(index);
-			}
+			if (index >= 0) bitHelper.MarkBit(index);
 		}
 
 		// if anything unmarked, remove it. 
 		for (int i = bitHelper.FindFirstUnmarked(); (uint) i < (uint) originalLastIndex; i = bitHelper.FindFirstUnmarked(i + 1))
-		{
-			if (_slots[i].hashCode >= 0)
-			{
-				Remove(_slots[i].value);
-			}
-		}
+			if (_slots![i].HashCode >= 0) Remove(_slots[i].Value);
 	}
 
 	/// <summary>
@@ -2181,20 +1831,12 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 		int collisionCount = 0;
 		int hashCode = InternalGetHashCode(item);
 		var slots = _slots;
-		for (int i = _buckets[hashCode % _size] - 1; i >= 0; i = slots[i].next)
+		for (int i = _buckets[hashCode % _size] - 1; i >= 0; i = slots[i].Next)
 		{
-			if (slots[i].hashCode == hashCode && Comparer.Equals(slots[i].value, item))
-			{
-				return i;
-			}
+			if (slots![i].HashCode == hashCode && Comparer.Equals(slots[i].Value, item)) return i;
 
-			if (collisionCount >= _size)
-			{
-				// The chain of entries forms a loop, which means a concurrent update has happened.
-				ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
-			}
-
-			collisionCount++;
+			// The chain of entries forms a loop, which means a concurrent update has happened.
+			collisionCount = collisionCount.ThrowIfGreaterOrEqualsThan(_size) + 1;
 		}
 
 		// wasn't found
@@ -2208,15 +1850,10 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 	///     same equality comparer.
 	/// </summary>
 	/// <param name="other"></param>
-	private void SymmetricExceptWithUniqueHashSet(PooledSet<T> other)
+	private void SymmetricExceptWithUniqueHashSet(MHashSet<T> other)
 	{
 		foreach (var item in other)
-		{
-			if (!Remove(item))
-			{
-				AddIfNotPresent(item);
-			}
-		}
+			if (!Remove(item)) AddIfNotPresent(item);
 	}
 
 	/// <summary>
@@ -2229,12 +1866,7 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 	private void SymmetricExceptWithUniqueHashSet(HashSet<T> other)
 	{
 		foreach (var item in other)
-		{
-			if (!Remove(item))
-			{
-				AddIfNotPresent(item);
-			}
-		}
+			if (!Remove(item)) AddIfNotPresent(item);
 	}
 
 	/// <summary>
@@ -2258,12 +1890,12 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 
 		Span<int> itemsToRemoveSpan = stackalloc int[StackAllocThreshold / 2];
 		var itemsToRemove = intArrayLength <= StackAllocThreshold / 2
-			? new BitHelper(itemsToRemoveSpan.Slice(0, intArrayLength), true)
+			? new BitHelper(itemsToRemoveSpan[..intArrayLength], true)
 			: new BitHelper(new int[intArrayLength], false);
 
 		Span<int> itemsAddedFromOtherSpan = stackalloc int[StackAllocThreshold / 2];
 		var itemsAddedFromOther = intArrayLength <= StackAllocThreshold / 2
-			? new BitHelper(itemsAddedFromOtherSpan.Slice(0, intArrayLength), true)
+			? new BitHelper(itemsAddedFromOtherSpan[..intArrayLength], true)
 			: new BitHelper(new int[intArrayLength], false);
 
 		foreach (var item in other)
@@ -2294,9 +1926,9 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 		// if anything marked, remove it
 		for (int i = itemsToRemove.FindFirstMarked(); (uint) i < (uint) originalLastIndex; i = itemsToRemove.FindFirstMarked(i + 1))
 		{
-			if (_slots[i].hashCode >= 0)
+			if (_slots![i].HashCode >= 0)
 			{
-				Remove(_slots[i].value);
+				Remove(_slots[i].Value);
 			}
 		}
 	}
@@ -2322,12 +1954,12 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 
 		Span<int> itemsToRemoveSpan = stackalloc int[StackAllocThreshold / 2];
 		var itemsToRemove = intArrayLength <= StackAllocThreshold / 2
-			? new BitHelper(itemsToRemoveSpan.Slice(0, intArrayLength), true)
+			? new BitHelper(itemsToRemoveSpan[..intArrayLength], true)
 			: new BitHelper(new int[intArrayLength], false);
 
 		Span<int> itemsAddedFromOtherSpan = stackalloc int[StackAllocThreshold / 2];
 		var itemsAddedFromOther = intArrayLength <= StackAllocThreshold / 2
-			? new BitHelper(itemsAddedFromOtherSpan.Slice(0, intArrayLength), true)
+			? new BitHelper(itemsAddedFromOtherSpan[..intArrayLength], true)
 			: new BitHelper(new int[intArrayLength], false);
 
 		for (int i = 0, len = other.Length; i < len; i++)
@@ -2358,9 +1990,9 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 		// if anything marked, remove it
 		for (int i = itemsToRemove.FindFirstMarked(); (uint) i < (uint) originalLastIndex; i = itemsToRemove.FindFirstMarked(i + 1))
 		{
-			if (_slots[i].hashCode >= 0)
+			if (_slots![i].HashCode >= 0)
 			{
-				Remove(_slots[i].value);
+				Remove(_slots[i].Value);
 			}
 		}
 	}
@@ -2383,28 +2015,23 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 		int bucket = hashCode % _size;
 		int collisionCount = 0;
 		var slots = _slots;
-		for (int i = _buckets[bucket] - 1; i >= 0; i = slots[i].next)
+		for (int i = _buckets[bucket] - 1; i >= 0; i = slots[i].Next)
 		{
-			if (slots[i].hashCode == hashCode && Comparer.Equals(slots[i].value, value))
+			if (slots![i].HashCode == hashCode && Comparer.Equals(slots[i].Value, value))
 			{
 				location = i;
 				return false; //already present
 			}
 
-			if (collisionCount >= _size)
-			{
-				// The chain of entries forms a loop, which means a concurrent update has happened.
-				ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
-			}
-
-			collisionCount++;
+			// The chain of entries forms a loop, which means a concurrent update has happened.
+			collisionCount = collisionCount.ThrowIfGreaterOrEqualsThan(_size);
 		}
 
 		int index;
 		if (_freeList >= 0)
 		{
 			index = _freeList;
-			_freeList = slots[index].next;
+			_freeList = slots![index].Next;
 		}
 		else
 		{
@@ -2420,9 +2047,9 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 			_lastIndex++;
 		}
 
-		slots[index].hashCode = hashCode;
-		slots[index].value = value;
-		slots[index].next = _buckets[bucket] - 1;
+		slots![index].HashCode = hashCode;
+		slots[index].Value = value;
+		slots[index].Next = _buckets[bucket] - 1;
 		_buckets[bucket] = index + 1;
 		Count++;
 		_version++;
@@ -2436,25 +2063,25 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 	///     these properties can be checked faster without use of marking because we can assume
 	///     other has no duplicates.
 	///     The following count checks are performed by callers:
-	///     1. Equals: checks if unfoundCount = 0 and uniqueFoundCount = _count; i.e. everything
+	///     1. Equals: checks if unFoundCount = 0 and uniqueFoundCount = _count; i.e. everything
 	///     in other is in this and everything in this is in other
-	///     2. Subset: checks if unfoundCount >= 0 and uniqueFoundCount = _count; i.e. other may
+	///     2. Subset: checks if unFoundCount >= 0 and uniqueFoundCount = _count; i.e. other may
 	///     have elements not in this and everything in this is in other
-	///     3. Proper subset: checks if unfoundCount > 0 and uniqueFoundCount = _count; i.e
+	///     3. Proper subset: checks if unFoundCount > 0 and uniqueFoundCount = _count; i.e
 	///     other must have at least one element not in this and everything in this is in other
-	///     4. Proper superset: checks if unfound count = 0 and uniqueFoundCount strictly less
+	///     4. Proper superset: checks if unFound count = 0 and uniqueFoundCount strictly less
 	///     than _count; i.e. everything in other was in this and this had at least one element
 	///     not contained in other.
 	///     An earlier implementation used delegates to perform these checks rather than returning
 	///     an ElementCount struct; however this was changed due to the perf overhead of delegates.
 	/// </summary>
 	/// <param name="other"></param>
-	/// <param name="returnIfUnfound">
+	/// <param name="returnIfUnFound">
 	///     Allows us to finish faster for equals and proper superset
-	///     because unfoundCount must be 0.
+	///     because unFoundCount must be 0.
 	/// </param>
 	/// <returns></returns>
-	private ElementCount CheckUniqueAndUnfoundElements(IEnumerable<T> other, bool returnIfUnfound)
+	private ElementCount CheckUniqueAndUnFoundElements(IEnumerable<T> other, bool returnIfUnFound)
 	{
 		ElementCount result;
 
@@ -2462,15 +2089,12 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 		if (Count == 0)
 		{
 			int numElementsInOther = 0;
-			foreach (var item in other)
-			{
+			using var enumerator = other.GetEnumerator();
+			if (enumerator.MoveNext() && enumerator.MoveNext())
 				numElementsInOther++;
-				// break right away, all we want to know is whether other has 0 or 1 elements
-				break;
-			}
 
-			result.uniqueCount = 0;
-			result.unfoundCount = numElementsInOther;
+			result.UniqueCount = 0;
+			result.UnFoundCount = numElementsInOther;
 			return result;
 		}
 
@@ -2481,11 +2105,11 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 
 		Span<int> span = stackalloc int[StackAllocThreshold];
 		var bitHelper = intArrayLength <= StackAllocThreshold
-			? new BitHelper(span.Slice(0, intArrayLength), true)
+			? new BitHelper(span[..intArrayLength], true)
 			: new BitHelper(new int[intArrayLength], false);
 
 		// count of items in other not found in this
-		int unfoundCount = 0;
+		int unFoundCount = 0;
 		// count of unique items in other found in this
 		int uniqueFoundCount = 0;
 
@@ -2494,25 +2118,23 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 			int index = InternalIndexOf(item);
 			if (index >= 0)
 			{
-				if (!bitHelper.IsMarked(index))
-				{
-					// item hasn't been seen yet
-					bitHelper.MarkBit(index);
-					uniqueFoundCount++;
-				}
+				if (bitHelper.IsMarked(index)) continue;
+				// item hasn't been seen yet
+				bitHelper.MarkBit(index);
+				uniqueFoundCount++;
 			}
 			else
 			{
-				unfoundCount++;
-				if (returnIfUnfound)
+				unFoundCount++;
+				if (returnIfUnFound)
 				{
 					break;
 				}
 			}
 		}
 
-		result.uniqueCount = uniqueFoundCount;
-		result.unfoundCount = unfoundCount;
+		result.UniqueCount = uniqueFoundCount;
+		result.UnFoundCount = unFoundCount;
 		return result;
 	}
 
@@ -2522,33 +2144,33 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 	///     these properties can be checked faster without use of marking because we can assume
 	///     other has no duplicates.
 	///     The following count checks are performed by callers:
-	///     1. Equals: checks if unfoundCount = 0 and uniqueFoundCount = _count; i.e. everything
+	///     1. Equals: checks if unFoundCount = 0 and uniqueFoundCount = _count; i.e. everything
 	///     in other is in this and everything in this is in other
-	///     2. Subset: checks if unfoundCount >= 0 and uniqueFoundCount = _count; i.e. other may
+	///     2. Subset: checks if unFoundCount >= 0 and uniqueFoundCount = _count; i.e. other may
 	///     have elements not in this and everything in this is in other
-	///     3. Proper subset: checks if unfoundCount > 0 and uniqueFoundCount = _count; i.e
+	///     3. Proper subset: checks if unFoundCount > 0 and uniqueFoundCount = _count; i.e
 	///     other must have at least one element not in this and everything in this is in other
-	///     4. Proper superset: checks if unfound count = 0 and uniqueFoundCount strictly less
+	///     4. Proper superset: checks if unFound count = 0 and uniqueFoundCount strictly less
 	///     than _count; i.e. everything in other was in this and this had at least one element
 	///     not contained in other.
 	///     An earlier implementation used delegates to perform these checks rather than returning
 	///     an ElementCount struct; however this was changed due to the perf overhead of delegates.
 	/// </summary>
 	/// <param name="other"></param>
-	/// <param name="returnIfUnfound">
+	/// <param name="returnIfUnFound">
 	///     Allows us to finish faster for equals and proper superset
-	///     because unfoundCount must be 0.
+	///     because unFoundCount must be 0.
 	/// </param>
 	/// <returns></returns>
-	private ElementCount CheckUniqueAndUnfoundElements(ReadOnlySpan<T> other, bool returnIfUnfound)
+	private ElementCount CheckUniqueAndUnFoundElements(ReadOnlySpan<T> other, bool returnIfUnFound)
 	{
 		ElementCount result;
 
 		// need special case in case this has no elements. 
 		if (Count == 0)
 		{
-			result.uniqueCount = 0;
-			result.unfoundCount = other.Length;
+			result.UniqueCount = 0;
+			result.UnFoundCount = other.Length;
 			return result;
 		}
 
@@ -2559,11 +2181,11 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 
 		Span<int> span = stackalloc int[StackAllocThreshold];
 		var bitHelper = intArrayLength <= StackAllocThreshold
-			? new BitHelper(span.Slice(0, intArrayLength), true)
+			? new BitHelper(span[..intArrayLength], true)
 			: new BitHelper(new int[intArrayLength], false);
 
 		// count of items in other not found in this
-		int unfoundCount = 0;
+		int unFoundCount = 0;
 		// count of unique items in other found in this
 		int uniqueFoundCount = 0;
 
@@ -2581,16 +2203,16 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 			}
 			else
 			{
-				unfoundCount++;
-				if (returnIfUnfound)
+				unFoundCount++;
+				if (returnIfUnFound)
 				{
 					break;
 				}
 			}
 		}
 
-		result.uniqueCount = uniqueFoundCount;
-		result.unfoundCount = unfoundCount;
+		result.UniqueCount = uniqueFoundCount;
+		result.UnFoundCount = unFoundCount;
 		return result;
 	}
 
@@ -2604,36 +2226,21 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 	/// <param name="set2"></param>
 	/// <param name="comparer"></param>
 	/// <returns></returns>
-	internal static bool PooledSetEquals(PooledSet<T> set1, PooledSet<T> set2, IEqualityComparer<T> comparer)
+	internal static bool MSetEquals(MHashSet<T>? set1, MHashSet<T>? set2, IEqualityComparer<T> comparer)
 	{
 		// handle null cases first
-		if (set1 == null)
-		{
-			return set2 == null;
-		}
-
-		if (set2 == null)
-		{
-			// set1 != null
-			return false;
-		}
+		if (set1 is null) return set2 is null;
+		// set1 != null
+		if (set2 is null) return false;
 
 		// all comparers are the same; this is faster
 		if (AreEqualityComparersEqual(set1, set2))
 		{
-			if (set1.Count != set2.Count)
-			{
-				return false;
-			}
+			if (set1.Count != set2.Count) return false;
 
 			// suffices to check subset
 			foreach (var item in set2)
-			{
-				if (!set1.Contains(item))
-				{
-					return false;
-				}
-			}
+				if (!set1.Contains(item)) return false;
 
 			return true;
 		}
@@ -2644,17 +2251,12 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 			bool found = false;
 			foreach (var set1Item in set1)
 			{
-				if (comparer.Equals(set2Item, set1Item))
-				{
-					found = true;
-					break;
-				}
+				if (!comparer.Equals(set2Item, set1Item)) continue;
+				found = true;
+				break;
 			}
 
-			if (!found)
-			{
-				return false;
-			}
+			if (!found) return false;
 		}
 
 		return true;
@@ -2667,7 +2269,7 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 	/// </summary>
 	/// <param name="set1"></param>
 	/// <param name="set2"></param>
-	private static bool AreEqualityComparersEqual(PooledSet<T> set1, PooledSet<T> set2) => set1.Comparer.Equals(set2.Comparer);
+	private static bool AreEqualityComparersEqual(MHashSet<T> set1, MHashSet<T> set2) => set1.Comparer.Equals(set2.Comparer);
 
 	/// <summary>
 	///     Checks if equality comparers are equal. This is used for algorithms that can
@@ -2676,7 +2278,7 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 	/// </summary>
 	/// <param name="set1"></param>
 	/// <param name="set2"></param>
-	private static bool AreEqualityComparersEqual(PooledSet<T> set1, HashSet<T> set2) => set1.Comparer.Equals(set2.Comparer);
+	private static bool AreEqualityComparersEqual(MHashSet<T> set1, HashSet<T> set2) => set1.Comparer.Equals(set2.Comparer);
 
 	/// <summary>
 	///     Workaround Comparers that throw ArgumentNullException for GetHashCode(null).
@@ -2707,4 +2309,17 @@ public class PooledSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IDi
 	}
 
 	#endregion
-}*/
+}
+
+public static partial class ConverterExtensions
+{
+	public static MHashSet<T> ToMSet<T>(this IEnumerable<T> source, IEqualityComparer<T> comparer) => new(source, comparer);
+
+	public static MHashSet<T> ToMSet<T>(this Span<T> source, IEqualityComparer<T> comparer) => new(source, comparer);
+
+	public static MHashSet<T> ToMSet<T>(this ReadOnlySpan<T> source, IEqualityComparer<T> comparer) => new(source, comparer);
+
+	public static MHashSet<T> ToMSet<T>(this Memory<T> source, IEqualityComparer<T> comparer) => new(source.Span, comparer);
+
+	public static MHashSet<T> ToMSet<T>(this ReadOnlyMemory<T> source, IEqualityComparer<T> comparer) => new(source.Span, comparer);
+}

@@ -2,6 +2,7 @@
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using Core.Registries.Collections;
 using Core.Registries.CoreTypes;
 using Core.Registries.Entities;
 using Core.Utils;
@@ -20,7 +21,7 @@ public static class App
 	};
 
 	private static readonly DefaultCore<IRegistry<IEntry>> Registries = new(NamespacedName.CreateWithCoreNamespace("base"));
-	private static readonly PooledDictionary<Type, string> TypeKey = new();
+	private static readonly MDictionary<Type, string> TypeKey = new();
 
 	// Folders
 	internal static readonly string AppFolderPath = Path.Combine(Configuration.DataPath, Configuration.AppName);

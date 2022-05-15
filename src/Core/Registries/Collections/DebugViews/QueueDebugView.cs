@@ -5,14 +5,15 @@
 using System;
 using System.Diagnostics;
 
-namespace Core.Registries.Collections.Pooled;
+namespace Core.Registries.Collections.DebugViews;
 
 internal sealed class QueueDebugView<T>
 {
-	private readonly PooledQueue<T> _queue;
+	private readonly MQueue<T> _queue;
 
-	public QueueDebugView(PooledQueue<T> queue) => _queue = queue ?? throw new ArgumentNullException(nameof(queue));
+	public QueueDebugView(MQueue<T> queue) => _queue = queue ?? throw new ArgumentNullException(nameof(queue));
 
 	[DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+	// ReSharper disable once ReturnTypeCanBeEnumerable.Global
 	public T[] Items => _queue.ToArray();
 }
