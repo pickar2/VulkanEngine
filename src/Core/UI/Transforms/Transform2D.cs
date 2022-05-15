@@ -1,6 +1,3 @@
 ﻿namespace Core.UI.Transforms;
 
-public class Transform2D
-{
-	
-}
+public class Transform2D { }

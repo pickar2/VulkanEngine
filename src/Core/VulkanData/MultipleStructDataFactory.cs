@@ -12,20 +12,10 @@ namespace Core.VulkanData;
 
 public unsafe class MultipleStructDataFactory : SimpleRegistry<NoneEventManager<StructHolder>, StructHolder>
 {
-	private int _offset;
 	private readonly int _minAlignment;
-	public byte* Pointer { get; private set; }
-	public int Count { get; private set; }
-
-	public bool CpuToGpuMemory { get; }
 
 	private readonly IntPtr[] _ptr = new IntPtr[1];
-
-	public VulkanBuffer DataBufferCpu { get; private set; }
-	public VulkanBuffer DataBufferGpu { get; private set; }
-	public bool BufferChanged { get; set; } = true;
-
-	public ulong BufferSize { get; private set; } = 2048;
+	private int _offset;
 
 	public MultipleStructDataFactory(NamespacedName identifier, bool cpuToGpuMemory = false) : base(identifier)
 	{
@@ -60,6 +50,17 @@ public unsafe class MultipleStructDataFactory : SimpleRegistry<NoneEventManager<
 				DataBufferGpu.Dispose();
 		});
 	}
+
+	public byte* Pointer { get; private set; }
+	public int Count { get; private set; }
+
+	public bool CpuToGpuMemory { get; }
+
+	public VulkanBuffer DataBufferCpu { get; private set; }
+	public VulkanBuffer DataBufferGpu { get; private set; }
+	public bool BufferChanged { get; set; } = true;
+
+	public ulong BufferSize { get; private set; } = 2048;
 
 	private void DoubleBufferSize()
 	{
@@ -123,11 +124,11 @@ public unsafe class MultipleStructDataFactory : SimpleRegistry<NoneEventManager<
 
 public unsafe class StructHolder : IEntry
 {
-	public NamespacedName Identifier { get; init; } = default!;
 	public MultipleStructDataFactory Factory { get; init; } = default!;
 
 	public int Size { get; init; }
 	public int Offset { get; init; }
+	public NamespacedName Identifier { get; init; } = default!;
 
 	public T* Get<T>() where T : unmanaged => Factory.GetStruct<T>(Offset);
 }

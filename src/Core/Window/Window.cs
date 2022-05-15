@@ -11,27 +11,17 @@ namespace Core.Window;
 
 public unsafe class Window : IDisposable
 {
-	public delegate void OnKeyDelegate(Key key);
-
 	public delegate void OnCursorPositionDelegate(float xpos, float ypos);
+
+	public delegate void OnKeyDelegate(Key key);
 
 	public delegate void OnMouseButtonDelegate(MouseButton button);
 
 	public delegate void OnScrollDelegate(float xoffset, float yoffset);
 
-	public event OnKeyDelegate? OnKeyDown;
-	public event OnKeyDelegate? OnKeyUp;
-	public event OnCursorPositionDelegate? OnCursorPosition;
-	public event OnMouseButtonDelegate? OnMouseUp;
-	public event OnMouseButtonDelegate? OnMouseDown;
-	public event OnScrollDelegate? OnScroll;
-
-	private readonly IWindow _window;
-	private readonly IInputContext _input;
 	private readonly Stopwatch _stopwatch = new();
-	public readonly string Title = "Engine";
 
-	public bool IsClosing { get; private set; }
+	public readonly string Title = "Engine";
 
 	public Window()
 	{
@@ -41,14 +31,14 @@ public unsafe class Window : IDisposable
 		opts.WindowState = VulkanOptions.Fullscreen ? WindowState.Fullscreen : WindowState.Normal;
 		opts.WindowBorder = WindowBorder.Resizable;
 
-		_window = Silk.NET.Windowing.Window.Create(opts);
+		IWindow = Silk.NET.Windowing.Window.Create(opts);
 
-		_window.Initialize();
+		IWindow.Initialize();
 
-		_window.Center();
+		IWindow.Center();
 
-		_input = _window.CreateInput();
-		var primaryKeyboard = _input.Keyboards.FirstOrDefault();
+		InputContext = IWindow.CreateInput();
+		var primaryKeyboard = InputContext.Keyboards.FirstOrDefault();
 
 		if (primaryKeyboard != null)
 		{
@@ -56,7 +46,7 @@ public unsafe class Window : IDisposable
 			primaryKeyboard.KeyUp += (keyboard, key, code) => OnKeyUp?.Invoke(key);
 		}
 
-		foreach (var m in _input.Mice)
+		foreach (var m in InputContext.Mice)
 		{
 			m.Cursor.CursorMode = CursorMode.Normal;
 			m.MouseMove += (mouse, pos) => OnCursorPosition?.Invoke(pos.X, pos.Y);
@@ -68,18 +58,34 @@ public unsafe class Window : IDisposable
 		IWindow.Closing += () => IsClosing = true;
 	}
 
-	public IWindow IWindow => _window;
-	public IInputContext InputContext => _input;
+	public bool IsClosing { get; private set; }
 
-	public int FrameBufferWidth => _window.FramebufferSize.X;
-	public int FrameBufferHeight => _window.FramebufferSize.Y;
+	public IWindow IWindow { get; }
 
-	public int WindowWidth => _window.Size.X;
-	public int WindowHeight => _window.Size.Y;
+	public IInputContext InputContext { get; }
+
+	public int FrameBufferWidth => IWindow.FramebufferSize.X;
+	public int FrameBufferHeight => IWindow.FramebufferSize.Y;
+
+	public int WindowWidth => IWindow.Size.X;
+	public int WindowHeight => IWindow.Size.Y;
+
+	public void Dispose()
+	{
+		IWindow.Dispose();
+		GC.SuppressFinalize(this);
+	}
+
+	public event OnKeyDelegate? OnKeyDown;
+	public event OnKeyDelegate? OnKeyUp;
+	public event OnCursorPositionDelegate? OnCursorPosition;
+	public event OnMouseButtonDelegate? OnMouseUp;
+	public event OnMouseButtonDelegate? OnMouseDown;
+	public event OnScrollDelegate? OnScroll;
 
 	public string[] GetRequiredInstanceExtensions()
 	{
-		byte** stringArrayPtr = _window.VkSurface!.GetRequiredExtensions(out uint count);
+		byte** stringArrayPtr = IWindow.VkSurface!.GetRequiredExtensions(out uint count);
 		return SilkMarshal.PtrToStringArray((nint) stringArrayPtr, (int) count);
 	}
 
@@ -88,29 +94,23 @@ public unsafe class Window : IDisposable
 	public void Close()
 	{
 		IsClosing = true;
-		_window.IsClosing = true;
+		IWindow.IsClosing = true;
 	}
 
-	public bool IsMinimized() => _window.WindowState == WindowState.Minimized;
+	public bool IsMinimized() => IWindow.WindowState == WindowState.Minimized;
 
 	public void Run()
 	{
 		_stopwatch.Start();
-		_window.Run(() =>
+		IWindow.Run(() =>
 		{
-			_window.DoEvents();
-			if (!_window.IsClosing)
-				_window.DoUpdate();
+			IWindow.DoEvents();
+			if (!IWindow.IsClosing)
+				IWindow.DoUpdate();
 		});
-		_window.DoEvents();
-		_window.Reset();
+		IWindow.DoEvents();
+		IWindow.Reset();
 	}
 
-	public void WaitForEvents() => _window.DoEvents();
-
-	public void Dispose()
-	{
-		_window.Dispose();
-		GC.SuppressFinalize(this);
-	}
+	public void WaitForEvents() => IWindow.DoEvents();
 }

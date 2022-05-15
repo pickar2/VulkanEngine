@@ -16,9 +16,21 @@ public static class VulkanOptions
 	private static readonly NamespacedName PresentModeName = NamespacedName.CreateWithName("present-mode");
 
 	private static readonly NamespacedName Vulkan = NamespacedName.CreateWithName("vulkan");
-	private static ConfigCategory VulkanStates => App.Get<ConfigRegistry>().GetOrRegister(Vulkan, () => new ConfigCategory(Vulkan));
 
 	static VulkanOptions() => UpdateOptions(true);
+	private static ConfigCategory VulkanStates => App.Get<ConfigRegistry>().GetOrRegister(Vulkan, () => new ConfigCategory(Vulkan));
+
+	public static uint WindowWidth => VulkanStates.GetOrDefault<uint>(WindowWidthName.FullName);
+	public static uint WindowHeight => VulkanStates.GetOrDefault<uint>(WindowHeightName.FullName);
+	public static bool Fullscreen => VulkanStates.GetOrDefault<bool>(FullscreenName.FullName);
+
+	public static bool DebugMode => VulkanStates.GetOrDefault<bool>(DebugModeName.FullName);
+	public static int GpuId => VulkanStates.GetOrDefault<int>(GpuIdName.FullName);
+
+	public static bool MsaaEnabled => VulkanStates.GetOrDefault<bool>(MsaaEnabledName.FullName);
+	public static SampleCountFlags MsaaSamples => VulkanStates.GetOrDefault<SampleCountFlags>(MsaaSamplesName.FullName);
+
+	public static PresentModeKHR PresentMode => VulkanStates.GetOrDefault<PresentModeKHR>(PresentModeName.FullName);
 
 	public static void UpdateOptions(bool reset)
 	{
@@ -35,16 +47,4 @@ public static class VulkanOptions
 
 		// App.Get<ConfigRegistry>().SaveStates();
 	}
-
-	public static uint WindowWidth => VulkanStates.GetOrDefault<uint>(WindowWidthName.FullName);
-	public static uint WindowHeight => VulkanStates.GetOrDefault<uint>(WindowHeightName.FullName);
-	public static bool Fullscreen => VulkanStates.GetOrDefault<bool>(FullscreenName.FullName);
-
-	public static bool DebugMode => VulkanStates.GetOrDefault<bool>(DebugModeName.FullName);
-	public static int GpuId => VulkanStates.GetOrDefault<int>(GpuIdName.FullName);
-
-	public static bool MsaaEnabled => VulkanStates.GetOrDefault<bool>(MsaaEnabledName.FullName);
-	public static SampleCountFlags MsaaSamples => VulkanStates.GetOrDefault<SampleCountFlags>(MsaaSamplesName.FullName);
-
-	public static PresentModeKHR PresentMode => VulkanStates.GetOrDefault<PresentModeKHR>(PresentModeName.FullName);
 }

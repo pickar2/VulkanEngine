@@ -21,142 +21,6 @@ public class VectorGenerators : ISourceGenerator
 	private static readonly int[] Sizes = {2, 3, 4};
 	private static readonly string[] ComponentNames = {"X", "Y", "Z", "W"};
 
-	private static StringBuilder CreateScalarOperator(string op, string name, IReadOnlyCollection<string> components)
-	{
-		var sb = new StringBuilder();
-
-		sb.Append($"\tpublic static {name}<T> operator {op}({name}<T> vector, T value) => ");
-		sb.Append($"new({string.Join(", ", components.Select(s => $"vector.{s} {op} value"))});\n");
-
-		foreach (string type in Types)
-		{
-			sb.Append($"\tpublic static {name}<T> operator {op}({name}<T> vector, {type} value) => ");
-			sb.Append($"new({string.Join(", ", components.Select(s => $"vector.{s} {op} T.Create(value)"))});\n");
-		}
-
-		return sb;
-	}
-
-	private static StringBuilder CreateVectorOperator(string op, string name, IReadOnlyCollection<string> components)
-	{
-		var sb = new StringBuilder();
-
-		sb.Append($"\tpublic static {name}<T> operator {op}({name}<T> vector, {name}<T> other) => ");
-		sb.Append($"new({string.Join(", ", components.Select(s => $"vector.{s} {op} other.{s}"))});\n");
-
-		foreach (string type in Types)
-		{
-			sb.Append($"\tpublic static {name}<T> operator {op}({name}<T> vector, {name}<{type}> other) => ");
-			sb.Append($"new({string.Join(", ", components.Select(s => $"vector.{s} {op} T.Create(other.{s})"))});\n");
-		}
-
-		sb.Append("\n");
-
-		string tTuple = string.Join(", ", components.Select(s => $"T {s}"));
-		sb.Append($"\tpublic static {name}<T> operator {op}({name}<T> vector, ({tTuple}) other) => ");
-		sb.Append($"new({string.Join(", ", components.Select(s => $"vector.{s} {op} other.{s}"))});\n");
-
-		foreach (string type in Types)
-		{
-			string tuple = string.Join(", ", components.Select(s => $"{type} {s}"));
-			sb.Append($"\tpublic static {name}<T> operator {op}({name}<T> vector, ({tuple}) other) => ");
-			sb.Append($"new({string.Join(", ", components.Select(s => $"vector.{s} {op} T.Create(other.{s})"))});\n");
-		}
-
-		return sb;
-	}
-
-	private static StringBuilder CreateExtensionFunction(string name, IReadOnlyCollection<string> components, string functionName, string functionUsage)
-	{
-		var sb = new StringBuilder(
-			@$"	public static ref {name}<T> {functionName}<T, TOther>(this ref {name}<T> vector, {name}<TOther> other) where T : struct, INumber<T> where TOther : struct, INumber<TOther>
-	{{
-{string.Join("", components.Select(s => $"\t\tvector.{s} {functionUsage} (T.Create(other.{s}));\n"))}
-		return ref vector;
-	}}
-
-	public static ref {name}<T> {functionName}<T, TOther>(this ref {name}<T> vector, ({String.Join(", ", components.Select(s => $"TOther {s}"))}) other) where T : struct, INumber<T> where TOther : struct, INumber<TOther>
-	{{
-{string.Join("", components.Select(s => $"\t\tvector.{s} {functionUsage} (T.Create(other.{s}));\n"))}
-		return ref vector;
-	}}
-
-	public static ref {name}<T> {functionName}<T, TOther>(this ref {name}<T> vector, {String.Join(", ", components.Select(s => $"TOther {s.ToLower()}"))}) where T : struct, INumber<T> where TOther : struct, INumber<TOther>
-	{{
-{string.Join("", components.Select(s => $"\t\tvector.{s} {functionUsage} (T.Create({s.ToLower()}));\n"))}
-		return ref vector;
-	}}
-
-");
-		sb.Append(CreateScalarExtensionFunction(name, components, functionName, functionUsage)).Append("\n");
-		return sb;
-	}
-
-	private static StringBuilder CreateScalarExtensionFunction(string name, IReadOnlyCollection<string> components, string functionName, string functionUsage)
-	{
-		var sb = new StringBuilder();
-
-		sb.Append(@$"	public static ref {name}<T> {functionName}<T, TOther>(this ref {name}<T> vector, TOther value) where T : struct, INumber<T> where TOther : struct, INumber<TOther>
-	{{
-		var tValue = T.Create(value);
-{string.Join("", components.Select(s => $"\t\tvector.{s} {functionUsage} (tValue);\n"))}
-		return ref vector;
-	}}");
-		
-		return sb;
-	}
-
-	private static StringBuilder CreateDestinationFunction(string name, IReadOnlyCollection<string> components, string functionName, string functionUsage)
-	{
-		var sb = new StringBuilder(
-			@$"	public static ref {name}<TDest> {functionName}<T, TOther, TDest>(this {name}<T> vector, {name}<TOther> other, ref {name}<TDest> destination)
-		where T : struct, INumber<T> where TOther : struct, INumber<TOther> where TDest : struct, INumber<TDest> =>
-		ref destination.Set(vector {functionUsage} (other.Cast<TOther, T>()));
-
-	public static ref {name}<TDest> {functionName}<T, TOther, TDest>(this {name}<T> vector, ({String.Join(", ", components.Select(s => $"TOther {s}"))}) other, ref {name}<TDest> destination)
-		where T : struct, INumber<T> where TOther : struct, INumber<TOther> where TDest : struct, INumber<TDest> =>
-		ref destination.Set(vector {functionUsage} ((({name}<TOther>) other).Cast<TOther, T>()));
-");
-
-		sb.Append("\n").Append(CreateScalarDestinationFunction(name, functionName, functionUsage)).Append("\n");
-		return sb;
-	}
-	
-	private static StringBuilder CreateScalarDestinationFunction(string name, string functionName, string functionUsage)
-	{
-		var sb = new StringBuilder();
-
-		sb.Append(@$"	public static ref {name}<TDest> {functionName}<T, TOther, TDest>(this {name}<T> vector, TOther value, ref {name}<TDest> destination)
-		where T : struct, INumber<T> where TOther : struct, INumber<TOther> where TDest : struct, INumber<TDest> =>
-		ref destination.Set(vector {functionUsage} (T.Create(value)));");
-
-		return sb;
-	}
-	
-	private static StringBuilder CreateVoidExtensionFunction(string name, IReadOnlyCollection<string> components, string functionName, string functionUsage)
-	{
-		var sb = new StringBuilder();
-
-		sb.Append(@$"	public static ref {name}<T> {functionName}<T>(this ref {name}<T> vector) where T : struct, INumber<T>
-	{{
-{string.Join("", components.Select(s => $"\t\tvector.{s} = T.Create({functionUsage}(decimal.Create(vector.{s})));\n"))}
-		return ref vector;
-	}}");
-
-		return sb;
-	}
-	
-	private static StringBuilder CreateVoidDestinationFunction(string name, IReadOnlyCollection<string> components, string functionName, string functionUsage)
-	{
-		var sb = new StringBuilder();
-
-		sb.Append(@$"	public static ref {name}<TDest> {functionName}<T, TDest>(this {name}<T> vector, ref {name}<TDest> destination)
-		where T : struct, INumber<T> where TDest : struct, INumber<TDest> =>
-		ref destination.Set({string.Join(", ", components.Select(s => $"TDest.Create({functionUsage}(decimal.Create(vector.{s})))"))});");
-
-		return sb;
-	}
-
 	public void Initialize(GeneratorInitializationContext context) { }
 
 	public void Execute(GeneratorExecutionContext context)
@@ -209,10 +73,10 @@ public struct {name}<T> where T : struct, INumber<T>
 
 			#region VectorNBasicFunctions
 
-			source.Append($"\tpublic T LengthSquared => ");
+			source.Append("\tpublic T LengthSquared => ");
 			source.Append($"{string.Join(" + ", components.Select(s => $"{s} * {s}"))};\n\n");
 
-			source.Append($"\tpublic double Length => ");
+			source.Append("\tpublic double Length => ");
 			source.Append("Math.Sqrt(Double.Create(LengthSquared));\n\n");
 
 			source.Append($"\tpublic bool Equals({name}<T> other) => ");
@@ -321,16 +185,16 @@ public struct {name}<T> where T : struct, INumber<T>
 
 			source.Append(CreateVoidExtensionFunction(name, components, "Ceil", "Math.Ceiling")).Append("\n\n");
 			source.Append(CreateVoidDestinationFunction(name, components, "Ceil", "Math.Ceiling")).Append("\n\n");
-			
+
 			source.Append(CreateVoidExtensionFunction(name, components, "Round", "Math.Round")).Append("\n\n");
 			source.Append(CreateVoidDestinationFunction(name, components, "Round", "Math.Round")).Append("\n\n");
 
 			source.Append($"\tpublic static ref {name}<T> Normalize<T>(this ref {name}<T> vector) where T : struct, INumber<T> => ");
-			source.Append($"ref vector.Mul(Math.ReciprocalSqrtEstimate(Double.Create(vector.LengthSquared)));\n\n");
+			source.Append("ref vector.Mul(Math.ReciprocalSqrtEstimate(Double.Create(vector.LengthSquared)));\n\n");
 
 			source.Append($"\tpublic static ref {name}<T> Negate<T>(this ref {name}<T> vector) where T : struct, INumber<T>\n\t{{\n");
 			source.Append($"{String.Join("", components.Select(s => $"\t\tvector.{s} = -vector.{s};\n"))}");
-			source.Append($"\n\t\treturn ref vector;\n");
+			source.Append("\n\t\treturn ref vector;\n");
 			source.Append("\t}\n");
 
 			source.Append("}\n");
@@ -339,5 +203,142 @@ public struct {name}<T> where T : struct, INumber<T>
 
 			context.AddSource($"Vector{size}.g.cs", source.ToString());
 		}
+	}
+
+	private static StringBuilder CreateScalarOperator(string op, string name, IReadOnlyCollection<string> components)
+	{
+		var sb = new StringBuilder();
+
+		sb.Append($"\tpublic static {name}<T> operator {op}({name}<T> vector, T value) => ");
+		sb.Append($"new({string.Join(", ", components.Select(s => $"vector.{s} {op} value"))});\n");
+
+		foreach (string type in Types)
+		{
+			sb.Append($"\tpublic static {name}<T> operator {op}({name}<T> vector, {type} value) => ");
+			sb.Append($"new({string.Join(", ", components.Select(s => $"vector.{s} {op} T.Create(value)"))});\n");
+		}
+
+		return sb;
+	}
+
+	private static StringBuilder CreateVectorOperator(string op, string name, IReadOnlyCollection<string> components)
+	{
+		var sb = new StringBuilder();
+
+		sb.Append($"\tpublic static {name}<T> operator {op}({name}<T> vector, {name}<T> other) => ");
+		sb.Append($"new({string.Join(", ", components.Select(s => $"vector.{s} {op} other.{s}"))});\n");
+
+		foreach (string type in Types)
+		{
+			sb.Append($"\tpublic static {name}<T> operator {op}({name}<T> vector, {name}<{type}> other) => ");
+			sb.Append($"new({string.Join(", ", components.Select(s => $"vector.{s} {op} T.Create(other.{s})"))});\n");
+		}
+
+		sb.Append("\n");
+
+		string tTuple = string.Join(", ", components.Select(s => $"T {s}"));
+		sb.Append($"\tpublic static {name}<T> operator {op}({name}<T> vector, ({tTuple}) other) => ");
+		sb.Append($"new({string.Join(", ", components.Select(s => $"vector.{s} {op} other.{s}"))});\n");
+
+		foreach (string type in Types)
+		{
+			string tuple = string.Join(", ", components.Select(s => $"{type} {s}"));
+			sb.Append($"\tpublic static {name}<T> operator {op}({name}<T> vector, ({tuple}) other) => ");
+			sb.Append($"new({string.Join(", ", components.Select(s => $"vector.{s} {op} T.Create(other.{s})"))});\n");
+		}
+
+		return sb;
+	}
+
+	private static StringBuilder CreateExtensionFunction(string name, IReadOnlyCollection<string> components, string functionName, string functionUsage)
+	{
+		var sb = new StringBuilder(
+			@$"	public static ref {name}<T> {functionName}<T, TOther>(this ref {name}<T> vector, {name}<TOther> other) where T : struct, INumber<T> where TOther : struct, INumber<TOther>
+	{{
+{string.Join("", components.Select(s => $"\t\tvector.{s} {functionUsage} (T.Create(other.{s}));\n"))}
+		return ref vector;
+	}}
+
+	public static ref {name}<T> {functionName}<T, TOther>(this ref {name}<T> vector, ({String.Join(", ", components.Select(s => $"TOther {s}"))}) other) where T : struct, INumber<T> where TOther : struct, INumber<TOther>
+	{{
+{string.Join("", components.Select(s => $"\t\tvector.{s} {functionUsage} (T.Create(other.{s}));\n"))}
+		return ref vector;
+	}}
+
+	public static ref {name}<T> {functionName}<T, TOther>(this ref {name}<T> vector, {String.Join(", ", components.Select(s => $"TOther {s.ToLower()}"))}) where T : struct, INumber<T> where TOther : struct, INumber<TOther>
+	{{
+{string.Join("", components.Select(s => $"\t\tvector.{s} {functionUsage} (T.Create({s.ToLower()}));\n"))}
+		return ref vector;
+	}}
+
+");
+		sb.Append(CreateScalarExtensionFunction(name, components, functionName, functionUsage)).Append("\n");
+		return sb;
+	}
+
+	private static StringBuilder CreateScalarExtensionFunction(string name, IReadOnlyCollection<string> components, string functionName, string functionUsage)
+	{
+		var sb = new StringBuilder();
+
+		sb.Append(
+			@$"	public static ref {name}<T> {functionName}<T, TOther>(this ref {name}<T> vector, TOther value) where T : struct, INumber<T> where TOther : struct, INumber<TOther>
+	{{
+		var tValue = T.Create(value);
+{string.Join("", components.Select(s => $"\t\tvector.{s} {functionUsage} (tValue);\n"))}
+		return ref vector;
+	}}");
+
+		return sb;
+	}
+
+	private static StringBuilder CreateDestinationFunction(string name, IReadOnlyCollection<string> components, string functionName, string functionUsage)
+	{
+		var sb = new StringBuilder(
+			@$"	public static ref {name}<TDest> {functionName}<T, TOther, TDest>(this {name}<T> vector, {name}<TOther> other, ref {name}<TDest> destination)
+		where T : struct, INumber<T> where TOther : struct, INumber<TOther> where TDest : struct, INumber<TDest> =>
+		ref destination.Set(vector {functionUsage} (other.Cast<TOther, T>()));
+
+	public static ref {name}<TDest> {functionName}<T, TOther, TDest>(this {name}<T> vector, ({String.Join(", ", components.Select(s => $"TOther {s}"))}) other, ref {name}<TDest> destination)
+		where T : struct, INumber<T> where TOther : struct, INumber<TOther> where TDest : struct, INumber<TDest> =>
+		ref destination.Set(vector {functionUsage} ((({name}<TOther>) other).Cast<TOther, T>()));
+");
+
+		sb.Append("\n").Append(CreateScalarDestinationFunction(name, functionName, functionUsage)).Append("\n");
+		return sb;
+	}
+
+	private static StringBuilder CreateScalarDestinationFunction(string name, string functionName, string functionUsage)
+	{
+		var sb = new StringBuilder();
+
+		sb.Append(@$"	public static ref {name}<TDest> {functionName}<T, TOther, TDest>(this {name}<T> vector, TOther value, ref {name}<TDest> destination)
+		where T : struct, INumber<T> where TOther : struct, INumber<TOther> where TDest : struct, INumber<TDest> =>
+		ref destination.Set(vector {functionUsage} (T.Create(value)));");
+
+		return sb;
+	}
+
+	private static StringBuilder CreateVoidExtensionFunction(string name, IReadOnlyCollection<string> components, string functionName, string functionUsage)
+	{
+		var sb = new StringBuilder();
+
+		sb.Append(@$"	public static ref {name}<T> {functionName}<T>(this ref {name}<T> vector) where T : struct, INumber<T>
+	{{
+{string.Join("", components.Select(s => $"\t\tvector.{s} = T.Create({functionUsage}(decimal.Create(vector.{s})));\n"))}
+		return ref vector;
+	}}");
+
+		return sb;
+	}
+
+	private static StringBuilder CreateVoidDestinationFunction(string name, IReadOnlyCollection<string> components, string functionName, string functionUsage)
+	{
+		var sb = new StringBuilder();
+
+		sb.Append(@$"	public static ref {name}<TDest> {functionName}<T, TDest>(this {name}<T> vector, ref {name}<TDest> destination)
+		where T : struct, INumber<T> where TDest : struct, INumber<TDest> =>
+		ref destination.Set({string.Join(", ", components.Select(s => $"TDest.Create({functionUsage}(decimal.Create(vector.{s})))"))});");
+
+		return sb;
 	}
 }

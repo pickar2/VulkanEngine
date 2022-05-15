@@ -20,6 +20,8 @@ public class ControlInfoBox : AbsolutePanel
 		}
 	}
 
+	public override bool Selectable { get; set; } = false;
+
 	public override void PropagateScale(Vector2<float> parentScale)
 	{
 		ComputedScale = new Vector2<float>(1);
@@ -64,6 +66,4 @@ public class ControlInfoBox : AbsolutePanel
 		stackPanel.AddChild(new Label {Text = $"\tComputedArea: {_control.ComputedArea}"});
 		stackPanel.AddChild(new Label {Text = $"\tComputedScale: {_control.ComputedScale}"});
 	}
-
-	public override bool Selectable { get; set; } = false;
 }

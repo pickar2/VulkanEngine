@@ -8,45 +8,45 @@ public static class Vector2Extensions
 
 	public static double Dot<T, TOther>(this Vector2<T> vector, Vector2<TOther> other)
 		where T : struct, INumber<T> where TOther : struct, INumber<TOther> =>
-		Double.Create(vector.X * T.Create(other.X) + vector.Y * T.Create(other.Y));
+		Double.Create((vector.X * T.Create(other.X)) + (vector.Y * T.Create(other.Y)));
 
 	public static double Dot<T, TOther>(this Vector2<T> vector, (T X, T Y) other)
 		where T : struct, INumber<T> where TOther : struct, INumber<TOther> =>
-		Double.Create(vector.X * T.Create(other.X) + vector.Y * T.Create(other.Y));
-	
+		Double.Create((vector.X * T.Create(other.X)) + (vector.Y * T.Create(other.Y)));
+
 	public static ref Vector2<T> Min<T, TOther>(this ref Vector2<T> vector, Vector2<TOther> other)
-	where T : struct, INumber<T> where TOther : struct, INumber<TOther> => ref Min(vector, other, ref vector);
+		where T : struct, INumber<T> where TOther : struct, INumber<TOther> => ref Min(vector, other, ref vector);
 
 	public static ref Vector2<T> Min<T, TOther>(this Vector2<T> vector, Vector2<TOther> other, ref Vector2<T> dest)
-	where T : struct, INumber<T> where TOther : struct, INumber<TOther>
+		where T : struct, INumber<T> where TOther : struct, INumber<TOther>
 	{
 		var otherX = T.Create(other.X);
 		var otherY = T.Create(other.Y);
-		
+
 		dest.X = vector.X < otherX ? vector.X : otherX;
 		dest.Y = vector.Y < otherY ? vector.Y : otherY;
 
 		return ref dest;
 	}
-	
+
 	public static Vector2<T> Min<T, TOther>(Vector2<T> vector, Vector2<TOther> other)
-	where T : struct, INumber<T> where TOther : struct, INumber<TOther>
+		where T : struct, INumber<T> where TOther : struct, INumber<TOther>
 	{
 		var otherX = T.Create(other.X);
 		var otherY = T.Create(other.Y);
 
 		return new Vector2<T>(vector.X < otherX ? vector.X : otherX, vector.Y < otherY ? vector.Y : otherY);
 	}
-	
+
 	public static ref Vector2<T> Max<T, TOther>(this ref Vector2<T> vector, Vector2<TOther> other)
-	where T : struct, INumber<T> where TOther : struct, INumber<TOther> => ref Max(vector, other, ref vector);
+		where T : struct, INumber<T> where TOther : struct, INumber<TOther> => ref Max(vector, other, ref vector);
 
 	public static ref Vector2<T> Max<T, TOther>(this Vector2<T> vector, Vector2<TOther> other, ref Vector2<T> dest)
-	where T : struct, INumber<T> where TOther : struct, INumber<TOther>
+		where T : struct, INumber<T> where TOther : struct, INumber<TOther>
 	{
 		var otherX = T.Create(other.X);
 		var otherY = T.Create(other.Y);
-		
+
 		dest.X = vector.X > otherX ? vector.X : otherX;
 		dest.Y = vector.Y > otherY ? vector.Y : otherY;
 

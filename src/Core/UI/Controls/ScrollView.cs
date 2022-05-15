@@ -6,10 +6,9 @@ namespace Core.UI.Controls;
 
 public class ScrollView : UiControl
 {
-	public Vector2<float> ScrollOffset;
-
 	private readonly UiControl _horizontalSlider;
 	private Vector2<float> _maxAreaInside;
+	public Vector2<float> ScrollOffset;
 
 	public ScrollView()
 	{

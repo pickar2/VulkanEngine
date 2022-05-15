@@ -6,15 +6,16 @@ namespace Core.UI.Controls;
 
 public abstract class UiControl : IDisposable
 {
-	public virtual bool Selectable { get; set; } = true;
-	public virtual bool Resizable { get; set; } = true;
-	public virtual Overflow Overflow { get; set; } = Overflow.Hidden;
+	protected List<UiControl> ChildrenList = new();
 
 	// set by user
 	public Vector2<float> Offset;
 	public short OffsetZ;
-	public Vector2<float> Size = new(float.PositiveInfinity);
 	public Vector2<float> Scale = new(1.0f);
+	public Vector2<float> Size = new(float.PositiveInfinity);
+	public virtual bool Selectable { get; set; } = true;
+	public virtual bool Resizable { get; set; } = true;
+	public virtual Overflow Overflow { get; set; } = Overflow.Hidden;
 
 	// set internally
 	public virtual Vector2<float> BasePos { get; set; }
@@ -33,9 +34,14 @@ public abstract class UiControl : IDisposable
 	public virtual Vector2<float> MaskStart { get; set; } = new(float.NegativeInfinity);
 	public virtual Vector2<float> MaskEnd { get; set; } = new(float.PositiveInfinity);
 
-	protected List<UiControl> ChildrenList = new();
-
 	public virtual IReadOnlyCollection<UiControl> Children => ChildrenList;
+
+	public virtual void Dispose()
+	{
+		foreach (var child in Children) child.Dispose();
+		GC.SuppressFinalize(this);
+	}
+
 	public virtual void AddChild(UiControl control) => ChildrenList.Add(control);
 	public virtual void RemoveChild(UiControl control) => ChildrenList.Remove(control);
 	public virtual void ClearChildren() => ChildrenList.Clear();
@@ -81,12 +87,6 @@ public abstract class UiControl : IDisposable
 
 			child.ArrangeAndChildren(area);
 		}
-	}
-
-	public virtual void Dispose()
-	{
-		foreach (var child in Children) child.Dispose();
-		GC.SuppressFinalize(this);
 	}
 }
 

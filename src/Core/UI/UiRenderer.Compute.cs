@@ -476,7 +476,7 @@ public unsafe partial class UiRenderer
 			CommandBuffers.EndSingleTimeCommands(ref copyBuffer, _copyCommandPool, Context.Queues.Transfer);
 		}
 
-		Utils.Utils.MapDataToVulkanBuffer((span) =>
+		Utils.Utils.MapDataToVulkanBuffer(span =>
 		{
 			var intSpan = MemoryMarshal.Cast<byte, int>(span);
 			intSpan[0] = UiComponentFactory.Instance.ComponentCount;

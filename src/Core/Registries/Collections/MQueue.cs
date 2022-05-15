@@ -20,7 +20,7 @@ using System.Threading;
 using Core.Registries.Collections.DebugViews;
 using Core.Serializer.Entities.MapperWorkers;
 
-namespace Core.Registries.Collections.Pooled;
+namespace Core.Registries.Collections;
 
 /// <summary>
 ///     A simple Queue of generic objects.  Internally it is implemented as a
@@ -63,7 +63,9 @@ public class MQueue<T> : ICollection, IReadOnlyCollection<T>, IDisposable
 	///     The number of items in the queue.
 	/// </summary>
 	public int Count { get; private set; }
+
 	bool ICollection.IsSynchronized => false;
+
 	object ICollection.SyncRoot
 	{
 		get

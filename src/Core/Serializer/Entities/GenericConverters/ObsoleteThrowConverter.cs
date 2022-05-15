@@ -1,4 +1,5 @@
 ﻿using System;
+
 // ReSharper disable UnusedTypeParameter
 
 namespace Core.Serializer.Entities.GenericConverters;

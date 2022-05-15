@@ -6,7 +6,6 @@ using Core.UI.Animations;
 using Core.UI.Controls;
 using Core.UI.Controls.Panels;
 using Core.UI.Transforms;
-using Core.Utils;
 using Silk.NET.Input;
 using SimpleMath.Vectors;
 
@@ -14,6 +13,8 @@ namespace Core.UI;
 
 public static partial class UiManager
 {
+	private static readonly Random Random = new(1234);
+
 	private static void InitTestScene()
 	{
 		// off root control example
@@ -47,8 +48,6 @@ public static partial class UiManager
 		Transform3DTest(mainControl);
 		AnimationTest(mainControl);
 	}
-
-	private static readonly Random Random = new(1234);
 
 	public static int RandomColor(bool randomTransparency = false)
 	{
@@ -228,7 +227,7 @@ public static partial class UiManager
 		panel.AddChild(box2);
 	}
 
-	private static unsafe void AnimationTest(UiControl parent)
+	private static void AnimationTest(UiControl parent)
 	{
 		var button = new ColoredBox
 		{
@@ -257,7 +256,7 @@ public static partial class UiManager
 		};
 		parent.AddChild(box2);
 
-		var animation1 = Animation.OfNumber(() => ref box1.Offset.X, box1.Offset.X, box1.Offset.X + 75, 2000, animationOffset: 1,
+		var animation1 = Animation.OfNumber(() => ref box1.Offset.X, box1.Offset.X, box1.Offset.X + 75, 2000, 1,
 			type: AnimationType.RepeatAndReverse, curve: DefaultCurves.EaseInOutSine);
 
 		var animation2 = Animation.OfNumber(() => ref box1.Offset.Y, box1.Offset.Y, box1.Offset.Y + 75, 1000, startDelay: 500,

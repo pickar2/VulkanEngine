@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Core.Registries.Collections;
 using Core.Registries.CoreTypes;
 using Core.Registries.Entities;
 using Core.Serializer.Entities.MapperWorkers;
@@ -58,17 +57,17 @@ public abstract class ComplexRegistry<TEventManager, TMainType> : IComplexRegist
 		return result;
 	}
 
+	public void Dispose()
+	{
+		_registry.Dispose();
+		EventManager.Dispose();
+	}
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool ContainsKey(string identifier)
 	{
 		using var upgradableReadLock = _registry.Lock.UpgradableReadLock();
 		return _registry.ContainsKeyUnsafe(identifier);
-	}
-
-	public void Dispose()
-	{
-		_registry.Dispose();
-		EventManager.Dispose();
 	}
 
 	// T is provided for support ComplexRegistry that have generic interface as TMainType argument.

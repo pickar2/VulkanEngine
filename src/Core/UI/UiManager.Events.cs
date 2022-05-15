@@ -9,23 +9,17 @@ namespace Core.UI;
 
 public static partial class UiManager
 {
-	public static Vector2<float> MousePos { get; private set; }
-	public static UiControl? TopControl { get; private set; }
-
-	public static event Action? BeforeUpdate;
-	public static event Action? AfterUpdate;
-
-	private static UiControl? _draggedControl;
-
-	public delegate void OnHoverDelegate(UiControl control, Vector2<float> pos);
-
 	public delegate void OnClickDelegate(UiControl control, MouseButton button, Vector2<float> pos);
 
-	public delegate void OnDragStartDelegate(UiControl control, Vector2<float> startPos);
+	public delegate void OnDragEndDelegate(UiControl control, Vector2<float> endPos);
 
 	public delegate void OnDragMoveDelegate(UiControl control, Vector2<float> from, Vector2<float> to);
 
-	public delegate void OnDragEndDelegate(UiControl control, Vector2<float> endPos);
+	public delegate void OnDragStartDelegate(UiControl control, Vector2<float> startPos);
+
+	public delegate void OnHoverDelegate(UiControl control, Vector2<float> pos);
+
+	private static UiControl? _draggedControl;
 
 	private static readonly Dictionary<UiControl, OnHoverDelegate> OnHoverStartDelegates = new();
 	private static readonly Dictionary<UiControl, OnHoverDelegate> OnHoverEndDelegates = new();
@@ -36,6 +30,11 @@ public static partial class UiManager
 	private static readonly Dictionary<UiControl, OnDragStartDelegate> OnDragStartDelegates = new();
 	private static readonly Dictionary<UiControl, OnDragMoveDelegate> OnDragMoveDelegates = new();
 	private static readonly Dictionary<UiControl, OnDragEndDelegate> OnDragEndDelegates = new();
+	public static Vector2<float> MousePos { get; private set; }
+	public static UiControl? TopControl { get; private set; }
+
+	public static event Action? BeforeUpdate;
+	public static event Action? AfterUpdate;
 
 	private static void InitEvents()
 	{

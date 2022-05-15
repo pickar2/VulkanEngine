@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Drawing;
-using System.Runtime.CompilerServices;
-using Core.Utils;
 using SimpleMath.Vectors;
 
 namespace Core.UI.Animations;
@@ -13,9 +11,9 @@ public interface IValueInterpolator
 
 public abstract class ValueInterpolator<TValue> : IValueInterpolator
 {
-	public TValue Start, End;
-	
 	public delegate void ValueUpdater(TValue value);
+
+	public TValue Start, End;
 	public ValueUpdater Updater;
 
 	protected ValueInterpolator(TValue start, TValue end, ValueUpdater updater)

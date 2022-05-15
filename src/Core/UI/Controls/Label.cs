@@ -12,9 +12,11 @@ public class Label : StackPanel
 	private static readonly MaterialDataFactory UvMaterial = UiMaterialManager.GetFactory("core:texture_uv_material");
 	private static readonly MaterialDataFactory FontMaterial = UiMaterialManager.GetFactory("core:font_material");
 
-	public Label() => Scale = new Vector2<float>(0.5f);
-
 	private Vector2<float> _computedScale;
+
+	private string _text = "";
+
+	public Label() => Scale = new Vector2<float>(0.5f);
 
 	public override Vector2<float> ComputedScale
 	{
@@ -25,8 +27,6 @@ public class Label : StackPanel
 			UpdateText();
 		}
 	}
-
-	private string _text = "";
 
 	public string Text
 	{

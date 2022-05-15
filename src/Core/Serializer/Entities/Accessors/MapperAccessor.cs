@@ -160,7 +160,7 @@ public abstract class MapperAccessor
 		public override T PatchNew<T>(in Patcher patcher)
 		{
 			if (_patcherCreator is not Func<Patcher, T> patcherCreator)
-				patcherCreator =  Unsafe.As<Delegate, Func<Patcher, T>>(ref _patcherCreator);
+				patcherCreator = Unsafe.As<Delegate, Func<Patcher, T>>(ref _patcherCreator);
 			return patcherCreator(patcher);
 		}
 

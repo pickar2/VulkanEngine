@@ -30,9 +30,8 @@ public abstract class ArrayOfSubArrays : AbstractArrayOfSubArrays
 
 public abstract class FixedKeyCountAOSA : AbstractArrayOfSubArrays
 {
-	protected readonly SubArrayData[] SubArrays;
 	protected readonly bool[] KeyAbsenceMask;
-	public int KeyCount { get; }
+	protected readonly SubArrayData[] SubArrays;
 
 	public FixedKeyCountAOSA(int itemSize, int keyCount, int startItemCapacity) : base(itemSize, startItemCapacity)
 	{
@@ -41,6 +40,8 @@ public abstract class FixedKeyCountAOSA : AbstractArrayOfSubArrays
 		KeyAbsenceMask = new bool[KeyCount];
 		Array.Fill(KeyAbsenceMask, true);
 	}
+
+	public int KeyCount { get; }
 
 	public override SubArrayData GetData(int key) => SubArrays[key];
 
@@ -73,14 +74,6 @@ public abstract class FixedKeyCountAOSA : AbstractArrayOfSubArrays
 public abstract unsafe class AbstractArrayOfSubArrays
 {
 	protected readonly List<int> Keys = new();
-	protected int MaxKey { get; set; } = int.MinValue;
-
-	public byte* Data { get; protected set; }
-
-	public int StartItemCapacity { get; }
-	public int ItemSize { get; }
-	public int GlobalItemCapacity { get; private set; }
-	public int GlobalAllocatedItemCount { get; private set; }
 
 	public AbstractArrayOfSubArrays(int itemSize, int startItemCapacity)
 	{
@@ -89,6 +82,15 @@ public abstract unsafe class AbstractArrayOfSubArrays
 
 		GlobalItemCapacity = StartItemCapacity;
 	}
+
+	protected int MaxKey { get; set; } = int.MinValue;
+
+	public byte* Data { get; protected set; }
+
+	public int StartItemCapacity { get; }
+	public int ItemSize { get; }
+	public int GlobalItemCapacity { get; private set; }
+	public int GlobalAllocatedItemCount { get; private set; }
 
 	public abstract SubArrayData GetData(int key);
 	public abstract SubArrayData GetOrCreateData(int key);
@@ -307,13 +309,13 @@ public static class ListExtensions
 
 public class SubArrayData
 {
+	public int[] Gaps = new int[8];
 	public AbstractArrayOfSubArrays Storage { get; init; } = default!;
 	public int Key { get; init; }
 
 	public int StartByteIndex { get; set; }
 
 	public int GapCount { get; set; }
-	public int[] Gaps = new int[8];
 
 	public int ItemCount { get; set; }
 	public int ItemCapacity { get; set; }
@@ -332,7 +334,7 @@ public class KeyedPointerAccessor
 
 public static class AOSATest
 {
-	public static unsafe void Test()
+	public static void Test()
 	{
 		// int keyCount = 4096;
 		// var test = new GlobalAOSA(40, 512);

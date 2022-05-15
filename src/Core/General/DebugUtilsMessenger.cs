@@ -9,9 +9,6 @@ namespace Core.General;
 
 public unsafe class DebugUtilsMessenger : IDisposable
 {
-	public DebugUtilsMessengerCreateInfoEXT CreateInfo;
-	public DebugUtilsMessengerEXT DebugMessenger;
-
 	private const DebugUtilsMessageSeverityFlagsEXT MessageSeverity = DebugUtilsMessageSeverityErrorBitExt |
 	                                                                  DebugUtilsMessageSeverityWarningBitExt;
 
@@ -25,6 +22,9 @@ public unsafe class DebugUtilsMessenger : IDisposable
 		0x7cd0911d // broken layer check https://github.com/KhronosGroup/Vulkan-ValidationLayers/issues/1340
 	};
 
+	public DebugUtilsMessengerCreateInfoEXT CreateInfo;
+	public DebugUtilsMessengerEXT DebugMessenger;
+
 	public DebugUtilsMessenger() =>
 		CreateInfo = new DebugUtilsMessengerCreateInfoEXT
 		{
@@ -33,6 +33,12 @@ public unsafe class DebugUtilsMessenger : IDisposable
 			MessageType = MessageType,
 			PfnUserCallback = (DebugUtilsMessengerCallbackFunctionEXT) DebugCallback
 		};
+
+	public void Dispose()
+	{
+		Context.ExtDebugUtils.DestroyDebugUtilsMessenger(Context.Instance, DebugMessenger, null);
+		GC.SuppressFinalize(this);
+	}
 
 	private uint DebugCallback(DebugUtilsMessageSeverityFlagsEXT messageSeverity,
 		DebugUtilsMessageTypeFlagsEXT messageTypes,
@@ -60,11 +66,5 @@ public unsafe class DebugUtilsMessenger : IDisposable
 				Context.ExtDebugUtils.CreateDebugUtilsMessenger(Context.Instance, CreateInfo, null, debugMessenger),
 				"Failed to create debug messenger");
 		}
-	}
-
-	public void Dispose()
-	{
-		Context.ExtDebugUtils.DestroyDebugUtilsMessenger(Context.Instance, DebugMessenger, null);
-		GC.SuppressFinalize(this);
 	}
 }

@@ -1,5 +1,4 @@
 ﻿using System;
-using Core.Registries.Collections;
 
 namespace Core.Registries.EventManagerTypes.PriorityEventManagerAPI;
 

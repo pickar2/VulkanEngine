@@ -1,6 +1,5 @@
 ﻿using Core.Locales.Entities;
 using Core.Registries.API;
-using Core.Registries.Collections;
 using Core.Registries.Entities;
 using Core.Registries.EventManagerTypes;
 

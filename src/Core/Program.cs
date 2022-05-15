@@ -1,11 +1,6 @@
-﻿using System;
-using System.Diagnostics;
-using System.Runtime.CompilerServices;
+﻿using System.Diagnostics;
 using System.Threading;
-using Core.Configs.Entities;
 using Core.General;
-using Core.Registries.CoreTypes;
-using Core.Serializer.Entities.MapperWorkers;
 using Core.UI;
 using Core.Utils;
 using Core.Utils.Features;
@@ -27,7 +22,8 @@ internal static class Program
 		stopwatch.Stop();
 		App.Logger.Info.Message($"START");
 
-		App.Logger.Info.Message($"Version of {appName} is {App.Configuration.Version}. Ticks: {stopwatch.ElapsedTicks}. Time: {stopwatch.ElapsedMilliseconds}ms.");
+		App.Logger.Info.Message(
+			$"Version of {appName} is {App.Configuration.Version}. Ticks: {stopwatch.ElapsedTicks}. Time: {stopwatch.ElapsedMilliseconds}ms.");
 		if (VulkanOptions.DebugMode)
 			App.Logger.Warn.Message($"DEBUG MODE IS ENABLED");
 

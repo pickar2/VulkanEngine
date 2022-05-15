@@ -11,11 +11,16 @@ namespace Core.UI;
 
 public sealed class UiMaterialManager : SimpleRegistry<NoneEventManager<MaterialDataFactory>, MaterialDataFactory>
 {
+	private readonly StringBuilder _fragmentIncludes = new();
+	private readonly StringBuilder _fragmentSwitch = new();
+
+	private readonly StringBuilder _vertexIncludes = new();
+	private readonly StringBuilder _vertexSwitch = new();
+
+	private UiMaterialManager() : base(NamespacedName.CreateWithName("ui-material-manager")) { }
 	public short MaterialCount { get; private set; }
 	public short VertMaterialCount { get; private set; }
 	public short FragMaterialCount { get; private set; }
-
-	private UiMaterialManager() : base(NamespacedName.CreateWithName("ui-material-manager")) { }
 	public static UiMaterialManager Instance { get; } = new();
 
 	public static MaterialDataFactory GetFactory(string name)
@@ -24,12 +29,6 @@ public sealed class UiMaterialManager : SimpleRegistry<NoneEventManager<Material
 			throw new ArgumentException($"Tried to get unknown material factory `{name}`.").AsExpectedException();
 		return factory;
 	}
-
-	private readonly StringBuilder _vertexIncludes = new();
-	private readonly StringBuilder _vertexSwitch = new();
-
-	private readonly StringBuilder _fragmentIncludes = new();
-	private readonly StringBuilder _fragmentSwitch = new();
 
 	protected override void RegisterActions(MaterialDataFactory materialFactory, Assembly callingAssembly)
 	{

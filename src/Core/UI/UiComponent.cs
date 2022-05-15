@@ -8,8 +8,8 @@ namespace Core.UI;
 
 public unsafe class UiComponent : VulkanDataHolder
 {
-	private MaterialDataHolder _vertMaterial = default!;
 	private MaterialDataHolder _fragMaterial = default!;
+	private MaterialDataHolder _vertMaterial = default!;
 
 	public MaterialDataHolder VertMaterial
 	{
@@ -42,9 +42,9 @@ public class UiComponentFactory : AbstractVulkanDataFactory<UiComponent>
 {
 	public static readonly UiComponentFactory Instance = new();
 
-	public static UiComponent CreateComponent() => Instance.Create();
-
 	private UiComponentFactory(int dataSize = 64) : base(dataSize) { }
+
+	public static UiComponent CreateComponent() => Instance.Create();
 }
 
 public struct UiComponentData

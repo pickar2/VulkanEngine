@@ -7,5 +7,5 @@ global using Core.Exceptions;
 global using Core.Locales;
 global using Core.Logs;
 global using Core.Mods;
-global using Core.Registries.Collections.Pooled;
+global using Core.Registries.Collections;
 global using Core.Serializer;

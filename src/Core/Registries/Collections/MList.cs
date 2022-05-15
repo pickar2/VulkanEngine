@@ -11,6 +11,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using Core.Registries.Collections.DebugViews;
+using Core.Registries.Collections.Interfaces;
 
 namespace Core.Registries.Collections;
 
@@ -131,7 +132,7 @@ public class MList<T> : IList<T>, IReadOnlyMList<T>, IList, IDisposable
 	{
 		if (item.ThrowIfNullable() is not T castedValue)
 			throw new ArgumentException($"Can't cast {item!.GetType()} to {typeof(T)}").AsExpectedException();
-		
+
 		Add(castedValue);
 		return Count - 1;
 	}
@@ -237,8 +238,9 @@ public class MList<T> : IList<T>, IReadOnlyMList<T>, IList, IDisposable
 		// only make one virtual call to EqualityComparer.IndexOf.
 		Count != 0 && IndexOf(item) != -1;
 
-	void ICollection<T>.CopyTo(T[] array, int arrayIndex) => 
+	void ICollection<T>.CopyTo(T[] array, int arrayIndex) =>
 		Array.Copy(_items, 0, array, arrayIndex, Count);
+
 	IEnumerator<T> IEnumerable<T>.GetEnumerator() => new Enumerator(this);
 	IEnumerator IEnumerable.GetEnumerator() => new Enumerator(this);
 
@@ -278,7 +280,6 @@ public class MList<T> : IList<T>, IReadOnlyMList<T>, IList, IDisposable
 		if (index < 0) return false;
 		RemoveAt(index);
 		return true;
-
 	}
 
 	/// <summary>
@@ -418,7 +419,7 @@ public class MList<T> : IList<T>, IReadOnlyMList<T>, IList, IDisposable
 	private void EnsureCapacity(int min)
 	{
 		if (_items.Length >= min) return;
-		
+
 		int newCapacity = _items.Length == 0 ? DefaultCapacity : _items.Length * 2;
 		// Allow the list to grow to maximum possible capacity (~2G elements) before encountering overflow.
 		// Note that this check works even when _items.Length overflowed thanks to the (uint) cast
@@ -457,6 +458,7 @@ public class MList<T> : IList<T>, IReadOnlyMList<T>, IList, IDisposable
 
 	public int FindIndex(Func<T, bool> match) =>
 		FindIndex(0, Count, match);
+
 	public int FindIndex(int startIndex, Func<T, bool> match) =>
 		FindIndex(startIndex, Count - startIndex, match);
 
@@ -486,6 +488,7 @@ public class MList<T> : IList<T>, IReadOnlyMList<T>, IList, IDisposable
 
 	public int FindLastIndex(Func<T, bool> match) =>
 		FindLastIndex(Count - 1, Count, match);
+
 	public int FindLastIndex(int startIndex, Func<T, bool> match) =>
 		FindLastIndex(startIndex, startIndex + 1, match);
 
@@ -537,7 +540,7 @@ public class MList<T> : IList<T>, IReadOnlyMList<T>, IList, IDisposable
 	/// <summary>
 	///     Equivalent to MList.Span.Slice(index, count).
 	/// </summary>
-	public Span<T> GetRange(int index, int count) => 
+	public Span<T> GetRange(int index, int count) =>
 		Span.Slice(index.ThrowIfNegative(),
 			count.ThrowIfNegative()
 				.ThrowIfGreaterThan(Count - index));
@@ -648,7 +651,7 @@ public class MList<T> : IList<T>, IReadOnlyMList<T>, IList, IDisposable
 
 		Count += count;
 		_version++;
-		
+
 		return _items.AsSpan(index, count);
 	}
 
@@ -682,7 +685,7 @@ public class MList<T> : IList<T>, IReadOnlyMList<T>, IList, IDisposable
 		(Count != 0 && index < 0).ThrowIfTrue($"Something went wrong.");
 		// Special case for empty list
 		if (Count == 0) return -1;
-		
+
 		return Array.LastIndexOf(_items,
 			item,
 			index.ThrowIfGreaterOrEqualsThan(Count),
@@ -726,7 +729,7 @@ public class MList<T> : IList<T>, IReadOnlyMList<T>, IList, IDisposable
 	public void RemoveRange(int index, int count)
 	{
 		if (count.ThrowIfNegative().ThrowIfGreaterThan(Count - index.ThrowIfNegative()) <= 0) return;
-		
+
 		Count -= count;
 		if (index < Count)
 		{
@@ -888,6 +891,7 @@ public class MList<T> : IList<T>, IReadOnlyMList<T>, IList, IDisposable
 
 		private T? _current;
 		public T Current => _current ?? throw new ArgumentNullException().GetBaseException();
+
 		object IEnumerator.Current
 		{
 			get
@@ -1022,7 +1026,7 @@ public class MList<T> : IList<T>, IReadOnlyMList<T>, IList, IDisposable
 	public MList(IEnumerable<T> collection, ArrayPool<T> customPool)
 	{
 		_pool = customPool;
-		
+
 		switch (collection)
 		{
 			case ICollection<T> c:
@@ -1037,6 +1041,7 @@ public class MList<T> : IList<T>, IReadOnlyMList<T>, IList, IDisposable
 					c.CopyTo(_items, 0);
 					Count = count;
 				}
+
 				break;
 			default:
 				Count = 0;
@@ -1046,9 +1051,11 @@ public class MList<T> : IList<T>, IReadOnlyMList<T>, IList, IDisposable
 					while (en.MoveNext())
 						Add(en.Current);
 				}
+
 				break;
 		}
 	}
+
 	#endregion
 }
 

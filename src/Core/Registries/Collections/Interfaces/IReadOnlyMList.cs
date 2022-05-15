@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Core.Registries.Collections.Pooled;
+namespace Core.Registries.Collections.Interfaces;
 
 /// <summary>
 ///     Represents a read-only collection of pooled elements that can be accessed by index

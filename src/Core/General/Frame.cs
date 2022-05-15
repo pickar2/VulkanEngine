@@ -5,10 +5,10 @@ namespace Core.General;
 
 public class Frame : IDisposable
 {
-	public Semaphore PresentSemaphore;
-	public Semaphore RenderSemaphore;
-
 	public Fence Fence;
+	public Semaphore PresentSemaphore;
+
+	public Semaphore RenderSemaphore;
 	// public readonly CommandBuffer[] MainCommandBuffers;
 
 	public Frame(Semaphore presentSemaphore, Semaphore renderSemaphore, Fence fence)

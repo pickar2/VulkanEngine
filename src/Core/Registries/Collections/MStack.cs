@@ -20,7 +20,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using Core.Registries.Collections.DebugViews;
 
-namespace Core.Registries.Collections.Pooled;
+namespace Core.Registries.Collections;
 
 /// <summary>
 ///     A simple stack of objects.  Internally it is implemented as an array,
@@ -32,9 +32,9 @@ public class MStack<T> : ICollection, IReadOnlyCollection<T>, IDisposable
 {
 	private const int DefaultCapacity = 4;
 
-	private T[] _array; // Storage for stack elements. Do not rename (binary serialization)
-
 	private readonly ArrayPool<T> _pool;
+
+	private T[] _array; // Storage for stack elements. Do not rename (binary serialization)
 	private object? _syncRoot;
 
 	private int _version; // Used to keep enumerator in sync w/ collection. Do not rename (binary serialization)
@@ -78,7 +78,7 @@ public class MStack<T> : ICollection, IReadOnlyCollection<T>, IDisposable
 	}
 
 	IEnumerator IEnumerable.GetEnumerator() => new Enumerator(this);
-	
+
 	// void IDeserializationCallback.OnDeserialization(object sender) =>
 	// 	// We can't serialize array pools, so deserialized MStacks will
 	// 	// have to use the shared pool, even if they were using a custom pool
@@ -416,6 +416,7 @@ public class MStack<T> : ICollection, IReadOnlyCollection<T>, IDisposable
 			Debug.Assert(_index is -1 or -2);
 			throw new InvalidOperationException(_index == -2 ? "Enumeration was not started." : "Enumeration has ended.");
 		}
+
 		readonly object IEnumerator.Current => _currentElement ?? throw new ArgumentNullException().AsExpectedException();
 
 		void IEnumerator.Reset()

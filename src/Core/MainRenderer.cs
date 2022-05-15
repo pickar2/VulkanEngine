@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using Core.General;
-using Core.Registries.Collections;
 using Core.UI;
 using Core.UI.Controls;
 using Core.Utils;
@@ -26,16 +25,18 @@ public static unsafe class MainRenderer
 	private static CommandPool[] _commandPools = default!;
 	private static CommandBuffer[] _primaryCommandBuffers = default!;
 
+	private static MList<Fence>[] _fences = default!;
+
+	private static bool _framebufferResized;
+
+	public static long TimeMs { get; private set; }
+
+	public static int FrameIndex { get; private set; }
+
 	public static event Action<int, int>? BeforeDrawFrame;
 	public static event Action<int, int>? AfterDrawFrame;
 
 	public static event Func<int, CommandBuffer>? FillCommandBuffers;
-
-	private static MList<Fence>[] _fences = default!;
-
-	private static bool _framebufferResized;
-	
-	public static long TimeMs { get; private set; }
 
 	public static void Init()
 	{
@@ -211,8 +212,6 @@ public static unsafe class MainRenderer
 	public static Frame GetLastFrame() => Frames[(FrameIndex + FrameOverlap - 1) % FrameOverlap];
 
 	public static Frame GetCurrentFrame() => Frames[FrameIndex % FrameOverlap];
-
-	public static int FrameIndex { get; private set; }
 
 	public static void WaitInRenderer(this ref Fence fence, int imageIndex)
 	{

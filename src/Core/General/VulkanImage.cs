@@ -6,13 +6,13 @@ namespace Core.General;
 
 public class VulkanImage : IDisposable
 {
-	public uint Width;
+	public nint Allocation;
+	public Format Format;
 	public uint Height;
 	public Image Image;
 	public ImageView ImageView;
-	public nint Allocation;
 	public uint MipLevels;
-	public Format Format;
+	public uint Width;
 
 	public unsafe void Dispose()
 	{

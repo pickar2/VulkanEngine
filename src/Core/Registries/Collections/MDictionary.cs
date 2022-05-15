@@ -14,6 +14,7 @@ using Core.Registries.CoreTypes;
 using Core.Registries.Entities;
 using Core.Serializer.Entities;
 using Core.Serializer.Entities.MapperWorkers;
+using Core.Utils;
 
 namespace Core.Registries.Collections;
 
@@ -354,11 +355,11 @@ public class MDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictionary,
 		if (key is not TKey castedKey)
 			throw new ArgumentException($"Can't cast {nameof(key)} {key.GetType()} to {typeof(TKey)}")
 				.AsExpectedException();
-		
+
 		if (value.ThrowIfNullable() is not TValue castedValue)
 			throw new ArgumentException($"Can't cast {nameof(value)} {value!.GetType()} to {typeof(TValue)}")
 				.AsExpectedException();
-		
+
 		Add(castedKey, castedValue);
 	}
 
@@ -374,6 +375,7 @@ public class MDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictionary,
 	///     The number of items in the dictionary.
 	/// </summary>
 	public int Count => _count - _freeCount;
+
 	ICollection<TKey> IDictionary<TKey, TValue>.Keys => _keys ??= new KeyCollection(this);
 	ICollection<TValue> IDictionary<TKey, TValue>.Values => _values ??= new ValueCollection(this);
 
@@ -432,6 +434,7 @@ public class MDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictionary,
 	}
 
 	public bool ContainsKey(TKey key) => FindEntry(key) >= 0;
+
 	IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator() =>
 		new Enumerator(this, Enumerator.KeyValuePair);
 
@@ -543,6 +546,7 @@ public class MDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictionary,
 	}
 
 	public void AddRange((TKey key, TValue value)[] array) => AddRange(array.AsSpan());
+
 	public void AddOrUpdate(TKey key, TValue addValue, Func<TKey, TValue, TValue> updater)
 	{
 		if (TryGetValue(key, out var value))
@@ -586,7 +590,8 @@ public class MDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictionary,
 			{
 				// ValueType: devirtualize with EqualityComparer<TValue>.Default intrinsic
 				for (int i = 0; i < _count; i++)
-					if (entries![i].HashCode >= 0 && EqualityComparer<TValue>.Default.Equals(entries[i].Value, value)) return true;
+					if (entries![i].HashCode >= 0 && EqualityComparer<TValue>.Default.Equals(entries[i].Value, value))
+						return true;
 			}
 			else
 			{
@@ -595,7 +600,8 @@ public class MDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictionary,
 				// So cache in a local rather than get EqualityComparer per loop iteration
 				var defaultComparer = EqualityComparer<TValue>.Default;
 				for (int i = 0; i < _count; i++)
-					if (entries![i].HashCode >= 0 && defaultComparer.Equals(entries[i].Value, value)) return true;
+					if (entries![i].HashCode >= 0 && defaultComparer.Equals(entries[i].Value, value))
+						return true;
 			}
 		}
 
@@ -1027,7 +1033,7 @@ public class MDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictionary,
 		public bool MoveNext()
 		{
 			_version.ThrowIfNotEquals(_dictionary._version);
-			
+
 			// Use unsigned comparison since we set index to dictionary.count+1 when the enumeration ends.
 			// dictionary.count+1 could be negative if dictionary.count is int.MaxValue
 			while ((uint) _index < (uint) _dictionary._count)
@@ -1134,7 +1140,8 @@ public class MDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictionary,
 				try
 				{
 					for (int i = 0; i < count; i++)
-						if (entries![i].HashCode >= 0) objects[index++] = entries[i].Key!;
+						if (entries![i].HashCode >= 0)
+							objects[index++] = entries[i].Key!;
 				}
 				catch (ArrayTypeMismatchException exception)
 				{
@@ -1156,7 +1163,8 @@ public class MDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictionary,
 			int count = _dictionary._count;
 			var entries = _dictionary._entries;
 			for (int i = 0; i < count; i++)
-				if (entries![i].HashCode >= 0) array[index++] = entries[i].Key;
+				if (entries![i].HashCode >= 0)
+					array[index++] = entries[i].Key;
 		}
 
 		public int Count => _dictionary.Count;
@@ -1214,7 +1222,7 @@ public class MDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictionary,
 				{
 					_index.ThrowIfEquals(0)
 						.ThrowIfEquals(_dictionary._count + 1);
-					
+
 					return Current!;
 				}
 			}
@@ -1255,7 +1263,8 @@ public class MDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictionary,
 					try
 					{
 						for (int i = 0; i < count; i++)
-							if (entries![i].HashCode >= 0) objects[index++] = entries[i].Value!;
+							if (entries![i].HashCode >= 0)
+								objects[index++] = entries[i].Value!;
 					}
 					catch (ArrayTypeMismatchException exception)
 					{
@@ -1281,7 +1290,8 @@ public class MDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictionary,
 			int count = _dictionary._count;
 			var entries = _dictionary._entries;
 			for (int i = 0; i < count; i++)
-				if (entries![i].HashCode >= 0) array[index++] = entries[i].Value;
+				if (entries![i].HashCode >= 0)
+					array[index++] = entries[i].Value;
 		}
 
 		public int Count => _dictionary.Count;

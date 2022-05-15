@@ -14,14 +14,14 @@ public interface IShaderNode
 
 public interface IHasInputs : IShaderNode
 {
+	delegate void SetInputDelegate(int inputIndex, IHasOutputs outputNode, int outputIndex);
+
+	delegate void UnsetInputDelegate(int inputIndex);
+
 	IInputConnector[] InputConnectors { get; }
 
 	event SetInputDelegate? OnSetInput;
 	event UnsetInputDelegate? OnUnsetInput;
-
-	delegate void SetInputDelegate(int inputIndex, IHasOutputs outputNode, int outputIndex);
-
-	delegate void UnsetInputDelegate(int inputIndex);
 
 	public void SetInput(int inputIndex, IHasOutputs outputNode, int outputIndex);
 	public void UnsetInput(int inputIndex);
@@ -29,14 +29,14 @@ public interface IHasInputs : IShaderNode
 
 public interface IHasOutputs : IShaderNode
 {
+	delegate void AddOutputDelegate(int outputIndex, IHasInputs inputNode, int inputIndex);
+
+	delegate void RemoveOutputDelegate(int outputIndex, IInputConnector inputConnector);
+
 	IOutputConnector[] OutputConnectors { get; }
 
 	event AddOutputDelegate? OnAddOutput;
 	event RemoveOutputDelegate? OnRemoveOutput;
-
-	delegate void AddOutputDelegate(int outputIndex, IHasInputs inputNode, int inputIndex);
-
-	delegate void RemoveOutputDelegate(int outputIndex, IInputConnector inputConnector);
 
 	public void AddOutput(int outputIndex, IHasInputs inputNode, int inputIndex);
 	public void RemoveOutput(int outputIndex, IInputConnector inputConnector);
@@ -56,12 +56,12 @@ public class DefaultInputConnector : IInputConnector
 {
 	private readonly List<ShaderResourceType> _acceptedTypes;
 
+	public DefaultInputConnector(List<ShaderResourceType> acceptedTypes) => _acceptedTypes = acceptedTypes;
+
 	public IOutputConnector? OutputConnector { get; set; }
 
 	public IHasOutputs? ConnectedNode { get; set; }
 	public int ConnectorIndex { get; set; }
-
-	public DefaultInputConnector(List<ShaderResourceType> acceptedTypes) => _acceptedTypes = acceptedTypes;
 
 	public bool CanConnect(ShaderResourceType? type) => _acceptedTypes.Contains(type.ThrowIfNullable());
 }
@@ -92,11 +92,10 @@ public class DefaultOutputConnector : IOutputConnector
 
 public class DelegateOutputConnector : IOutputConnector
 {
-	public ShaderResourceType Type => TypeFunc();
-	public string Name => NameFunc();
-
 	public Func<ShaderResourceType> TypeFunc { get; set; } = default!;
 	public Func<string> NameFunc { get; set; } = default!;
+	public ShaderResourceType Type => TypeFunc();
+	public string Name => NameFunc();
 
 	public List<OutputConnection> Connections { get; } = new();
 }
@@ -244,26 +243,23 @@ public abstract class InputOutputNode : IHasInputs, IHasOutputs
 
 public class ConstInputNode : OutputOnlyNode
 {
-	public string Value { get; set; }
-
-	public override string GetHeaderCode() => "";
-	public override string GetBodyCode() => $"const {OutputConnectors[0].Type?.CompileName} {Name} = {Value};";
-
 	public ConstInputNode(String name, ShaderResourceType type, String value)
 	{
 		Name = name;
 		Value = value;
-		OutputConnectors = new IOutputConnector[] {new DefaultOutputConnector() {Type = type, Name = name}};
+		OutputConnectors = new IOutputConnector[] {new DefaultOutputConnector {Type = type, Name = name}};
 	}
+
+	public string Value { get; set; }
+
+	public override string GetHeaderCode() => "";
+	public override string GetBodyCode() => $"const {OutputConnectors[0].Type?.CompileName} {Name} = {Value};";
 }
 
 public class MaterialDataNode : OutputOnlyNode
 {
-	private readonly string _shaderType;
 	private readonly string _materialIdentifier;
-
-	public override string GetHeaderCode() => "";
-	public override string GetBodyCode() => $"{_materialIdentifier}_struct {Name} = {_materialIdentifier}_data[data.{_shaderType}ElementIndex];";
+	private readonly string _shaderType;
 
 	public MaterialDataNode(String materialIdentifier, String shaderType, String name, List<(ShaderResourceType type, string name)> structTuples)
 	{
@@ -281,6 +277,9 @@ public class MaterialDataNode : OutputOnlyNode
 			};
 		}
 	}
+
+	public override string GetHeaderCode() => "";
+	public override string GetBodyCode() => $"{_materialIdentifier}_struct {Name} = {_materialIdentifier}_data[data.{_shaderType}ElementIndex];";
 }
 
 public class VectorDecomposeNode : InputOutputNode
@@ -305,9 +304,6 @@ public class VectorDecomposeNode : InputOutputNode
 
 	private readonly List<ShaderResourceType> _acceptedTypes = new(DefaultAcceptedTypes);
 	protected ShaderResourceType? OutputType;
-
-	public override string GetHeaderCode() => "";
-	public override string GetBodyCode() => "";
 
 	public VectorDecomposeNode(string name)
 	{
@@ -351,12 +347,15 @@ public class VectorDecomposeNode : InputOutputNode
 			OutputConnectors = Array.Empty<IOutputConnector>();
 		};
 	}
+
+	public override string GetHeaderCode() => "";
+	public override string GetBodyCode() => "";
 }
 
 public abstract class FunctionNode : InputOutputNode
 {
-	public abstract string FunctionName { get; }
 	protected ShaderResourceType? OutputType;
+	public abstract string FunctionName { get; }
 
 	public override string GetHeaderCode() => "";
 
@@ -366,8 +365,6 @@ public abstract class FunctionNode : InputOutputNode
 
 public class DotFunctionNode : FunctionNode
 {
-	public override string FunctionName => "dot";
-
 	private static readonly List<ShaderResourceType> DefaultAcceptedTypes = new()
 	{
 		ShaderResourceType.Vec2F,
@@ -407,12 +404,12 @@ public class DotFunctionNode : FunctionNode
 			OutputType = null;
 		};
 	}
+
+	public override string FunctionName => "dot";
 }
 
 public class Vec3FunctionNode : FunctionNode
 {
-	public override string FunctionName => OutputType?.CompileName!;
-
 	private static readonly List<ShaderResourceType> DefaultAcceptedTypes = new()
 	{
 		ShaderResourceType.Float,
@@ -454,15 +451,12 @@ public class Vec3FunctionNode : FunctionNode
 			OutputType = null;
 		};
 	}
+
+	public override string FunctionName => OutputType?.CompileName!;
 }
 
 public class OutputNode : InputsOnlyNode
 {
-	public ShaderResourceType? Type { get; }
-
-	public override string GetHeaderCode() => "";
-	public override string GetBodyCode() => $"{Name} = {InputConnectors[0].OutputConnector?.Name};";
-
 	public OutputNode(string name, ShaderResourceType type)
 	{
 		Name = name;
@@ -470,4 +464,9 @@ public class OutputNode : InputsOnlyNode
 
 		InputConnectors = new IInputConnector[] {new DefaultInputConnector(new List<ShaderResourceType> {type})};
 	}
+
+	public ShaderResourceType? Type { get; }
+
+	public override string GetHeaderCode() => "";
+	public override string GetBodyCode() => $"{Name} = {InputConnectors[0].OutputConnector?.Name};";
 }

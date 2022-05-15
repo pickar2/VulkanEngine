@@ -84,21 +84,21 @@ public class ShaderResourceType
 		{Vec4D, 4}
 	};
 
-	public static ShaderResourceType ScalarToVector2(ShaderResourceType scalar) => ScalarToVector2Dict[scalar];
-	public static ShaderResourceType ScalarToVector3(ShaderResourceType scalar) => ScalarToVector3Dict[scalar];
-	public static ShaderResourceType ScalarToVector4(ShaderResourceType scalar) => ScalarToVector4Dict[scalar];
-
-	public static ShaderResourceType VectorToScalar(ShaderResourceType vector) => Vector2Scalar[vector];
-	public static int VectorSize(ShaderResourceType vector) => VectorSizes[vector];
-
-	public string CompileName { get; }
-	public string DisplayName { get; }
-	public int Size { get; }
-
 	public ShaderResourceType(string compileName, string displayName, int size)
 	{
 		CompileName = compileName;
 		DisplayName = displayName;
 		Size = size;
 	}
+
+	public string CompileName { get; }
+	public string DisplayName { get; }
+	public int Size { get; }
+
+	public static ShaderResourceType ScalarToVector2(ShaderResourceType scalar) => ScalarToVector2Dict[scalar];
+	public static ShaderResourceType ScalarToVector3(ShaderResourceType scalar) => ScalarToVector3Dict[scalar];
+	public static ShaderResourceType ScalarToVector4(ShaderResourceType scalar) => ScalarToVector4Dict[scalar];
+
+	public static ShaderResourceType VectorToScalar(ShaderResourceType vector) => Vector2Scalar[vector];
+	public static int VectorSize(ShaderResourceType vector) => VectorSizes[vector];
 }

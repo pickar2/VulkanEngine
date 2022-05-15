@@ -1,6 +1,4 @@
-﻿using Core.Registries.Collections;
-
-namespace Core.Registries.EventManagerTypes.PriorityEventManagerAPI;
+﻿namespace Core.Registries.EventManagerTypes.PriorityEventManagerAPI;
 
 public sealed partial class PriorityEventManager<TMainType>
 {

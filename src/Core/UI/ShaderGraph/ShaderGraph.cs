@@ -8,17 +8,17 @@ namespace Core.UI.ShaderGraph;
 
 public class ShaderGraph
 {
-	private readonly HashSet<IShaderNode> _shaderNodes = new();
 	private readonly HashSet<IShaderNode> _alreadyCompiled = new();
+	private readonly HashSet<IShaderNode> _shaderNodes = new();
 
 	public readonly Dictionary<IShaderNode, UiShaderNode> UiShaderNodes = new();
 
 	private int _id;
 
+	public List<(ShaderResourceType, string)> StructFields = new();
+
 	public string Identifier { get; set; } = default!;
 	public string Type { get; set; } = default!;
-
-	public List<(ShaderResourceType, string)> StructFields = new();
 
 	public string CompileGraph()
 	{
@@ -142,9 +142,6 @@ public class ShaderGraph
 
 public class UiShaderNode
 {
-	public ShaderGraph ShaderGraph { get; }
-	public IShaderNode Node { get; }
-	public int Id { get; }
 	public readonly List<UiComponent> Components = new();
 
 	public UiShaderNode(ShaderGraph graph, IShaderNode node, int id)
@@ -154,6 +151,10 @@ public class UiShaderNode
 		Id = id;
 		// UpdateUi();
 	}
+
+	public ShaderGraph ShaderGraph { get; }
+	public IShaderNode Node { get; }
+	public int Id { get; }
 
 	// [SuppressMessage("ReSharper", "PossibleLossOfFraction")]
 	// public void UpdateUi()

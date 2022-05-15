@@ -2,7 +2,6 @@
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Core.Registries.Collections;
 using Core.Registries.CoreTypes;
 using Core.Registries.Entities;
 using Core.Utils;
@@ -33,19 +32,23 @@ public static class App
 	// Files
 	internal static readonly string AppStateFile = Path.Combine(AppFolderPath, "configs.cache");
 	internal static readonly string RecoveryKeyFile = Path.Combine(AppFolderPath, "recovery-key.cache");
-	
+
 	// Default registries
 	// ReSharper disable once MemberCanBePrivate.Global
 	public static readonly LoggerRegistry Logger;
+
 	// ReSharper disable once MemberCanBePrivate.Global
 	public static readonly SerializerRegistry Serializer;
+
 	// ReSharper disable once MemberCanBePrivate.Global
 	public static readonly ConfigRegistry Configs;
+
 	// ReSharper disable once MemberCanBePrivate.Global
 	public static readonly LocaleRegistry Locales;
+
 	// ReSharper disable once MemberCanBePrivate.Global
 	public static readonly CacheFileRegistry Cache;
-	
+
 
 	static App()
 	{
@@ -53,7 +56,7 @@ public static class App
 		AppDomain.CurrentDomain.UnhandledException += (_, args) =>
 		{
 			var exception = (Exception) args.ExceptionObject;
-			App.Logger.Fatal.Message(exception);
+			Logger.Fatal.Message(exception);
 
 			// TODO: Send data to server
 			if (!exception.IsExpectedException()) { }

@@ -105,7 +105,7 @@ public class MLinkedList<T>
 	}
 
 	public UnsafeEnumerator GetEnumerator() => new(Head);
-	
+
 	public sealed class Node
 	{
 		internal Node? Next;
@@ -116,13 +116,14 @@ public class MLinkedList<T>
 
 		public bool IsExists => Next is not null || Previous is not null;
 	}
-	
+
 	public struct UnsafeEnumerator : IEnumerator<Node>
 	{
 		private readonly Node? _firstNode;
 		private Node? _current;
 		public readonly Node Current => _current.ThrowIfNullable();
 		readonly object IEnumerator.Current => Current;
+
 		// ReSharper disable once UnusedMember.Global
 		public UnsafeEnumerator() => throw new NotSupportedException().AsExpectedException();
 		internal UnsafeEnumerator(Node? firstNode) => (_firstNode, _current) = (firstNode, default!);

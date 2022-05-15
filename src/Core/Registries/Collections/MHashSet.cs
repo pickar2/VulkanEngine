@@ -12,8 +12,9 @@ using Core.Registries.Collections.Comparers;
 using Core.Registries.Collections.DebugViews;
 using Core.Serializer.Entities;
 using Core.Serializer.Entities.MapperWorkers;
+using Core.Utils;
 
-namespace Core.Registries.Collections.Pooled;
+namespace Core.Registries.Collections;
 
 /// <summary>
 ///     Represents a set of values.
@@ -125,12 +126,12 @@ public class MHashSet<T> : ISet<T>, IReadOnlyCollection<T>, IDisposable
 
 		mapper.MapField(ref _version);
 	}
-	
+
 #pragma warning disable CS8618
 	// ReSharper disable once UnusedParameter.Local
-	protected MHashSet(Patcher patcher) {}
+	protected MHashSet(Patcher patcher) { }
 #pragma warning restore CS8618
-	
+
 	// public virtual void OnDeserialization(object sender)
 	// {
 	//
@@ -163,7 +164,7 @@ public class MHashSet<T> : ISet<T>, IReadOnlyCollection<T>, IDisposable
 	// 	_version = _siInfo.GetInt32(VersionName);
 	// 	_siInfo = null;
 	// }
-	
+
 	/// <summary>
 	///     Gets object data for serialization.
 	/// </summary>
@@ -225,7 +226,7 @@ public class MHashSet<T> : ISet<T>, IReadOnlyCollection<T>, IDisposable
 		public bool MoveNext()
 		{
 			_version.ThrowIfNotEquals(_hashSet._version);
-				
+
 			while (_index < _hashSet._lastIndex)
 			{
 				if (_hashSet._slots![_index].HashCode >= 0)
@@ -522,7 +523,7 @@ public class MHashSet<T> : ISet<T>, IReadOnlyCollection<T>, IDisposable
 
 				return true;
 			}
-			
+
 			// The chain of entries forms a loop, which means a concurrent update has happened.
 			collisionCount = collisionCount.ThrowIfGreaterOrEqualsThan(_size);
 		}
@@ -1189,7 +1190,8 @@ public class MHashSet<T> : ISet<T>, IReadOnlyCollection<T>, IDisposable
 		if (Equals(other, this)) return true;
 
 		foreach (var element in other)
-			if (Contains(element)) return true;
+			if (Contains(element))
+				return true;
 
 		return false;
 	}
@@ -1211,7 +1213,8 @@ public class MHashSet<T> : ISet<T>, IReadOnlyCollection<T>, IDisposable
 		if (Count == 0) return false;
 
 		for (int i = 0, len = other.Length; i < len; i++)
-			if (Contains(other[i])) return true;
+			if (Contains(other[i]))
+				return true;
 
 		return false;
 	}
@@ -1243,7 +1246,7 @@ public class MHashSet<T> : ISet<T>, IReadOnlyCollection<T>, IDisposable
 			{
 				// attempt to return early: since both contain unique elements, if they have 
 				// different counts, then they can't be equal
-				
+
 				// already confirmed that the sets have the same number of distinct elements, so if
 				// one is a superset of the other then they must be equal
 				return Count == otherAsHs.Count && ContainsAllElements(otherAsHs);
@@ -1661,7 +1664,8 @@ public class MHashSet<T> : ISet<T>, IReadOnlyCollection<T>, IDisposable
 	private bool ContainsAllElements(IEnumerable<T> other)
 	{
 		foreach (var element in other)
-			if (!Contains(element)) return false;
+			if (!Contains(element))
+				return false;
 
 		return true;
 	}
@@ -1676,7 +1680,8 @@ public class MHashSet<T> : ISet<T>, IReadOnlyCollection<T>, IDisposable
 	private bool ContainsAllElements(ReadOnlySpan<T> other)
 	{
 		foreach (var element in other)
-			if (!Contains(element)) return false;
+			if (!Contains(element))
+				return false;
 
 		return true;
 	}
@@ -1694,7 +1699,8 @@ public class MHashSet<T> : ISet<T>, IReadOnlyCollection<T>, IDisposable
 	private bool IsSubsetOfHashSetWithSameEC(MHashSet<T> other)
 	{
 		foreach (var item in this)
-			if (!other.Contains(item)) return false;
+			if (!other.Contains(item))
+				return false;
 
 		return true;
 	}
@@ -1815,7 +1821,8 @@ public class MHashSet<T> : ISet<T>, IReadOnlyCollection<T>, IDisposable
 
 		// if anything unmarked, remove it. 
 		for (int i = bitHelper.FindFirstUnmarked(); (uint) i < (uint) originalLastIndex; i = bitHelper.FindFirstUnmarked(i + 1))
-			if (_slots![i].HashCode >= 0) Remove(_slots[i].Value);
+			if (_slots![i].HashCode >= 0)
+				Remove(_slots[i].Value);
 	}
 
 	/// <summary>
@@ -1853,7 +1860,8 @@ public class MHashSet<T> : ISet<T>, IReadOnlyCollection<T>, IDisposable
 	private void SymmetricExceptWithUniqueHashSet(MHashSet<T> other)
 	{
 		foreach (var item in other)
-			if (!Remove(item)) AddIfNotPresent(item);
+			if (!Remove(item))
+				AddIfNotPresent(item);
 	}
 
 	/// <summary>
@@ -1866,7 +1874,8 @@ public class MHashSet<T> : ISet<T>, IReadOnlyCollection<T>, IDisposable
 	private void SymmetricExceptWithUniqueHashSet(HashSet<T> other)
 	{
 		foreach (var item in other)
-			if (!Remove(item)) AddIfNotPresent(item);
+			if (!Remove(item))
+				AddIfNotPresent(item);
 	}
 
 	/// <summary>
@@ -2240,7 +2249,8 @@ public class MHashSet<T> : ISet<T>, IReadOnlyCollection<T>, IDisposable
 
 			// suffices to check subset
 			foreach (var item in set2)
-				if (!set1.Contains(item)) return false;
+				if (!set1.Contains(item))
+					return false;
 
 			return true;
 		}

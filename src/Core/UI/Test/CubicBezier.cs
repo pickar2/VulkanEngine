@@ -9,11 +9,11 @@ namespace Core.UI.Test;
 public unsafe class UiCubicBezier
 {
 	public Vector2<double>[] Anchors = new Vector2<double>[4];
+
+	public double LineWidth;
 	public List<Vector2<double>> Points = new();
 	public List<Quad> Quads = new();
 	public List<Quad> Quads2 = new();
-
-	public double LineWidth;
 
 	public UiCubicBezier(Vector2<double> p0, Vector2<double> p1, Vector2<double> p2, Vector2<double> p3, double lineWidth = 3.7)
 	{

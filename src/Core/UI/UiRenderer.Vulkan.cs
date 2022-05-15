@@ -95,7 +95,7 @@ public static unsafe partial class UiRenderer
 		SwapchainHelper.OnRecreateSwapchain += CreatePipelines;
 
 		MainRenderer.BeforeDrawFrame += UpdateBuffers;
-		MainRenderer.FillCommandBuffers += (index) => _commandBuffers[index];
+		MainRenderer.FillCommandBuffers += index => _commandBuffers[index];
 
 		DisposalQueue.EnqueueInGlobal(() =>
 		{

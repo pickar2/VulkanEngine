@@ -46,16 +46,13 @@ public unsafe class Context : IDisposable
 
 	public static bool IsIntegratedGpu;
 
-	public static event Action? AfterVulkanInit;
-	public static event Action? OnVulkanDispose;
-
 	public Context(VulkanConfig config, Window.Window window)
 	{
 		Config = config;
 		Window = window;
 		KhrSurface = new KhrSurface(Vk.Context);
 
-		var options = new Options(enableIncludes:true);
+		var options = new Options(true);
 		options.EnableDebugInfo();
 		options.Optimization = OptimizationLevel.Performance;
 		options.TargetSpirVVersion = new SpirVVersion(1, 5);
@@ -63,6 +60,27 @@ public unsafe class Context : IDisposable
 
 		Compiler = new Compiler(options);
 	}
+
+	public void Dispose()
+	{
+		Vk.DeviceWaitIdle(Device);
+		OnVulkanDispose?.Invoke();
+
+		Compiler.Dispose();
+
+		SwapchainHelper.CleanupSwapchain();
+		vmaDestroyAllocator(VmaHandle);
+		KhrSurface.DestroySurface(Instance, Surface, null);
+		Vk.DestroyDevice(Device, null);
+
+		if (VulkanOptions.DebugMode) DebugMessenger.Dispose();
+		Vk.DestroyInstance(Instance, null);
+
+		GC.SuppressFinalize(this);
+	}
+
+	public static event Action? AfterVulkanInit;
+	public static event Action? OnVulkanDispose;
 
 	public void Init()
 	{
@@ -382,7 +400,7 @@ public unsafe class Context : IDisposable
 			if (supported) return true;
 		}
 
-		sb.Append($"\tDevice does not have graphics & present queue\r\n");
+		sb.Append("\tDevice does not have graphics & present queue\r\n");
 		return false;
 	}
 
@@ -519,23 +537,5 @@ public unsafe class Context : IDisposable
 
 		Check((Result) vmaCreateAllocator(ref vmaAllocatorCreateInfo, out nint handle), "Failed to create VMA allocator.");
 		VmaHandle = handle;
-	}
-
-	public void Dispose()
-	{
-		Vk.DeviceWaitIdle(Device);
-		OnVulkanDispose?.Invoke();
-
-		Compiler.Dispose();
-
-		SwapchainHelper.CleanupSwapchain();
-		vmaDestroyAllocator(VmaHandle);
-		KhrSurface.DestroySurface(Instance, Surface, null);
-		Vk.DestroyDevice(Device, null);
-
-		if (VulkanOptions.DebugMode) DebugMessenger.Dispose();
-		Vk.DestroyInstance(Instance, null);
-
-		GC.SuppressFinalize(this);
 	}
 }

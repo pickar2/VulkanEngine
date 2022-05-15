@@ -6,7 +6,7 @@
 using System;
 using System.Diagnostics;
 
-namespace Core.Registries.Collections.Pooled;
+namespace Core.Utils;
 
 internal static class HashHelpers
 {

@@ -19,15 +19,9 @@ public static unsafe partial class UiRenderer
 {
 	public static readonly List<UiComponent> Components = new();
 
-	private static List<VulkanImage> _textures = new();
+	private static readonly List<VulkanImage> _textures = new();
 
 	public static Font? Consolas;
-
-	public struct Vec2I
-	{
-		public int X;
-		public int Y;
-	}
 
 	public static StructHolder? MousePositionHolder;
 
@@ -232,5 +226,11 @@ public static unsafe partial class UiRenderer
 		GlobalData.CreateHolder(64, NamespacedName.CreateWithName("projection-matrix"));
 		GlobalData.CreateHolder(4, NamespacedName.CreateWithName("frame-index"));
 		GlobalData.CreateHolder(8, NamespacedName.CreateWithName("mouse-position"));
+	}
+
+	public struct Vec2I
+	{
+		public int X;
+		public int Y;
 	}
 }

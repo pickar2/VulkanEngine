@@ -6,8 +6,8 @@ namespace Core.General;
 
 public class VulkanBuffer : IDisposable
 {
-	public readonly Buffer Buffer;
 	public readonly nint Allocation;
+	public readonly Buffer Buffer;
 
 	public VulkanBuffer(Buffer buffer, nint allocation)
 	{

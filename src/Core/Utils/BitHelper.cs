@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("Collections.Pooled.Tests")]
 
-namespace Core.Registries.Collections.Pooled;
+namespace Core.Utils;
 
 internal readonly ref struct BitHelper
 {

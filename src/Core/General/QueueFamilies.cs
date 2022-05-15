@@ -5,16 +5,16 @@ namespace Core.General;
 
 public class QueueFamilies
 {
-	public QueueFamily Graphics { get; }
-	public QueueFamily Transfer { get; }
-	public QueueFamily Compute { get; }
-
 	public QueueFamilies(QueueFamily graphics, QueueFamily transfer, QueueFamily compute)
 	{
 		Graphics = graphics;
 		Transfer = transfer;
 		Compute = compute;
 	}
+
+	public QueueFamily Graphics { get; }
+	public QueueFamily Transfer { get; }
+	public QueueFamily Compute { get; }
 
 	public uint[] UniqueIndices() => new[] {Graphics.Index, Transfer.Index, Compute.Index}.Distinct().ToArray();
 }

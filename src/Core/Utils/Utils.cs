@@ -17,6 +17,8 @@ namespace Core.Utils;
 
 public static unsafe class Utils
 {
+	public delegate void SpanAction<T>(Span<T> span);
+
 	// TODO: Recreate Obsolete types with ExpectedException in Core. As Check -> ExpectedException.EnsureThat
 	public static void Check(Result result, string errorString, Result expectedResult = Result.Success)
 	{
@@ -400,8 +402,6 @@ public static unsafe class Utils
 
 		return result;
 	}
-
-	public delegate void SpanAction<T>(Span<T> span);
 
 	public static VulkanBuffer CreateBuffer(ulong size, BufferUsageFlags usage, VmaMemoryUsage memoryUsage)
 	{

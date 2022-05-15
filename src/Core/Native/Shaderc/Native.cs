@@ -10,44 +10,43 @@ namespace Core.Native.Shaderc;
 public enum TargetEnvironment : byte
 {
 	/// <summary>
-	/// SPIR-V under Vulkan semantics
+	///     SPIR-V under Vulkan semantics
 	/// </summary>
 	Vulkan,
 
 	/// <summary>
-	/// SPIR-V under OpenGL semantics
+	///     SPIR-V under OpenGL semantics
 	/// </summary>
 	/// <remarks>
-	/// NOTE: SPIR-V code generation is not supported for shaders under OpenGL
-	/// compatibility profile.
+	///     NOTE: SPIR-V code generation is not supported for shaders under OpenGL
+	///     compatibility profile.
 	/// </remarks>
 	OpenGL,
 
 	/// <summary>
-	/// SPIR-V under OpenGL semantics,
-	/// including compatibility profile
-	/// functions
+	///     SPIR-V under OpenGL semantics,
+	///     including compatibility profile
+	///     functions
 	/// </summary>
 	OpenGLCompat,
 
 	/// <summary>
-	/// SPIR-V under WebGPU semantics.
+	///     SPIR-V under WebGPU semantics.
 	/// </summary>
 	WebGPU
 	// Default = Vulkan
 }
 
 /// <summary>
-/// Target environment version
+///     Target environment version
 /// </summary>
 /// <remarks>
-/// For Vulkan, use Vulkan's mapping of version numbers to integers.
-/// See vulkan.h
-/// 
-/// For OpenGL, use the number from #version in shaders.
-/// See glslang/Standalone/Standalone.cpp
-/// Currently WebGPU doesn't have versioning, since it isn't finalized. This
-/// will have to be updated once the spec is finished.
+///     For Vulkan, use Vulkan's mapping of version numbers to integers.
+///     See vulkan.h
+///     For OpenGL, use the number from #version in shaders.
+///     See glslang/Standalone/Standalone.cpp
+///     Currently WebGPU doesn't have versioning, since it isn't finalized. This
+///     will have to be updated once the spec is finished.
 /// </remarks>
 public enum EnvironmentVersion : uint
 {
@@ -59,14 +58,14 @@ public enum EnvironmentVersion : uint
 }
 
 /// <summary>
-/// The known versions of SPIR-V.
+///     The known versions of SPIR-V.
 /// </summary>
 /// <remarks>
-/// Use the values used for word 1 of a SPIR-V binary:
-/// - bits 24 to 31: zero
-/// - bits 16 to 23: major version number
-/// - bits 8 to 15: minor version number
-/// - bits 0 to 7: zero
+///     Use the values used for word 1 of a SPIR-V binary:
+///     - bits 24 to 31: zero
+///     - bits 16 to 23: major version number
+///     - bits 8 to 15: minor version number
+///     - bits 0 to 7: zero
 /// </remarks>
 public struct SpirVVersion : IEquatable<SpirVVersion>
 {
@@ -92,7 +91,7 @@ public enum SourceLanguage : byte
 {
 	Glsl,
 	Hlsl
-};
+}
 
 // Indicate the status of a compilation.
 public enum Status : byte
@@ -157,7 +156,7 @@ public enum ShaderKind : byte
 	// GlslMeshShader = MeshShader,
 	GlslDefaultTaskShader,
 	GlslDefaultMeshShader
-};
+}
 
 public enum Profile : byte
 {
@@ -165,14 +164,14 @@ public enum Profile : byte
 	Core,
 	Compatibility,
 	Es
-};
+}
 
 public enum OptimizationLevel : byte
 {
 	Zero,
 	Size,
 	Performance
-};
+}
 
 public enum Limit : byte
 {
@@ -259,7 +258,7 @@ public enum Limit : byte
 	MaxCullDistances,
 	MaxCombinedClipAndCullDistances,
 	MaxSamples
-};
+}
 
 public enum UniformKind : byte
 {
@@ -269,26 +268,26 @@ public enum UniformKind : byte
 	Buffer,
 	StorageBuffer,
 	UnorderedAccessView
-};
+}
 
 /// <summary>
-/// The kinds of include requests.
+///     The kinds of include requests.
 /// </summary>
 public enum IncludeType
 {
 	/// <summary>
-	/// E.g. #include "source"
+	///     E.g. #include "source"
 	/// </summary>
 	Relative,
 
 	/// <summary>
-	/// E.g. #include &lt;source>
+	///     E.g. #include &lt;source>
 	/// </summary>
 	Standard
-};
+}
 
 /// <summary>
-/// An include result.
+///     An include result.
 /// </summary>
 public struct IncludeResult
 {
@@ -298,22 +297,22 @@ public struct IncludeResult
 	private readonly UIntPtr contentLength;
 
 	/// <summary>
-	/// User data to be passed along with this request.
+	///     User data to be passed along with this request.
 	/// </summary>
 	public readonly IntPtr UserData;
 
 	/// <summary>
-	/// The name of the source file.  The name should be fully resolved
-	/// in the sense that it should be a unique name in the context of the
-	/// includer.  For example, if the includer maps source names to files in
-	/// a filesystem, then this name should be the absolute path of the file.
-	/// For a failed inclusion, this string is empty.
+	///     The name of the source file.  The name should be fully resolved
+	///     in the sense that it should be a unique name in the context of the
+	///     includer.  For example, if the includer maps source names to files in
+	///     a filesystem, then this name should be the absolute path of the file.
+	///     For a failed inclusion, this string is empty.
 	/// </summary>
 	public string SourceName => Marshal.PtrToStringAnsi(sourceName, (int) sourceNameLength);
 
 	/// <summary>
-	/// The text contents of the source file in the normal case.
-	/// For a failed inclusion, this contains the error message.
+	///     The text contents of the source file in the normal case.
+	///     For a failed inclusion, this contains the error message.
 	/// </summary>
 	public string Content => Marshal.PtrToStringAnsi(content, (int) contentLength);
 
