@@ -99,6 +99,17 @@ public static partial class UiManager
 	public static void OnDragMove(this UiControl control, OnDragMoveDelegate onDragMove) => OnDragMoveDelegates[control] = onDragMove;
 	public static void OnDragEnd(this UiControl control, OnDragEndDelegate onDragEnd) => OnDragEndDelegates[control] = onDragEnd;
 
+	public static void RemoveAllEvents(this UiControl control)
+	{
+		RemoveOnHoverStart(control);
+		RemoveOnHoverEnd(control);
+		RemoveOnClickStart(control);
+		RemoveOnClickEnd(control);
+		RemoveOnDragStart(control);
+		RemoveOnDragMove(control);
+		RemoveOnDragEnd(control);
+	}
+
 	public static void RemoveOnHoverStart(this UiControl control) => OnHoverStartDelegates.Remove(control);
 	public static void RemoveOnHoverEnd(this UiControl control) => OnHoverEndDelegates.Remove(control);
 

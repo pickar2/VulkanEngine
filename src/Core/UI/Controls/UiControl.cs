@@ -39,6 +39,8 @@ public abstract class UiControl : IDisposable
 	public virtual void Dispose()
 	{
 		foreach (var child in Children) child.Dispose();
+		ClearChildren();
+		this.RemoveAllEvents();
 		GC.SuppressFinalize(this);
 	}
 
