@@ -34,7 +34,7 @@ public class StackPanel : UiControl
 		ComputedArea = desiredSize;
 	}
 
-	public override void ArrangeAndChildren(Vector2<float> area)
+	public override void ArrangeAndMaskChildren(Vector2<float> area)
 	{
 		int stackComponent = (int) Orientation;
 		float offset = 0;
@@ -62,7 +62,7 @@ public class StackPanel : UiControl
 				default: throw new ArgumentOutOfRangeException();
 			}
 
-			child.ArrangeAndChildren(area - offsetVec);
+			child.ArrangeAndMaskChildren(area - offsetVec);
 			offset += child.ComputedArea[stackComponent] + (Spacing * ComputedScale[stackComponent]);
 			offset = Math.Min(offset, area[stackComponent]);
 		}

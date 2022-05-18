@@ -64,7 +64,7 @@ public class DockPanel : UiControl
 		ComputedArea = desiredSize;
 	}
 
-	public override void ArrangeAndChildren(Vector2<float> area)
+	public override void ArrangeAndMaskChildren(Vector2<float> area)
 	{
 		float[] accumulated = new float[4];
 
@@ -74,19 +74,16 @@ public class DockPanel : UiControl
 			var offsetVec = new Vector2<float>();
 			_docks.TryGetValue(child, out var dock);
 
+			offsetVec.X = accumulated[(int) Dock.Left];
+			offsetVec.Y = accumulated[(int) Dock.Top];
+			
 			switch (dock)
 			{
 				case Dock.Right: 
 					offsetVec.X = ComputedArea.X - accumulated[(int) Dock.Right] - child.ComputedArea.X;
-					offsetVec.Y = accumulated[(int) Dock.Top];
 					break;
 				case Dock.Bottom: 
-					offsetVec.X = accumulated[(int) Dock.Left];
 					offsetVec.Y = ComputedArea.Y - accumulated[(int) Dock.Bottom] - child.ComputedArea.Y;
-					break;
-				default:
-					offsetVec.X = accumulated[(int) Dock.Left];
-					offsetVec.Y = accumulated[(int) Dock.Top];
 					break;
 			}
 
@@ -113,7 +110,7 @@ public class DockPanel : UiControl
 				default: throw new ArgumentOutOfRangeException();
 			}
 
-			child.ArrangeAndChildren(area);
+			child.ArrangeAndMaskChildren(child.ComputedArea);
 			
 			if (!_docks.ContainsKey(child)) break;
 		}

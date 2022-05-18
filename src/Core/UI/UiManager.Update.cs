@@ -29,7 +29,7 @@ public static partial class UiManager
 	{
 		control.PropagateScale(scale);
 		control.ComputeSizeAndArea(area);
-		control.ArrangeAndChildren(area);
+		control.ArrangeAndMaskChildren(area);
 	}
 
 	public static UiControl? TopControlOnPos(Vector2<float> point, UiControl? startControl)

@@ -43,7 +43,7 @@ public class ScrollView : UiControl
 		_maxAreaInside -= Size;
 	}
 
-	public override void ArrangeAndChildren(Vector2<float> area)
+	public override void ArrangeAndMaskChildren(Vector2<float> area)
 	{
 		foreach (var child in Children)
 		{
@@ -68,7 +68,7 @@ public class ScrollView : UiControl
 				default: throw new ArgumentOutOfRangeException();
 			}
 
-			child.ArrangeAndChildren(area);
+			child.ArrangeAndMaskChildren(area);
 		}
 
 		_horizontalSlider.LocalPos = new Vector2<float>(ScrollOffset.X * (Size.X - _horizontalSlider.Size.X), ComputedArea.Y - _horizontalSlider.Size.Y) *

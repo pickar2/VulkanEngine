@@ -53,7 +53,7 @@ public class WrapPanel : UiControl
 		ComputedArea = panelSize;
 	}
 
-	public override void ArrangeAndChildren(Vector2<float> area)
+	public override void ArrangeAndMaskChildren(Vector2<float> area)
 	{
 		int stackComponent = (int) Orientation;
 		int wrapComponent = 1 - stackComponent;
@@ -97,7 +97,7 @@ public class WrapPanel : UiControl
 				default: throw new ArgumentOutOfRangeException();
 			}
 
-			child.ArrangeAndChildren(area);
+			child.ArrangeAndMaskChildren(area);
 		}
 	}
 }

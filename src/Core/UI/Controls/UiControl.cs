@@ -60,7 +60,7 @@ public abstract class UiControl : IDisposable
 		ComputedArea = maxSize * ComputedScale;
 	}
 
-	public virtual void ArrangeAndChildren(Vector2<float> area)
+	public virtual void ArrangeAndMaskChildren(Vector2<float> area)
 	{
 		foreach (var child in Children)
 		{
@@ -85,7 +85,7 @@ public abstract class UiControl : IDisposable
 				default: throw new ArgumentOutOfRangeException();
 			}
 
-			child.ArrangeAndChildren(area);
+			child.ArrangeAndMaskChildren(area);
 		}
 	}
 }
