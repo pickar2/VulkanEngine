@@ -126,7 +126,7 @@ public static unsafe class MainRenderer
 	{
 		var currentFrame = GetCurrentFrame();
 
-		Utils.Utils.Check(currentFrame.Fence.Wait(), "Failed to finish frame");
+		VulkanUtils.Check(currentFrame.Fence.Wait(), "Failed to finish frame");
 		currentFrame.Fence.Reset();
 
 		if (_framebufferResized)
@@ -236,11 +236,11 @@ public static unsafe class MainRenderer
 
 		for (int i = 0; i < FrameOverlap; i++)
 		{
-			Utils.Utils.Check(Context.Vk.CreateSemaphore(Context.Device, semaphoreCreateInfo, null, out var presentSemaphore),
+			VulkanUtils.Check(Context.Vk.CreateSemaphore(Context.Device, semaphoreCreateInfo, null, out var presentSemaphore),
 				$"Failed to create synchronization objects for the frame {i}");
-			Utils.Utils.Check(Context.Vk.CreateSemaphore(Context.Device, semaphoreCreateInfo, null, out var renderSemaphore),
+			VulkanUtils.Check(Context.Vk.CreateSemaphore(Context.Device, semaphoreCreateInfo, null, out var renderSemaphore),
 				$"Failed to create synchronization objects for the frame {i}");
-			Utils.Utils.Check(Context.Vk.CreateFence(Context.Device, fenceCreateInfo, null, out var fence),
+			VulkanUtils.Check(Context.Vk.CreateFence(Context.Device, fenceCreateInfo, null, out var fence),
 				$"Failed to create synchronization objects for the frame {i}");
 
 			Frames[i] = new Frame(presentSemaphore, renderSemaphore, fence);
@@ -263,7 +263,7 @@ public static unsafe class MainRenderer
 
 		var cmd = _primaryCommandBuffers[imageIndex];
 
-		Utils.Utils.Check(cmd.Begin(CommandBufferUsageFlags.CommandBufferUsageOneTimeSubmitBit), "Failed to begin command buffer.");
+		VulkanUtils.Check(cmd.Begin(CommandBufferUsageFlags.CommandBufferUsageOneTimeSubmitBit), "Failed to begin command buffer.");
 
 		var renderPassBeginInfo = new RenderPassBeginInfo
 		{
@@ -293,6 +293,6 @@ public static unsafe class MainRenderer
 
 		Context.Vk.CmdEndRenderPass(cmd);
 
-		Utils.Utils.Check(cmd.End(), "Failed to end command buffer.");
+		VulkanUtils.Check(cmd.End(), "Failed to end command buffer.");
 	}
 }

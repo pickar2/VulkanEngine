@@ -11,7 +11,7 @@ using Silk.NET.Vulkan;
 using Silk.NET.Vulkan.Extensions.EXT;
 using Silk.NET.Vulkan.Extensions.KHR;
 using static Core.Native.VMA.VulkanMemoryAllocator;
-using static Core.Utils.Utils;
+using static Core.Utils.VulkanUtils;
 using Result = Silk.NET.Vulkan.Result;
 
 namespace Core.General;

@@ -2,7 +2,7 @@
 using Core.General;
 using Core.Utils;
 using Silk.NET.Vulkan;
-using static Core.Utils.Utils;
+using static Core.Utils.VulkanUtils;
 using static Core.Native.VMA.VulkanMemoryAllocator;
 
 namespace Core;

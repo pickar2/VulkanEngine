@@ -41,7 +41,7 @@ public static unsafe partial class UiRenderer
 		byte[] bytes = File.ReadAllBytes($"Assets/Textures/{Consolas.Pages[0].TextureName}");
 		var qoiImage = QoiDecoder.Decode(bytes);
 
-		var texture = Utils.Utils.CreateTextureFromBytes(qoiImage.Data, (ulong) qoiImage.Data.LongLength, (uint) qoiImage.Width, (uint) qoiImage.Height,
+		var texture = VulkanUtils.CreateTextureFromBytes(qoiImage.Data, (ulong) qoiImage.Data.LongLength, (uint) qoiImage.Width, (uint) qoiImage.Height,
 			(int) qoiImage.Channels, true);
 		texture.EnqueueGlobalDispose();
 		_textures.Add(texture);

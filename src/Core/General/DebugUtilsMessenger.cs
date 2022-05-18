@@ -62,7 +62,7 @@ public unsafe class DebugUtilsMessenger : IDisposable
 	{
 		fixed (DebugUtilsMessengerEXT* debugMessenger = &DebugMessenger)
 		{
-			Utils.Utils.Check(
+			Utils.VulkanUtils.Check(
 				Context.ExtDebugUtils.CreateDebugUtilsMessenger(Context.Instance, CreateInfo, null, debugMessenger),
 				"Failed to create debug messenger");
 		}

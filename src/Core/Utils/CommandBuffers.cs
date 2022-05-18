@@ -18,7 +18,7 @@ public static class CommandBuffers
 		};
 
 		var commandBuffers = new CommandBuffer[count];
-		Utils.Check(Context.Vk.AllocateCommandBuffers(Context.Device, allocateInfo, out commandBuffers[0]), "Failed to allocate command buffers");
+		VulkanUtils.Check(Context.Vk.AllocateCommandBuffers(Context.Device, allocateInfo, out commandBuffers[0]), "Failed to allocate command buffers");
 
 		return commandBuffers;
 	}
@@ -43,7 +43,7 @@ public static class CommandBuffers
 			CommandBufferCount = 1
 		};
 
-		var fence = Utils.CreateFence(false);
+		var fence = VulkanUtils.CreateFence(false);
 		queue.Submit(ref submitInfo, ref fence);
 		fence.Wait(ulong.MaxValue);
 

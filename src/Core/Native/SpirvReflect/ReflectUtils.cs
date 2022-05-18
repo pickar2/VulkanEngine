@@ -50,7 +50,7 @@ public static unsafe class ReflectUtils
 				Offset = bindingDescriptions[0].Stride
 			};
 
-			bindingDescriptions[0].Stride += (uint) Utils.Utils.FormatSize(desc.Format);
+			bindingDescriptions[0].Stride += (uint) VulkanUtils.FormatSize(desc.Format);
 		}
 
 		var arr = attributeDescriptions.ToArray();

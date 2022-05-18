@@ -15,7 +15,7 @@ using Vk = Silk.NET.Vulkan.Vk;
 
 namespace Core.Utils;
 
-public static unsafe class Utils
+public static unsafe class VulkanUtils
 {
 	public delegate void SpanAction<T>(Span<T> span);
 

@@ -28,7 +28,7 @@ public class QueueFamily
 	{
 		lock (this)
 		{
-			Utils.Utils.Check(Context.Vk.QueueSubmit(Queue, (uint) submitInfo.Length, submitInfo, fence), "Failed to submit to Queue.");
+			Utils.VulkanUtils.Check(Context.Vk.QueueSubmit(Queue, (uint) submitInfo.Length, submitInfo, fence), "Failed to submit to Queue.");
 		}
 	}
 
@@ -36,7 +36,7 @@ public class QueueFamily
 	{
 		lock (this)
 		{
-			Utils.Utils.Check(Context.Vk.QueueSubmit(Queue, 1, submitInfo, fence), "Failed to submit to Queue.");
+			Utils.VulkanUtils.Check(Context.Vk.QueueSubmit(Queue, 1, submitInfo, fence), "Failed to submit to Queue.");
 		}
 	}
 }
