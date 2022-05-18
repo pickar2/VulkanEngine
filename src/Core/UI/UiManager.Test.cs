@@ -2,10 +2,13 @@
 using System.Drawing;
 using System.Linq;
 using System.Numerics;
+using System.Runtime.CompilerServices;
+using Core.General;
 using Core.UI.Animations;
 using Core.UI.Controls;
 using Core.UI.Controls.Panels;
 using Core.UI.Transforms;
+using Core.Utils;
 using Silk.NET.Input;
 using SimpleMath.Vectors;
 
@@ -13,21 +16,19 @@ namespace Core.UI;
 
 public static partial class UiManager
 {
-	private static readonly Random Random = new(1234);
-
 	private static void InitTestScene()
 	{
 		// off root control example
-		// var infoPanel = new AbsolutePanel();
-		// var infoBox = new ControlInfoBox();
-		// infoPanel.AddChild(infoBox);
-		// AfterUpdate += () =>
-		// {
-		// 	infoBox.Control = TopControl is not null && TopControl.Selectable ? TopControl : null;
-		//
-		// 	var screenSize = new Vector2<float>(Context.Window.WindowWidth, Context.Window.WindowHeight);
-		// 	infoPanel.UpdateControl(new Vector2<float>(1), screenSize);
-		// };
+		var infoPanel = new AbsolutePanel();
+		var infoBox = new ControlInfoBox();
+		infoPanel.AddChild(infoBox);
+		AfterUpdate += () =>
+		{
+			infoBox.Control = TopControl is not null && TopControl.Selectable ? TopControl : null;
+		
+			var screenSize = new Vector2<float>(Context.Window.WindowWidth, Context.Window.WindowHeight);
+			infoPanel.UpdateControl(new Vector2<float>(1), screenSize);
+		};
 
 		var mainControl = new AbsolutePanel();
 		// mainControl.Selectable = false;
@@ -41,13 +42,15 @@ public static partial class UiManager
 		bg.Selectable = false;
 		mainControl.AddChild(bg);
 
-		LabelTest(mainControl);
-		StackPanelTest(mainControl);
-		WrapPanelTest(mainControl);
-		// DockPanelTest(mainControl);
-		Transform3DTest(mainControl);
-		AnimationTest(mainControl);
+		// LabelTest(mainControl);
+		// StackPanelTest(mainControl);
+		// WrapPanelTest(mainControl);
+		DockPanelTest(mainControl);
+		// Transform3DTest(mainControl);
+		// AnimationTest(mainControl);
 	}
+
+	private static readonly Random Random = new(1234);
 
 	public static int RandomColor(bool randomTransparency = false)
 	{
@@ -149,16 +152,20 @@ public static partial class UiManager
 		var dockPanel = new DockPanel();
 		dockPanel.Size = new Vector2<float>(300, 300);
 		dockPanel.Offset = new Vector2<float>(600, 300);
-		dockPanel.OffsetZ = 15;
+		dockPanel.OffsetZ = 55;
 
 		var top = new ColoredBox {Color = RandomColor()};
 		top.Size.Y = 30;
+		var top2 = new ColoredBox {Color = RandomColor()};
+		top2.Size.Y = 45;
 
 		var left = new ColoredBox {Color = RandomColor()};
 		left.Size.X = 60;
 
 		var bottom = new ColoredBox {Color = RandomColor()};
 		bottom.Size.Y = 60;
+		var bottom2 = new ColoredBox {Color = RandomColor()};
+		bottom2.Size.Y = 15;
 
 		var right = new ColoredBox {Color = RandomColor()};
 		right.Size.X = 30;
@@ -166,9 +173,11 @@ public static partial class UiManager
 		var fill = new ColoredBox {Color = RandomColor()};
 
 		dockPanel.AddChild(top, Dock.Top);
+		dockPanel.AddChild(top2, Dock.Top);
 		dockPanel.AddChild(left, Dock.Left);
 		dockPanel.AddChild(bottom, Dock.Bottom);
 		dockPanel.AddChild(right, Dock.Right);
+		dockPanel.AddChild(bottom2, Dock.Bottom);
 		dockPanel.AddChild(fill);
 
 		parent.AddChild(dockPanel);
@@ -227,7 +236,7 @@ public static partial class UiManager
 		panel.AddChild(box2);
 	}
 
-	private static void AnimationTest(UiControl parent)
+	private static unsafe void AnimationTest(UiControl parent)
 	{
 		var button = new ColoredBox
 		{
@@ -256,13 +265,13 @@ public static partial class UiManager
 		};
 		parent.AddChild(box2);
 
-		var animation1 = Animation.OfNumber(() => ref box1.Offset.X, box1.Offset.X, box1.Offset.X + 75, 2000, 1,
+		var animation1 = Animation.Of(() => ref box1.Offset.X, box1.Offset.X, box1.Offset.X + 75, 2000, animationOffset: 1,
 			type: AnimationType.RepeatAndReverse, curve: DefaultCurves.EaseInOutSine);
 
-		var animation2 = Animation.OfNumber(() => ref box1.Offset.Y, box1.Offset.Y, box1.Offset.Y + 75, 1000, startDelay: 500,
+		var animation2 = Animation.Of(() => ref box1.Offset.Y, box1.Offset.Y, box1.Offset.Y + 75, 1000, startDelay: 500,
 			type: AnimationType.RepeatAndReverse, curve: DefaultCurves.EaseInOutSine);
 
-		var animation3 = Animation.OfVector2(() => ref box2.Offset, box2.Offset, box2.Offset + (75, 150), 3000);
+		var animation3 = Animation.Of(() => ref box2.Offset, box2.Offset, box2.Offset + (75, 150), 3000);
 
 		int startColor = box1.Color;
 		var animationColor = new Animation
@@ -270,7 +279,7 @@ public static partial class UiManager
 			Curve = DefaultCurves.EaseInOutSine,
 			Type = AnimationType.RepeatAndReverse,
 			Duration = 1000,
-			Interpolator = new RGBInterpolator(Color.FromArgb(startColor), Color.Red, c => box1.Color = c.ToArgb())
+			Interpolator = new RGBInterpolator(Color.FromArgb(startColor), Color.Red, c => box2.Color = c.ToArgb())
 		};
 
 		bool started = false;
@@ -286,10 +295,10 @@ public static partial class UiManager
 			}
 			else
 			{
-				animation1.Reset();
-				animation2.Reset();
+				animation1.Pause();
+				animation2.Pause();
 				animation3.Reset();
-				animationColor.Reset();
+				animationColor.Pause();
 			}
 
 			started = !started;

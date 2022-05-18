@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Drawing;
+using System.Runtime.CompilerServices;
 using SimpleMath.Vectors;
 
 namespace Core.UI.Animations;
@@ -34,7 +35,7 @@ public class Animation
 			AnimationType.OneTime => (float) Math.Min(fullTime, 1.0),
 			AnimationType.RepeatFromStart => fullTime % 1.0f,
 			AnimationType.RepeatAndReverse => (float) Math.Abs(((fullTime + 1) % 2.0) - 1),
-			_ => throw new ArgumentOutOfRangeException().AsExpectedException()
+			_ => throw new ArgumentOutOfRangeException(paramName: nameof(Type)).AsExpectedException()
 		};
 
 		Value = Curve.Interpolate(normalizedTime);
@@ -46,6 +47,16 @@ public class Animation
 		_stopwatch.Start();
 		_startTime = StartDelay;
 		UiManager.BeforeUpdate += _updateDelegate;
+	}
+
+	public void Pause()
+	{
+		_stopwatch.Stop();
+	}
+
+	public void Resume()
+	{
+		_stopwatch.Start();
 	}
 
 	public void Stop()
@@ -66,7 +77,7 @@ public class Animation
 		Start();
 	}
 
-	public static Animation OfNumber<T>(RefGetter<T> getter, T start, T end, long duration, float animationOffset = 0,
+	public static Animation Of<T>(RefGetter<T> getter, T start, T end, long duration, float animationOffset = 0,
 		long startDelay = 0, AnimationType type = AnimationType.OneTime, IAnimationCurve? curve = null) where T : struct, INumber<T>
 		=> new()
 		{
@@ -78,9 +89,9 @@ public class Animation
 			Interpolator = new NumberInterpolator<T>(start, end, vec => getter.Invoke() = vec)
 		};
 
-	public static Animation OfVector2<T>(RefGetter<Vector2<T>> getter, Vector2<T> start, Vector2<T> end, long duration, float animationOffset = 0,
-		long startDelay = 0, AnimationType type = AnimationType.OneTime, IAnimationCurve? curve = null) where T : struct, INumber<T>
-		=> new()
+	public static Animation Of<T>(RefGetter<Vector2<T>> getter, Vector2<T> start, Vector2<T> end, long duration, float animationOffset = 0,
+		long startDelay = 0, AnimationType type = AnimationType.OneTime, IAnimationCurve? curve = null) where T : struct, INumber<T> =>
+		new()
 		{
 			Type = type,
 			Curve = curve ?? DefaultCurves.Linear,
@@ -90,7 +101,7 @@ public class Animation
 			Interpolator = new Vector2Interpolator<T>(start, end, vec => getter.Invoke() = vec)
 		};
 
-	public static Animation OfVector3<T>(RefGetter<Vector3<T>> getter, Vector3<T> start, Vector3<T> end, long duration, float animationOffset = 0,
+	public static Animation Of<T>(RefGetter<Vector3<T>> getter, Vector3<T> start, Vector3<T> end, long duration, float animationOffset = 0,
 		long startDelay = 0, AnimationType type = AnimationType.OneTime, IAnimationCurve? curve = null) where T : struct, INumber<T>
 		=> new()
 		{
@@ -102,7 +113,7 @@ public class Animation
 			Interpolator = new Vector3Interpolator<T>(start, end, vec => getter.Invoke() = vec)
 		};
 
-	public static Animation OfVector4<T>(RefGetter<Vector4<T>> getter, Vector4<T> start, Vector4<T> end, long duration, float animationOffset = 0,
+	public static Animation Of<T>(RefGetter<Vector4<T>> getter, Vector4<T> start, Vector4<T> end, long duration, float animationOffset = 0,
 		long startDelay = 0, AnimationType type = AnimationType.OneTime, IAnimationCurve? curve = null) where T : struct, INumber<T>
 		=> new()
 		{

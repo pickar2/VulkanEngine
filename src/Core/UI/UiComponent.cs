@@ -42,7 +42,7 @@ public class UiComponentFactory : AbstractVulkanDataFactory<UiComponent>
 {
 	public static readonly UiComponentFactory Instance = new();
 
-	private UiComponentFactory(int dataSize = 64) : base(dataSize) { }
+	private UiComponentFactory(int dataSize = 60) : base(dataSize) { }
 
 	public static UiComponent CreateComponent() => Instance.Create();
 }
@@ -50,7 +50,7 @@ public class UiComponentFactory : AbstractVulkanDataFactory<UiComponent>
 public struct UiComponentData
 {
 	/*
-		struct UiElementData { // 64 bytes (aligned for 4 bytes)
+		struct UiElementData { // 60 bytes (aligned for 4 bytes)
 			float baseX;
 			float baseY;
 
@@ -76,7 +76,6 @@ public struct UiComponentData
 			int fragmentDataIndex;
 
 			int flags;
-			int transformationIndex;
 		};
 	 */
 
@@ -102,8 +101,6 @@ public struct UiComponentData
 	public int FragmentDataIndex;
 
 	public UiComponentFlags Flags;
-
-	public int TransformationIndex;
 }
 
 [Flags]

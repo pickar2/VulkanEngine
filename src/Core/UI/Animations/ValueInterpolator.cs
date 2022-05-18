@@ -23,7 +23,7 @@ public abstract class ValueInterpolator<TValue> : IValueInterpolator
 		Updater = updater;
 	}
 
-	public void Update(float x) => Updater.Invoke(Interpolate(x));
+	public virtual void Update(float x) => Updater.Invoke(Interpolate(x));
 
 	public abstract TValue Interpolate(float x);
 }

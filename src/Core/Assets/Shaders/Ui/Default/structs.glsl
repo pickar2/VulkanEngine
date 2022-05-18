@@ -1,5 +1,5 @@
 ﻿// rectangle
-struct UiElementData { // 64 bytes (aligned for 4 bytes)
+struct UiElementData { // 60 bytes (aligned for 4 bytes)
     float baseX;
     float baseY;
 
@@ -25,7 +25,6 @@ struct UiElementData { // 64 bytes (aligned for 4 bytes)
     int fragmentDataIndex;
 
     int flags;
-    int transformationIndex;
 };
 
 // flags:
