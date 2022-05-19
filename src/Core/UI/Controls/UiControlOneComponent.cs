@@ -11,7 +11,7 @@ public abstract unsafe class UiControlOneComponent : UiControl
 	{
 		Component.GetData()->MaskStart = new Vector2<float>(float.NegativeInfinity);
 		Component.GetData()->MaskEnd = new Vector2<float>(float.PositiveInfinity);
-		Component.MarkForUpdate();
+		Component.MarkForGPUUpdate();
 	}
 
 	public override Vector2<float> BasePos
@@ -20,7 +20,7 @@ public abstract unsafe class UiControlOneComponent : UiControl
 		set
 		{
 			Component.GetData()->BasePos = value;
-			Component.MarkForUpdate();
+			Component.MarkForGPUUpdate();
 		}
 	}
 
@@ -30,7 +30,7 @@ public abstract unsafe class UiControlOneComponent : UiControl
 		set
 		{
 			Component.GetData()->BaseZ = value;
-			Component.MarkForUpdate();
+			Component.MarkForGPUUpdate();
 		}
 	}
 
@@ -40,7 +40,7 @@ public abstract unsafe class UiControlOneComponent : UiControl
 		set
 		{
 			Component.GetData()->LocalPos = value;
-			Component.MarkForUpdate();
+			Component.MarkForGPUUpdate();
 		}
 	}
 
@@ -50,7 +50,7 @@ public abstract unsafe class UiControlOneComponent : UiControl
 		set
 		{
 			Component.GetData()->LocalZ = value;
-			Component.MarkForUpdate();
+			Component.MarkForGPUUpdate();
 		}
 	}
 
@@ -60,7 +60,7 @@ public abstract unsafe class UiControlOneComponent : UiControl
 		set
 		{
 			Component.GetData()->Size = value;
-			Component.MarkForUpdate();
+			Component.MarkForGPUUpdate();
 		}
 	}
 
@@ -70,7 +70,7 @@ public abstract unsafe class UiControlOneComponent : UiControl
 		set
 		{
 			Component.GetData()->MaskStart = value;
-			Component.MarkForUpdate();
+			Component.MarkForGPUUpdate();
 		}
 	}
 
@@ -80,7 +80,7 @@ public abstract unsafe class UiControlOneComponent : UiControl
 		set
 		{
 			Component.GetData()->MaskEnd = value;
-			Component.MarkForUpdate();
+			Component.MarkForGPUUpdate();
 		}
 	}
 

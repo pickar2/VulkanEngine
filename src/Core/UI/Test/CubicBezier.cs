@@ -75,8 +75,8 @@ public unsafe class UiCubicBezier
 
 		var colorFactory = UiMaterialManager.GetFactory("core:bezier_gradient_material");
 		var blackColorMat = colorFactory.Create();
-		*blackColorMat.GetData<(int, int, float)>() = (Color.Purple.ToArgb(), Color.DarkBlue.ToArgb(), 0.2f);
-		blackColorMat.MarkForUpdate();
+		*blackColorMat.GetMemPtr<(int, int, float)>() = (Color.Purple.ToArgb(), Color.DarkBlue.ToArgb(), 0.2f);
+		blackColorMat.MarkForGPUUpdate();
 
 		var coordinatesFactory = UiMaterialManager.GetFactory("core:pixel_coordinates_material");
 		for (int index = 0; index < Quads.Count; index++)
@@ -86,14 +86,14 @@ public unsafe class UiCubicBezier
 			var component = UiComponentFactory.CreateComponent();
 
 			var pixelCoords = coordinatesFactory.Create();
-			var pixelCoordsData = pixelCoords.GetData<PixelCoordinatesMaterial>();
+			var pixelCoordsData = pixelCoords.GetMemPtr<PixelCoordinatesMaterial>();
 
 			pixelCoordsData->V1 = new Vector4F((float) quad[0].X, (float) quad[0].Y, (float) quad2[0].X, (float) quad2[0].Y);
 			pixelCoordsData->V2 = new Vector4F((float) quad[1].X, (float) quad[1].Y, (float) quad2[1].X, (float) quad2[1].Y);
 			pixelCoordsData->V3 = new Vector4F((float) quad[2].X, (float) quad[2].Y, (float) quad2[2].X, (float) quad2[2].Y);
 			pixelCoordsData->V4 = new Vector4F((float) quad[3].X, (float) quad[3].Y, (float) quad2[3].X, (float) quad2[3].Y);
 
-			pixelCoords.MarkForUpdate();
+			pixelCoords.MarkForGPUUpdate();
 
 			component.FragMaterial = blackColorMat;
 			component.VertMaterial = pixelCoords;
@@ -102,7 +102,7 @@ public unsafe class UiCubicBezier
 			data->Size = (1, 1);
 			data->BaseZ = 256;
 
-			component.MarkForUpdate();
+			component.MarkForGPUUpdate();
 		}
 	}
 }

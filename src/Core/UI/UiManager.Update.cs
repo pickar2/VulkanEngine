@@ -17,19 +17,20 @@ public static partial class UiManager
 
 	public static void Update()
 	{
-		EventsUpdate();
+		EventsPreUpdate();
 
 		var screenSize = new Vector2<float>(Context.Window.WindowWidth, Context.Window.WindowHeight);
 		Root.UpdateControl(new Vector2<float>(1), screenSize);
 
-		EventsAfterUpdate();
+		EventsPostUpdate();
 	}
 
 	public static void UpdateControl(this UiControl control, Vector2<float> scale, Vector2<float> area)
 	{
 		control.PropagateScale(scale);
 		control.ComputeSizeAndArea(area);
-		control.ArrangeAndMaskChildren(area);
+		control.ArrangeChildren(area);
+		control.UpdateChildrenMask();
 	}
 
 	public static UiControl? TopControlOnPos(Vector2<float> point, UiControl? startControl)

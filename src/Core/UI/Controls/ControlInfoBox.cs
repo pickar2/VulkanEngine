@@ -1,5 +1,7 @@
 ﻿using System.Drawing;
+using Core.General;
 using Core.UI.Controls.Panels;
+using Silk.NET.Input;
 using SimpleMath.Vectors;
 
 namespace Core.UI.Controls;
@@ -8,7 +10,7 @@ public class ControlInfoBox : AbsolutePanel
 {
 	private UiControl? _control;
 
-	public ControlInfoBox() => OffsetZ = 2047;
+	public ControlInfoBox() => OffsetZ = 2046;
 
 	public UiControl? Control
 	{
@@ -24,8 +26,8 @@ public class ControlInfoBox : AbsolutePanel
 
 	public override void PropagateScale(Vector2<float> parentScale)
 	{
-		ComputedScale = new Vector2<float>(1);
-		foreach (var child in Children) child.PropagateScale(ComputedScale);
+		ParentScale = new Vector2<float>(1);
+		foreach (var child in Children) child.PropagateScale(ParentScale);
 	}
 
 	private void UpdateControl()
@@ -34,25 +36,37 @@ public class ControlInfoBox : AbsolutePanel
 		ClearChildren();
 		if (_control == null) return;
 
-		var bg = new ColoredBox
+		var bg = new Rectangle
 		{
 			Color = Color.Brown.ToArgb() & (127 << 24),
-			Offset = _control.CombinedPos,
-			Size = _control.ComputedSize
 		};
 		AddChild(bg);
+
+		if (Context.Window.InputContext.Keyboards[0].IsKeyPressed(Key.ShiftLeft))
+		{
+			bg.MarginLT = _control.CombinedPos - _control.MarginLT * _control.ParentScale;
+			bg.Size = _control.ComputedArea;
+		}
+		else
+		{
+			bg.MarginLT = _control.CombinedPos;
+			bg.Size = _control.ComputedSize;
+		}
 
 		var stackPanel = new StackPanel
 		{
 			Orientation = Orientation.Vertical,
-			Offset = _control.CombinedPos + (_control.ComputedSize.X, 0)
+			MarginLT = _control.CombinedPos + (_control.ComputedSize.X, 0),
+			OffsetZ = 1
 		};
 		AddChild(stackPanel);
 
 		stackPanel.AddChild(new Label {Text = $"ControlType: {_control.GetType().Name}"});
 
 		stackPanel.AddChild(new Label {Text = "Set by user:"});
-		stackPanel.AddChild(new Label {Text = $"\tOffset: {new Vector3<float>(_control.Offset.X, _control.Offset.Y, _control.OffsetZ)}"});
+		stackPanel.AddChild(new Label {Text = $"\tMarginLT: {_control.MarginLT}"});
+		stackPanel.AddChild(new Label {Text = $"\tMarginRB: {_control.MarginRB}"});
+		stackPanel.AddChild(new Label {Text = $"\tZIndex: {_control.OffsetZ}"});
 		stackPanel.AddChild(new Label {Text = $"\tSize: {_control.Size}"});
 		stackPanel.AddChild(new Label {Text = $"\tScale: {_control.Scale}"});
 
@@ -64,6 +78,7 @@ public class ControlInfoBox : AbsolutePanel
 		stackPanel.AddChild(new Label {Text = $"\tMaskEnd: {_control.MaskEnd}"});
 		stackPanel.AddChild(new Label {Text = $"\tComputedSize: {_control.ComputedSize}"});
 		stackPanel.AddChild(new Label {Text = $"\tComputedArea: {_control.ComputedArea}"});
-		stackPanel.AddChild(new Label {Text = $"\tComputedScale: {_control.ComputedScale}"});
+		stackPanel.AddChild(new Label {Text = $"\tParentScale: {_control.ParentScale}"});
+		stackPanel.AddChild(new Label {Text = $"\tCombinedScale: {_control.CombinedScale}"});
 	}
 }

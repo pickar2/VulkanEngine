@@ -130,13 +130,13 @@ public class ShaderGraph
 
 		var dotsBgMaterialFactory = UiMaterialManager.GetFactory("core:dots_background_material");
 		var bgFragMat = dotsBgMaterialFactory.Create();
-		bgFragMat.MarkForUpdate();
+		bgFragMat.MarkForGPUUpdate();
 
 		var bg = UiComponentFactory.CreateComponent();
 		bg.FragMaterial = bgFragMat;
 		var bgData = bg.GetData();
 		bgData->Size = (Context.Window.WindowWidth, Context.Window.WindowHeight);
-		bg.MarkForUpdate();
+		bg.MarkForGPUUpdate();
 	}
 }
 

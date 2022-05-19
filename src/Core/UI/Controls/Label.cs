@@ -18,7 +18,7 @@ public class Label : StackPanel
 
 	public Label() => Scale = new Vector2<float>(0.5f);
 
-	public override Vector2<float> ComputedScale
+	public override Vector2<float> ParentScale
 	{
 		get => _computedScale;
 		set
@@ -51,31 +51,30 @@ public class Label : StackPanel
 
 			box.VertMaterial = UvMaterial.Create();
 
-			var vertData = box.VertMaterial.GetData<UvMaterialData>();
+			var vertData = box.VertMaterial.GetMemPtr<UvMaterialData>();
 			vertData->First = new Vector2<float>(character.X / 1024f, character.Y / 1024f);
 			vertData->Second = new Vector2<float>((character.X + character.Width) / 1024f, character.Y / 1024f);
 			vertData->Third = new Vector2<float>(character.X / 1024f, (character.Y + character.Height) / 1024f);
 			vertData->Fourth = new Vector2<float>((character.X + character.Width) / 1024f, (character.Y + character.Height) / 1024f);
 
-			box.VertMaterial.MarkForUpdate();
+			box.VertMaterial.MarkForGPUUpdate();
 
 			box.FragMaterial = FontMaterial.Create();
 
-			var fragData = box.FragMaterial.GetData<FontMaterialData>();
+			var fragData = box.FragMaterial.GetMemPtr<FontMaterialData>();
 			fragData->TextureId = 0; // TODO: UiRenderer.Consolas.Pages[character.Page].TextureName to vulkan texture id
-			fragData->FontScale = Math.Max(ComputedScale.X, ComputedScale.Y);
+			fragData->FontScale = Math.Max(CombinedScale.X, CombinedScale.Y);
 			fragData->OutlineDistance = 0.1f;
 			fragData->Color = Color.White.ToArgb();
 
-			box.FragMaterial.MarkForUpdate();
+			box.FragMaterial.MarkForGPUUpdate();
 
 			box.Size = new Vector2<float>(character.Width, character.Height);
-			box.Offset = new Vector2<float>(character.XOffset, character.YOffset);
+			box.MarginLT = new Vector2<float>(character.XOffset, character.YOffset);
 
-			box.MarginRight = character.XAdvance - character.Width - character.XOffset;
+			box.MarginRB.X = character.XAdvance - character.Width - character.XOffset;
 
-			box.Component.MarkForUpdate();
-			box.Resizable = false;
+			box.Component.MarkForGPUUpdate();
 
 			AddChild(box);
 		}

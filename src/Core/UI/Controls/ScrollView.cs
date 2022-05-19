@@ -1,5 +1,4 @@
-﻿using System;
-using System.Drawing;
+﻿using System.Drawing;
 using SimpleMath.Vectors;
 
 namespace Core.UI.Controls;
@@ -12,7 +11,7 @@ public class ScrollView : UiControl
 
 	public ScrollView()
 	{
-		_horizontalSlider = new ColoredBox
+		_horizontalSlider = new Rectangle
 		{
 			Color = Color.Cornsilk.ToArgb(),
 			Size = new Vector2<float>(50, 10),
@@ -22,7 +21,7 @@ public class ScrollView : UiControl
 		_horizontalSlider.OnDragStart((control, pos) => { });
 		_horizontalSlider.OnDragMove((control, from, to) =>
 		{
-			var offset = to - from;
+			var offset = (to - from) / ParentScale;
 			ScrollOffset.X += offset.X / (Size.X - _horizontalSlider.Size.X);
 			ScrollOffset.Max(new Vector2<float>(0)).Min(new Vector2<float>(1));
 		});
@@ -30,48 +29,35 @@ public class ScrollView : UiControl
 
 	public override void ComputeSizeAndArea(Vector2<float> maxSize)
 	{
-		maxSize.Min(Size);
-		_maxAreaInside = Size;
+		var maxArea = maxSize.MinV(Size * CombinedScale + (MarginLT + MarginRB) * ParentScale);
+		maxSize.Min(Size * CombinedScale);
+
 		foreach (var child in Children)
 		{
 			child.ComputeSizeAndArea(new Vector2<float>(float.PositiveInfinity));
 			_maxAreaInside.Max(child.ComputedArea);
 		}
 
-		ComputedSize = maxSize * ComputedScale;
-		ComputedArea = maxSize * ComputedScale;
-		_maxAreaInside -= Size;
+		ComputedSize = maxSize;
+		ComputedArea = maxArea;
 	}
 
-	public override void ArrangeAndMaskChildren(Vector2<float> area)
+	public override void ArrangeChildren(Vector2<float> area)
 	{
 		foreach (var child in Children)
 		{
 			child.BasePos = CombinedPos;
 			child.BaseZ = CombinedZ;
 
-			child.LocalPos = (child.Offset - (ScrollOffset * _maxAreaInside)) * ComputedScale;
+			child.LocalPos = (child.MarginLT - ScrollOffset * (_maxAreaInside - Size)) * CombinedScale;
 			child.LocalZ = child.OffsetZ;
 
-			switch (Overflow)
-			{
-				case Overflow.Hidden:
-					var maskStart = CombinedPos;
-					var maskEnd = CombinedPos + ComputedArea;
-					child.MaskStart = maskStart.Max(MaskStart);
-					child.MaskEnd = maskEnd.Min(MaskEnd);
-					break;
-				case Overflow.Shown:
-					child.MaskStart = new Vector2<float>(float.NegativeInfinity);
-					child.MaskEnd = new Vector2<float>(float.PositiveInfinity);
-					break;
-				default: throw new ArgumentOutOfRangeException();
-			}
-
-			child.ArrangeAndMaskChildren(area);
+			child.ArrangeChildren(area);
 		}
-
-		_horizontalSlider.LocalPos = new Vector2<float>(ScrollOffset.X * (Size.X - _horizontalSlider.Size.X), ComputedArea.Y - _horizontalSlider.Size.Y) *
-		                             ComputedScale;
+		
+		_horizontalSlider.MarginLT.X = (Size.X - _horizontalSlider.Size.X) * ScrollOffset.X;
+		_horizontalSlider.MarginLT.Y = Size.Y - _horizontalSlider.Size.Y;
+		
+		_horizontalSlider.LocalPos = _horizontalSlider.MarginLT * CombinedScale;
 	}
 }

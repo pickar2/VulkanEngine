@@ -38,4 +38,7 @@ void main() {
     }
 
     fragmentSwitch(d);
+
+    //    const float gamma = 2.2;
+    //    outColor.rgb = pow(outColor.rgb, vec3(1.0/gamma));
 }

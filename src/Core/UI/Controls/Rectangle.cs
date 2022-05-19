@@ -1,26 +1,26 @@
 ﻿namespace Core.UI.Controls;
 
-public class ColoredBox : CustomBox
+public class Rectangle : CustomBox
 {
 	private static readonly MaterialDataFactory DefaultVertexMaterial = UiMaterialManager.GetFactory("core:default_vertex_material");
 	private static readonly MaterialDataFactory ColorMaterial = UiMaterialManager.GetFactory("core:color_material");
 
-	public ColoredBox()
+	public Rectangle()
 	{
 		Component.VertMaterial = DefaultVertexMaterial.Create();
 		Component.FragMaterial = ColorMaterial.Create();
-		Component.MarkForUpdate();
+		Component.MarkForGPUUpdate();
 
 		Color = System.Drawing.Color.White.ToArgb();
 	}
 
 	public unsafe int Color
 	{
-		get => *Component.FragMaterial.GetData<int>();
+		get => *Component.FragMaterial.GetMemPtr<int>();
 		set
 		{
-			*Component.FragMaterial.GetData<int>() = value;
-			Component.FragMaterial.MarkForUpdate();
+			*Component.FragMaterial.GetMemPtr<int>() = value;
+			Component.FragMaterial.MarkForGPUUpdate();
 		}
 	}
 }

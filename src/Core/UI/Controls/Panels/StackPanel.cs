@@ -10,12 +10,15 @@ public class StackPanel : UiControl
 
 	public override void ComputeSizeAndArea(Vector2<float> maxSize)
 	{
-		maxSize.Min(Size).Mul(ComputedScale);
+		var maxArea = maxSize.MinV(Size * CombinedScale + (MarginLT + MarginRB) * ParentScale);
+		maxSize.Min(Size * CombinedScale);
 
 		var desiredSize = new Vector2<float>();
 
 		int stackComponent = (int) Orientation;
 		int otherComponent = 1 - stackComponent;
+
+		var scaledSpacing = Spacing * CombinedScale[stackComponent];
 		foreach (var child in Children)
 		{
 			var availableSize = maxSize;
@@ -24,19 +27,20 @@ public class StackPanel : UiControl
 			child.ComputeSizeAndArea(availableSize);
 			var childArea = child.ComputedArea;
 
-			desiredSize[stackComponent] = desiredSize[stackComponent] + childArea[stackComponent] + (Spacing * ComputedScale[stackComponent]);
+			desiredSize[stackComponent] = desiredSize[stackComponent] + childArea[stackComponent] + scaledSpacing;
 			desiredSize[otherComponent] = Math.Max(desiredSize[otherComponent], childArea[otherComponent]);
 
 			desiredSize.Min(maxSize);
 		}
 
 		ComputedSize = desiredSize;
-		ComputedArea = desiredSize;
+		ComputedArea = maxArea.Min(desiredSize + (MarginLT + MarginRB) * ParentScale);
 	}
 
-	public override void ArrangeAndMaskChildren(Vector2<float> area)
+	public override void ArrangeChildren(Vector2<float> area)
 	{
 		int stackComponent = (int) Orientation;
+		var scaledSpacing = Spacing * CombinedScale[stackComponent];
 		float offset = 0;
 		foreach (var child in Children)
 		{
@@ -44,26 +48,11 @@ public class StackPanel : UiControl
 			child.BasePos = CombinedPos;
 			child.BaseZ = CombinedZ;
 
-			child.LocalPos = (child.Offset * ComputedScale) + offsetVec;
+			child.LocalPos = (child.MarginLT * CombinedScale) + offsetVec;
 			child.LocalZ = child.OffsetZ;
 
-			switch (Overflow)
-			{
-				case Overflow.Hidden:
-					var maskStart = CombinedPos;
-					var maskEnd = CombinedPos + ComputedArea;
-					child.MaskStart = maskStart.Max(MaskStart);
-					child.MaskEnd = maskEnd.Min(MaskEnd);
-					break;
-				case Overflow.Shown:
-					child.MaskStart = new Vector2<float>(float.NegativeInfinity);
-					child.MaskEnd = new Vector2<float>(float.PositiveInfinity);
-					break;
-				default: throw new ArgumentOutOfRangeException();
-			}
-
-			child.ArrangeAndMaskChildren(area - offsetVec);
-			offset += child.ComputedArea[stackComponent] + (Spacing * ComputedScale[stackComponent]);
+			child.ArrangeChildren(area - offsetVec);
+			offset += child.ComputedArea[stackComponent] + scaledSpacing;
 			offset = Math.Min(offset, area[stackComponent]);
 		}
 	}

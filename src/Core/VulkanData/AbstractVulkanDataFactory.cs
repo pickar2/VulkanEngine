@@ -13,10 +13,11 @@ public abstract unsafe class AbstractVulkanDataFactory<TDataHolder> : IVulkanDat
 	private ulong _copyRegionByteSize;
 	private bool[] _copyRegions;
 	private int _copyRegionSize = 1024;
+	private int _copyRegionSizeLog2 = (int) Math.Log2(1024);
 
 	private int _gapCount;
 
-	private int[] _gaps = new int[2048];
+	private int[] _gaps = new int[512];
 
 	private byte* _materialData;
 
@@ -62,7 +63,7 @@ public abstract unsafe class AbstractVulkanDataFactory<TDataHolder> : IVulkanDat
 	public int ComponentSize { get; }
 	public ulong BufferSize { get; private set; }
 
-	public void MarkForCopy(int index) => _copyRegions[index / _copyRegionSize] = true;
+	public void MarkForCopy(int index) => _copyRegions[index >> _copyRegionSizeLog2] = true;
 
 	public void RecordCopyCommand(CommandBuffer cb)
 	{
@@ -162,7 +163,12 @@ public abstract unsafe class AbstractVulkanDataFactory<TDataHolder> : IVulkanDat
 	{
 		int newMaxComponents = MaxComponents * 2;
 
-		if ((int) Math.Ceiling((double) newMaxComponents / _copyRegionSize) > MaxCopyRegions) _copyRegionSize *= 2;
+		if ((int) Math.Ceiling((double) newMaxComponents / _copyRegionSize) > MaxCopyRegions)
+		{
+			_copyRegionSize *= 2;
+			_copyRegionSizeLog2++;
+		}
+
 		bool[] newCopyRegions = new bool[(int) Math.Ceiling((double) newMaxComponents / _copyRegionSize)];
 		_copyRegions.CopyTo(newCopyRegions, 0);
 		_copyRegions = newCopyRegions;

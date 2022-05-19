@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using SimpleMath.Vectors;
 
 namespace Core.UI.Controls.Panels;
@@ -31,7 +30,8 @@ public class DockPanel : UiControl
 
 	public override void ComputeSizeAndArea(Vector2<float> maxSize)
 	{
-		maxSize.Min(Size).Mul(ComputedScale);
+		var maxArea = maxSize.MinV(Size * CombinedScale + (MarginLT + MarginRB) * ParentScale);
+		maxSize.Min(Size * CombinedScale);
 
 		var accumulated = new Vector2<float>();
 		var desiredSize = new Vector2<float>();
@@ -40,18 +40,16 @@ public class DockPanel : UiControl
 			var availableSize = (maxSize - accumulated).MaxV(0);
 
 			child.ComputeSizeAndArea(availableSize);
-			if (!_docks.TryGetValue(child, out var dock)) break;
+			if (!_docks.TryGetValue(child, out var dock)) continue;
 
 			var childArea = child.ComputedArea;
 			switch (dock)
 			{
-				case Dock.Left:
-				case Dock.Right:
+				case Dock.Left or Dock.Right:
 					desiredSize.Y = Math.Max(desiredSize.Y, accumulated.Y + childArea.Y);
 					accumulated.X += childArea.X;
 					break;
-				case Dock.Top:
-				case Dock.Bottom:
+				case Dock.Top or Dock.Bottom:
 					desiredSize.X = Math.Max(desiredSize.X, accumulated.X + childArea.X);
 					accumulated.Y += childArea.Y;
 					break;
@@ -60,59 +58,43 @@ public class DockPanel : UiControl
 
 		desiredSize.Max(accumulated);
 
-		ComputedSize = desiredSize;
-		ComputedArea = desiredSize;
+		ComputedSize = maxSize.Min(desiredSize);
+		ComputedArea = maxArea.Min(desiredSize + (MarginLT + MarginRB) * ParentScale);
 	}
 
-	public override void ArrangeAndMaskChildren(Vector2<float> area)
+	public override void ArrangeChildren(Vector2<float> area)
 	{
 		float[] accumulated = new float[4];
 
 		foreach (var child in Children)
 		{
-			
 			var offsetVec = new Vector2<float>();
 			_docks.TryGetValue(child, out var dock);
 
 			offsetVec.X = accumulated[(int) Dock.Left];
 			offsetVec.Y = accumulated[(int) Dock.Top];
-			
+
 			switch (dock)
 			{
-				case Dock.Right: 
-					offsetVec.X = ComputedArea.X - accumulated[(int) Dock.Right] - child.ComputedArea.X;
+				case Dock.Right:
+					offsetVec.X = ComputedSize.X - accumulated[(int) Dock.Right] - child.ComputedSize.X;
 					break;
-				case Dock.Bottom: 
-					offsetVec.Y = ComputedArea.Y - accumulated[(int) Dock.Bottom] - child.ComputedArea.Y;
+				case Dock.Bottom:
+					offsetVec.Y = ComputedSize.Y - accumulated[(int) Dock.Bottom] - child.ComputedSize.Y;
 					break;
 			}
 
 			child.BasePos = CombinedPos;
 			child.BaseZ = CombinedZ;
 
-			child.LocalPos = (child.Offset * ComputedScale) + offsetVec;
+			child.LocalPos = (child.MarginLT * CombinedScale) + offsetVec;
 			child.LocalZ = child.OffsetZ;
 
-			accumulated[(int) dock] += child.ComputedArea[(int) dock % 2];
+			accumulated[(int) dock] += child.ComputedSize[(int) dock % 2];
 
-			switch (Overflow)
-			{
-				case Overflow.Hidden:
-					var maskStart = CombinedPos;
-					var maskEnd = CombinedPos + ComputedArea;
-					child.MaskStart = maskStart.Max(MaskStart);
-					child.MaskEnd = maskEnd.Min(MaskEnd);
-					break;
-				case Overflow.Shown:
-					child.MaskStart = new Vector2<float>(float.NegativeInfinity);
-					child.MaskEnd = new Vector2<float>(float.PositiveInfinity);
-					break;
-				default: throw new ArgumentOutOfRangeException();
-			}
+			child.ArrangeChildren(child.ComputedSize);
 
-			child.ArrangeAndMaskChildren(child.ComputedArea);
-			
-			if (!_docks.ContainsKey(child)) break;
+			// if (!_docks.ContainsKey(child)) break;
 		}
 	}
 }

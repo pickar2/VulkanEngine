@@ -80,9 +80,9 @@ public static partial class UiManager
 		if (TopControl is not null && OnHoverStartDelegates.TryGetValue(TopControl, out var hoverStart)) hoverStart.Invoke(TopControl, MousePos);
 	}
 
-	private static void EventsUpdate() => BeforeUpdate?.Invoke();
+	private static void EventsPreUpdate() => BeforeUpdate?.Invoke();
 
-	private static void EventsAfterUpdate()
+	private static void EventsPostUpdate()
 	{
 		var topControl = TopControlOnPos(MousePos, Root);
 		if (TopControl != topControl) OnTopControlChanged(topControl);

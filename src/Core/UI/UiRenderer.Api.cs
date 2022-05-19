@@ -73,13 +73,13 @@ public static unsafe partial class UiRenderer
 		var followCursorMaterial = UiMaterialManager.GetFactory("core:follow_cursor_material");
 
 		var cursorVertMat = followCursorMaterial.Create();
-		cursorVertMat.MarkForUpdate();
+		cursorVertMat.MarkForGPUUpdate();
 
 		var cursorFragMat = coolMaterial.Create();
-		var cursorFragData = cursorFragMat.GetData<CoolMaterialData>();
+		var cursorFragData = cursorFragMat.GetMemPtr<CoolMaterialData>();
 		cursorFragData->Color1 = Color.Blue.ToArgb();
 		cursorFragData->Color2 = Color.DarkViolet.ToArgb();
-		cursorFragMat.MarkForUpdate();
+		cursorFragMat.MarkForGPUUpdate();
 
 		var cursor = UiComponentFactory.Instance.Create();
 		var cursorData = cursor.GetData();
@@ -89,7 +89,7 @@ public static unsafe partial class UiRenderer
 
 		cursor.VertMaterial = cursorVertMat;
 		cursor.FragMaterial = cursorFragMat;
-		cursor.MarkForUpdate();
+		cursor.MarkForGPUUpdate();
 
 		var comp = UiComponentFactory.Instance.Create();
 		var compData = comp.GetData();
@@ -100,20 +100,20 @@ public static unsafe partial class UiRenderer
 		var cool = coolMaterial.Create();
 		comp.FragMaterial = cool;
 
-		var coolData = cool.GetData<CoolMaterialData>();
+		var coolData = cool.GetMemPtr<CoolMaterialData>();
 		coolData->Color1 = Color.Black.ToArgb();
 		coolData->Color2 = Color.DarkRed.ToArgb();
-		cool.MarkForUpdate();
+		cool.MarkForGPUUpdate();
 
 		var transform = transformMaterial.Create();
 		comp.VertMaterial = transform;
 
-		var transformData = transform.GetData<TransformMaterialData>();
+		var transformData = transform.GetMemPtr<TransformMaterialData>();
 		transformData->Transform = Matrix4X4<float>.Identity.RotationZ(0.08f);
-		transform.MarkForUpdate();
+		transform.MarkForGPUUpdate();
 
 		// Components.Add(comp);
-		comp.MarkForUpdate();
+		comp.MarkForGPUUpdate();
 
 		const short count = 1000;
 		const short spacing = 0;
@@ -123,7 +123,7 @@ public static unsafe partial class UiRenderer
 		const short startY = 55;
 
 		var defaultVertexMaterial = vertexMaterial.Create();
-		defaultVertexMaterial.MarkForUpdate();
+		defaultVertexMaterial.MarkForGPUUpdate();
 
 		for (int i = 0; i < count; i++)
 		{
@@ -132,7 +132,7 @@ public static unsafe partial class UiRenderer
 				var square = UiComponentFactory.Instance.Create();
 
 				var gradient = bigGradientMaterial.Create();
-				var data = gradient.GetData<BigGradientMaterialData>();
+				var data = gradient.GetMemPtr<BigGradientMaterialData>();
 
 				data->Color1 = Color.Blue.ToArgb();
 				data->Color2 = Color.Yellow.ToArgb();
@@ -142,7 +142,7 @@ public static unsafe partial class UiRenderer
 
 				data->EndX = (size + spacing) * count;
 				data->EndY = (size + spacing) * count;
-				gradient.MarkForUpdate();
+				gradient.MarkForGPUUpdate();
 
 				var squareData = square.GetData();
 
@@ -155,7 +155,7 @@ public static unsafe partial class UiRenderer
 
 				square.VertMaterial = defaultVertexMaterial;
 				square.FragMaterial = gradient;
-				square.MarkForUpdate();
+				square.MarkForGPUUpdate();
 
 				Components.Add(square);
 			}
@@ -192,9 +192,9 @@ public static unsafe partial class UiRenderer
 			var colorMaterialFactory = UiMaterialManager.GetFactory("core:color_material");
 			var colorMat = colorMaterialFactory.Create();
 			Components[randomIndex].FragMaterial = colorMat;
-			colorMat.GetData<ColorMaterialData>()->Color = Color.Blue.ToArgb();
-			colorMat.MarkForUpdate();
-			Components[randomIndex].MarkForUpdate();
+			colorMat.GetMemPtr<ColorMaterialData>()->Color = Color.Blue.ToArgb();
+			colorMat.MarkForGPUUpdate();
+			Components[randomIndex].MarkForGPUUpdate();
 		};
 	}
 

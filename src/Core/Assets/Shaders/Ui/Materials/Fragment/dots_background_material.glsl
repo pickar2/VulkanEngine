@@ -1,25 +1,23 @@
 ﻿//identifier=dots_background_material
 //type=fragment
-//size=0
+//size=4
 
-//struct bezier_gradient_material_struct { // 12 bytes
-//	int color1;
-//	int color2;
-//	float smoothing;
-//};
-//
-//readonly layout(std430, set = 4, binding = bezier_gradient_material_binding) buffer bezier_gradient_material_buffer {
-//	bezier_gradient_material_struct bezier_gradient_material_data[];
-//};
+struct dots_background_material_struct { // 4 bytes
+    float scale;
+};
+
+readonly layout(std430, set = 4, binding = dots_background_material_binding) buffer dots_background_material_buffer {
+	dots_background_material_struct dots_background_material_data[];
+};
 
 void dots_background_material(UiElementData data) {
-    //	bezier_gradient_material_struct mat = bezier_gradient_material_data[data.fragmentDataIndex];
+    dots_background_material_struct mat = dots_background_material_data[data.fragmentDataIndex];
 
     float time = frameIndex / 25.0;
     vec2 canvasSize = vec2(data.width, data.height);
     vec2 mPos = mousePos;
 
-    float scale = 1;
+    float scale = mat.scale;
 
     int brightSize = 5;
     float squareSize = 5 * scale;
@@ -39,7 +37,7 @@ void dots_background_material(UiElementData data) {
     vec2 dotStart = dotNumber * spacing + spacing / 2.0;
 
     float sizeVariance = 1.0;
-    float size = 2.0 + ((sin(length(dotStart - canvasSize / 2.0) + time) + 1.0) / 2.0) * sizeVariance;
+    float size = 2.0 + ((sin(length(dotNumber) + time) + 1.0) / 2.0) * sizeVariance;
     size *= scale;
 
     float other = float(mod(dotNumber.x, squareSize) == 0 && mod(dotNumber.y, squareSize) == 0);
@@ -47,7 +45,7 @@ void dots_background_material(UiElementData data) {
     float distance = clamp(length(pixelCoord - dotStart) / size, 0.0, 1.0);
     vec4 col = vec4(mix(mix(dotColor, otherColor, other), bgColor, distance), 1.0);
 
-    float higlightDistance = 100.0 * scale;
+    float higlightDistance = 100.0;
     float higlightStrength = 2.0;
     float distToMouse = 1.0 + higlightStrength - clamp(length(mPos - pixelCoord), 0.0, higlightDistance) / higlightDistance * higlightStrength;
 
