@@ -282,19 +282,19 @@ public static partial class UiManager
 		// var test1 = Animation.Of(() => ref Root.Scale, Root.Scale, Root.Scale / 2, 5000);
 		// test1.Start();
 		
-		var test1 = new Animation
-		{
-			Curve = DefaultCurves.EaseInOutQuad,
-			Type = AnimationType.RepeatAndReverse,
-			Duration = 2000,
-			Interpolator = new Vector2Interpolator<float>((1, 1), (0.5f, 0.5f), v =>
-			{
-				parent.Scale = v;
-				*((CustomBox) parent.Children.First()).FragMaterial.GetMemPtr<float>() = v.X;
-				((CustomBox) parent.Children.First()).FragMaterial.MarkForGPUUpdate();
-			})
-		};
-		test1.Start();
+		// var test1 = new Animation
+		// {
+		// 	Curve = DefaultCurves.EaseInOutQuad,
+		// 	Type = AnimationType.RepeatAndReverse,
+		// 	Duration = 2000,
+		// 	Interpolator = new Vector2Interpolator<float>((1, 1), (0.5f, 0.5f), v =>
+		// 	{
+		// 		parent.Scale = v;
+		// 		*((CustomBox) parent.Children.First()).FragMaterial.GetMemPtr<float>() = v.X;
+		// 		((CustomBox) parent.Children.First()).FragMaterial.MarkForGPUUpdate();
+		// 	})
+		// };
+		// test1.Start();
 
 		// var test2 = Animation.Of(() => ref parent.MarginLT, parent.MarginLT, (-500, -500), 5000);
 		// test2.Start();
