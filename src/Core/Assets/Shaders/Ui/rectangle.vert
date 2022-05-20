@@ -48,7 +48,7 @@ void main() {
 
     globalMatrix[3][0] = d.baseX;
     globalMatrix[3][1] = d.baseY;
-    zIndex = 1 - (d.localZ + d.baseZ) / MAX_Z_INDEX;
+    zIndex = 1 - d.zIndex / MAX_Z_INDEX;
 
     vertexSwitch(d);
 }

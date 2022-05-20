@@ -85,10 +85,7 @@ public class DockPanel : UiControl
 			}
 
 			child.BasePos = CombinedPos;
-			child.BaseZ = CombinedZ;
-
 			child.LocalPos = (child.MarginLT * CombinedScale) + offsetVec;
-			child.LocalZ = child.OffsetZ;
 
 			accumulated[(int) dock] += child.ComputedSize[(int) dock % 2];
 

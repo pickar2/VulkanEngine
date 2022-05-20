@@ -14,6 +14,16 @@ public abstract unsafe class UiControlOneComponent : UiControl
 		Component.MarkForGPUUpdate();
 	}
 
+	public override short ZIndex
+	{
+		get => Component.GetData()->ZIndex;
+		set
+		{
+			Component.GetData()->ZIndex = value;
+			Component.MarkForGPUUpdate();
+		}
+	}
+
 	public override Vector2<float> BasePos
 	{
 		get => Component.GetData()->BasePos;
@@ -24,32 +34,12 @@ public abstract unsafe class UiControlOneComponent : UiControl
 		}
 	}
 
-	public override short BaseZ
-	{
-		get => Component.GetData()->BaseZ;
-		set
-		{
-			Component.GetData()->BaseZ = value;
-			Component.MarkForGPUUpdate();
-		}
-	}
-
 	public override Vector2<float> LocalPos
 	{
 		get => Component.GetData()->LocalPos;
 		set
 		{
 			Component.GetData()->LocalPos = value;
-			Component.MarkForGPUUpdate();
-		}
-	}
-
-	public override short LocalZ
-	{
-		get => Component.GetData()->LocalZ;
-		set
-		{
-			Component.GetData()->LocalZ = value;
 			Component.MarkForGPUUpdate();
 		}
 	}

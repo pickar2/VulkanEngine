@@ -69,14 +69,14 @@ public static partial class UiManager
 		var testText1 = new Label();
 		testText1.Scale = new Vector2<float>(1.0f);
 		testText1.Text = "Frame time:";
-		testText1.OffsetZ = 34;
+		testText1.ZIndex = 34;
 		testText1.MarginLT = new Vector2<float>(10, 42);
 		parent.AddChild(testText1);
 
 		var testText2 = new Label();
 		testText2.Scale = new Vector2<float>(0.5f);
 		testText2.Text = "Scaled text";
-		testText2.OffsetZ = 34;
+		testText2.ZIndex = 34;
 		testText2.MarginLT = new Vector2<float>(10, 42 + 32);
 		parent.AddChild(testText2);
 	}
@@ -87,24 +87,24 @@ public static partial class UiManager
 		stackPanel.Spacing = 30;
 		stackPanel.Size = new Vector2<float>(800, 600);
 		stackPanel.MarginLT = new Vector2<float>(150, 150);
-		stackPanel.OffsetZ = 5;
+		stackPanel.ZIndex = 5;
 
-		var box1 = new Rectangle {Color = RandomColor(), OffsetZ = 1};
+		var box1 = new Rectangle {Color = RandomColor(), ZIndex = 6};
 		box1.Size.X = 30;
 		box1.MarginLT = new Vector2<float>(30, 30);
 		stackPanel.AddChild(box1);
 
-		var box2 = new Rectangle {Color = RandomColor(), OffsetZ = 1};
+		var box2 = new Rectangle {Color = RandomColor(), ZIndex = 6};
 		box2.Size.X = 60;
 		box2.MarginLT = new Vector2<float>(30, -30);
 		stackPanel.AddChild(box2);
 
-		var box3 = new Rectangle {Color = RandomColor(), OffsetZ = 1};
+		var box3 = new Rectangle {Color = RandomColor(), ZIndex = 6};
 		box3.Size.X = 10;
 		box3.MarginRB.X = 20;
 		stackPanel.AddChild(box3);
 
-		var box4 = new Rectangle {Color = RandomColor(), OffsetZ = 1};
+		var box4 = new Rectangle {Color = RandomColor(), ZIndex = 6};
 		box4.Size.X = 10;
 		stackPanel.AddChild(box4);
 
@@ -133,7 +133,7 @@ public static partial class UiManager
 		{
 			Size = new Vector2<float>(150, 150),
 			MarginLT = new Vector2<float>(600, 150),
-			OffsetZ = 10,
+			ZIndex = 10,
 			ScrollOffset = new Vector2<float>(0.5f, 0)
 		};
 		wrapPanel.MarginLT = new Vector2<float>(0, 10);
@@ -156,7 +156,7 @@ public static partial class UiManager
 		{
 			Size = (300, 300),
 			MarginLT = (750, 400),
-			OffsetZ = 55,
+			ZIndex = 55,
 			Overflow = Overflow.Shown
 		};
 
@@ -195,7 +195,7 @@ public static partial class UiManager
 		{
 			Size = (150, 150),
 			MarginLT = (450, 450),
-			OffsetZ = 100
+			ZIndex = 100
 		};
 		parent.AddChild(panel);
 
@@ -207,7 +207,7 @@ public static partial class UiManager
 
 		var box = new CustomBox
 		{
-			OffsetZ = 0
+			ZIndex = 0
 		};
 
 		box.FragMaterial = UiMaterialManager.GetFactory("core:color_material").Create();
@@ -228,7 +228,7 @@ public static partial class UiManager
 
 		var box2 = new CustomBox
 		{
-			OffsetZ = 1
+			ZIndex = 1
 		};
 
 		box2.FragMaterial = UiMaterialManager.GetFactory("core:color_material").Create();
@@ -249,7 +249,7 @@ public static partial class UiManager
 			Color = RandomColor(),
 			Size = (100, 50),
 			MarginLT = (700, 350),
-			OffsetZ = 10
+			ZIndex = 10
 		};
 		parent.AddChild(button);
 
@@ -258,7 +258,7 @@ public static partial class UiManager
 			Color = RandomColor(),
 			Size = (75, 75),
 			MarginLT = (900, 150),
-			OffsetZ = 10
+			ZIndex = 10
 		};
 		parent.AddChild(box1);
 
@@ -267,7 +267,7 @@ public static partial class UiManager
 			Color = RandomColor(),
 			Size = (75, 75),
 			MarginLT = (900, 300),
-			OffsetZ = 10
+			ZIndex = 10
 		};
 		parent.AddChild(box2);
 

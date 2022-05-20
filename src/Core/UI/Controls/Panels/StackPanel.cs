@@ -46,10 +46,7 @@ public class StackPanel : UiControl
 		{
 			var offsetVec = new Vector2<float> {[stackComponent] = offset};
 			child.BasePos = CombinedPos;
-			child.BaseZ = CombinedZ;
-
 			child.LocalPos = (child.MarginLT * CombinedScale) + offsetVec;
-			child.LocalZ = child.OffsetZ;
 
 			child.ArrangeChildren(area - offsetVec);
 			offset += child.ComputedArea[stackComponent] + scaledSpacing;

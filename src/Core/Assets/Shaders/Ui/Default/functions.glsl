@@ -8,7 +8,7 @@
 }
 
 Pos calcFullPos(UiElementData data) {
-    Pos pos = { data.baseX + data.localX, data.baseY + data.localY, data.baseZ + data.localZ };
+    Pos pos = { data.baseX + data.localX, data.baseY + data.localY, data.zIndex };
 
     return pos;
 }

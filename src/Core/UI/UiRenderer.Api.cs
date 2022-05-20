@@ -84,7 +84,7 @@ public static unsafe partial class UiRenderer
 		var cursor = UiComponentFactory.Instance.Create();
 		var cursorData = cursor.GetData();
 		cursorData->BasePos = (0, 0);
-		cursorData->BaseZ = 30;
+		cursorData->ZIndex = 30;
 		cursorData->Size = (50, 50);
 
 		cursor.VertMaterial = cursorVertMat;
@@ -94,7 +94,7 @@ public static unsafe partial class UiRenderer
 		var comp = UiComponentFactory.Instance.Create();
 		var compData = comp.GetData();
 		compData->BasePos = (450, 100);
-		compData->BaseZ = 25;
+		compData->ZIndex = 25;
 		compData->Size = (300, 300);
 
 		var cool = coolMaterial.Create();
@@ -147,7 +147,7 @@ public static unsafe partial class UiRenderer
 				var squareData = square.GetData();
 
 				squareData->BasePos = (startX, startY);
-				squareData->BaseZ = 600;
+				squareData->ZIndex = 600;
 
 				squareData->LocalPos = ((size + spacing) * i, (size + spacing) * j);
 
