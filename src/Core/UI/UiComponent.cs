@@ -42,7 +42,7 @@ public class UiComponentFactory : AbstractVulkanDataFactory<UiComponent>
 {
 	public static readonly UiComponentFactory Instance = new();
 
-	private UiComponentFactory(int dataSize = 56) : base(dataSize) { }
+	private UiComponentFactory(int dataSize = 60) : base(dataSize) { }
 
 	public static UiComponent CreateComponent() => Instance.Create();
 }
@@ -50,38 +50,38 @@ public class UiComponentFactory : AbstractVulkanDataFactory<UiComponent>
 public struct UiComponentData
 {
 	/*
-		struct UiElementData { // 56 bytes (aligned for 4 bytes)
-		    int16_t flags;
-		    int16_t zIndex;
-		    
-		    float baseX;
-		    float baseY;
+		struct UiElementData { // 60 bytes (aligned for 4 bytes)
+			float baseX;
+			float baseY;
 
-		    float localX;
-		    float localY;
+			float localX;
+			float localY;
 
-		    float width;
-		    float height;
+			int16_t baseZ;
+			int16_t localZ;
 
-		    float maskStartX;
-		    float maskStartY;
+			float width;
+			float height;
 
-		    float maskEndX;
-		    float maskEndY;
+			float maskStartX;
+			float maskStartY;
 
-		    int16_t vertexMaterialType;
-		    int16_t fragmentMaterialType;
+			float maskEndX;
+			float maskEndY;
 
-		    int vertexDataIndex;
-		    int fragmentDataIndex;
+			int16_t vertexMaterialType;
+			int16_t fragmentMaterialType;
+
+			int vertexDataIndex;
+			int fragmentDataIndex;
+
+			int flags;
 		};
 	 */
 
-	public UiComponentFlags Flags;
-	public Int16 ZIndex;
-
 	public Vector2<float> BasePos;
 	public Vector2<float> LocalPos;
+	public Int16 BaseZ, LocalZ;
 
 	public Vector2<float> Size;
 
@@ -99,10 +99,12 @@ public struct UiComponentData
 
 	[Obsolete("Use fragment material setter from UiComponent")]
 	public int FragmentDataIndex;
+
+	public UiComponentFlags Flags;
 }
 
 [Flags]
-public enum UiComponentFlags : short
+public enum UiComponentFlags
 {
 	Disabled = 1 << 0,
 	HasTransformation = 1 << 3,

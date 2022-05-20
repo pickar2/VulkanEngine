@@ -87,7 +87,10 @@ public class WrapPanel : UiControl
 			}
 
 			child.BasePos = CombinedPos;
+			child.BaseZ = CombinedZ;
+
 			child.LocalPos = child.MarginLT * CombinedScale + offset - new Vector2<float> {[stackComponent] = childArea[stackComponent]};
+			child.LocalZ = child.OffsetZ;
 
 			child.ArrangeChildren(area);
 		}

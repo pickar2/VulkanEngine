@@ -41,10 +41,10 @@ public static partial class UiManager
 			short topZ = -1;
 			foreach (var child in startControl.Children)
 			{
-				if (child.Selectable && IsInsideControl(child, point) && child.ZIndex > topZ)
+				if (child.Selectable && IsInsideControl(child, point) && child.CombinedZ > topZ)
 				{
 					topControl = child;
-					topZ = child.ZIndex;
+					topZ = child.CombinedZ;
 				}
 			}
 

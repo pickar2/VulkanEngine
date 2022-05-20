@@ -17,7 +17,7 @@ public class ScrollView : UiControl
 		{
 			Color = Color.Cornsilk.ToArgb(),
 			Size = new Vector2<float>(50, 10),
-			ZIndex = (short) (_zIndex + 1)
+			OffsetZ = 1
 		};
 		_horizontalSlider.OnDragStart((control, pos) => { });
 		_horizontalSlider.OnDragMove((control, from, to) =>
@@ -32,7 +32,7 @@ public class ScrollView : UiControl
 		{
 			Color = Color.Cornsilk.ToArgb(),
 			Size = new Vector2<float>(10, 50),
-			ZIndex = (short) (_zIndex + 1)
+			OffsetZ = 1
 		};
 		_verticalSlider.OnDragStart((control, pos) => { });
 		_verticalSlider.OnDragMove((control, from, to) =>
@@ -42,19 +42,6 @@ public class ScrollView : UiControl
 			ScrollOffset.Max(new Vector2<float>(0)).Min(new Vector2<float>(1));
 		});
 		AddChild(_verticalSlider);
-	}
-
-	private short _zIndex;
-
-	public override short ZIndex
-	{
-		get => _zIndex;
-		set
-		{
-			_zIndex = value;
-			_verticalSlider.ZIndex = (short) (value + 1);
-			_horizontalSlider.ZIndex = (short) (value + 1);
-		}
 	}
 
 	public override void ComputeSizeAndArea(Vector2<float> maxSize)
@@ -77,7 +64,10 @@ public class ScrollView : UiControl
 		foreach (var child in Children)
 		{
 			child.BasePos = CombinedPos;
+			child.BaseZ = CombinedZ;
+
 			child.LocalPos = (child.MarginLT - ScrollOffset * (_maxAreaInside - Size).MaxV(0)) * CombinedScale;
+			child.LocalZ = child.OffsetZ;
 
 			child.ArrangeChildren(area);
 		}

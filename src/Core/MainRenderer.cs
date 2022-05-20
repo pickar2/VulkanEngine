@@ -85,8 +85,8 @@ public static unsafe class MainRenderer
 		var sw3 = new Stopwatch();
 		sw3.Start();
 
-		var fpsLabel = new Label {MarginLT = (10, 10), ZIndex = 30};
-		var frameTimeLabel = new Label {MarginLT = (10, 26), ZIndex = 31};
+		var fpsLabel = new Label {MarginLT = (10, 10), OffsetZ = 30};
+		var frameTimeLabel = new Label {MarginLT = (10, 26), OffsetZ = 31};
 
 		UiManager.Root.AddChild(fpsLabel);
 		UiManager.Root.AddChild(frameTimeLabel);

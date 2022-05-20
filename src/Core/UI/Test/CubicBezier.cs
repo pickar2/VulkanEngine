@@ -100,7 +100,7 @@ public unsafe class UiCubicBezier
 
 			var data = component.GetData();
 			data->Size = (1, 1);
-			data->ZIndex = 256;
+			data->BaseZ = 256;
 
 			component.MarkForGPUUpdate();
 		}

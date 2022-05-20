@@ -11,7 +11,7 @@ public abstract class UiControl : IDisposable
 	// set by user
 	public Vector2<float> MarginLT;
 	public Vector2<float> MarginRB;
-	public virtual short ZIndex { get; set; }
+	public short OffsetZ;
 	public Vector2<float> Scale = new(1.0f);
 	public Vector2<float> Size = new(float.PositiveInfinity);
 	public virtual bool Selectable { get; set; } = true;
@@ -20,8 +20,13 @@ public abstract class UiControl : IDisposable
 
 	// set internally
 	public virtual Vector2<float> BasePos { get; set; }
+	public virtual short BaseZ { get; set; }
+
 	public virtual Vector2<float> LocalPos { get; set; }
+	public virtual short LocalZ { get; set; }
+
 	public Vector2<float> CombinedPos => BasePos + LocalPos;
+	public short CombinedZ => (short) (BaseZ + LocalZ);
 
 	public virtual Vector2<float> ComputedArea { get; set; }
 	public virtual Vector2<float> ComputedSize { get; set; }
@@ -68,7 +73,10 @@ public abstract class UiControl : IDisposable
 		foreach (var child in Children)
 		{
 			child.BasePos = CombinedPos;
+			child.BaseZ = CombinedZ;
+
 			child.LocalPos = child.MarginLT * CombinedScale;
+			child.LocalZ = child.OffsetZ;
 
 			child.ArrangeChildren(area);
 		}
