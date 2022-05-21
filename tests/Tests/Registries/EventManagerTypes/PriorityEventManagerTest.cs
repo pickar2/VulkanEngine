@@ -1,5 +1,4 @@
 ﻿using System.Reflection;
-using Core;
 using Core.Registries;
 using Core.Registries.API;
 using Core.Registries.CoreTypes;
@@ -62,10 +61,12 @@ public class PriorityEventManagerTest
 
 	private sealed class TestReg : SimpleRegistry<NoneEventManager<TestData>, TestData>
 	{
+		// ReSharper disable once UnusedMember.Local
 		public TestReg(Mapper mapper) : base(mapper)
 		{
 		}
 
+		// ReSharper disable once UnusedMember.Local
 		public TestReg(Patcher patcher) : base(patcher)
 		{
 		}
