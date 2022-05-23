@@ -25,9 +25,9 @@ public static class MouseInput
 		OnMouseMotion?.Invoke(MousePos, LastMotion);
 	}
 
-	public static void MouseButtonDown(SDL_MouseButtonEvent buttonEvent) => OnMouseButtonDown?.Invoke((MouseButton) buttonEvent.button);
+	public static void MouseButtonDown(SDL_MouseButtonEvent buttonEvent) => OnMouseButtonDown?.Invoke((MouseButton) (buttonEvent.button - 1));
 
-	public static void MouseButtonUp(SDL_MouseButtonEvent buttonEvent) => OnMouseButtonUp?.Invoke((MouseButton) buttonEvent.button);
+	public static void MouseButtonUp(SDL_MouseButtonEvent buttonEvent) => OnMouseButtonUp?.Invoke((MouseButton) (buttonEvent.button - 1));
 
 	public static void Scroll(SDL_MouseWheelEvent mouseWheelEvent) => OnScroll?.Invoke(new Vector2<float>(mouseWheelEvent.preciseX, mouseWheelEvent.preciseY));
 }
