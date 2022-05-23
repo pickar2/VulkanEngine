@@ -29,8 +29,6 @@ public static partial class UiManager
 			infoPanel.UpdateControl(new Vector2<float>(1), screenSize);
 		};
 
-		App.Logger.Info.Message($"{Context.Window.WindowWidth}");
-
 		var mainControl = new AbsolutePanel();
 		// mainControl.Selectable = false;
 		// mainControl.MarginLT = new Vector2<float>(300, 100);
