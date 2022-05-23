@@ -30,7 +30,7 @@ public static partial class UiManager
 		control.PropagateScale(scale);
 		control.ComputeSizeAndArea(area);
 		control.ArrangeChildren(area);
-		control.UpdateChildrenMask();
+		control.UpdateChildrenMask(new Vector2<float>(float.NegativeInfinity), new Vector2<float>(float.PositiveInfinity));
 	}
 
 	public static UiControl? TopControlOnPos(Vector2<float> point, UiControl? startControl)

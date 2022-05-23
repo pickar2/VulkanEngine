@@ -1,7 +1,7 @@
 ﻿using System.Drawing;
-using Core.General;
 using Core.UI.Controls.Panels;
-using Silk.NET.Input;
+using Core.Window;
+using SDL2;
 using SimpleMath.Vectors;
 
 namespace Core.UI.Controls;
@@ -42,7 +42,7 @@ public class ControlInfoBox : AbsolutePanel
 		};
 		AddChild(bg);
 
-		if (Context.Window.InputContext.Keyboards[0].IsKeyPressed(Key.ShiftLeft))
+		if (KeyboardInput.IsKeyPressed(SDL.SDL_Keycode.SDLK_LSHIFT))
 		{
 			bg.MarginLT = _control.CombinedPos - _control.MarginLT * _control.ParentScale;
 			bg.Size = _control.ComputedArea;

@@ -8,6 +8,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimpleMath", "SimpleMath\Si
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimpleMath.Generators", "SimpleMath.Generators\SimpleMath.Generators.csproj", "{6E88DCC3-70ED-4691-9D7E-B0F0B4F69FE8}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SDL2-CS", "SDL2-CS\SDL2-CS.csproj", "{F9BA5B34-15EF-4462-A533-DC941A41AF34}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Release|x64 = Release|x64
@@ -30,5 +32,9 @@ Global
 		{6E88DCC3-70ED-4691-9D7E-B0F0B4F69FE8}.Debug|x64.Build.0 = Debug|x64
 		{6E88DCC3-70ED-4691-9D7E-B0F0B4F69FE8}.Release|x64.ActiveCfg = Release|x64
 		{6E88DCC3-70ED-4691-9D7E-B0F0B4F69FE8}.Release|x64.Build.0 = Release|x64
+		{F9BA5B34-15EF-4462-A533-DC941A41AF34}.Release|x64.ActiveCfg = Release|Any CPU
+		{F9BA5B34-15EF-4462-A533-DC941A41AF34}.Release|x64.Build.0 = Release|Any CPU
+		{F9BA5B34-15EF-4462-A533-DC941A41AF34}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{F9BA5B34-15EF-4462-A533-DC941A41AF34}.Debug|x64.Build.0 = Debug|Any CPU
 	EndGlobalSection
 EndGlobal

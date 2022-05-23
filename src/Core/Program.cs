@@ -4,8 +4,9 @@ using Core.General;
 using Core.UI;
 using Core.Utils;
 using Core.Utils.Features;
+using Core.Window;
 using NullGuard;
-using Silk.NET.Input;
+using SDL2;
 using Silk.NET.Vulkan;
 
 [assembly: NullGuard(ValidationFlags.All)]
@@ -27,14 +28,12 @@ internal static class Program
 		if (VulkanOptions.DebugMode)
 			App.Logger.Warn.Message($"DEBUG MODE IS ENABLED");
 
-		Window.Window window = new();
-		window.OnKeyUp += key =>
-		{
-			if (key == Key.Escape) window.Close();
-		};
+		var window = new SdlWindow();
 
-		window.IWindow.VSync = false;
-		window.IWindow.FramesPerSecond = 0;
+		KeyboardInput.OnKeyUp += key =>
+		{
+			if (key.scancode == SDL.SDL_Scancode.SDL_SCANCODE_ESCAPE) window.Close();
+		};
 
 		Context vulkanContext = new(new VulkanConfig
 		{
@@ -84,7 +83,9 @@ internal static class Program
 		var renderThread = new Thread(MainRenderer.RenderLoop);
 		renderThread.Start();
 
-		window.Run();
+		window.Show();
+
+		window.MainLoop();
 		renderThread.Join();
 
 		vulkanContext.Dispose();

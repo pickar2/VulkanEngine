@@ -1,23 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
-using Core.General;
 using Core.UI.Controls;
-using Silk.NET.Input;
+using Core.Window;
 using SimpleMath.Vectors;
 
 namespace Core.UI;
 
 public static partial class UiManager
 {
-	public delegate void OnClickDelegate(UiControl control, MouseButton button, Vector2<float> pos);
+	public delegate void OnClickDelegate(UiControl control, MouseButton button, Vector2<int> pos);
 
-	public delegate void OnDragEndDelegate(UiControl control, Vector2<float> endPos);
+	public delegate void OnDragEndDelegate(UiControl control, Vector2<int> endPos);
 
-	public delegate void OnDragMoveDelegate(UiControl control, Vector2<float> from, Vector2<float> to);
+	public delegate void OnDragMoveDelegate(UiControl control, Vector2<int> from, Vector2<int> to);
 
-	public delegate void OnDragStartDelegate(UiControl control, Vector2<float> startPos);
+	public delegate void OnDragStartDelegate(UiControl control, Vector2<int> startPos);
 
-	public delegate void OnHoverDelegate(UiControl control, Vector2<float> pos);
+	public delegate void OnHoverDelegate(UiControl control, Vector2<int> pos);
 
 	private static UiControl? _draggedControl;
 
@@ -30,7 +29,8 @@ public static partial class UiManager
 	private static readonly Dictionary<UiControl, OnDragStartDelegate> OnDragStartDelegates = new();
 	private static readonly Dictionary<UiControl, OnDragMoveDelegate> OnDragMoveDelegates = new();
 	private static readonly Dictionary<UiControl, OnDragEndDelegate> OnDragEndDelegates = new();
-	public static Vector2<float> MousePos { get; private set; }
+
+	public static Vector2<int> MousePos { get; private set; }
 	public static UiControl? TopControl { get; private set; }
 
 	public static event Action? BeforeUpdate;
@@ -38,13 +38,13 @@ public static partial class UiManager
 
 	private static void InitEvents()
 	{
-		Context.Window.OnCursorPosition += (xPos, yPos) => HandleCursorMove(new Vector2<float>(xPos, yPos));
+		MouseInput.OnMouseMotion += (pos, motion) => HandleCursorMove(pos);
 
-		Context.Window.OnMouseUp += HandleMouseUp;
-		Context.Window.OnMouseDown += HandleMouseDown;
+		MouseInput.OnMouseButtonUp += HandleMouseUp;
+		MouseInput.OnMouseButtonDown += HandleMouseDown;
 	}
 
-	private static void HandleCursorMove(Vector2<float> newPos)
+	private static void HandleCursorMove(Vector2<int> newPos)
 	{
 		if (_draggedControl is not null && OnDragMoveDelegates.TryGetValue(_draggedControl, out var dragMove))
 			dragMove.Invoke(_draggedControl, MousePos, newPos);
@@ -84,7 +84,7 @@ public static partial class UiManager
 
 	private static void EventsPostUpdate()
 	{
-		var topControl = TopControlOnPos(MousePos, Root);
+		var topControl = TopControlOnPos(MousePos.Cast<int, float>(), Root);
 		if (TopControl != topControl) OnTopControlChanged(topControl);
 		AfterUpdate?.Invoke();
 	}

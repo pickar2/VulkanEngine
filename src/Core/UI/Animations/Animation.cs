@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Drawing;
-using System.Runtime.CompilerServices;
 using SimpleMath.Vectors;
 
 namespace Core.UI.Animations;

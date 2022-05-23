@@ -25,7 +25,7 @@ public unsafe class Context : IDisposable
 {
 	public static readonly Vk Vk = Vk.GetApi();
 	public static VulkanConfig Config = default!;
-	public static Window.Window Window = default!;
+	public static Window.SdlWindow Window = default!;
 
 	public static Compiler Compiler = default!;
 
@@ -46,7 +46,7 @@ public unsafe class Context : IDisposable
 
 	public static bool IsIntegratedGpu;
 
-	public Context(VulkanConfig config, Window.Window window)
+	public Context(VulkanConfig config, Window.SdlWindow window)
 	{
 		Config = config;
 		Window = window;
@@ -92,7 +92,7 @@ public unsafe class Context : IDisposable
 
 		if (VulkanOptions.DebugMode) DebugMessenger.Init();
 
-		Surface = Window.IWindow.VkSurface!.Create<AllocationCallbacks>(Instance.ToHandle(), null).ToSurface();
+		Surface = Window.GetVulkanSurface(Instance);
 
 		PickPhysicalDevice();
 		FindQueueFamilies(PhysicalDevice);
@@ -362,15 +362,13 @@ public unsafe class Context : IDisposable
 		KhrSurface.GetPhysicalDeviceSurfaceFormats(device, Surface, &formatCount, null);
 
 		var formats = new SurfaceFormatKHR[formatCount];
-		KhrSurface.GetPhysicalDeviceSurfaceFormats(device, Surface, &formatCount,
-			formats[0].AsPointer());
+		KhrSurface.GetPhysicalDeviceSurfaceFormats(device, Surface, &formatCount, formats[0].AsPointer());
 
 		uint presentModeCount = 0;
 		KhrSurface.GetPhysicalDeviceSurfacePresentModes(device, Surface, &presentModeCount, null);
 
 		var presentModes = new PresentModeKHR[presentModeCount];
-		KhrSurface.GetPhysicalDeviceSurfacePresentModes(device, Surface, &presentModeCount,
-			presentModes[0].AsPointer());
+		KhrSurface.GetPhysicalDeviceSurfacePresentModes(device, Surface, &presentModeCount, presentModes[0].AsPointer());
 
 		return new SwapchainDetails(capabilities, formats, presentModes);
 	}

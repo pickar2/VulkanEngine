@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using SimpleMath.Vectors;
 
 namespace Core.UI.Controls.Panels;

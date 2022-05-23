@@ -2,7 +2,7 @@
 
     <PropertyGroup>
         <TargetFramework>net7.0</TargetFramework>
-        <LangVersion>preview</LangVersion>
+        <LangVersion>10.0</LangVersion>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <Nullable>enable</Nullable>
         <Configurations>Release;Debug</Configurations>
@@ -34,8 +34,12 @@
         <PackageReference Include="Silk.NET.Vulkan" Version="2.15.0" />
         <PackageReference Include="Silk.NET.Vulkan.Extensions.EXT" Version="2.15.0" />
         <PackageReference Include="Silk.NET.Vulkan.Extensions.KHR" Version="2.15.0" />
-        <PackageReference Include="Silk.NET.Windowing" Version="2.15.0" />
-        <PackageReference Include="Silk.NET.Input" Version="2.15.0" />
+        <PackageReference Include="Silk.NET.Maths" Version="2.15.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\SimpleMath\SimpleMath.csproj" />
+        <ProjectReference Include="..\SDL2-CS\SDL2-CS.csproj" />
     </ItemGroup>
 
     <ItemGroup>
@@ -51,10 +55,6 @@
     <ItemGroup>
         <None Remove="Local\Entities\DefaultLocales\en-EN.lson" />
         <EmbeddedResource Include="Locales\Entities\DefaultLocales\en.lson" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <ProjectReference Include="..\SimpleMath\SimpleMath.csproj" />
     </ItemGroup>
 
 </Project>

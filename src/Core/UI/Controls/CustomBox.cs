@@ -1,6 +1,4 @@
-﻿using SimpleMath.Vectors;
-
-namespace Core.UI.Controls;
+﻿namespace Core.UI.Controls;
 
 public class CustomBox : UiControlOneComponent
 {

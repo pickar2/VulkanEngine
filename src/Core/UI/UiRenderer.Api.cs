@@ -11,7 +11,9 @@ using Core.UI.Materials.Fragment;
 using Core.UI.Materials.Vertex;
 using Core.Utils;
 using Core.VulkanData;
+using Core.Window;
 using Silk.NET.Maths;
+using SimpleMath.Vectors;
 
 namespace Core.UI;
 
@@ -34,7 +36,7 @@ public static unsafe partial class UiRenderer
 		FrameIndexHolder = GlobalData.GetOrDefault("core:frame-index");
 		MousePositionHolder = GlobalData.GetOrDefault("core:mouse-position");
 
-		Context.Window.OnCursorPosition += (xPos, yPos) => *MousePositionHolder.Get<Vec2I>() = new Vec2I {X = (int) xPos, Y = (int) yPos};
+		MouseInput.OnMouseMotion += (pos, motion) => *MousePositionHolder.Get<Vector2<int>>() = pos;
 
 		Consolas = FontLoader.LoadFromText("Assets/Fonts/consolas.fnt");
 

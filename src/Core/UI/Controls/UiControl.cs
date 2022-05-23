@@ -14,7 +14,9 @@ public abstract class UiControl : IDisposable
 	public short OffsetZ;
 	public Vector2<float> Scale = new(1.0f);
 	public Vector2<float> Size = new(float.PositiveInfinity);
+
 	public virtual bool Selectable { get; set; } = true;
+
 	// public virtual bool Resizable { get; set; } = true;
 	public virtual Overflow Overflow { get; set; } = Overflow.Hidden;
 
@@ -30,7 +32,7 @@ public abstract class UiControl : IDisposable
 
 	public virtual Vector2<float> ComputedArea { get; set; }
 	public virtual Vector2<float> ComputedSize { get; set; }
-	
+
 	public virtual Vector2<float> ParentScale { get; set; }
 	public Vector2<float> CombinedScale => Scale * ParentScale;
 
@@ -60,9 +62,9 @@ public abstract class UiControl : IDisposable
 
 	public virtual void ComputeSizeAndArea(Vector2<float> maxSize)
 	{
-		var maxArea = maxSize.MinV(Size * CombinedScale + (MarginLT + MarginRB) * ParentScale);
+		var maxArea = maxSize.MinV((Size * CombinedScale) + ((MarginLT + MarginRB) * ParentScale));
 		maxSize.Min(Size * CombinedScale);
-		
+
 		foreach (var child in Children) child.ComputeSizeAndArea(maxSize);
 		ComputedSize = maxSize;
 		ComputedArea = maxArea;
@@ -82,7 +84,7 @@ public abstract class UiControl : IDisposable
 		}
 	}
 
-	public virtual void UpdateChildrenMask()
+	public virtual void UpdateChildrenMask(Vector2<float> parentMaskStart, Vector2<float> parentMaskEnd)
 	{
 		foreach (var child in Children)
 		{
@@ -95,13 +97,13 @@ public abstract class UiControl : IDisposable
 					child.MaskEnd = maskEnd.Min(MaskEnd);
 					break;
 				case Overflow.Shown:
-					child.MaskStart = new Vector2<float>(float.NegativeInfinity);
-					child.MaskEnd = new Vector2<float>(float.PositiveInfinity);
+					child.MaskStart = parentMaskStart;
+					child.MaskEnd = parentMaskEnd;
 					break;
 				default: throw new ArgumentOutOfRangeException();
 			}
-			
-			child.UpdateChildrenMask();
+
+			child.UpdateChildrenMask(MaskStart, MaskEnd);
 		}
 	}
 }

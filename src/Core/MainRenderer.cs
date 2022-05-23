@@ -13,7 +13,7 @@ namespace Core;
 public static unsafe class MainRenderer
 {
 	public const int FrameOverlap = 3;
-	public const int FramesPerSecond = 120;
+	public const int FramesPerSecond = 60;
 	public const double MsPerUpdate = 1000.0 / FramesPerSecond;
 	public const double MsPerUpdateInv = 1 / MsPerUpdate;
 
@@ -40,7 +40,7 @@ public static unsafe class MainRenderer
 
 	public static void Init()
 	{
-		Context.Window.IWindow.Resize += _ => _framebufferResized = true;
+		Context.Window.OnResize += () => _framebufferResized = true;
 
 		SwapchainHelper.CreateSwapchainObjects();
 
@@ -91,11 +91,11 @@ public static unsafe class MainRenderer
 		UiManager.Root.AddChild(fpsLabel);
 		UiManager.Root.AddChild(frameTimeLabel);
 
-		Context.Window.IWindow.Title = $"{(VulkanOptions.DebugMode ? "[DEBUG] " : "")}{Context.Window.Title}";
+		Context.Window.SetTitle($"{(VulkanOptions.DebugMode ? "[DEBUG] " : "")}{Context.Window.Title}");
 
 		var queue = new Queue<double>();
 
-		while (!Context.Window.IsClosing)
+		while (Context.Window.Running)
 		{
 			lag += sw.ElapsedTicks / 10000d;
 			sw.Restart();

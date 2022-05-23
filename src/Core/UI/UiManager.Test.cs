@@ -7,7 +7,7 @@ using Core.UI.Animations;
 using Core.UI.Controls;
 using Core.UI.Controls.Panels;
 using Core.UI.Transforms;
-using Silk.NET.Input;
+using Core.Window;
 using SimpleMath.Vectors;
 using Rectangle = Core.UI.Controls.Rectangle;
 
@@ -28,6 +28,8 @@ public static partial class UiManager
 			var screenSize = new Vector2<float>(Context.Window.WindowWidth, Context.Window.WindowHeight);
 			infoPanel.UpdateControl(new Vector2<float>(1), screenSize);
 		};
+
+		App.Logger.Info.Message($"{Context.Window.WindowWidth}");
 
 		var mainControl = new AbsolutePanel();
 		// mainControl.Selectable = false;

@@ -56,8 +56,7 @@ public static unsafe class SwapchainHelper
 	public static void RecreateSwapchain()
 	{
 		Context.Vk.DeviceWaitIdle(Context.Device);
-		Context.Window.IWindow.DoEvents();
-		if (Context.Window.IsClosing) { return; }
+		if (!Context.Window.Running) { return; }
 
 		CleanupSwapchain();
 		CreateSwapchainObjects();
@@ -257,7 +256,7 @@ public static unsafe class SwapchainHelper
 	{
 		if (capabilities.CurrentExtent.Width != uint.MaxValue) return capabilities.CurrentExtent;
 
-		var extent = new Extent2D((uint) Context.Window.FrameBufferWidth, (uint) Context.Window.FrameBufferHeight);
+		var extent = new Extent2D((uint) Context.Window.WindowWidth, (uint) Context.Window.WindowHeight);
 
 		extent.Width = Math.Clamp(extent.Width, capabilities.MinImageExtent.Width, capabilities.MaxImageExtent.Width);
 		extent.Height = Math.Clamp(extent.Height, capabilities.MinImageExtent.Height, capabilities.MaxImageExtent.Height);
