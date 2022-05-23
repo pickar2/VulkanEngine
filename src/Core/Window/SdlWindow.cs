@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Diagnostics;
+using System.IO;
+using System.Reflection;
 using System.Threading;
 using Core.Utils;
-using SDL2;
-using Silk.NET.Core.Native;
 using Silk.NET.Vulkan;
 using static SDL2.SDL;
 
@@ -13,11 +13,10 @@ public class SdlWindow : IDisposable
 {
 	private readonly Stopwatch _stopwatch = new();
 
-	public string Title { get; private set; } = "Engine";
-	
+	public string Title { get; private set; } = App.Details.AppName;
 	public IntPtr WindowHandle { get; }
 
-	public bool Running { get; private set; }
+	public bool IsRunning { get; private set; }
 
 	public int WindowWidth { get; private set; }
 	public int WindowHeight { get; private set; }
@@ -27,7 +26,6 @@ public class SdlWindow : IDisposable
 	public SdlWindow()
 	{
 		SDL_Init(SDL_INIT_EVERYTHING);
-
 		SDL_GetDesktopDisplayMode(0, out var mode);
 
 		WindowHandle = SDL_CreateWindow(Title, (int) (mode.w - VulkanOptions.WindowWidth) / 2, (int) (mode.h - VulkanOptions.WindowHeight) / 2,
@@ -58,35 +56,31 @@ public class SdlWindow : IDisposable
 	}
 
 	public double GetTime() => _stopwatch.Elapsed.TotalSeconds;
-
-	public void Close() => Running = false;
-
-	public void SetTitle(string title)
-	{
-		Title = title;
-		SDL_SetWindowTitle(WindowHandle, Title);
-	}
-
+	public void Close() => IsRunning = false;
+	public void SetTitle(string title) => SDL_SetWindowTitle(WindowHandle, Title = title);
 	public void Hide() => SDL_HideWindow(WindowHandle);
-
 	public void Show() => SDL_ShowWindow(WindowHandle);
 
 	public void MainLoop()
 	{
 		_stopwatch.Start();
 
-		Running = true;
-		var events = new SDL_Event[1];
-		while (Running)
+		const int maxNumEvents = 4;
+		var events = new SDL_Event[maxNumEvents];
+		for (IsRunning = true; IsRunning;)
 		{
 			SDL_PumpEvents();
-			while (SDL_PeepEvents(events, 1, SDL_eventaction.SDL_GETEVENT, SDL_EventType.SDL_FIRSTEVENT, SDL_EventType.SDL_LASTEVENT) > 0)
-			{
-				HandleEvent(events[0]);
-			}
+			var result = SDL_PeepEvents(events,
+				maxNumEvents,
+				SDL_eventaction.SDL_GETEVENT,
+				SDL_EventType.SDL_FIRSTEVENT,
+				SDL_EventType.SDL_LASTEVENT);
+			
+			for (int index = 0; index < result; index++)
+				HandleEvent(events[index]);
 			Thread.Sleep(2);
 		}
-		
+
 		_stopwatch.Stop();
 	}
 
@@ -95,7 +89,7 @@ public class SdlWindow : IDisposable
 		switch (sdlEvent.type)
 		{
 			case SDL_EventType.SDL_QUIT:
-				Running = false;
+				IsRunning = false;
 				break;
 			case SDL_EventType.SDL_KEYDOWN:
 				KeyboardInput.KeyDown(sdlEvent.key);

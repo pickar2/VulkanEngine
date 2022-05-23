@@ -56,7 +56,7 @@ public static unsafe class SwapchainHelper
 	public static void RecreateSwapchain()
 	{
 		Context.Vk.DeviceWaitIdle(Context.Device);
-		if (!Context.Window.Running) { return; }
+		if (!Context.Window.IsRunning) { return; }
 
 		CleanupSwapchain();
 		CreateSwapchainObjects();

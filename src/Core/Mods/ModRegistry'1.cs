@@ -54,7 +54,7 @@ internal sealed partial class ModRegistry : OrderedLiLiSimpleRegistry<DefaultEve
 		_modIdentifiers.TryGetValue(assembly, out string value) ? value : string.Empty;
 
 	internal Version? GetVersion(string identifier) =>
-		NamespacedName.IsCore(identifier) ? App.Configuration.Version : GetOrDefault(identifier)?.Attribute.Version;
+		NamespacedName.IsCore(identifier) ? App.Details.Version : GetOrDefault(identifier)?.Attribute.Version;
 
 	internal Assembly? GetAssembly(string identifier) =>
 		NamespacedName.IsCore(identifier) ? Instance.CoreAssembly : GetOrDefault(identifier)?.ModAssembly;

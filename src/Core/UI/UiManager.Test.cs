@@ -139,10 +139,9 @@ public static partial class UiManager
 		wrapPanel.MarginLT = new Vector2<float>(0, 10);
 		scrollView.AddChild(wrapPanel);
 
-		scrollView.OnDragStart((control, pos) => { }); // required for drag to move, but can be empty now
-
-		scrollView.OnDragMove((control, start, end) =>
+		scrollView.OnDrag((control, start, end, dragType) =>
 		{
+			if (dragType != DragType.Move) return;
 			var distance = end - start;
 			control.MarginLT += distance / control.CombinedScale;
 		});
@@ -242,7 +241,7 @@ public static partial class UiManager
 		panel.AddChild(box2);
 	}
 
-	private static unsafe void AnimationTest(UiControl parent)
+	private static void AnimationTest(UiControl parent)
 	{
 		var button = new Rectangle
 		{
@@ -309,7 +308,7 @@ public static partial class UiManager
 		};
 
 		bool started = false;
-		button.OnClickEnd((contol, mb, pos) =>
+		button.OnMouseUp((_, mb, _) =>
 		{
 			if (mb != MouseButton.Left) return;
 			if (!started)

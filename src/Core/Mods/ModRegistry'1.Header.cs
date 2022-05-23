@@ -7,7 +7,7 @@ internal sealed partial class ModRegistry
 {
 	internal void WriteHeader(in SWH swh)
 	{
-		swh.WriteClass(App.Configuration.Version, BaseTypes.Version);
+		swh.WriteClass(App.Details.Version, BaseTypes.Version);
 		int count = 0; //Count;
 		swh.WriteStruct(ref count, BaseTypes.Int);
 		// TODO:

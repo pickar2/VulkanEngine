@@ -19,12 +19,12 @@ internal static class Program
 	{
 		var stopwatch = new Stopwatch();
 		stopwatch.Start();
-		string appName = App.Configuration.AppName;
+		string appName = App.Details.AppName;
 		stopwatch.Stop();
 		App.Logger.Info.Message($"START");
 
 		App.Logger.Info.Message(
-			$"Version of {appName} is {App.Configuration.Version}. Ticks: {stopwatch.ElapsedTicks}. Time: {stopwatch.ElapsedMilliseconds}ms.");
+			$"Version of {appName} is {App.Details.Version}. Ticks: {stopwatch.ElapsedTicks}. Time: {stopwatch.ElapsedMilliseconds}ms.");
 		if (VulkanOptions.DebugMode)
 			App.Logger.Warn.Message($"DEBUG MODE IS ENABLED");
 
@@ -77,14 +77,12 @@ internal static class Program
 
 		vulkanContext.Init();
 		MainRenderer.Init();
-
 		UiRenderer.Init();
 
-		var renderThread = new Thread(MainRenderer.RenderLoop);
+		// ReSharper disable once ConvertClosureToMethodGroup
+		var renderThread = new Thread(() => MainRenderer.RenderLoop());
 		renderThread.Start();
-
 		window.Show();
-
 		window.MainLoop();
 		renderThread.Join();
 

@@ -19,9 +19,9 @@ public class ScrollView : UiControl
 			Size = new Vector2<float>(50, 10),
 			OffsetZ = 1
 		};
-		_horizontalSlider.OnDragStart((control, pos) => { });
-		_horizontalSlider.OnDragMove((control, from, to) =>
+		_horizontalSlider.OnDrag((control, from, to, dragType) =>
 		{
+			if (dragType != UiManager.DragType.Move) return;
 			var offset = (to - from) / CombinedScale;
 			ScrollOffset.X += offset.X / (Size.X - _horizontalSlider.Size.X);
 			ScrollOffset.Max(new Vector2<float>(0)).Min(new Vector2<float>(1));
@@ -34,9 +34,9 @@ public class ScrollView : UiControl
 			Size = new Vector2<float>(10, 50),
 			OffsetZ = 1
 		};
-		_verticalSlider.OnDragStart((control, pos) => { });
-		_verticalSlider.OnDragMove((control, from, to) =>
+		_verticalSlider.OnDrag((control, from, to, dragType) =>
 		{
+			if (dragType != UiManager.DragType.Move) return;
 			var offset = (to - from) / CombinedScale;
 			ScrollOffset.Y += offset.Y / (Size.Y - _verticalSlider.Size.Y);
 			ScrollOffset.Max(new Vector2<float>(0)).Min(new Vector2<float>(1));

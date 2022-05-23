@@ -10,7 +10,7 @@ namespace Core;
 
 public static class App
 {
-	public static readonly Config Configuration = new()
+	public static readonly Config Details = new()
 	{
 		AppName = typeof(App).Assembly.GetCustomAttribute<AssemblyProductAttribute>()!.Product,
 		DataPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -23,7 +23,7 @@ public static class App
 	private static readonly MDictionary<Type, string> TypeKey = new();
 
 	// Folders
-	internal static readonly string AppFolderPath = Path.Combine(Configuration.DataPath, Configuration.AppName);
+	internal static readonly string AppFolderPath = Path.Combine(Details.DataPath, Details.AppName);
 	internal static readonly string LogsPath = Path.Combine(AppFolderPath, "logs").CheckDirExistence();
 	internal static readonly string ModsPath = Path.Combine(AppFolderPath, "mods").CheckDirExistence();
 	internal static readonly string CachePath = Path.Combine(AppFolderPath, "cache").CheckDirExistence();
@@ -63,7 +63,7 @@ public static class App
 
 			Environment.Exit(0);
 		};
-		Logger.Info.Message($"{Configuration.AppName}: {Configuration.Version}, {Configuration.GitLastCommitHash}");
+		Logger.Info.Message($"{Details.AppName}: {Details.Version}, {Details.GitLastCommitHash}");
 		Register(ModRegistry.Instance);
 		Register(Serializer = SerializerRegistry.Instance);
 		Register(Configs = ConfigRegistry.Instance);

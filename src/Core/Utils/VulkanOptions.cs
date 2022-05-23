@@ -38,7 +38,7 @@ public static class VulkanOptions
 		if (reset || !VulkanStates.TryGetValue<uint>(WindowHeightName.FullName, out _)) VulkanStates.RegisterOrUpdate(WindowHeightName, 720u);
 		if (reset || !VulkanStates.TryGetValue<bool>(FullscreenName.FullName, out _)) VulkanStates.RegisterOrUpdate(FullscreenName, false);
 		if (reset || !VulkanStates.TryGetValue<bool>(DebugModeName.FullName, out _)) VulkanStates.RegisterOrUpdate(DebugModeName, false);
-		if (reset || !VulkanStates.TryGetValue<int>(GpuIdName.FullName, out _)) VulkanStates.RegisterOrUpdate(GpuIdName, -1);
+		if (reset || !VulkanStates.TryGetValue<int>(GpuIdName.FullName, out _)) VulkanStates.RegisterOrUpdate(GpuIdName, 0);
 		if (reset || !VulkanStates.TryGetValue<bool>(MsaaEnabledName.FullName, out _)) VulkanStates.RegisterOrUpdate(MsaaEnabledName, true);
 		if (reset || !VulkanStates.TryGetValue<SampleCountFlags>(MsaaSamplesName.FullName, out _))
 			VulkanStates.RegisterOrUpdate(MsaaSamplesName, SampleCountFlags.SampleCount2Bit);

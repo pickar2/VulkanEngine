@@ -95,7 +95,7 @@ public static unsafe class MainRenderer
 
 		var queue = new Queue<double>();
 
-		while (Context.Window.Running)
+		while (Context.Window.IsRunning)
 		{
 			lag += sw.ElapsedTicks / 10000d;
 			sw.Restart();

@@ -86,7 +86,7 @@ public abstract class UiControl : IDisposable
 
 	public virtual void UpdateChildrenMask(Vector2<float> parentMaskStart, Vector2<float> parentMaskEnd)
 	{
-		foreach (var child in Children)
+		foreach (var child in ChildrenList)
 		{
 			switch (Overflow)
 			{

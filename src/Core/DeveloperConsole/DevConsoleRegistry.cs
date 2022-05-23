@@ -40,8 +40,8 @@ public sealed class DevConsoleRegistry : SimpleRegistry<DefaultEventManager<ICon
 			new FigletText("Developer Mode")
 				.LeftAligned()
 				.Color(Color.Red));
-		AnsiConsole.WriteLine($"[Version {App.Configuration.Version}] (c) {App.Configuration.Company}. All rights reserved.");
-		string prompt = $"{App.Configuration.AppName}>";
+		AnsiConsole.WriteLine($"[Version {App.Details.Version}] (c) {App.Details.Company}. All rights reserved.");
+		string prompt = $"{App.Details.AppName}>";
 		for (;;)
 		{
 			string rawString = AnsiConsole.Ask<string>(prompt);
