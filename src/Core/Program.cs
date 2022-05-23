@@ -78,11 +78,11 @@ internal static class Program
 		vulkanContext.Init();
 		MainRenderer.Init();
 		UiRenderer.Init();
-
+		
+		DisposalQueue.EnqueueInFrame(0, () => Context.Window.Show());
 		// ReSharper disable once ConvertClosureToMethodGroup
 		var renderThread = new Thread(() => MainRenderer.RenderLoop());
 		renderThread.Start();
-		window.Show();
 		window.MainLoop();
 		renderThread.Join();
 

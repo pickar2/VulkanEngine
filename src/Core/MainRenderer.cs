@@ -94,7 +94,7 @@ public static unsafe class MainRenderer
 		Context.Window.SetTitle($"{(VulkanOptions.DebugMode ? "[DEBUG] " : "")}{Context.Window.Title}");
 
 		var queue = new Queue<double>();
-
+		
 		while (Context.Window.IsRunning)
 		{
 			lag += sw.ElapsedTicks / 10000d;

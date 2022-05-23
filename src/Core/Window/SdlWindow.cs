@@ -83,7 +83,7 @@ public class SdlWindow : IDisposable
 
 		_stopwatch.Stop();
 	}
-
+	
 	private void HandleEvent(SDL_Event sdlEvent)
 	{
 		switch (sdlEvent.type)
