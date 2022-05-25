@@ -24,7 +24,7 @@ public class CustomBox : UiControlOneComponent
 
 	// public override void ComputeSizeAndArea(Vector2<float> maxSize)
 	// {
-		// ComputedSize = Vector2Extensions.Min(maxSize, Size) * CombinedScale;
-		// ComputedArea = Vector2Extensions.Min(maxSize, Size + MarginRB + MarginLT) * CombinedScale;
+	// ComputedSize = Vector2Extensions.Min(maxSize, Size) * CombinedScale;
+	// ComputedArea = Vector2Extensions.Min(maxSize, Size + MarginRB + MarginLT) * CombinedScale;
 	// }
 }

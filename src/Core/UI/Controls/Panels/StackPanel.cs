@@ -10,7 +10,7 @@ public class StackPanel : UiControl
 
 	public override void ComputeSizeAndArea(Vector2<float> maxSize)
 	{
-		var maxArea = maxSize.MinV(Size * CombinedScale + (MarginLT + MarginRB) * ParentScale);
+		var maxArea = maxSize.MinV((Size * CombinedScale) + ((MarginLT + MarginRB) * ParentScale));
 		maxSize.Min(Size * CombinedScale);
 
 		var desiredSize = new Vector2<float>();
@@ -18,7 +18,7 @@ public class StackPanel : UiControl
 		int stackComponent = (int) Orientation;
 		int otherComponent = 1 - stackComponent;
 
-		var scaledSpacing = Spacing * CombinedScale[stackComponent];
+		float scaledSpacing = Spacing * CombinedScale[stackComponent];
 		foreach (var child in Children)
 		{
 			var availableSize = maxSize;
@@ -34,13 +34,13 @@ public class StackPanel : UiControl
 		}
 
 		ComputedSize = desiredSize;
-		ComputedArea = maxArea.Min(desiredSize + (MarginLT + MarginRB) * ParentScale);
+		ComputedArea = maxArea.Min(desiredSize + ((MarginLT + MarginRB) * ParentScale));
 	}
 
 	public override void ArrangeChildren(Vector2<float> area)
 	{
 		int stackComponent = (int) Orientation;
-		var scaledSpacing = Spacing * CombinedScale[stackComponent];
+		float scaledSpacing = Spacing * CombinedScale[stackComponent];
 		float offset = 0;
 		foreach (var child in Children)
 		{

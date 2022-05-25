@@ -38,13 +38,13 @@ public class ControlInfoBox : AbsolutePanel
 
 		var bg = new Rectangle
 		{
-			Color = Color.Brown.ToArgb() & (127 << 24),
+			Color = Color.Brown.ToArgb() & (127 << 24)
 		};
 		AddChild(bg);
 
 		if (KeyboardInput.IsKeyPressed(SDL.SDL_Keycode.SDLK_LSHIFT))
 		{
-			bg.MarginLT = _control.CombinedPos - _control.MarginLT * _control.ParentScale;
+			bg.MarginLT = _control.CombinedPos - (_control.MarginLT * _control.ParentScale);
 			bg.Size = _control.ComputedArea;
 		}
 		else

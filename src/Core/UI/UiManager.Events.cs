@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using Core.UI.Controls;
 using Core.Window;
 using SimpleMath.Vectors;
@@ -12,6 +11,7 @@ public static partial class UiManager
 	public delegate bool OnClickDelegate(UiControl control, MouseButton button, Vector2<int> pos);
 
 	public delegate bool OnDragDelegate(UiControl control, Vector2<int> newPos, Vector2<int> motion, MouseButton button, DragType dragType);
+
 	public enum DragType : byte
 	{
 		Start,
@@ -21,14 +21,12 @@ public static partial class UiManager
 
 	public delegate void OnHoverDelegate(UiControl control, Vector2<int> pos);
 
-	// private static UiControl? _draggedControl;
-
 	private static readonly Dictionary<UiControl, OnHoverDelegate> OnHoverStartDelegates = new();
 	private static readonly Dictionary<UiControl, OnHoverDelegate> OnHoverEndDelegates = new();
 
 	private static readonly Dictionary<UiControl, OnClickDelegate> OnMouseDownDelegates = new();
 	private static readonly Dictionary<UiControl, OnClickDelegate> OnMouseUpDelegates = new();
-	
+
 	private static readonly Dictionary<UiControl, OnDragDelegate> OnDragDelegates = new();
 
 	private static readonly HashSet<UiControl> HoveredControls = new();

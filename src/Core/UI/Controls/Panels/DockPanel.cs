@@ -30,7 +30,7 @@ public class DockPanel : UiControl
 
 	public override void ComputeSizeAndArea(Vector2<float> maxSize)
 	{
-		var maxArea = maxSize.MinV(Size * CombinedScale + (MarginLT + MarginRB) * ParentScale);
+		var maxArea = maxSize.MinV((Size * CombinedScale) + ((MarginLT + MarginRB) * ParentScale));
 		maxSize.Min(Size * CombinedScale);
 
 		var accumulated = new Vector2<float>();
@@ -59,7 +59,7 @@ public class DockPanel : UiControl
 		desiredSize.Max(accumulated);
 
 		ComputedSize = maxSize.Min(desiredSize);
-		ComputedArea = maxArea.Min(desiredSize + (MarginLT + MarginRB) * ParentScale);
+		ComputedArea = maxArea.Min(desiredSize + ((MarginLT + MarginRB) * ParentScale));
 	}
 
 	public override void ArrangeChildren(Vector2<float> area)

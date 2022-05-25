@@ -24,7 +24,7 @@ public static partial class UiManager
 		infoPanel.AddChild(infoBox);
 		AfterUpdate += () =>
 		{
-			infoBox.Control = (KeyboardInput.IsKeyPressed(SDL.SDL_Keycode.SDLK_LALT) && TopControl is not null && TopControl.Selectable) ? TopControl : null;
+			infoBox.Control = KeyboardInput.IsKeyPressed(SDL.SDL_Keycode.SDLK_LALT) && TopControl is not null && TopControl.Selectable ? TopControl : null;
 
 			var screenSize = new Vector2<float>(Context.Window.WindowWidth, Context.Window.WindowHeight);
 			infoPanel.UpdateControl(new Vector2<float>(1), screenSize);
@@ -143,7 +143,7 @@ public static partial class UiManager
 		scrollView.OnDrag((control, newPos, motion, button, dragType) =>
 		{
 			if (button != MouseButton.Left) return false;
-			if (dragType == DragType.Move) 
+			if (dragType == DragType.Move)
 				control.MarginLT += motion / control.CombinedScale;
 
 			return true;
@@ -290,7 +290,7 @@ public static partial class UiManager
 
 		// var test1 = Animation.Of(() => ref Root.Scale, Root.Scale, Root.Scale / 2, 5000);
 		// test1.Start();
-		
+
 		// var test1 = new Animation
 		// {
 		// 	Curve = DefaultCurves.EaseInOutQuad,
@@ -316,8 +316,8 @@ public static partial class UiManager
 			Duration = 1000,
 			Interpolator = new RGBInterpolator(Color.FromArgb(startColor), Color.Red, c => box2.Color = c.ToArgb())
 		};
-		
-		var color = button.Color;
+
+		int color = button.Color;
 		var hoverAnimation = new Animation
 		{
 			Curve = DefaultCurves.EaseInOutSine,
@@ -326,16 +326,16 @@ public static partial class UiManager
 			Interpolator = new RGBInterpolator(Color.FromArgb(color), Color.Red, c => button.Color = c.ToArgb())
 		};
 
-		button.OnHoverStart(((control, pos) =>
+		button.OnHoverStart((control, pos) =>
 		{
 			hoverAnimation.ResetDirection();
 			hoverAnimation.Start();
-		}));
-		button.OnHoverEnd(((control, pos) =>
+		});
+		button.OnHoverEnd((control, pos) =>
 		{
 			hoverAnimation.ReverseDirection();
 			hoverAnimation.Start();
-		}));
+		});
 
 		bool started = false;
 		button.OnMouseUp((_, mb, _) =>
@@ -357,7 +357,7 @@ public static partial class UiManager
 			}
 
 			started = !started;
-			
+
 			return true;
 		});
 	}

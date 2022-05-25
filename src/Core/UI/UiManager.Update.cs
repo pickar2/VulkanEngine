@@ -47,28 +47,6 @@ public static partial class UiManager
 		return list;
 	}
 
-	public static UiControl? TopControlOnPos(Vector2<float> point, UiControl? startControl)
-	{
-		while (startControl != null && startControl.Children.Count > 0)
-		{
-			UiControl? topControl = null;
-			short topZ = -1;
-			foreach (var child in startControl.Children)
-			{
-				if (child.Selectable && IsInsideControl(child, point) && child.CombinedZ > topZ)
-				{
-					topControl = child;
-					topZ = child.CombinedZ;
-				}
-			}
-
-			if (topControl == null) break;
-			startControl = topControl;
-		}
-
-		return startControl;
-	}
-
 	public static bool IsInsideControl(UiControl control, Vector2<float> point) =>
 		point.IsInside(control.CombinedPos, control.CombinedPos + control.ComputedSize);
 }
@@ -78,7 +56,7 @@ public class ZComparer : IComparer<UiControl>
 	public int Compare(UiControl? c1, UiControl? c2)
 	{
 		if (c1 is null || c2 is null) throw new ArgumentException("Comparing null controls");
-		var diff = c2.CombinedZ - c1.CombinedZ;
+		int diff = c2.CombinedZ - c1.CombinedZ;
 		return diff == 0 ? 1 : diff;
 	}
 }

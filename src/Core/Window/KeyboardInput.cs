@@ -6,11 +6,12 @@ namespace Core.Window;
 
 public static class KeyboardInput
 {
-	private static readonly Dictionary<SDL_Keycode, bool> PressedKeys = new();
 	public delegate void OnKeyDelegate(SDL_Keysym key);
 
 	public static event OnKeyDelegate? OnKeyDown;
 	public static event OnKeyDelegate? OnKeyUp;
+
+	private static readonly Dictionary<SDL_Keycode, bool> PressedKeys = new();
 
 	static KeyboardInput()
 	{

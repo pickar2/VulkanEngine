@@ -33,7 +33,7 @@ public class ScrollView : UiControl
 			return true;
 		});
 		AddChild(_horizontalSlider);
-		
+
 		_verticalSlider = new Rectangle
 		{
 			Color = Color.Cornsilk.ToArgb(),
@@ -57,7 +57,7 @@ public class ScrollView : UiControl
 
 	public override void ComputeSizeAndArea(Vector2<float> maxSize)
 	{
-		var maxArea = maxSize.MinV(Size * CombinedScale + (MarginLT + MarginRB) * ParentScale);
+		var maxArea = maxSize.MinV((Size * CombinedScale) + ((MarginLT + MarginRB) * ParentScale));
 		maxSize.Min(Size * CombinedScale);
 
 		foreach (var child in Children)
@@ -77,20 +77,20 @@ public class ScrollView : UiControl
 			child.BasePos = CombinedPos;
 			child.BaseZ = CombinedZ;
 
-			child.LocalPos = (child.MarginLT - ScrollOffset * (_maxAreaInside - Size).MaxV(0)) * CombinedScale;
+			child.LocalPos = (child.MarginLT - (ScrollOffset * (_maxAreaInside - Size).MaxV(0))) * CombinedScale;
 			child.LocalZ = child.OffsetZ;
 
 			child.ArrangeChildren(area);
 		}
-		
+
 		_horizontalSlider.MarginLT.X = (Size.X - _horizontalSlider.Size.X) * ScrollOffset.X;
 		_horizontalSlider.MarginLT.Y = Size.Y - _horizontalSlider.Size.Y;
-		
+
 		_horizontalSlider.LocalPos = _horizontalSlider.MarginLT * CombinedScale;
-		
+
 		_verticalSlider.MarginLT.X = Size.X - _verticalSlider.Size.X;
 		_verticalSlider.MarginLT.Y = (Size.Y - _verticalSlider.Size.Y) * ScrollOffset.Y;
-		
+
 		_verticalSlider.LocalPos = _verticalSlider.MarginLT * CombinedScale;
 	}
 }

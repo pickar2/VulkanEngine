@@ -6,7 +6,7 @@ namespace Core.UI.Controls;
 public class AlignPanel : UiControl
 {
 	public Alignment Alignment = Alignment.TopLeft;
-	
+
 	public override void ArrangeChildren(Vector2<float> area)
 	{
 		foreach (var child in Children)
@@ -34,7 +34,7 @@ public class AlignPanel : UiControl
 			child.ArrangeChildren(child.ComputedSize);
 		}
 	}
-	
+
 	public override void UpdateChildrenMask(Vector2<float> parentMaskStart, Vector2<float> parentMaskEnd)
 	{
 		foreach (var child in ChildrenList)

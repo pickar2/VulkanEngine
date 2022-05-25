@@ -11,16 +11,16 @@ public class WrapPanel : UiControl
 
 	public override void ComputeSizeAndArea(Vector2<float> maxSize)
 	{
-		var maxArea = maxSize.MinV(Size * CombinedScale + (MarginLT + MarginRB) * ParentScale);
+		var maxArea = maxSize.MinV((Size * CombinedScale) + ((MarginLT + MarginRB) * ParentScale));
 		maxSize.Min(Size * CombinedScale);
 
 		var desiredSize = new Vector2<float>();
 
 		int stackComponent = (int) Orientation;
 		int wrapComponent = 1 - stackComponent;
-		
-		var scaledStackSpacing = StackSpacing * CombinedScale[stackComponent];
-		var scaledWrapSpacing = WrapSpacing * CombinedScale[wrapComponent];
+
+		float scaledStackSpacing = StackSpacing * CombinedScale[stackComponent];
+		float scaledWrapSpacing = WrapSpacing * CombinedScale[wrapComponent];
 
 		var offset = new Vector2<float>();
 		float currentWrapMaxSize = 0;
@@ -34,7 +34,7 @@ public class WrapPanel : UiControl
 			child.ComputeSizeAndArea(availableArea);
 
 			var childArea = child.ComputedArea;
-			if ((maxSize[stackComponent] - offset[stackComponent]) - (scaledStackSpacing + childArea[stackComponent]) < 0.1)
+			if (maxSize[stackComponent] - offset[stackComponent] - (scaledStackSpacing + childArea[stackComponent]) < 0.1)
 			{
 				if (offset[stackComponent] != 0) offset[wrapComponent] += currentWrapMaxSize + scaledWrapSpacing;
 
@@ -53,16 +53,16 @@ public class WrapPanel : UiControl
 		desiredSize[wrapComponent] = offset[wrapComponent] + currentWrapMaxSize;
 
 		ComputedSize = desiredSize.MinV(maxSize);
-		ComputedArea = maxArea.Min(desiredSize + (MarginLT + MarginRB) * ParentScale);
+		ComputedArea = maxArea.Min(desiredSize + ((MarginLT + MarginRB) * ParentScale));
 	}
 
 	public override void ArrangeChildren(Vector2<float> area)
 	{
 		int stackComponent = (int) Orientation;
 		int wrapComponent = 1 - stackComponent;
-		
-		var scaledStackSpacing = StackSpacing * CombinedScale[stackComponent];
-		var scaledWrapSpacing = WrapSpacing * CombinedScale[wrapComponent];
+
+		float scaledStackSpacing = StackSpacing * CombinedScale[stackComponent];
+		float scaledWrapSpacing = WrapSpacing * CombinedScale[wrapComponent];
 
 		var offset = new Vector2<float>
 		{
@@ -72,7 +72,7 @@ public class WrapPanel : UiControl
 		foreach (var child in Children)
 		{
 			var childArea = child.ComputedArea;
-			if ((ComputedSize[stackComponent] - offset[stackComponent]) - (scaledStackSpacing + childArea[stackComponent]) < 0.1)
+			if (ComputedSize[stackComponent] - offset[stackComponent] - (scaledStackSpacing + childArea[stackComponent]) < 0.1)
 			{
 				if (offset[stackComponent] != 0) offset[wrapComponent] += currentWrapMaxSize + scaledWrapSpacing;
 
@@ -88,7 +88,7 @@ public class WrapPanel : UiControl
 			child.BasePos = CombinedPos;
 			child.BaseZ = CombinedZ;
 
-			child.LocalPos = child.MarginLT * CombinedScale + offset - new Vector2<float> {[stackComponent] = childArea[stackComponent]};
+			child.LocalPos = (child.MarginLT * CombinedScale) + offset - new Vector2<float> {[stackComponent] = childArea[stackComponent]};
 			child.LocalZ = child.OffsetZ;
 
 			child.ArrangeChildren(area);

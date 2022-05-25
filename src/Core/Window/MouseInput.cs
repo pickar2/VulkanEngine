@@ -11,15 +11,18 @@ public static class MouseInput
 	public delegate void MouseDragDelegate(Vector2<int> newPos, Vector2<int> motion, MouseButton button);
 	public delegate void MouseButtonDelegate(MouseButton button);
 	public delegate void ScrollDelegate(Vector2<float> scrollAmount);
-	
+
 	public static event MouseMotionDelegate? OnMouseMotion;
+
 	public static event MouseDragDelegate? OnMouseDragStart;
 	public static event MouseDragDelegate? OnMouseDragMove;
 	public static event MouseDragDelegate? OnMouseDragEnd;
+
 	public static event MouseButtonDelegate? OnMouseButtonUp;
 	public static event MouseButtonDelegate? OnMouseButtonDown;
+
 	public static event ScrollDelegate? OnScroll;
-	
+
 	public static Vector2<int> MousePos { get; private set; }
 	public static Vector2<int> LastMotion { get; private set; }
 
@@ -36,9 +39,9 @@ public static class MouseInput
 	{
 		MousePos = new Vector2<int>(motionEvent.x, motionEvent.y);
 		LastMotion = new Vector2<int>(motionEvent.xrel, motionEvent.yrel);
-		
+
 		OnMouseMotion?.Invoke(MousePos, LastMotion);
-		
+
 		foreach ((var button, bool pressed) in PressedButtons)
 		{
 			if (pressed)
@@ -79,7 +82,7 @@ public static class MouseInput
 	}
 
 	public static void Scroll(SDL_MouseWheelEvent mouseWheelEvent) => OnScroll?.Invoke(new Vector2<float>(mouseWheelEvent.preciseX, mouseWheelEvent.preciseY));
-	
+
 	public static bool IsButtonPressed(MouseButton button) => PressedButtons[button];
 }
 
