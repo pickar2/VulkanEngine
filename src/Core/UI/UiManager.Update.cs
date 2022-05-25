@@ -41,11 +41,14 @@ public static partial class UiManager
 	{
 		if (startControl is null) return list;
 
-		if (startControl.Selectable && IsInsideControl(startControl, point)) list.BinaryInsert(startControl, ZComparer);
+		if (startControl.Selectable && IsControlPartVisible(startControl, point) && IsInsideControl(startControl, point))
+			list.BinaryInsert(startControl, ZComparer);
 		foreach (var child in startControl.Children) ControlsOnPos(point, child, list);
 
 		return list;
 	}
+
+	public static bool IsControlPartVisible(UiControl control, Vector2<float> point) => point.IsInside(control.MaskStart, control.MaskEnd);
 
 	public static bool IsInsideControl(UiControl control, Vector2<float> point) =>
 		point.IsInside(control.CombinedPos, control.CombinedPos + control.ComputedSize);
