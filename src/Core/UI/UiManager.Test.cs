@@ -8,6 +8,7 @@ using Core.UI.Controls;
 using Core.UI.Controls.Panels;
 using Core.UI.Transforms;
 using Core.Window;
+using SDL2;
 using SimpleMath.Vectors;
 using Rectangle = Core.UI.Controls.Rectangle;
 
@@ -23,7 +24,7 @@ public static partial class UiManager
 		infoPanel.AddChild(infoBox);
 		AfterUpdate += () =>
 		{
-			infoBox.Control = TopControl is not null && TopControl.Selectable ? TopControl : null;
+			infoBox.Control = (KeyboardInput.IsKeyPressed(SDL.SDL_Keycode.SDLK_LALT) && TopControl is not null && TopControl.Selectable) ? TopControl : null;
 
 			var screenSize = new Vector2<float>(Context.Window.WindowWidth, Context.Window.WindowHeight);
 			infoPanel.UpdateControl(new Vector2<float>(1), screenSize);
@@ -139,11 +140,13 @@ public static partial class UiManager
 		wrapPanel.MarginLT = new Vector2<float>(0, 10);
 		scrollView.AddChild(wrapPanel);
 
-		scrollView.OnDrag((control, start, end, dragType) =>
+		scrollView.OnDrag((control, newPos, motion, button, dragType) =>
 		{
-			if (dragType != DragType.Move) return;
-			var distance = end - start;
-			control.MarginLT += distance / control.CombinedScale;
+			if (button != MouseButton.Left) return false;
+			if (dragType == DragType.Move) 
+				control.MarginLT += motion / control.CombinedScale;
+
+			return true;
 		});
 
 		parent.AddChild(scrollView);
@@ -252,6 +255,13 @@ public static partial class UiManager
 		};
 		parent.AddChild(button);
 
+		var alignPanel = new AlignPanel {Alignment = Alignment.Center};
+		button.AddChild(alignPanel);
+
+		var text = new Label {Text = "Animate"};
+		alignPanel.AddChild(text);
+		// text.Overflow = Overflow.Shown;
+
 		var box1 = new Rectangle
 		{
 			Color = RandomColor(),
@@ -306,11 +316,31 @@ public static partial class UiManager
 			Duration = 1000,
 			Interpolator = new RGBInterpolator(Color.FromArgb(startColor), Color.Red, c => box2.Color = c.ToArgb())
 		};
+		
+		var color = button.Color;
+		var hoverAnimation = new Animation
+		{
+			Curve = DefaultCurves.EaseInOutSine,
+			Type = AnimationType.OneTime,
+			Duration = 100,
+			Interpolator = new RGBInterpolator(Color.FromArgb(color), Color.Red, c => button.Color = c.ToArgb())
+		};
+
+		button.OnHoverStart(((control, pos) =>
+		{
+			hoverAnimation.ResetDirection();
+			hoverAnimation.Start();
+		}));
+		button.OnHoverEnd(((control, pos) =>
+		{
+			hoverAnimation.ReverseDirection();
+			hoverAnimation.Start();
+		}));
 
 		bool started = false;
 		button.OnMouseUp((_, mb, _) =>
 		{
-			if (mb != MouseButton.Left) return;
+			if (mb != MouseButton.Left) return false;
 			if (!started)
 			{
 				animation1.Start();
@@ -327,6 +357,8 @@ public static partial class UiManager
 			}
 
 			started = !started;
+			
+			return true;
 		});
 	}
 }

@@ -115,6 +115,7 @@ public class SdlWindow : IDisposable
 		}
 	}
 
+	private bool _firstTimeFocus = true;
 	private void HandleWindowEvent(SDL_WindowEvent windowEvent)
 	{
 		switch (windowEvent.windowEvent)
@@ -123,6 +124,13 @@ public class SdlWindow : IDisposable
 				WindowWidth = windowEvent.data1;
 				WindowHeight = windowEvent.data2;
 				OnResize?.Invoke();
+				break;
+			case SDL_WindowEventID.SDL_WINDOWEVENT_ENTER:
+				if (_firstTimeFocus)
+				{
+					SDL_RaiseWindow(WindowHandle);
+					_firstTimeFocus = false;
+				}
 				break;
 		}
 	}

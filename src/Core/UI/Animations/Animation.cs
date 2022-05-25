@@ -22,23 +22,52 @@ public class Animation
 
 	public Animation() => _updateDelegate = () => Update(_stopwatch.ElapsedMilliseconds);
 
+	public float NormalizedTime { get; private set; }
 	public float Value { get; private set; }
+
+	private float _fullTime;
+	private bool _direction = true;
 
 	private void Update(long time)
 	{
 		if (_startTime > time) return;
 
-		float fullTime = ((float) (time - _startTime) / Duration) + AnimationOffset;
-		float normalizedTime = Type switch
-		{
-			AnimationType.OneTime => (float) Math.Min(fullTime, 1.0),
-			AnimationType.RepeatFromStart => fullTime % 1.0f,
-			AnimationType.RepeatAndReverse => (float) Math.Abs(((fullTime + 1) % 2.0) - 1),
-			_ => throw new ArgumentOutOfRangeException(paramName: nameof(Type)).AsExpectedException()
-		};
+		float newFullTime = ((float) (time - _startTime) / Duration) + AnimationOffset;
+		float delta = newFullTime - _fullTime;
 
-		Value = Curve.Interpolate(normalizedTime);
+		if (Type == AnimationType.OneTime)
+		{
+			if (_direction)
+			{
+				NormalizedTime += delta;
+				NormalizedTime = (float) Math.Min(NormalizedTime, 1.0);
+			}
+			else
+			{
+				NormalizedTime -= delta;
+				NormalizedTime = (float) Math.Max(NormalizedTime, 0.0);
+			}
+		}
+		else
+		{
+			NormalizedTime = Type switch
+			{
+				AnimationType.RepeatFromStart => newFullTime % 1.0f,
+				AnimationType.RepeatAndReverse => (float) Math.Abs(((newFullTime + 1) % 2.0) - 1),
+				_ => throw new ArgumentOutOfRangeException(nameof(Type)).AsExpectedException()
+			};
+		}
+
+		_fullTime = newFullTime;
+
+		Value = Curve.Interpolate(NormalizedTime);
 		Interpolator.Update(Value);
+
+		if (Type == AnimationType.OneTime)
+		{
+			if ((_direction && Value >= 1) || (!_direction && Value <= 0))
+				Stop();
+		}
 	}
 
 	public void Start()
@@ -48,15 +77,9 @@ public class Animation
 		UiManager.BeforeUpdate += _updateDelegate;
 	}
 
-	public void Pause()
-	{
-		_stopwatch.Stop();
-	}
+	public void Pause() => _stopwatch.Stop();
 
-	public void Resume()
-	{
-		_stopwatch.Start();
-	}
+	public void Resume() => _stopwatch.Start();
 
 	public void Stop()
 	{
@@ -75,6 +98,10 @@ public class Animation
 		Reset();
 		Start();
 	}
+
+	public void ReverseDirection() => _direction = !_direction;
+
+	public void ResetDirection() => _direction = true;
 
 	public static Animation Of<T>(RefGetter<T> getter, T start, T end, long duration, float animationOffset = 0,
 		long startDelay = 0, AnimationType type = AnimationType.OneTime, IAnimationCurve? curve = null) where T : struct, INumber<T>

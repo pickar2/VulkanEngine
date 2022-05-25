@@ -184,10 +184,10 @@ public class MList<T> : IList<T>, IReadOnlyMList<T>, IList, IDisposable
 	/// </summary>
 	public T this[int index]
 	{
-		get => _items[index.ThrowIfNegative().ThrowIfGreaterOrEqualsThan(Count)];
+		get => _items[index.ThrowIfNegative().ThrowIfGreaterThanOrEquals(Count)];
 		set
 		{
-			_items[index.ThrowIfNegative().ThrowIfGreaterOrEqualsThan(Count)] = value;
+			_items[index.ThrowIfNegative().ThrowIfGreaterThanOrEquals(Count)] = value;
 			_version++;
 		}
 	}
@@ -259,7 +259,7 @@ public class MList<T> : IList<T>, IReadOnlyMList<T>, IList, IDisposable
 	public void Insert(int index, T item)
 	{
 		// Note that insertions at the end are legal.
-		index.ThrowIfNegative().ThrowIfGreaterOrEqualsThan(Count);
+		index.ThrowIfNegative().ThrowIfGreaterThan(Count);
 
 		if (Count == _items.Length) EnsureCapacity(Count + 1);
 		if (index < Count)
@@ -288,7 +288,7 @@ public class MList<T> : IList<T>, IReadOnlyMList<T>, IList, IDisposable
 	/// </summary>
 	public void RemoveAt(int index)
 	{
-		if (index.ThrowIfNegative().ThrowIfGreaterOrEqualsThan(Count) < --Count)
+		if (index.ThrowIfNegative().ThrowIfGreaterThanOrEquals(Count) < --Count)
 			Array.Copy(_items, index + 1, _items, index, Count - index);
 
 		_version++;
@@ -502,7 +502,7 @@ public class MList<T> : IList<T>, IReadOnlyMList<T>, IList, IDisposable
 		else
 		{
 			startIndex.ThrowIfNegative()
-				.ThrowIfGreaterOrEqualsThan(Count);
+				.ThrowIfGreaterThanOrEquals(Count);
 		}
 
 		// 2nd half of this also catches when startIndex == MaxInt, so MaxInt - 0 + 1 == -1, which is < 0.
@@ -673,7 +673,7 @@ public class MList<T> : IList<T>, IReadOnlyMList<T>, IList, IDisposable
 	///     index and ending at the first element in the list.
 	/// </summary>
 	public int LastIndexOf(T item, int index) =>
-		LastIndexOf(item, index.ThrowIfGreaterOrEqualsThan(Count), index + 1);
+		LastIndexOf(item, index.ThrowIfGreaterThanOrEquals(Count), index + 1);
 
 	/// <summary>
 	///     Returns the index of the last occurrence of a given value in a range of
@@ -688,7 +688,7 @@ public class MList<T> : IList<T>, IReadOnlyMList<T>, IList, IDisposable
 
 		return Array.LastIndexOf(_items,
 			item,
-			index.ThrowIfGreaterOrEqualsThan(Count),
+			index.ThrowIfGreaterThanOrEquals(Count),
 			count.ThrowIfGreaterThan(index + 1));
 	}
 

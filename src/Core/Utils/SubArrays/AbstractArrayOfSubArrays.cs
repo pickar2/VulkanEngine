@@ -297,16 +297,6 @@ public unsafe class GlobalAOSA : ArrayOfSubArrays
 	protected override void DisposePointer(byte* pointer) => Marshal.FreeHGlobal(new IntPtr(pointer));
 }
 
-public static class ListExtensions
-{
-	public static void BinaryInsert<T>(this List<T> list, T element)
-	{
-		int position = list.BinarySearch(element);
-		if (position < 0) position = -(position + 1);
-		list.Insert(position, element);
-	}
-}
-
 public class SubArrayData
 {
 	public int[] Gaps = new int[8];

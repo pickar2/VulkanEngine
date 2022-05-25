@@ -483,7 +483,7 @@ public class MDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictionary,
 
 			// The chain of entries forms a loop; which means a concurrent update has happened.
 			// Break out of the loop and throw, rather than looping forever.
-			collisionCount = collisionCount.ThrowIfGreaterOrEqualsThan(_size) + 1;
+			collisionCount = collisionCount.ThrowIfGreaterThanOrEquals(_size) + 1;
 		}
 
 		return false;
@@ -649,7 +649,7 @@ public class MDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictionary,
 			}
 
 			i = entries[i].Next;
-			collisionCount = collisionCount.ThrowIfGreaterOrEqualsThan(length) + 1;
+			collisionCount = collisionCount.ThrowIfGreaterThanOrEquals(length) + 1;
 		} while (true);
 
 		return i;
@@ -710,7 +710,7 @@ public class MDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictionary,
 
 			// The chain of entries forms a loop; which means a concurrent update has happened.
 			// Break out of the loop and throw, rather than looping forever.
-			collisionCount = collisionCount.ThrowIfGreaterOrEqualsThan(size) + 1;
+			collisionCount = collisionCount.ThrowIfGreaterThanOrEquals(size) + 1;
 		} while (true);
 
 		bool updateFreeList = false;
@@ -873,7 +873,7 @@ public class MDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictionary,
 			i = entry.Next;
 			// The chain of entries forms a loop; which means a concurrent update has happened.
 			// Break out of the loop and throw, rather than looping forever.
-			collisionCount = collisionCount.ThrowIfGreaterOrEqualsThan(_size) + 1;
+			collisionCount = collisionCount.ThrowIfGreaterThanOrEquals(_size) + 1;
 		}
 
 		value = default!;

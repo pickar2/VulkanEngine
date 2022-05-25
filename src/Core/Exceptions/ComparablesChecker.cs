@@ -9,19 +9,19 @@ namespace Core.Exceptions;
 public static class ComparablesChecker
 {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static T ThrowIfGreaterOrEqualsThan<T>(this T value, in T value1, [CallerArgumentExpression("value")] string? callerName = null)
+	public static T ThrowIfGreaterThanOrEquals<T>(this T value, in T value1, [CallerArgumentExpression("value")] string? callerName = null)
 	{
 		if (Comparer<T>.Default.Compare(value, value1) >= 0)
-			throw new ArgumentOutOfRangeException(callerName, value, $"Value greater or equals than {value1}").AsExpectedException();
+			throw new ArgumentOutOfRangeException(callerName, value, $"Value greater than or equals {value1}").AsExpectedException();
 
 		return value;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static T ThrowIfLessOrEqualsThan<T>(this T value, in T value1, [CallerArgumentExpression("value")] string? callerName = null)
+	public static T ThrowIfLessThanOrEquals<T>(this T value, in T value1, [CallerArgumentExpression("value")] string? callerName = null)
 	{
 		if (Comparer<T>.Default.Compare(value, value1) <= 0)
-			throw new ArgumentOutOfRangeException(callerName, value, $"Value less or equals than {value1}").AsExpectedException();
+			throw new ArgumentOutOfRangeException(callerName, value, $"Value less than or equals {value1}").AsExpectedException();
 
 		return value;
 	}

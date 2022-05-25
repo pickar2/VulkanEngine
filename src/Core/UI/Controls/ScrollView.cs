@@ -1,4 +1,5 @@
 ﻿using System.Drawing;
+using Core.Window;
 using SimpleMath.Vectors;
 
 namespace Core.UI.Controls;
@@ -19,12 +20,17 @@ public class ScrollView : UiControl
 			Size = new Vector2<float>(50, 10),
 			OffsetZ = 1
 		};
-		_horizontalSlider.OnDrag((control, from, to, dragType) =>
+		_horizontalSlider.OnDrag((control, newPos, motion, button, dragType) =>
 		{
-			if (dragType != UiManager.DragType.Move) return;
-			var offset = (to - from) / CombinedScale;
-			ScrollOffset.X += offset.X / (Size.X - _horizontalSlider.Size.X);
-			ScrollOffset.Max(new Vector2<float>(0)).Min(new Vector2<float>(1));
+			if (button != MouseButton.Left) return false;
+			if (dragType == UiManager.DragType.Move)
+			{
+				var offset = motion / CombinedScale;
+				ScrollOffset.X += offset.X / (Size.X - _horizontalSlider.Size.X);
+				ScrollOffset.Max(new Vector2<float>(0)).Min(new Vector2<float>(1));
+			}
+
+			return true;
 		});
 		AddChild(_horizontalSlider);
 		
@@ -34,12 +40,17 @@ public class ScrollView : UiControl
 			Size = new Vector2<float>(10, 50),
 			OffsetZ = 1
 		};
-		_verticalSlider.OnDrag((control, from, to, dragType) =>
+		_verticalSlider.OnDrag((control, newPos, motion, button, dragType) =>
 		{
-			if (dragType != UiManager.DragType.Move) return;
-			var offset = (to - from) / CombinedScale;
-			ScrollOffset.Y += offset.Y / (Size.Y - _verticalSlider.Size.Y);
-			ScrollOffset.Max(new Vector2<float>(0)).Min(new Vector2<float>(1));
+			if (button != MouseButton.Left) return false;
+			if (dragType == UiManager.DragType.Move)
+			{
+				var offset = motion / CombinedScale;
+				ScrollOffset.Y += offset.Y / (Size.Y - _verticalSlider.Size.Y);
+				ScrollOffset.Max(new Vector2<float>(0)).Min(new Vector2<float>(1));
+			}
+
+			return true;
 		});
 		AddChild(_verticalSlider);
 	}

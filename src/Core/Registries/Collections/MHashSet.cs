@@ -463,7 +463,7 @@ public class MHashSet<T> : ISet<T>, IReadOnlyCollection<T>, IDisposable
 		{
 			if (slots![i].HashCode == hashCode && Comparer.Equals(slots[i].Value, item)) return true;
 			// The chain of entries forms a loop, which means a concurrent update has happened.
-			collisionCount = collisionCount.ThrowIfGreaterOrEqualsThan(_size);
+			collisionCount = collisionCount.ThrowIfGreaterThanOrEquals(_size);
 		}
 
 		// either _buckets is null or wasn't found
@@ -525,7 +525,7 @@ public class MHashSet<T> : ISet<T>, IReadOnlyCollection<T>, IDisposable
 			}
 
 			// The chain of entries forms a loop, which means a concurrent update has happened.
-			collisionCount = collisionCount.ThrowIfGreaterOrEqualsThan(_size);
+			collisionCount = collisionCount.ThrowIfGreaterThanOrEquals(_size);
 		}
 
 		// either _buckets is null or wasn't found
@@ -1495,7 +1495,7 @@ public class MHashSet<T> : ISet<T>, IReadOnlyCollection<T>, IDisposable
 	{
 		Debug.Assert(_buckets != null, "IncreaseCapacity called on a set with no elements");
 		// Able to increase capacity; copy elements to larger array and rehash
-		SetCapacity(HashHelpers.ExpandPrime(Count).ThrowIfLessOrEqualsThan(Count));
+		SetCapacity(HashHelpers.ExpandPrime(Count).ThrowIfLessThanOrEquals(Count));
 	}
 
 	/// <summary>
@@ -1600,7 +1600,7 @@ public class MHashSet<T> : ISet<T>, IReadOnlyCollection<T>, IDisposable
 		for (int i = _buckets![bucket] - 1; i >= 0; i = slots[i].Next)
 		{
 			if (slots[i].HashCode == hashCode && Comparer.Equals(slots[i].Value, value)) return false;
-			collisionCount = collisionCount.ThrowIfGreaterOrEqualsThan(_size);
+			collisionCount = collisionCount.ThrowIfGreaterThanOrEquals(_size);
 		}
 
 		int index;
@@ -1843,7 +1843,7 @@ public class MHashSet<T> : ISet<T>, IReadOnlyCollection<T>, IDisposable
 			if (slots![i].HashCode == hashCode && Comparer.Equals(slots[i].Value, item)) return i;
 
 			// The chain of entries forms a loop, which means a concurrent update has happened.
-			collisionCount = collisionCount.ThrowIfGreaterOrEqualsThan(_size) + 1;
+			collisionCount = collisionCount.ThrowIfGreaterThanOrEquals(_size) + 1;
 		}
 
 		// wasn't found
@@ -2033,7 +2033,7 @@ public class MHashSet<T> : ISet<T>, IReadOnlyCollection<T>, IDisposable
 			}
 
 			// The chain of entries forms a loop, which means a concurrent update has happened.
-			collisionCount = collisionCount.ThrowIfGreaterOrEqualsThan(_size);
+			collisionCount = collisionCount.ThrowIfGreaterThanOrEquals(_size);
 		}
 
 		int index;

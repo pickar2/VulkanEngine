@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using Core.General;
 using Core.UI;
 using Core.UI.Controls;
@@ -99,6 +100,12 @@ public static unsafe class MainRenderer
 		{
 			lag += sw.ElapsedTicks / 10000d;
 			sw.Restart();
+			if (MsPerUpdate - lag > 2)
+			{
+				Thread.Sleep((int) ((MsPerUpdate - lag) / 1.5));
+				lag += sw.ElapsedTicks / 10000d;
+				sw.Restart();
+			}
 			if (lag < MsPerUpdate) continue;
 
 			TimeMs = sw3.ElapsedMilliseconds;

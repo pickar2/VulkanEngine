@@ -16,6 +16,9 @@ public class Label : StackPanel
 
 	private string _text = "";
 
+	// first letter sometimes has negative left margin, which does not increase its area, and cuts first pixels of it
+	public override Overflow Overflow { get; set; } = Overflow.Shown;
+
 	public Label() => Scale = new Vector2<float>(0.5f);
 
 	public override Vector2<float> ParentScale

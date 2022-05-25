@@ -81,7 +81,10 @@ internal static class Program
 		
 		DisposalQueue.EnqueueInFrame(0, () => Context.Window.Show());
 		// ReSharper disable once ConvertClosureToMethodGroup
-		var renderThread = new Thread(() => MainRenderer.RenderLoop());
+		var renderThread = new Thread(() => MainRenderer.RenderLoop())
+		{
+			Name = "Render Thread"
+		};
 		renderThread.Start();
 		window.MainLoop();
 		renderThread.Join();
