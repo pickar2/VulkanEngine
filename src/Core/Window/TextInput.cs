@@ -151,44 +151,28 @@ public static class TextInput
 		{
 			if (!IsSelecting) IsSelecting = true;
 
-			int move = CursorPos;
-			SetCursorPos(CursorPos - 1);
-			move -= CursorPos;
-
-			SetSelection(CursorPos, SelectionLength + move);
+			IncreaseSelection(-1);
 		}), KeyboardInput.KeySym(SDLK_LEFT).WithModifier(KMOD_LSHIFT).Build());
 
 		KeyboardInput.AddTextEditKeyBind(new NamedAction("select_word_left", () =>
 		{
 			if (!IsSelecting) IsSelecting = true;
 
-			int move = CursorPos;
-			SetCursorPos(CursorPos - FindWordEndLeft());
-			move -= CursorPos;
-
-			SetSelection(CursorPos, SelectionLength + move);
+			IncreaseSelection(-FindWordEndLeft());
 		}), KeyboardInput.KeySym(SDLK_LEFT).WithModifier(KMOD_LSHIFT).WithModifier(KMOD_LCTRL).Build());
 
 		KeyboardInput.AddTextEditKeyBind(new NamedAction("select_symbol_right", () =>
 		{
 			if (!IsSelecting) IsSelecting = true;
 
-			int move = CursorPos;
-			SetCursorPos(CursorPos + 1);
-			move -= CursorPos;
-
-			SetSelection(CursorPos, SelectionLength + move);
+			IncreaseSelection(1);
 		}), KeyboardInput.KeySym(SDLK_RIGHT).WithModifier(KMOD_LSHIFT).Build());
 
 		KeyboardInput.AddTextEditKeyBind(new NamedAction("select_word_right", () =>
 		{
 			if (!IsSelecting) IsSelecting = true;
 
-			int move = CursorPos;
-			SetCursorPos(CursorPos + FindWordEndRight());
-			move -= CursorPos;
-
-			SetSelection(CursorPos, SelectionLength + move);
+			IncreaseSelection(FindWordEndRight());
 		}), KeyboardInput.KeySym(SDLK_RIGHT).WithModifier(KMOD_LSHIFT).WithModifier(KMOD_LCTRL).Build());
 
 		KeyboardInput.AddTextEditKeyBind(new NamedAction("cursor_set_start", () =>
@@ -212,17 +196,13 @@ public static class TextInput
 		KeyboardInput.AddTextEditKeyBind(new NamedAction("copy_selection", () =>
 		{
 			if (!IsSelecting) return;
-			SDL_SetClipboardText(SelectionLength < 0
-				? CurrentText.Substring(SelectionPos + SelectionLength, -SelectionLength)
-				: CurrentText.Substring(SelectionPos, SelectionLength));
+			SDL_SetClipboardText(GetSelectedText());
 		}), KeyboardInput.KeySym(SDLK_c).WithModifier(KMOD_LCTRL).Build());
 
 		KeyboardInput.AddTextEditKeyBind(new NamedAction("cut_selection", () =>
 		{
 			if (!IsSelecting) return;
-			SDL_SetClipboardText(SelectionLength < 0
-				? CurrentText.Substring(SelectionPos + SelectionLength, -SelectionLength)
-				: CurrentText.Substring(SelectionPos, SelectionLength));
+			SDL_SetClipboardText(GetSelectedText());
 			RemoveSelectedText();
 		}), KeyboardInput.KeySym(SDLK_x).WithModifier(KMOD_LCTRL).Build());
 
@@ -310,6 +290,20 @@ public static class TextInput
 		SelectionLength = length;
 		_selectTextCallback?.Invoke(SelectionPos, SelectionLength);
 		if (length == 0) IsSelecting = false;
+	}
+
+	public static string GetSelectedText() =>
+		SelectionLength < 0
+			? CurrentText.Substring(SelectionPos + SelectionLength, -SelectionLength)
+			: CurrentText.Substring(SelectionPos, SelectionLength);
+
+	public static void IncreaseSelection(int amount)
+	{
+		int move = CursorPos;
+		SetCursorPos(CursorPos + amount);
+		move -= CursorPos;
+
+		SetSelection(CursorPos, SelectionLength + move);
 	}
 
 	public static string StopInput()
