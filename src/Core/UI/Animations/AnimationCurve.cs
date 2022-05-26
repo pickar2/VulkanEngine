@@ -18,6 +18,7 @@ public interface IAnimationCurve
 public static class DefaultCurves
 {
 	public static readonly IAnimationCurve Linear = new LinearAnimationCurve();
+	public static readonly IAnimationCurve HalfOffHalfOn = new HalfOffHalfOnAnimationCurve();
 
 	public static readonly IAnimationCurve EaseOutSine = new EaseOutSineAnimationCurve();
 	public static readonly IAnimationCurve EaseInSine = new EaseInSineAnimationCurve();
@@ -35,6 +36,11 @@ public static class DefaultCurves
 public class LinearAnimationCurve : IAnimationCurve
 {
 	public float Interpolate(float time) => time;
+}
+
+public class HalfOffHalfOnAnimationCurve : IAnimationCurve
+{
+	public float Interpolate(float time) => time > 0.5 ? 1 : 0;
 }
 
 public class EaseInSineAnimationCurve : IAnimationCurve

@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
 using System.Threading;
 using Core.General;
 using Core.UI;
@@ -17,6 +18,8 @@ internal static class Program
 {
 	private static void Main()
 	{
+		Console.OutputEncoding = System.Text.Encoding.UTF8;
+
 		var stopwatch = new Stopwatch();
 		stopwatch.Start();
 		string appName = App.Details.AppName;

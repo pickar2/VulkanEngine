@@ -28,6 +28,8 @@ public class SdlWindow : IDisposable
 		SDL_Init(SDL_INIT_EVERYTHING);
 		SDL_GetDesktopDisplayMode(0, out var mode);
 
+		SDL_SetHint(SDL_HINT_IME_SHOW_UI, "1");
+
 		WindowHandle = SDL_CreateWindow(Title, (int) (mode.w - VulkanOptions.WindowWidth) / 2, (int) (mode.h - VulkanOptions.WindowHeight) / 2,
 			(int) VulkanOptions.WindowWidth, (int) VulkanOptions.WindowHeight, 
 			SDL_WindowFlags.SDL_WINDOW_VULKAN | SDL_WindowFlags.SDL_WINDOW_RESIZABLE | SDL_WindowFlags.SDL_WINDOW_HIDDEN);
@@ -109,9 +111,18 @@ public class SdlWindow : IDisposable
 			case SDL_EventType.SDL_MOUSEWHEEL:
 				MouseInput.Scroll(sdlEvent.wheel);
 				break;
+			case SDL_EventType.SDL_TEXTEDITING:
+				TextInput.ProcessEvent(sdlEvent.edit);
+				break;
+			case SDL_EventType.SDL_TEXTINPUT:
+				TextInput.UpdateText(sdlEvent.text);
+				break;
 			case SDL_EventType.SDL_WINDOWEVENT:
 				HandleWindowEvent(sdlEvent.window);
 				break;
+			// default:
+			// 	App.Logger.Info.Message($"{sdlEvent.type}");
+			// 	break;
 		}
 	}
 

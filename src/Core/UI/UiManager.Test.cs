@@ -50,6 +50,17 @@ public static partial class UiManager
 		DockPanelTest(mainControl);
 		Transform3DTest(mainControl);
 		AnimationTest(mainControl);
+		TextInputTest(mainControl);
+	}
+
+	private static void TextInputTest(AbsolutePanel parent)
+	{
+		var input = new TextInputBox();
+		input.MarginLT = (10, 150);
+		input.OffsetZ = 150;
+		input.Scale = (2, 2);
+		
+		parent.AddChild(input);
 	}
 
 	private static readonly Random Random = new(1234);

@@ -23,7 +23,7 @@ public class ScrollView : UiControl
 		_horizontalSlider.OnDrag((control, newPos, motion, button, dragType) =>
 		{
 			if (button != MouseButton.Left) return false;
-			if (dragType == UiManager.DragType.Move)
+			if (dragType == DragType.Move)
 			{
 				var offset = motion / CombinedScale;
 				ScrollOffset.X += offset.X / (Size.X - _horizontalSlider.Size.X);
@@ -43,7 +43,7 @@ public class ScrollView : UiControl
 		_verticalSlider.OnDrag((control, newPos, motion, button, dragType) =>
 		{
 			if (button != MouseButton.Left) return false;
-			if (dragType == UiManager.DragType.Move)
+			if (dragType == DragType.Move)
 			{
 				var offset = motion / CombinedScale;
 				ScrollOffset.Y += offset.Y / (Size.Y - _verticalSlider.Size.Y);

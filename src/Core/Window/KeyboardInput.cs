@@ -21,12 +21,22 @@ public static class KeyboardInput
 
 	public static void KeyDown(SDL_KeyboardEvent keyboardEvent)
 	{
+		if (TextInput.IsEditing)
+		{
+			TextInput.ProcessTextEditKey(keyboardEvent);
+			return;
+		}
 		PressedKeys[keyboardEvent.keysym.sym] = true;
 		OnKeyDown?.Invoke(keyboardEvent.keysym);
 	}
 
 	public static void KeyUp(SDL_KeyboardEvent keyboardEvent)
 	{
+		if (TextInput.IsEditing)
+		{
+			TextInput.ProcessTextEditKey(keyboardEvent);
+			return;
+		}
 		PressedKeys[keyboardEvent.keysym.sym] = false;
 		OnKeyUp?.Invoke(keyboardEvent.keysym);
 	}
