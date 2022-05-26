@@ -31,6 +31,7 @@ public static partial class UiManager
 
 	public static void UpdateControl(this UiControl control, Vector2<float> scale, Vector2<float> area)
 	{
+		control.Update();
 		control.PropagateScale(scale);
 		control.ComputeSizeAndArea(area);
 		control.ArrangeChildren(area);

@@ -28,6 +28,7 @@ public static class TextInput
 		SetTextCallback? textCallback = null, SetCursorPosCallback? cursorPosCallback = null, 
 		SelectTextCallback? selectTextCallback = null, Action? finishEditingCallback = null)
 	{
+		if (IsEditing) return;
 		IsEditing = true;
 
 		_setTextCallback = textCallback;
@@ -106,7 +107,7 @@ public static class TextInput
 					if (CursorPos < CurrentText.Length)
 					{
 						int pos = CursorPos;
-						SetText(CurrentText.Remove(pos + 1, 1));
+						SetText(CurrentText.Remove(pos, 1));
 						SetCursorPos(Math.Min(CurrentText.Length, pos));
 					}
 					break;
@@ -122,6 +123,8 @@ public static class TextInput
 
 	public static string StopInput()
 	{
+		if (!IsEditing) return string.Empty;
+
 		SDL_StopTextInput();
 		_finishEditingCallback?.Invoke();
 

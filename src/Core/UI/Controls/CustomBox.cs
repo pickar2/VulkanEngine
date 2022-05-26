@@ -21,10 +21,4 @@ public class CustomBox : UiControlOneComponent
 			Component.MarkForGPUUpdate();
 		}
 	}
-
-	// public override void ComputeSizeAndArea(Vector2<float> maxSize)
-	// {
-	// ComputedSize = Vector2Extensions.Min(maxSize, Size) * CombinedScale;
-	// ComputedArea = Vector2Extensions.Min(maxSize, Size + MarginRB + MarginLT) * CombinedScale;
-	// }
 }

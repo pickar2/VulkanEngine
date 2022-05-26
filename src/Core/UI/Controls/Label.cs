@@ -14,9 +14,10 @@ public class Label : StackPanel
 
 	private Vector2<float> _computedScale;
 
-	private string _text = "";
+	private bool _needsUpdate = true;
+	private string _text = string.Empty;
 
-	// first letter sometimes has negative left margin, which does not increase its area, and cuts first pixels of it
+	// TODO: first letter sometimes has negative left margin, which does not increase its area, and cuts first pixels of it
 	public override Overflow Overflow { get; set; } = Overflow.Shown;
 
 	public Label() => Scale = new Vector2<float>(0.5f);
@@ -27,7 +28,7 @@ public class Label : StackPanel
 		set
 		{
 			_computedScale = value;
-			UpdateText();
+			_needsUpdate = true;
 		}
 	}
 
@@ -37,8 +38,18 @@ public class Label : StackPanel
 		set
 		{
 			_text = value;
-			UpdateText();
+			_needsUpdate = true;
 		}
+	}
+
+	public override void Update()
+	{
+		if (_needsUpdate)
+		{
+			UpdateText();
+			_needsUpdate = false;
+		}
+		base.Update();
 	}
 
 	private unsafe void UpdateText()

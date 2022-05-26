@@ -12,17 +12,28 @@ public class ControlInfoBox : AbsolutePanel
 
 	public ControlInfoBox() => OffsetZ = 2046;
 
+	private bool _needsUpdate;
 	public UiControl? Control
 	{
 		get => _control;
 		set
 		{
 			_control = value;
-			UpdateControl();
+			_needsUpdate = true;
 		}
 	}
 
 	public override bool Selectable { get; set; } = false;
+
+	public override void Update()
+	{
+		if (_needsUpdate)
+		{
+			UpdateControl();
+			_needsUpdate = false;
+		}
+		base.Update();
+	}
 
 	public override void PropagateScale(Vector2<float> parentScale)
 	{
@@ -36,21 +47,21 @@ public class ControlInfoBox : AbsolutePanel
 		ClearChildren();
 		if (_control == null) return;
 
-		var bg = new Rectangle
+		var controlBg = new Rectangle
 		{
 			Color = Color.Brown.ToArgb() & (127 << 24)
 		};
-		AddChild(bg);
+		AddChild(controlBg);
 
 		if (KeyboardInput.IsKeyPressed(SDL.SDL_Keycode.SDLK_LSHIFT))
 		{
-			bg.MarginLT = _control.CombinedPos - (_control.MarginLT * _control.ParentScale);
-			bg.Size = _control.ComputedArea;
+			controlBg.MarginLT = _control.CombinedPos - (_control.MarginLT * _control.ParentScale);
+			controlBg.Size = _control.ComputedArea;
 		}
 		else
 		{
-			bg.MarginLT = _control.CombinedPos;
-			bg.Size = _control.ComputedSize;
+			controlBg.MarginLT = _control.CombinedPos;
+			controlBg.Size = _control.ComputedSize;
 		}
 
 		var stackPanel = new StackPanel
@@ -60,6 +71,12 @@ public class ControlInfoBox : AbsolutePanel
 			OffsetZ = 1
 		};
 		AddChild(stackPanel);
+		
+		// var textBg = new Rectangle
+		// {
+		// 	Color = Color.Brown.ToArgb() & (127 << 24)
+		// };
+		// stackPanel.AddChild(textBg);
 
 		stackPanel.AddChild(new Label {Text = $"ControlType: {_control.GetType().Name}"});
 

@@ -13,7 +13,7 @@ public class TextInputBox : UiControl
 
 	private readonly Animation _cursorBlink;
 
-	private bool _isEditing = false;
+	private bool _isEditing;
 
 	public string Text
 	{
@@ -23,9 +23,13 @@ public class TextInputBox : UiControl
 
 	public TextInputBox()
 	{
+		TightBox = true;
+
 		ChildrenList.Add(_label);
 		ChildrenList.Add(_cursor);
 		ChildrenList.Add(_selection);
+
+		_cursor.Scale.X = 0.2f;
 
 		_cursor.Size = (0, 0);
 		_selection.Size = (0, 0);
@@ -49,11 +53,13 @@ public class TextInputBox : UiControl
 			if (_isEditing) { }
 			else
 			{
-				_cursor.Size = (9, 16);
-				_cursorBlink.Restart();
 				TextInput.StartInput(CombinedPos.Cast<float, int>(), ComputedSize.Cast<float, int>(), Text,
 					(str) => Text = str,
-					(curPos) => _cursor.MarginLT.X = curPos * 9,
+					(curPos) =>
+					{
+						_cursor.MarginLT.X = curPos * 9;
+						_cursorBlink.Restart();
+					},
 					(selectStart, selectLength) =>
 					{
 						_selection.MarginLT.X = selectStart * 9;
@@ -64,7 +70,10 @@ public class TextInputBox : UiControl
 						_cursor.Size = (0, 0);
 						_selection.Size = (0, 0);
 						_cursorBlink.Stop();
+						_isEditing = false;
 					});
+				_cursor.Size = (9, 16);
+				_cursorBlink.Restart();
 			}
 
 			return true;

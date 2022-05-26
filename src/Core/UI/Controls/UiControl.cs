@@ -14,6 +14,7 @@ public abstract class UiControl : IDisposable
 	public short OffsetZ;
 	public Vector2<float> Scale = new(1.0f);
 	public Vector2<float> Size = new(float.PositiveInfinity);
+	public bool TightBox = false;
 
 	public virtual bool Selectable { get; set; } = true;
 
@@ -43,7 +44,7 @@ public abstract class UiControl : IDisposable
 
 	public virtual void Dispose()
 	{
-		foreach (var child in Children) child.Dispose();
+		foreach (var child in ChildrenList) child.Dispose();
 		ClearChildren();
 		this.RemoveAllEvents();
 		GC.SuppressFinalize(this);
@@ -53,26 +54,47 @@ public abstract class UiControl : IDisposable
 	public virtual void RemoveChild(UiControl control) => ChildrenList.Remove(control);
 	public virtual void ClearChildren() => ChildrenList.Clear();
 
+	public virtual void Update()
+	{
+		foreach (var child in ChildrenList) child.Update();
+	}
+
 	public virtual void PropagateScale(Vector2<float> parentScale)
 	{
 		ParentScale = parentScale;
 		var combined = CombinedScale;
-		foreach (var child in Children) child.PropagateScale(combined);
+		foreach (var child in ChildrenList) child.PropagateScale(combined);
 	}
 
 	public virtual void ComputeSizeAndArea(Vector2<float> maxSize)
 	{
-		var maxArea = maxSize.MinV((Size * CombinedScale) + ((MarginLT + MarginRB) * ParentScale));
-		maxSize.Min(Size * CombinedScale);
+		if (TightBox)
+		{
+			var maxChildArea = new Vector2<float>();
 
-		foreach (var child in Children) child.ComputeSizeAndArea(maxSize);
-		ComputedSize = maxSize;
-		ComputedArea = maxArea;
+			foreach (var child in ChildrenList)
+			{
+				child.ComputeSizeAndArea(maxSize);
+				maxChildArea.Max(child.ComputedArea);
+			}
+			
+			ComputedSize = maxChildArea.MinV(maxSize).MinV(Size * CombinedScale);
+			ComputedArea = maxChildArea.MinV(maxSize).MinV(Size * CombinedScale + (MarginLT + MarginRB) * ParentScale);
+		}
+		else
+		{
+			var maxArea = maxSize.MinV((Size * CombinedScale) + ((MarginLT + MarginRB) * ParentScale));
+			maxSize.Min(Size * CombinedScale);
+
+			foreach (var child in ChildrenList) child.ComputeSizeAndArea(maxSize);
+			ComputedSize = maxSize;
+			ComputedArea = maxArea;
+		}
 	}
 
 	public virtual void ArrangeChildren(Vector2<float> area)
 	{
-		foreach (var child in Children)
+		foreach (var child in ChildrenList)
 		{
 			child.BasePos = CombinedPos;
 			child.BaseZ = CombinedZ;

@@ -2,6 +2,7 @@
 using System.Drawing;
 using System.Linq;
 using System.Numerics;
+using System.Text.RegularExpressions;
 using Core.General;
 using Core.UI.Animations;
 using Core.UI.Controls;
@@ -28,6 +29,8 @@ public static partial class UiManager
 
 			var screenSize = new Vector2<float>(Context.Window.WindowWidth, Context.Window.WindowHeight);
 			infoPanel.UpdateControl(new Vector2<float>(1), screenSize);
+			// TODO: investigate, why do we need full update of a child
+			infoBox.UpdateControl(new Vector2<float>(1), screenSize);
 		};
 
 		var mainControl = new AbsolutePanel();
@@ -51,6 +54,7 @@ public static partial class UiManager
 		Transform3DTest(mainControl);
 		AnimationTest(mainControl);
 		TextInputTest(mainControl);
+		AlignPanelTest(mainControl);
 	}
 
 	private static void TextInputTest(AbsolutePanel parent)
@@ -62,6 +66,44 @@ public static partial class UiManager
 		
 		parent.AddChild(input);
 	}
+	
+	private static void AlignPanelTest(AbsolutePanel parent)
+	{
+		var box = new Rectangle
+		{
+			Color = RandomColor() & (127 << 24),
+			Size = (150, 150),
+			OffsetZ = 200,
+			MarginLT = (350, 150)
+		};
+		parent.AddChild(box);
+
+		var values = Enum.GetValues<Alignment>();
+
+		foreach (var alignment in values)
+		{
+			var alignPanel = new AlignPanel
+			{
+				Alignment = alignment
+			};
+			box.AddChild(alignPanel);
+
+			var smallBox = new Rectangle
+			{
+				Color = RandomColor(),
+				Size = (30, 30),
+				OffsetZ = 1
+			};
+			var text = new Label
+			{
+				Text = Regex.Replace(alignment.Stringify(), "[a-z]*", ""),
+				OffsetZ = 2
+			};
+			alignPanel.AddChild(text);
+			alignPanel.AddChild(smallBox);
+		}
+	}
+
 
 	private static readonly Random Random = new(1234);
 
@@ -269,9 +311,12 @@ public static partial class UiManager
 		var alignPanel = new AlignPanel {Alignment = Alignment.Center};
 		button.AddChild(alignPanel);
 
-		var text = new Label {Text = "Animate"};
+		var text = new Label
+		{
+			Text = "Animate",
+			OffsetZ = 1
+		};
 		alignPanel.AddChild(text);
-		// text.Overflow = Overflow.Shown;
 
 		var box1 = new Rectangle
 		{
