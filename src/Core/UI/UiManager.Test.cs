@@ -105,7 +105,6 @@ public static partial class UiManager
 		}
 	}
 
-
 	private static readonly Random Random = new(1234);
 
 	public static int RandomColor(bool randomTransparency = false)

@@ -101,7 +101,9 @@ public static class TextInput
 		{
 			if (IsSelecting)
 			{
-				SetSelection(CursorPos, 0);
+				NormalizeSelection();
+				SetCursorPos(SelectionPos);
+				SetSelection(0, 0);
 				return;
 			}
 
@@ -112,34 +114,40 @@ public static class TextInput
 		{
 			if (IsSelecting)
 			{
-				SetSelection(CursorPos, 0);
+				NormalizeSelection();
+				SetCursorPos(SelectionPos);
+				SetSelection(0, 0);
 				return;
 			}
 
 			SetCursorPos(CursorPos - FindWordEndLeft());
 		}), KeyboardInput.KeySym(SDLK_LEFT).WithModifier(KMOD_LCTRL).Build());
 
-		KeyboardInput.AddTextEditKeyBind(new NamedAction("move_word_right", () =>
-		{
-			if (IsSelecting)
-			{
-				SetSelection(CursorPos, 0);
-				return;
-			}
-
-			SetCursorPos(CursorPos + FindWordEndRight());
-		}), KeyboardInput.KeySym(SDLK_RIGHT).WithModifier(KMOD_LCTRL).Build());
-
 		KeyboardInput.AddTextEditKeyBind(new NamedAction("move_symbol_right", () =>
 		{
 			if (IsSelecting)
 			{
-				SetSelection(CursorPos, 0);
+				NormalizeSelection();
+				SetCursorPos(SelectionPos + SelectionLength);
+				SetSelection(0, 0);
 				return;
 			}
 
 			SetCursorPos(Math.Min(CurrentText.Length, CursorPos + 1));
 		}), SDLK_RIGHT);
+
+		KeyboardInput.AddTextEditKeyBind(new NamedAction("move_word_right", () =>
+		{
+			if (IsSelecting)
+			{
+				NormalizeSelection();
+				SetCursorPos(SelectionPos + SelectionLength);
+				SetSelection(0, 0);
+				return;
+			}
+
+			SetCursorPos(CursorPos + FindWordEndRight());
+		}), KeyboardInput.KeySym(SDLK_RIGHT).WithModifier(KMOD_LCTRL).Build());
 
 		KeyboardInput.AddTextEditKeyBind(new NamedAction("stop_selecting", () =>
 		{
@@ -258,13 +266,16 @@ public static class TextInput
 		SetCursorPos(Math.Min(CurrentText.Length, CursorPos + text.Length));
 	}
 
+	private static void NormalizeSelection()
+	{
+		if (SelectionLength >= 0) return;
+		SelectionPos += SelectionLength;
+		SelectionLength = -SelectionLength;
+	}
+
 	private static void RemoveSelectedText()
 	{
-		if (SelectionLength < 0)
-		{
-			SelectionPos += SelectionLength;
-			SelectionLength = -SelectionLength;
-		}
+		NormalizeSelection();
 
 		SetText(CurrentText.Remove(SelectionPos, SelectionLength));
 		SetCursorPos(SelectionPos);
@@ -287,9 +298,9 @@ public static class TextInput
 	public static void SetSelection(int pos, int length)
 	{
 		SelectionPos = pos;
-		SelectionLength = length;
+		SelectionLength = Math.Clamp(length, -SelectionPos, CurrentText.Length - SelectionPos);
 		_selectTextCallback?.Invoke(SelectionPos, SelectionLength);
-		if (length == 0) IsSelecting = false;
+		if (SelectionLength == 0) IsSelecting = false;
 	}
 
 	public static string GetSelectedText() =>
@@ -299,6 +310,7 @@ public static class TextInput
 
 	public static void IncreaseSelection(int amount)
 	{
+		App.Logger.Info.Message($"{CursorPos}, {SelectionPos}, {SelectionLength}");
 		int move = CursorPos;
 		SetCursorPos(CursorPos + amount);
 		move -= CursorPos;
