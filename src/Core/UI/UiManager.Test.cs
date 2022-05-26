@@ -60,13 +60,14 @@ public static partial class UiManager
 	private static void TextInputTest(AbsolutePanel parent)
 	{
 		var input = new TextInputBox();
-		input.MarginLT = (10, 150);
+		input.MarginLT = (10, 110);
 		input.OffsetZ = 150;
 		input.Scale = (2, 2);
-		
+		input.Text = "Text that has spaces:    ; DOTS.... and .,|-:;<>";
+
 		parent.AddChild(input);
 	}
-	
+
 	private static void AlignPanelTest(AbsolutePanel parent)
 	{
 		var box = new Rectangle

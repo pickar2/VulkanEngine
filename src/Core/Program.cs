@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Threading;
 using Core.General;
+using Core.Registries.Entities;
 using Core.UI;
 using Core.Utils;
 using Core.Utils.Features;
@@ -33,10 +34,7 @@ internal static class Program
 
 		var window = new SdlWindow();
 
-		KeyboardInput.OnKeyUp += key =>
-		{
-			if (key.scancode == SDL.SDL_Scancode.SDL_SCANCODE_ESCAPE) window.Close();
-		};
+		KeyboardInput.AddKeyBind(new NamedAction("exit_program", () => Context.Window.Close()), KeyboardInput.KeySym(SDL.SDL_Keycode.SDLK_ESCAPE).Build());
 
 		Context vulkanContext = new(new VulkanConfig
 		{

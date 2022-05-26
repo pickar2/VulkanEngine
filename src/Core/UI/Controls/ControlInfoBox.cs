@@ -71,12 +71,6 @@ public class ControlInfoBox : AbsolutePanel
 			OffsetZ = 1
 		};
 		AddChild(stackPanel);
-		
-		// var textBg = new Rectangle
-		// {
-		// 	Color = Color.Brown.ToArgb() & (127 << 24)
-		// };
-		// stackPanel.AddChild(textBg);
 
 		stackPanel.AddChild(new Label {Text = $"ControlType: {_control.GetType().Name}"});
 

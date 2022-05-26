@@ -9,7 +9,7 @@ public class TextInputBox : UiControl
 {
 	private readonly Label _label = new();
 	private readonly Rectangle _cursor = new() {Color = Color.White.ToArgb()};
-	private readonly Rectangle _selection = new() {Color = Color.LightBlue.ToArgb() & (127 << 24)};
+	private readonly Rectangle _selection = new() {Color = Color.LightBlue.ToArgb() & (200 << 24)};
 
 	private readonly Animation _cursorBlink;
 
@@ -73,6 +73,7 @@ public class TextInputBox : UiControl
 						_isEditing = false;
 					});
 				_cursor.Size = (9, 16);
+				_selection.Size = (0, 16);
 				_cursorBlink.Restart();
 			}
 
