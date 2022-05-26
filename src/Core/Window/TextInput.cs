@@ -310,7 +310,6 @@ public static class TextInput
 
 	public static void IncreaseSelection(int amount)
 	{
-		App.Logger.Info.Message($"{CursorPos}, {SelectionPos}, {SelectionLength}");
 		int move = CursorPos;
 		SetCursorPos(CursorPos + amount);
 		move -= CursorPos;
