@@ -7,7 +7,7 @@ using static SDL2.SDL.SDL_Keymod;
 
 namespace Core.Window;
 
-public static class TextInput
+public static partial class TextInput
 {
 	public delegate void SetTextCallback(string newText);
 	public delegate void SetCursorPosCallback(int pos);
@@ -27,197 +27,170 @@ public static class TextInput
 	public static bool IsSelecting { get; private set; }
 	public static bool IsEditing { get; private set; }
 
+	private static readonly InputContext EditingContext = new("text_editing");
+	private static readonly InputContext EditingSelectingContext = new("text_editing_selecting");
+	private static readonly InputContext EditingNotSelectingContext = new("text_editing_not_selecting");
+
 	static TextInput()
 	{
-		KeyboardInput.AddTextEditKeyBind(new NamedAction("stop_input", () =>
+		EditingNotSelectingContext.AddKeyBind(new NamedFunc("stop_input", () =>
 		{
-			if (!IsSelecting) StopInput();
+			StopInput();
+			return true;
 		}), SDLK_ESCAPE, SDLK_RETURN, SDLK_KP_ENTER);
-
-		KeyboardInput.AddTextEditKeyBind(new NamedAction("remove_prev_symbol", () =>
+		
+		EditingNotSelectingContext.AddKeyBind(new NamedFunc("remove_prev_symbol", () =>
 		{
-			if (IsSelecting)
-			{
-				RemoveSelectedText();
-				return;
-			}
-
-			if (CursorPos <= 0) return;
-
-			int pos = CursorPos - 1;
-			SetText(CurrentText.Remove(pos, 1));
-			SetCursorPos(pos);
+			RemoveCharacters(-1);
+			return true;
 		}), SDLK_BACKSPACE, SDLK_KP_BACKSPACE);
 
-		KeyboardInput.AddTextEditKeyBind(new NamedAction("remove_current_symbol", () =>
+		EditingNotSelectingContext.AddKeyBind(new NamedFunc("remove_current_symbol", () =>
 		{
-			if (IsSelecting)
-			{
-				RemoveSelectedText();
-				return;
-			}
-
-			if (CursorPos >= CurrentText.Length) return;
-
-			int pos = CursorPos;
-			SetText(CurrentText.Remove(pos, 1));
-			SetCursorPos(pos);
+			RemoveCharacters(1);
+			return true;
 		}), SDLK_DELETE);
 
-		KeyboardInput.AddTextEditKeyBind(new NamedAction("remove_word_left", () =>
+		EditingNotSelectingContext.AddKeyBind(new NamedFunc("remove_current_symbol", () =>
+		{
+			RemoveCharacters(1);
+			return true;
+		}), SDLK_DELETE);
+
+		EditingNotSelectingContext.AddKeyBind(new NamedFunc("remove_word_left", () =>
 			{
-				if (IsSelecting)
-				{
-					RemoveSelectedText();
-					return;
-				}
-
-				if (CursorPos <= 0) return;
-
-				int count = FindWordEndLeft();
-				int pos = CursorPos - count;
-				SetText(CurrentText.Remove(pos, count));
-				SetCursorPos(pos);
+				RemoveCharacters(-FindWordEndLeft());
+				return true;
 			}), KeyboardInput.KeySym(SDLK_BACKSPACE).WithModifier(KMOD_LCTRL).Build(),
 			KeyboardInput.KeySym(SDLK_KP_BACKSPACE).WithModifier(KMOD_LCTRL).Build());
 
-		KeyboardInput.AddTextEditKeyBind(new NamedAction("remove_word_right", () =>
+		EditingNotSelectingContext.AddKeyBind(new NamedFunc("remove_word_right", () =>
 		{
-			if (IsSelecting)
-			{
-				RemoveSelectedText();
-				return;
-			}
-
-			if (CursorPos >= CurrentText.Length) return;
-
-			int count = FindWordEndRight();
-			int pos = CursorPos;
-			SetText(CurrentText.Remove(pos, count));
-			SetCursorPos(pos);
+			RemoveCharacters(FindWordEndRight());
+			return true;
 		}), KeyboardInput.KeySym(SDLK_DELETE).WithModifier(KMOD_LCTRL).Build());
 
-		KeyboardInput.AddTextEditKeyBind(new NamedAction("move_symbol_left", () =>
+		EditingNotSelectingContext.AddKeyBind(new NamedFunc("cursor_move_symbol_left", () =>
 		{
-			if (IsSelecting)
-			{
-				NormalizeSelection();
-				SetCursorPos(SelectionPos);
-				SetSelection(0, 0);
-				return;
-			}
-
 			SetCursorPos(CursorPos - 1);
-		}), SDLK_LEFT);
+			return true;
+		}), KeyboardInput.KeySym(SDLK_LEFT).Build());
 
-		KeyboardInput.AddTextEditKeyBind(new NamedAction("move_word_left", () =>
+		EditingNotSelectingContext.AddKeyBind(new NamedFunc("cursor_move_word_left", () =>
 		{
-			if (IsSelecting)
+			SetCursorPos(CursorPos - FindWordEndLeft());
+			return true;
+		}), KeyboardInput.KeySym(SDLK_LEFT).WithModifier(KMOD_LCTRL).Build());
+		
+		EditingNotSelectingContext.AddKeyBind(new NamedFunc("cursor_move_symbol_right", () =>
+		{
+			SetCursorPos(CursorPos + 1);
+			return true;
+		}), KeyboardInput.KeySym(SDLK_RIGHT).Build());
+
+		EditingNotSelectingContext.AddKeyBind(new NamedFunc("cursor_move_word_right", () =>
+		{
+			SetCursorPos(CursorPos + FindWordEndRight());
+			return true;
+		}), KeyboardInput.KeySym(SDLK_RIGHT).WithModifier(KMOD_LCTRL).Build());
+		
+		EditingSelectingContext.AddKeyBind(new NamedFunc("cancel_selection", () =>
+		{
+			SetSelection(0, 0);
+			return true;
+		}), SDLK_ESCAPE, SDLK_RETURN, SDLK_KP_ENTER);
+		
+		EditingSelectingContext.AddKeyBind(new NamedFunc("cancel_selection_left", () =>
 			{
 				NormalizeSelection();
 				SetCursorPos(SelectionPos);
 				SetSelection(0, 0);
-				return;
-			}
+				return true;
+			}), KeyboardInput.KeySym(SDLK_LEFT).Build(),
+			KeyboardInput.KeySym(SDLK_LEFT).WithModifier(KMOD_LCTRL).Build());
 
-			SetCursorPos(CursorPos - FindWordEndLeft());
-		}), KeyboardInput.KeySym(SDLK_LEFT).WithModifier(KMOD_LCTRL).Build());
-
-		KeyboardInput.AddTextEditKeyBind(new NamedAction("move_symbol_right", () =>
-		{
-			if (IsSelecting)
+		EditingSelectingContext.AddKeyBind(new NamedFunc("cancel_selection_right", () =>
 			{
 				NormalizeSelection();
 				SetCursorPos(SelectionPos + SelectionLength);
 				SetSelection(0, 0);
-				return;
-			}
+				return true;
+			}), KeyboardInput.KeySym(SDLK_RIGHT).Build(),
+			KeyboardInput.KeySym(SDLK_RIGHT).WithModifier(KMOD_LCTRL).Build());
 
-			SetCursorPos(Math.Min(CurrentText.Length, CursorPos + 1));
-		}), SDLK_RIGHT);
-
-		KeyboardInput.AddTextEditKeyBind(new NamedAction("move_word_right", () =>
-		{
-			if (IsSelecting)
+		EditingSelectingContext.AddKeyBind(new NamedFunc("remove_selection", () =>
 			{
-				NormalizeSelection();
-				SetCursorPos(SelectionPos + SelectionLength);
-				SetSelection(0, 0);
-				return;
-			}
-
-			SetCursorPos(CursorPos + FindWordEndRight());
-		}), KeyboardInput.KeySym(SDLK_RIGHT).WithModifier(KMOD_LCTRL).Build());
-
-		KeyboardInput.AddTextEditKeyBind(new NamedAction("stop_selecting", () =>
+				RemoveSelectedText();
+				return true;
+			}), KeyboardInput.KeySym(SDLK_BACKSPACE).Build(),
+			KeyboardInput.KeySym(SDLK_KP_BACKSPACE).Build(),
+			KeyboardInput.KeySym(SDLK_DELETE).Build(),
+			KeyboardInput.KeySym(SDLK_BACKSPACE).WithModifier(KMOD_LCTRL).Build(),
+			KeyboardInput.KeySym(SDLK_KP_BACKSPACE).WithModifier(KMOD_LCTRL).Build(),
+			KeyboardInput.KeySym(SDLK_DELETE).WithModifier(KMOD_LCTRL).Build());
+		
+		EditingContext.AddKeyBind(new NamedFunc("select_symbol_left", () =>
 		{
-			if (!IsSelecting) return;
-			SetSelection(0, 0);
-		}), SDLK_ESCAPE, SDLK_RETURN, SDLK_KP_ENTER);
-
-		KeyboardInput.AddTextEditKeyBind(new NamedAction("select_symbol_left", () =>
-		{
-			if (!IsSelecting) IsSelecting = true;
-
 			IncreaseSelection(-1);
+			return true;
 		}), KeyboardInput.KeySym(SDLK_LEFT).WithModifier(KMOD_LSHIFT).Build());
-
-		KeyboardInput.AddTextEditKeyBind(new NamedAction("select_word_left", () =>
+		
+		EditingContext.AddKeyBind(new NamedFunc("select_word_left", () =>
 		{
-			if (!IsSelecting) IsSelecting = true;
-
 			IncreaseSelection(-FindWordEndLeft());
+			return true;
 		}), KeyboardInput.KeySym(SDLK_LEFT).WithModifier(KMOD_LSHIFT).WithModifier(KMOD_LCTRL).Build());
-
-		KeyboardInput.AddTextEditKeyBind(new NamedAction("select_symbol_right", () =>
+		
+		EditingContext.AddKeyBind(new NamedFunc("select_symbol_right", () =>
 		{
-			if (!IsSelecting) IsSelecting = true;
-
 			IncreaseSelection(1);
+			return true;
 		}), KeyboardInput.KeySym(SDLK_RIGHT).WithModifier(KMOD_LSHIFT).Build());
-
-		KeyboardInput.AddTextEditKeyBind(new NamedAction("select_word_right", () =>
+		
+		EditingContext.AddKeyBind(new NamedFunc("select_word_right", () =>
 		{
-			if (!IsSelecting) IsSelecting = true;
-
 			IncreaseSelection(FindWordEndRight());
+			return true;
 		}), KeyboardInput.KeySym(SDLK_RIGHT).WithModifier(KMOD_LSHIFT).WithModifier(KMOD_LCTRL).Build());
-
-		KeyboardInput.AddTextEditKeyBind(new NamedAction("cursor_set_start", () =>
+		
+		EditingContext.AddKeyBind(new NamedFunc("cursor_set_start", () =>
 		{
 			if (IsSelecting) SetSelection(0, 0);
 			SetCursorPos(0);
+			return true;
 		}), SDLK_PAGEUP);
-
-		KeyboardInput.AddTextEditKeyBind(new NamedAction("cursor_set_end", () =>
+		
+		EditingContext.AddKeyBind(new NamedFunc("cursor_set_end", () =>
 		{
 			if (IsSelecting) SetSelection(0, 0);
 			SetCursorPos(CurrentText.Length);
+			return true;
 		}), SDLK_PAGEDOWN);
-
-		KeyboardInput.AddTextEditKeyBind(new NamedAction("select_all", () =>
+		
+		EditingContext.AddKeyBind(new NamedFunc("select_all", () =>
 		{
-			if (!IsSelecting) IsSelecting = true;
 			SetSelection(0, CurrentText.Length);
+			return true;
 		}), KeyboardInput.KeySym(SDLK_a).WithModifier(KMOD_LCTRL).Build());
-
-		KeyboardInput.AddTextEditKeyBind(new NamedAction("copy_selection", () =>
+		
+		EditingSelectingContext.AddKeyBind(new NamedFunc("copy_selection", () =>
 		{
-			if (!IsSelecting) return;
 			SDL_SetClipboardText(GetSelectedText());
+			return true;
 		}), KeyboardInput.KeySym(SDLK_c).WithModifier(KMOD_LCTRL).Build());
-
-		KeyboardInput.AddTextEditKeyBind(new NamedAction("cut_selection", () =>
+		
+		EditingSelectingContext.AddKeyBind(new NamedFunc("cut_selection", () =>
 		{
-			if (!IsSelecting) return;
 			SDL_SetClipboardText(GetSelectedText());
 			RemoveSelectedText();
+			return true;
 		}), KeyboardInput.KeySym(SDLK_x).WithModifier(KMOD_LCTRL).Build());
-
-		KeyboardInput.AddTextEditKeyBind(new NamedAction("paste_selection", () =>
+		
+		EditingContext.AddKeyBind(new NamedFunc("paste_selection", () =>
 		{
-			if (SDL_HasClipboardText() == SDL_bool.SDL_FALSE) return;
+			if (SDL_HasClipboardText() == SDL_bool.SDL_FALSE) return true;
 			InsertTextAtCursorPos(SDL_GetClipboardText()!);
+			return true;
 		}), KeyboardInput.KeySym(SDLK_v).WithModifier(KMOD_LCTRL).Build());
 	}
 
@@ -227,6 +200,8 @@ public static class TextInput
 	{
 		if (IsEditing) return;
 		IsEditing = true;
+		KeyboardInput.EnableContext(EditingContext);
+		KeyboardInput.EnableContext(EditingNotSelectingContext);
 
 		_setTextCallback = textCallback;
 		_setCursorPosCallback = cursorPosCallback;
@@ -283,6 +258,21 @@ public static class TextInput
 		SetSelection(0, 0);
 	}
 
+	public static void RemoveCharacters(int count)
+	{
+		int pos = CursorPos;
+		if (count < 0)
+		{
+			pos += count;
+			count = -count;
+		}
+
+		if (pos < 0 || pos >= CurrentText.Length) return;
+
+		SetText(CurrentText.Remove(pos, count));
+		SetCursorPos(pos);
+	}
+
 	public static void SetText(string newText)
 	{
 		CurrentText = newText;
@@ -300,7 +290,19 @@ public static class TextInput
 		SelectionPos = pos;
 		SelectionLength = Math.Clamp(length, -SelectionPos, CurrentText.Length - SelectionPos);
 		_selectTextCallback?.Invoke(SelectionPos, SelectionLength);
-		if (SelectionLength == 0) IsSelecting = false;
+
+		if (SelectionLength == 0)
+		{
+			IsSelecting = false;
+			KeyboardInput.DisableContext(EditingSelectingContext);
+			KeyboardInput.EnableContext(EditingNotSelectingContext);
+		}
+		else
+		{
+			IsSelecting = true;
+			KeyboardInput.DisableContext(EditingNotSelectingContext);
+			KeyboardInput.EnableContext(EditingSelectingContext);
+		}
 	}
 
 	public static string GetSelectedText() =>
@@ -320,6 +322,10 @@ public static class TextInput
 	public static string StopInput()
 	{
 		if (!IsEditing) return string.Empty;
+		
+		KeyboardInput.DisableContext(EditingContext);
+		KeyboardInput.DisableContext(EditingSelectingContext);
+		KeyboardInput.DisableContext(EditingNotSelectingContext);
 
 		SDL_StopTextInput();
 		_finishEditingCallback?.Invoke();
@@ -339,9 +345,14 @@ public static class TextInput
 		return CurrentText;
 	}
 
-	private const string NonLetters = @"\.,|\-\:;\<\>\^";
-	private const string NonLetterRegex = $"[{NonLetters}]";
-	private const string NonLetterNonWhitespaceRegex = $@"[{NonLetters}\s]";
+	private const string NonLetters = @"\.,|\-\:;\<\>\^\(\)\{\}\[\]""'\!\@\#\$\%\&\+\*\\\/";
+
+	[RegexGenerator(@"\s")]
+	private static partial Regex WhitespacesRegex();
+	[RegexGenerator($"[{NonLetters}]")]
+	private static partial Regex NonLettersRegex();
+	[RegexGenerator($@"[{NonLetters}\s]")]
+	private static partial Regex NonLetterNonWhitespaceRegex();
 
 	private static int FindWordEndLeft()
 	{
@@ -349,7 +360,7 @@ public static class TextInput
 		var chars = CurrentText.AsSpan(0, CursorPos);
 		int pos = CursorPos - 1;
 		// skip whitespaces
-		while (pos >= 0 && Regex.IsMatch(chars.Slice(pos, 1), @"\s"))
+		while (pos >= 0 && WhitespacesRegex().IsMatch(chars.Slice(pos, 1)))
 		{
 			pos--;
 			moveAmount++;
@@ -357,17 +368,17 @@ public static class TextInput
 
 		// choose group
 		int group = 0; // everything except \.,|-:;<>
-		if (pos >= 0 && Regex.IsMatch(chars.Slice(pos, 1), NonLetterRegex))
+		if (pos >= 0 && NonLettersRegex().IsMatch(chars.Slice(pos, 1)))
 		{
 			group = 1;
 		}
 
 		switch (group)
 		{
-			// move until .,|-:;<> or whitespace
+			// move until .,|-:;<>(){}[] or whitespace
 			case 0:
 			{
-				while (pos >= 0 && !Regex.IsMatch(chars.Slice(pos, 1), NonLetterNonWhitespaceRegex))
+				while (pos >= 0 && !NonLetterNonWhitespaceRegex().IsMatch(chars.Slice(pos, 1)))
 				{
 					pos--;
 					moveAmount++;
@@ -378,7 +389,7 @@ public static class TextInput
 			// move until character is .,|-:;<>
 			case 1:
 			{
-				while (pos >= 0 && Regex.IsMatch(chars.Slice(pos, 1), NonLetterRegex))
+				while (pos >= 0 && NonLettersRegex().IsMatch(chars.Slice(pos, 1)))
 				{
 					pos--;
 					moveAmount++;
@@ -397,7 +408,7 @@ public static class TextInput
 		var chars = CurrentText.AsSpan();
 		int pos = CursorPos;
 		// skip whitespaces
-		while (pos < CurrentText.Length && Regex.IsMatch(chars.Slice(pos, 1), @"\s"))
+		while (pos < CurrentText.Length && WhitespacesRegex().IsMatch(chars.Slice(pos, 1)))
 		{
 			pos++;
 			moveAmount++;
@@ -405,7 +416,7 @@ public static class TextInput
 
 		// choose group
 		int group = 0; // everything except \.,|-:;<>
-		if (pos < CurrentText.Length && Regex.IsMatch(chars.Slice(pos, 1), NonLetterRegex))
+		if (pos < CurrentText.Length && NonLettersRegex().IsMatch(chars.Slice(pos, 1)))
 		{
 			group = 1;
 		}
@@ -415,7 +426,7 @@ public static class TextInput
 			// move until .,|-:;<> or whitespace
 			case 0:
 			{
-				while (pos < CurrentText.Length && !Regex.IsMatch(chars.Slice(pos, 1), NonLetterNonWhitespaceRegex))
+				while (pos < CurrentText.Length && !NonLetterNonWhitespaceRegex().IsMatch(chars.Slice(pos, 1)))
 				{
 					pos++;
 					moveAmount++;
@@ -426,7 +437,7 @@ public static class TextInput
 			// move until character is .,|-:;<>
 			case 1:
 			{
-				while (pos < CurrentText.Length && Regex.IsMatch(chars.Slice(pos, 1), NonLetterRegex))
+				while (pos < CurrentText.Length && NonLettersRegex().IsMatch(chars.Slice(pos, 1)))
 				{
 					pos++;
 					moveAmount++;

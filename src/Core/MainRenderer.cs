@@ -80,6 +80,7 @@ public static unsafe class MainRenderer
 	{
 		double lag = 0;
 		var sw = new Stopwatch();
+		var handle = new EventWaitHandle(false, EventResetMode.AutoReset);
 		var sw2 = new Stopwatch();
 		sw.Start();
 
@@ -100,13 +101,11 @@ public static unsafe class MainRenderer
 		{
 			lag += sw.ElapsedTicks / 10000d;
 			sw.Restart();
-			if (MsPerUpdate - lag > 2)
+			if (lag < MsPerUpdate)
 			{
-				Thread.Sleep((int) ((MsPerUpdate - lag) / 1.5));
-				lag += sw.ElapsedTicks / 10000d;
-				sw.Restart();
+				handle.WaitOne((int) ((MsPerUpdate - lag) > 1 ? Math.Floor(MsPerUpdate - lag) : 0));
+				continue;
 			}
-			if (lag < MsPerUpdate) continue;
 
 			TimeMs = sw3.ElapsedMilliseconds;
 

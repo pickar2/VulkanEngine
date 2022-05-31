@@ -34,7 +34,11 @@ internal static class Program
 
 		var window = new SdlWindow();
 
-		KeyboardInput.AddKeyBind(new NamedAction("exit_program", () => Context.Window.Close()), KeyboardInput.KeySym(SDL.SDL_Keycode.SDLK_ESCAPE).Build());
+		KeyboardInput.GlobalContext.AddKeyBind(new NamedFunc("exit_program", () =>
+		{
+			Context.Window.Close();
+			return true;
+		}), SDL.SDL_Keycode.SDLK_ESCAPE);
 
 		Context vulkanContext = new(new VulkanConfig
 		{

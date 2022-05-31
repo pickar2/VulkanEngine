@@ -66,6 +66,7 @@ public class SdlWindow : IDisposable
 	public void MainLoop()
 	{
 		_stopwatch.Start();
+		var handle = new EventWaitHandle(false, EventResetMode.AutoReset);
 
 		const int maxNumEvents = 4;
 		var events = new SDL_Event[maxNumEvents];
@@ -80,7 +81,7 @@ public class SdlWindow : IDisposable
 			
 			for (int index = 0; index < result; index++)
 				HandleEvent(events[index]);
-			Thread.Sleep(2);
+			handle.WaitOne(1);
 		}
 
 		_stopwatch.Stop();

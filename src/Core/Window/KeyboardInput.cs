@@ -16,8 +16,25 @@ public static class KeyboardInput
 
 	private static readonly Dictionary<SDL_Keycode, bool> PressedKeys = new();
 
-	private static readonly Dictionary<SDL_Keysym, HashSet<NamedAction>> GeneralKeyBinds = new();
-	private static readonly Dictionary<SDL_Keysym, HashSet<NamedAction>> TextEditKeyBinds = new();
+	private static readonly Dictionary<NamespacedName, InputContext> CurrentContexts = new();
+	public static readonly InputContext GlobalContext = new("global");
+	private static bool _contextChanged;
+
+	public static void EnableContext(InputContext context)
+	{
+		if (CurrentContexts.ContainsKey(context.Identifier)) return;
+
+		CurrentContexts[context.Identifier] = context;
+		_contextChanged = true;
+	}
+
+	public static void DisableContext(InputContext context)
+	{
+		if (!CurrentContexts.ContainsKey(context.Identifier)) return;
+
+		CurrentContexts.Remove(context.Identifier);
+		_contextChanged = true;
+	}
 
 	static KeyboardInput()
 	{
@@ -34,170 +51,128 @@ public static class KeyboardInput
 		var keySym = keyboardEvent.keysym;
 		keySym.unicode = 0;
 		keySym.scancode = 0;
-		if (TextInput.IsEditing)
+
+		do
 		{
-			if (!TextEditKeyBinds.TryGetValue(keySym, out var set)) return;
-			foreach (var action in set) action.Action.Invoke();
-		}
-		else
-		{
-			if (!GeneralKeyBinds.TryGetValue(keySym, out var set)) return;
-			foreach (var action in set) action.Action.Invoke();
-		}
+			_contextChanged = false;
+			foreach (var (_, context) in CurrentContexts)
+			{
+				if (!context.KeyBinds.TryGetValue(keySym, out var set)) continue;
+				foreach (var namedFunc in set)
+				{
+					if (namedFunc.Func.Invoke()) goto KeyHandled;
+					if (_contextChanged) goto NextLoop;
+				}
+			}
+			if (GlobalContext.KeyBinds.TryGetValue(keySym, out var generalSet))
+			{
+				foreach (var namedFunc in generalSet)
+				{
+					if (namedFunc.Func.Invoke()) goto KeyHandled;
+					if (_contextChanged) goto NextLoop;
+				}
+			}
+			NextLoop: ;
+		} while (_contextChanged);
+		KeyHandled: ;
 	}
 
 	public static void KeyUp(SDL_KeyboardEvent keyboardEvent)
 	{
 		PressedKeys[keyboardEvent.keysym.sym] = false;
 		OnKeyUp?.Invoke(keyboardEvent.keysym);
-
-		// if (PauseKeyBinds) return;
-		// if (TextInput.IsEditing)
-		// {
-		// 	// TextInput.ProcessTextEditKey(keyboardEvent);
-		// } else {
-		//
-		// }
 	}
 
 	public static bool IsKeyPressed(SDL_Keycode keycode) => PressedKeys[keycode];
 
-	public static void AddKeyBind(NamedAction namedAction, SDL_Keysym keySym)
-	{
-		if (!GeneralKeyBinds.ContainsKey(keySym)) GeneralKeyBinds[keySym] = new HashSet<NamedAction>();
-		GeneralKeyBinds[keySym].Add(namedAction);
-	}
-
-	public static void AddKeyBind(NamedAction namedAction, params SDL_Keysym[] keySymArr)
-	{
-		foreach (var keySym in keySymArr)
-		{
-			if (!GeneralKeyBinds.ContainsKey(keySym)) GeneralKeyBinds[keySym] = new HashSet<NamedAction>();
-			GeneralKeyBinds[keySym].Add(namedAction);
-		}
-	}
-
-	public static void AddKeyBind(NamedAction namedAction, SDL_Keycode keyCode)
-	{
-		var keySym = KeySym(keyCode).Build();
-		if (!GeneralKeyBinds.ContainsKey(keySym)) GeneralKeyBinds[keySym] = new HashSet<NamedAction>();
-		GeneralKeyBinds[keySym].Add(namedAction);
-	}
-
-	public static void AddKeyBind(NamedAction namedAction, params SDL_Keycode[] keyCodeArr)
-	{
-		foreach (var keyCode in keyCodeArr)
-		{
-			var keySym = KeySym(keyCode).Build();
-			if (!GeneralKeyBinds.ContainsKey(keySym)) GeneralKeyBinds[keySym] = new HashSet<NamedAction>();
-			GeneralKeyBinds[keySym].Add(namedAction);
-		}
-	}
-
-	public static bool RemoveKeyBind(NamespacedName name)
-	{
-		bool removed = false;
-		foreach (var (_, set) in GeneralKeyBinds) removed |= set.RemoveWhere(act => act.Identifier.Equals(name)) > 0;
-
-		return removed;
-	}
-
-	public static bool RemoveKeyBind(NamedAction namedAction)
-	{
-		bool removed = false;
-		foreach (var (_, set) in GeneralKeyBinds) removed |= set.Remove(namedAction);
-
-		return removed;
-	}
-
-	public static bool RemoveKeyBind(SDL_Keysym keySym) => GeneralKeyBinds.Remove(keySym);
-
-	public static bool RemoveKeyBind(SDL_Keysym keySym, NamedAction namedAction) => GeneralKeyBinds.TryGetValue(keySym, out var set) && set.Remove(namedAction);
-
-	public static bool RemoveKeyBind(SDL_Keysym keySym, NamespacedName name) =>
-		GeneralKeyBinds.TryGetValue(keySym, out var set) && set.RemoveWhere(act => act.Identifier.Equals(name)) > 0;
-
-	public static void AddTextEditKeyBind(NamedAction namedAction, SDL_Keysym keySym)
-	{
-		if (!TextEditKeyBinds.ContainsKey(keySym)) TextEditKeyBinds[keySym] = new HashSet<NamedAction>();
-		TextEditKeyBinds[keySym].Add(namedAction);
-	}
-
-	public static void AddTextEditKeyBind(NamedAction namedAction, params SDL_Keysym[] keySymArr)
-	{
-		foreach (var keySym in keySymArr)
-		{
-			if (!TextEditKeyBinds.ContainsKey(keySym)) TextEditKeyBinds[keySym] = new HashSet<NamedAction>();
-			TextEditKeyBinds[keySym].Add(namedAction);
-		}
-	}
-
-	public static void AddTextEditKeyBind(NamedAction namedAction, SDL_Keycode keyCode)
-	{
-		var keySym = KeySym(keyCode).Build();
-		if (!TextEditKeyBinds.ContainsKey(keySym)) TextEditKeyBinds[keySym] = new HashSet<NamedAction>();
-		TextEditKeyBinds[keySym].Add(namedAction);
-	}
-
-	public static void AddTextEditKeyBind(NamedAction namedAction, params SDL_Keycode[] keyCodeArr)
-	{
-		foreach (var keyCode in keyCodeArr)
-		{
-			var keySym = KeySym(keyCode).Build();
-			if (!TextEditKeyBinds.ContainsKey(keySym)) TextEditKeyBinds[keySym] = new HashSet<NamedAction>();
-			TextEditKeyBinds[keySym].Add(namedAction);
-		}
-	}
-
-	public static bool RemoveTextEditKeyBind(NamespacedName name)
-	{
-		bool removed = false;
-		foreach (var (_, set) in TextEditKeyBinds) removed |= set.RemoveWhere(act => act.Identifier.Equals(name)) > 0;
-
-		return removed;
-	}
-
-	public static bool RemoveTextEditKeyBind(NamedAction namedAction)
-	{
-		bool removed = false;
-		foreach (var (_, set) in TextEditKeyBinds) removed |= set.Remove(namedAction);
-
-		return removed;
-	}
-
-	public static bool RemoveTextEditKeyBind(SDL_Keysym keySym) => TextEditKeyBinds.Remove(keySym);
-
-	public static bool RemoveTextEditKeyBind(SDL_Keysym keySym, NamedAction namedAction) =>
-		TextEditKeyBinds.TryGetValue(keySym, out var set) && set.Remove(namedAction);
-
-	public static bool RemoveTextEditKeyBind(SDL_Keysym keySym, NamespacedName name) =>
-		TextEditKeyBinds.TryGetValue(keySym, out var set) && set.RemoveWhere(act => act.Identifier.Equals(name)) > 0;
-
 	public static KeySymBuilder KeySym(SDL_Keycode keycode) => new(keycode);
 }
 
-public class NamedAction
+public class NamedFunc
 {
 	public readonly NamespacedName Identifier;
-	public readonly Action Action;
+	public readonly Func<bool> Func;
 
-	public NamedAction(NamespacedName identifier, Action action)
+	public NamedFunc(NamespacedName identifier, Func<bool> func)
 	{
 		Identifier = identifier;
-		Action = action;
+		Func = func;
 	}
 
-	public NamedAction(string name, Action action)
+	public NamedFunc(string name, Func<bool> func)
 	{
 		Identifier = NamespacedName.CreateWithName(name);
-		Action = action;
+		Func = func;
 	}
 
-	public override bool Equals(object? obj) => obj is NamedAction namedAction && Identifier.Equals(namedAction.Identifier);
+	public override bool Equals(object? obj) => obj is NamedFunc namedFunc && Identifier.Equals(namedFunc.Identifier);
 
 	public override int GetHashCode() => Identifier.GetHashCode();
 
 	public override string ToString() => Identifier.ToString();
+}
+
+public class InputContext {
+	public NamespacedName Identifier { get; }
+	public readonly Dictionary<SDL_Keysym, HashSet<NamedFunc>> KeyBinds = new();
+
+	public InputContext(NamespacedName identifier) => Identifier = identifier;
+	public InputContext(string name) => Identifier = NamespacedName.CreateWithName(name);
+	
+	public void AddKeyBind(NamedFunc namedFunc, SDL_Keysym keySym)
+	{
+		if (!KeyBinds.ContainsKey(keySym)) KeyBinds[keySym] = new HashSet<NamedFunc>();
+		KeyBinds[keySym].Add(namedFunc);
+	}
+
+	public void AddKeyBind(NamedFunc namedFunc, params SDL_Keysym[] keySymArr)
+	{
+		foreach (var keySym in keySymArr)
+		{
+			if (!KeyBinds.ContainsKey(keySym)) KeyBinds[keySym] = new HashSet<NamedFunc>();
+			KeyBinds[keySym].Add(namedFunc);
+		}
+	}
+
+	public void AddKeyBind(NamedFunc namedFunc, SDL_Keycode keyCode)
+	{
+		var keySym = KeyboardInput.KeySym(keyCode).Build();
+		if (!KeyBinds.ContainsKey(keySym)) KeyBinds[keySym] = new HashSet<NamedFunc>();
+		KeyBinds[keySym].Add(namedFunc);
+	}
+
+	public void AddKeyBind(NamedFunc namedFunc, params SDL_Keycode[] keyCodeArr)
+	{
+		foreach (var keyCode in keyCodeArr)
+		{
+			var keySym = KeyboardInput.KeySym(keyCode).Build();
+			if (!KeyBinds.ContainsKey(keySym)) KeyBinds[keySym] = new HashSet<NamedFunc>();
+			KeyBinds[keySym].Add(namedFunc);
+		}
+	}
+
+	public bool RemoveKeyBind(NamespacedName name)
+	{
+		bool removed = false;
+		foreach (var (_, set) in KeyBinds) removed |= set.RemoveWhere(act => act.Identifier.Equals(name)) > 0;
+
+		return removed;
+	}
+
+	public bool RemoveKeyBind(NamedFunc namedFunc)
+	{
+		bool removed = false;
+		foreach (var (_, set) in KeyBinds) removed |= set.Remove(namedFunc);
+
+		return removed;
+	}
+
+	public bool RemoveKeyBind(SDL_Keysym keySym) => KeyBinds.Remove(keySym);
+
+	public bool RemoveKeyBind(SDL_Keysym keySym, NamedFunc namedFunc) => KeyBinds.TryGetValue(keySym, out var set) && set.Remove(namedFunc);
+
+	public bool RemoveKeyBind(SDL_Keysym keySym, NamespacedName name) =>
+		KeyBinds.TryGetValue(keySym, out var set) && set.RemoveWhere(act => act.Identifier.Equals(name)) > 0;
 }
 
 public class KeySymBuilder
