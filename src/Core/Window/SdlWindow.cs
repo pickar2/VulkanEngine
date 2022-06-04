@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Threading;
+using Core.General;
 using Core.Utils;
 using Silk.NET.Vulkan;
 using static SDL2.SDL;
@@ -36,6 +37,20 @@ public class SdlWindow : IDisposable
 
 		WindowWidth = (int) VulkanOptions.WindowWidth;
 		WindowHeight = (int) VulkanOptions.WindowHeight;
+		
+		SDL_AddEventWatch(WindowResizeEventFilter, IntPtr.Zero);
+	}
+
+	private static unsafe int WindowResizeEventFilter(IntPtr data, IntPtr e)
+	{
+		var eventPtr = (SDL_Event*) e;
+		if (eventPtr->type == SDL_EventType.SDL_WINDOWEVENT && eventPtr->window.windowEvent == SDL_WindowEventID.SDL_WINDOWEVENT_RESIZED)
+		{
+			Context.Window.WindowWidth = eventPtr->window.data1;
+			Context.Window.WindowHeight = eventPtr->window.data2;
+			Context.Window.OnResize?.Invoke();
+		}
+		return 0;
 	}
 
 	public void Dispose()
@@ -132,11 +147,6 @@ public class SdlWindow : IDisposable
 	{
 		switch (windowEvent.windowEvent)
 		{
-			case SDL_WindowEventID.SDL_WINDOWEVENT_RESIZED:
-				WindowWidth = windowEvent.data1;
-				WindowHeight = windowEvent.data2;
-				OnResize?.Invoke();
-				break;
 			case SDL_WindowEventID.SDL_WINDOWEVENT_ENTER:
 				if (_firstTimeFocus)
 				{
