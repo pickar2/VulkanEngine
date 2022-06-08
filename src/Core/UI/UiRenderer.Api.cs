@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
-using Core.General;
 using Core.Registries.Entities;
 using Core.Serializer.Entities.QoiSharp;
 using Core.TemporaryMath;
@@ -10,6 +9,7 @@ using Core.UI.Fonts;
 using Core.UI.Materials.Fragment;
 using Core.UI.Materials.Vertex;
 using Core.Utils;
+using Core.Vulkan;
 using Core.VulkanData;
 using Core.Window;
 using Silk.NET.Maths;

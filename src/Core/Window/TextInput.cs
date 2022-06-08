@@ -38,7 +38,7 @@ public static partial class TextInput
 			StopInput();
 			return true;
 		}), SDLK_ESCAPE, SDLK_RETURN, SDLK_KP_ENTER);
-		
+
 		EditingNotSelectingContext.AddKeyBind(new NamedFunc("remove_prev_symbol", () =>
 		{
 			RemoveCharacters(-1);
@@ -81,7 +81,7 @@ public static partial class TextInput
 			SetCursorPos(CursorPos - FindWordEndLeft());
 			return true;
 		}), KeyboardInput.KeySym(SDLK_LEFT).WithModifier(KMOD_LCTRL).Build());
-		
+
 		EditingNotSelectingContext.AddKeyBind(new NamedFunc("cursor_move_symbol_right", () =>
 		{
 			SetCursorPos(CursorPos + 1);
@@ -93,13 +93,13 @@ public static partial class TextInput
 			SetCursorPos(CursorPos + FindWordEndRight());
 			return true;
 		}), KeyboardInput.KeySym(SDLK_RIGHT).WithModifier(KMOD_LCTRL).Build());
-		
+
 		EditingSelectingContext.AddKeyBind(new NamedFunc("cancel_selection", () =>
 		{
 			SetSelection(0, 0);
 			return true;
 		}), SDLK_ESCAPE, SDLK_RETURN, SDLK_KP_ENTER);
-		
+
 		EditingSelectingContext.AddKeyBind(new NamedFunc("cancel_selection_left", () =>
 			{
 				NormalizeSelection();
@@ -128,64 +128,64 @@ public static partial class TextInput
 			KeyboardInput.KeySym(SDLK_BACKSPACE).WithModifier(KMOD_LCTRL).Build(),
 			KeyboardInput.KeySym(SDLK_KP_BACKSPACE).WithModifier(KMOD_LCTRL).Build(),
 			KeyboardInput.KeySym(SDLK_DELETE).WithModifier(KMOD_LCTRL).Build());
-		
+
 		EditingContext.AddKeyBind(new NamedFunc("select_symbol_left", () =>
 		{
 			IncreaseSelection(-1);
 			return true;
 		}), KeyboardInput.KeySym(SDLK_LEFT).WithModifier(KMOD_LSHIFT).Build());
-		
+
 		EditingContext.AddKeyBind(new NamedFunc("select_word_left", () =>
 		{
 			IncreaseSelection(-FindWordEndLeft());
 			return true;
 		}), KeyboardInput.KeySym(SDLK_LEFT).WithModifier(KMOD_LSHIFT).WithModifier(KMOD_LCTRL).Build());
-		
+
 		EditingContext.AddKeyBind(new NamedFunc("select_symbol_right", () =>
 		{
 			IncreaseSelection(1);
 			return true;
 		}), KeyboardInput.KeySym(SDLK_RIGHT).WithModifier(KMOD_LSHIFT).Build());
-		
+
 		EditingContext.AddKeyBind(new NamedFunc("select_word_right", () =>
 		{
 			IncreaseSelection(FindWordEndRight());
 			return true;
 		}), KeyboardInput.KeySym(SDLK_RIGHT).WithModifier(KMOD_LSHIFT).WithModifier(KMOD_LCTRL).Build());
-		
+
 		EditingContext.AddKeyBind(new NamedFunc("cursor_set_start", () =>
 		{
 			if (IsSelecting) SetSelection(0, 0);
 			SetCursorPos(0);
 			return true;
 		}), SDLK_PAGEUP);
-		
+
 		EditingContext.AddKeyBind(new NamedFunc("cursor_set_end", () =>
 		{
 			if (IsSelecting) SetSelection(0, 0);
 			SetCursorPos(CurrentText.Length);
 			return true;
 		}), SDLK_PAGEDOWN);
-		
+
 		EditingContext.AddKeyBind(new NamedFunc("select_all", () =>
 		{
 			SetSelection(0, CurrentText.Length);
 			return true;
 		}), KeyboardInput.KeySym(SDLK_a).WithModifier(KMOD_LCTRL).Build());
-		
+
 		EditingSelectingContext.AddKeyBind(new NamedFunc("copy_selection", () =>
 		{
 			SDL_SetClipboardText(GetSelectedText());
 			return true;
 		}), KeyboardInput.KeySym(SDLK_c).WithModifier(KMOD_LCTRL).Build());
-		
+
 		EditingSelectingContext.AddKeyBind(new NamedFunc("cut_selection", () =>
 		{
 			SDL_SetClipboardText(GetSelectedText());
 			RemoveSelectedText();
 			return true;
 		}), KeyboardInput.KeySym(SDLK_x).WithModifier(KMOD_LCTRL).Build());
-		
+
 		EditingContext.AddKeyBind(new NamedFunc("paste_selection", () =>
 		{
 			if (SDL_HasClipboardText() == SDL_bool.SDL_FALSE) return true;
@@ -322,7 +322,7 @@ public static partial class TextInput
 	public static string StopInput()
 	{
 		if (!IsEditing) return string.Empty;
-		
+
 		KeyboardInput.DisableContext(EditingContext);
 		KeyboardInput.DisableContext(EditingSelectingContext);
 		KeyboardInput.DisableContext(EditingNotSelectingContext);
@@ -349,8 +349,10 @@ public static partial class TextInput
 
 	[RegexGenerator(@"\s")]
 	private static partial Regex WhitespacesRegex();
+
 	[RegexGenerator($"[{NonLetters}]")]
 	private static partial Regex NonLettersRegex();
+
 	[RegexGenerator($@"[{NonLetters}\s]")]
 	private static partial Regex NonLetterNonWhitespaceRegex();
 

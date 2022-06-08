@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Numerics;
 using System.Runtime.InteropServices;
-using Core.General;
 using Core.Native.Shaderc;
 using Core.Native.SpirvReflect;
 using Core.Registries.Entities;
 using Core.TemporaryMath;
 using Core.Utils;
+using Core.Vulkan;
 using Core.VulkanData;
 using Silk.NET.Core.Native;
 using Silk.NET.Maths;
@@ -216,7 +216,8 @@ public static unsafe partial class UiRenderer
 		{
 			SType = StructureType.CommandBufferInheritanceInfo,
 			Framebuffer = SwapchainHelper.FrameBuffers[imageIndex],
-			RenderPass = SwapchainHelper.RenderPass
+			RenderPass = SwapchainHelper.RenderPass,
+			Subpass = 0
 		};
 		commandBuffer.Begin(CommandBufferUsageFlags.CommandBufferUsageRenderPassContinueBit, inheritanceInfo);
 

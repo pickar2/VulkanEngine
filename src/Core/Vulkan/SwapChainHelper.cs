@@ -1,19 +1,18 @@
 ﻿using System;
-using Core.General;
 using Core.Utils;
 using Silk.NET.Vulkan;
 using static Core.Utils.VulkanUtils;
 using static Core.Native.VMA.VulkanMemoryAllocator;
 
-namespace Core;
+namespace Core.Vulkan;
 
 public static unsafe class SwapchainHelper
 {
 	// private static SwapchainKHR _oldSwapchain;
 
 	public static SwapchainKHR Swapchain;
-	public static Image[] SwapchainImages = default!;
-	public static ImageView[] SwapchainImageViews = default!;
+	public static Image[] SwapchainImages = Array.Empty<Image>();
+	public static ImageView[] SwapchainImageViews = Array.Empty<ImageView>();
 	public static Format Format;
 	public static Extent2D Extent;
 	public static uint ImageCount;
@@ -254,9 +253,11 @@ public static unsafe class SwapchainHelper
 
 	private static Extent2D ChooseSurfaceExtent(SurfaceCapabilitiesKHR capabilities)
 	{
-		if (capabilities.CurrentExtent.Width != uint.MaxValue) return capabilities.CurrentExtent;
+		if (capabilities.CurrentExtent.Width != uint.MaxValue && capabilities.CurrentExtent.Width != 0) return capabilities.CurrentExtent;
 
 		var extent = new Extent2D((uint) Context.Window.WindowWidth, (uint) Context.Window.WindowHeight);
+
+		if (Context.Window.IsMinimized) return extent;
 
 		extent.Width = Math.Clamp(extent.Width, capabilities.MinImageExtent.Width, capabilities.MaxImageExtent.Width);
 		extent.Height = Math.Clamp(extent.Height, capabilities.MinImageExtent.Height, capabilities.MaxImageExtent.Height);

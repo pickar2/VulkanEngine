@@ -3,13 +3,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
-using Core.General;
 using Core.UI;
 using Core.UI.Controls;
 using Core.Utils;
 using Silk.NET.Vulkan;
 
-namespace Core;
+namespace Core.Vulkan;
 
 public static unsafe class MainRenderer
 {
@@ -120,9 +119,12 @@ public static unsafe class MainRenderer
 
 			UiManager.Update();
 
-			sw2.Restart();
-			DrawFrame();
-			sw2.Stop();
+			if (!Context.Window.IsMinimized)
+			{
+				sw2.Restart();
+				DrawFrame();
+				sw2.Stop();
+			}
 
 			lag = 0;
 		}
@@ -288,13 +290,13 @@ public static unsafe class MainRenderer
 		var list = FillCommandBuffers?.GetInvocationList();
 		if (list is not null)
 		{
-			var arr = new CommandBuffer[list.Length];
+			var arr = stackalloc CommandBuffer[list.Length];
 			for (int index = 0; index < list.Length; index++)
 			{
 				arr[index] = ((Func<int, CommandBuffer>) list[index]).Invoke(imageIndex);
 			}
 
-			Context.Vk.CmdExecuteCommands(cmd, arr);
+			Context.Vk.CmdExecuteCommands(cmd, (uint) list.Length, arr);
 		}
 
 		Context.Vk.CmdEndRenderPass(cmd);

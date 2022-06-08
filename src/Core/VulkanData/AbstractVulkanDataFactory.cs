@@ -1,6 +1,6 @@
 ﻿using System;
-using Core.General;
 using Core.Utils;
+using Core.Vulkan;
 using Silk.NET.Vulkan;
 using static Core.Native.VMA.VulkanMemoryAllocator;
 

@@ -42,3 +42,8 @@ public sealed unsafe class FeatureWorker
 
 	public bool IsFeatureAvailable(Type type, BaseInStructure* ptr) => Checkers[type].Check(ptr);
 }
+
+public static class FeatureExtension
+{
+	public static void SetSType<T>(this ref T value) where T : struct, IExtendsChain<PhysicalDeviceFeatures2> => value.StructureType();
+}

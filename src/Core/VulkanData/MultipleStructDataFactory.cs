@@ -1,10 +1,10 @@
 ﻿using System;
-using Core.General;
 using Core.Registries.API;
 using Core.Registries.CoreTypes;
 using Core.Registries.Entities;
 using Core.Registries.EventManagerTypes;
 using Core.Utils;
+using Core.Vulkan;
 using Silk.NET.Vulkan;
 using static Core.Native.VMA.VulkanMemoryAllocator;
 

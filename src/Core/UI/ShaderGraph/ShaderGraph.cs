@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Core.General;
+using Core.Vulkan;
 
 namespace Core.UI.ShaderGraph;
 

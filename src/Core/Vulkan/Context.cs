@@ -14,18 +14,14 @@ using static Core.Native.VMA.VulkanMemoryAllocator;
 using static Core.Utils.VulkanUtils;
 using Result = Silk.NET.Vulkan.Result;
 
-namespace Core.General;
-
-public static class FeatureExtension
-{
-	public static void SetSType<T>(this ref T value) where T : struct, IExtendsChain<PhysicalDeviceFeatures2> => value.StructureType();
-}
+namespace Core.Vulkan;
 
 public unsafe class Context : IDisposable
 {
 	public static readonly Vk Vk = Vk.GetApi();
 	public static VulkanConfig Config = default!;
 	public static Window.SdlWindow Window = default!;
+	public static FrameGraph FrameGraph = default!;
 
 	public static Compiler Compiler = default!;
 
@@ -51,6 +47,8 @@ public unsafe class Context : IDisposable
 		Config = config;
 		Window = window;
 		KhrSurface = new KhrSurface(Vk.Context);
+
+		FrameGraph = new FrameGraph();
 
 		var options = new Options(true);
 		options.EnableDebugInfo();

@@ -1,7 +1,7 @@
 ﻿using System.Linq;
 using Silk.NET.Vulkan;
 
-namespace Core.General;
+namespace Core.Vulkan;
 
 public class QueueFamilies
 {

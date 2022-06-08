@@ -2,7 +2,7 @@
 using Silk.NET.Vulkan;
 using static Core.Native.VMA.VulkanMemoryAllocator;
 
-namespace Core.General;
+namespace Core.Vulkan;
 
 public class VulkanImage : IDisposable
 {

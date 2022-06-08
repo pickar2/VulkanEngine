@@ -31,13 +31,15 @@ void main() {
     UiElementData d = data[componentIndex];
 
     Pos pos = calcFullPos(d);
-    vec2 pixelPos = fragCoord;
+    vec2 pixelPos = gl_FragCoord.xy;
     if (!isPointInside(pixelPos, vec2(d.maskStartX, d.maskStartY), vec2(d.maskEndX, d.maskEndY))) {
         outColor = vec4(0);
         return;
     }
 
     fragmentSwitch(d);
+
+//    outColor.rgb = (gl_SampleMaskIn[0] >> 7) > 0 ? outColor.rgb : vec3(0);
 
     //    const float gamma = 2.2;
     //    outColor.rgb = pow(outColor.rgb, vec3(1.0/gamma));

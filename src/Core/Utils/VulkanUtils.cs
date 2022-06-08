@@ -2,11 +2,11 @@
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Core.General;
 using Core.Native.Shaderc;
+using Core.Vulkan;
 using Silk.NET.Core.Native;
 using Silk.NET.Vulkan;
-using static Core.General.Context;
+using static Core.Vulkan.Context;
 using static Core.Native.VMA.VulkanMemoryAllocator;
 using Buffer = Silk.NET.Vulkan.Buffer;
 using Result = Silk.NET.Vulkan.Result;

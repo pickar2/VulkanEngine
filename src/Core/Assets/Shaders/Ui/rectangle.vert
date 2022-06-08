@@ -38,7 +38,7 @@ void main() {
     UiElementData d = data[componentIndex];
 
     Pos pos = calcFullPos(d);
-    fragCoord = vec2(pos.x, pos.y) + vertexPos[gl_VertexIndex & 3] * vec2(d.width, d.height);
+    //fragCoord = vec2(pos.x, pos.y) + vertexPos[gl_VertexIndex & 3] * vec2(d.width, d.height);
 
     modelMatrix[0][0] = d.width;
     modelMatrix[1][1] = d.height;

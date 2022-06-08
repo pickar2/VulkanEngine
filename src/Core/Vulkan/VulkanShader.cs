@@ -1,7 +1,7 @@
 ﻿using System;
 using Silk.NET.Vulkan;
 
-namespace Core.General;
+namespace Core.Vulkan;
 
 public unsafe class VulkanShader : IDisposable
 {

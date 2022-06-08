@@ -2,7 +2,7 @@
 using Core.Native.VMA;
 using Buffer = Silk.NET.Vulkan.Buffer;
 
-namespace Core.General;
+namespace Core.Vulkan;
 
 public class VulkanBuffer : IDisposable
 {

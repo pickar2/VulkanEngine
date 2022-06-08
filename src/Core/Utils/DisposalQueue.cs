@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using Core.General;
+using Core.Vulkan;
 
 namespace Core.Utils;
 

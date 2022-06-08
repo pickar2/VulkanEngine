@@ -1,5 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
-using Core.General;
+using Core.Vulkan;
 using Silk.NET.Vulkan;
 
 namespace Core.Utils.Features.Checkers;

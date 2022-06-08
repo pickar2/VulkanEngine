@@ -5,7 +5,7 @@ using Silk.NET.Vulkan;
 using static Silk.NET.Vulkan.DebugUtilsMessageSeverityFlagsEXT;
 using static Silk.NET.Vulkan.DebugUtilsMessageTypeFlagsEXT;
 
-namespace Core.General;
+namespace Core.Vulkan;
 
 public unsafe class DebugUtilsMessenger : IDisposable
 {

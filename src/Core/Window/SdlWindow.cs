@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Diagnostics;
-using System.IO;
-using System.Reflection;
 using System.Threading;
-using Core.General;
 using Core.Utils;
+using Core.Vulkan;
 using Silk.NET.Vulkan;
 using static SDL2.SDL;
 
@@ -18,6 +16,7 @@ public class SdlWindow : IDisposable
 	public IntPtr WindowHandle { get; }
 
 	public bool IsRunning { get; private set; }
+	public bool IsMinimized => ((SDL_WindowFlags) SDL_GetWindowFlags(WindowHandle) & SDL_WindowFlags.SDL_WINDOW_MINIMIZED) > 0;
 
 	public int WindowWidth { get; private set; }
 	public int WindowHeight { get; private set; }

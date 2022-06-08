@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Threading;
-using Core.General;
 using Core.Registries.Entities;
 using Core.UI;
 using Core.Utils;
 using Core.Utils.Features;
+using Core.Vulkan;
 using Core.Window;
 using NullGuard;
 using SDL2;
