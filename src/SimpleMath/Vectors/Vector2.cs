@@ -1,4 +1,6 @@
-﻿namespace SimpleMath.Vectors;
+﻿using System.Numerics;
+
+namespace SimpleMath.Vectors;
 
 public static class Vector2Extensions
 {
@@ -6,13 +8,23 @@ public static class Vector2Extensions
 
 	public static ref Vector2<T> Rotate90DegClockwise<T>(this ref Vector2<T> vector) where T : struct, INumber<T> => ref vector.Set(vector.Y, -vector.X);
 
+	// public static TResult Dot<T, TOther, TResult>(this Vector2<T> vector, Vector2<TOther> other)
+	// 	where T : struct, INumber<T> where TOther : struct, INumber<TOther> where TResult : struct, INumber<TResult> =>
+	// 	TResult.CreateTruncating((vector.X * T.CreateTruncating(other.X)) + (vector.Y * T.CreateTruncating(other.Y)));
+	
 	public static double Dot<T, TOther>(this Vector2<T> vector, Vector2<TOther> other)
 		where T : struct, INumber<T> where TOther : struct, INumber<TOther> =>
-		Double.Create((vector.X * T.Create(other.X)) + (vector.Y * T.Create(other.Y)));
+		(double)(object)((vector.X * T.CreateTruncating(other.X)) + (vector.Y * T.CreateTruncating(other.Y)));
+	
+	// public static double Dot<T, TOther>(this Vector2<T> vector, Vector2<TOther> other)
+	// 	where T : struct, INumber<T> where TOther : struct, INumber<TOther> => vector.Dot<T, TOther, double>(other);
 
-	public static double Dot<T, TOther>(this Vector2<T> vector, (T X, T Y) other)
-		where T : struct, INumber<T> where TOther : struct, INumber<TOther> =>
-		Double.Create((vector.X * T.Create(other.X)) + (vector.Y * T.Create(other.Y)));
+	// public static TResult Dot<T, TOther, TResult>(this Vector2<T> vector, (TOther X, TOther Y) other)
+	// 	where T : struct, INumber<T> where TOther : struct, INumber<TOther> where TResult : struct, INumber<TResult> =>
+	// 	TResult.CreateTruncating((vector.X * T.CreateTruncating(other.X)) + (vector.Y * T.CreateTruncating(other.Y)));
+	//
+	// public static TResult Dot<T, TOther, TResult>(this Vector2<T> vector, (TOther X, TOther Y) other)
+	// 	where T : struct, INumber<T> where TOther : struct, INumber<TOther> where TResult : struct, INumber<TResult> => vector.Dot<T, TOther, double>(other);
 
 	public static ref Vector2<T> Min<T, TOther>(this ref Vector2<T> vector, Vector2<TOther> other)
 		where T : struct, INumber<T> where TOther : struct, INumber<TOther> => ref Min(vector, other, ref vector);
@@ -20,8 +32,8 @@ public static class Vector2Extensions
 	public static ref Vector2<T> Min<T, TOther>(this Vector2<T> vector, Vector2<TOther> other, ref Vector2<T> dest)
 		where T : struct, INumber<T> where TOther : struct, INumber<TOther>
 	{
-		var otherX = T.Create(other.X);
-		var otherY = T.Create(other.Y);
+		var otherX = T.CreateTruncating(other.X);
+		var otherY = T.CreateTruncating(other.Y);
 
 		dest.X = vector.X < otherX ? vector.X : otherX;
 		dest.Y = vector.Y < otherY ? vector.Y : otherY;
@@ -32,8 +44,8 @@ public static class Vector2Extensions
 	public static Vector2<T> Min<T, TOther>(Vector2<T> vector, Vector2<TOther> other)
 		where T : struct, INumber<T> where TOther : struct, INumber<TOther>
 	{
-		var otherX = T.Create(other.X);
-		var otherY = T.Create(other.Y);
+		var otherX = T.CreateTruncating(other.X);
+		var otherY = T.CreateTruncating(other.Y);
 
 		return new Vector2<T>(vector.X < otherX ? vector.X : otherX, vector.Y < otherY ? vector.Y : otherY);
 	}
@@ -41,8 +53,8 @@ public static class Vector2Extensions
 	public static Vector2<T> MinV<T, TOther>(this Vector2<T> vector, Vector2<TOther> other)
 		where T : struct, INumber<T> where TOther : struct, INumber<TOther>
 	{
-		var otherX = T.Create(other.X);
-		var otherY = T.Create(other.Y);
+		var otherX = T.CreateTruncating(other.X);
+		var otherY = T.CreateTruncating(other.Y);
 
 		return new Vector2<T>(vector.X < otherX ? vector.X : otherX, vector.Y < otherY ? vector.Y : otherY);
 	}
@@ -50,7 +62,7 @@ public static class Vector2Extensions
 	public static Vector2<T> MinV<T, TOther>(this Vector2<T> vector, TOther value)
 		where T : struct, INumber<T> where TOther : struct, INumber<TOther>
 	{
-		var otherValue = T.Create(value);
+		var otherValue = T.CreateTruncating(value);
 
 		return new Vector2<T>(vector.X < otherValue ? vector.X : otherValue, vector.Y < otherValue ? vector.Y : otherValue);
 	}
@@ -58,8 +70,8 @@ public static class Vector2Extensions
 	public static Vector2<T> MaxV<T, TOther>(this Vector2<T> vector, Vector2<TOther> other)
 		where T : struct, INumber<T> where TOther : struct, INumber<TOther>
 	{
-		var otherX = T.Create(other.X);
-		var otherY = T.Create(other.Y);
+		var otherX = T.CreateTruncating(other.X);
+		var otherY = T.CreateTruncating(other.Y);
 
 		return new Vector2<T>(vector.X > otherX ? vector.X : otherX, vector.Y > otherY ? vector.Y : otherY);
 	}
@@ -67,7 +79,7 @@ public static class Vector2Extensions
 	public static Vector2<T> MaxV<T, TOther>(this Vector2<T> vector, TOther value)
 		where T : struct, INumber<T> where TOther : struct, INumber<TOther>
 	{
-		var otherValue = T.Create(value);
+		var otherValue = T.CreateTruncating(value);
 
 		return new Vector2<T>(vector.X > otherValue ? vector.X : otherValue, vector.Y > otherValue ? vector.Y : otherValue);
 	}
@@ -78,8 +90,8 @@ public static class Vector2Extensions
 	public static ref Vector2<T> Max<T, TOther>(this Vector2<T> vector, Vector2<TOther> other, ref Vector2<T> dest)
 		where T : struct, INumber<T> where TOther : struct, INumber<TOther>
 	{
-		var otherX = T.Create(other.X);
-		var otherY = T.Create(other.Y);
+		var otherX = T.CreateTruncating(other.X);
+		var otherY = T.CreateTruncating(other.Y);
 
 		dest.X = vector.X > otherX ? vector.X : otherX;
 		dest.Y = vector.Y > otherY ? vector.Y : otherY;
@@ -93,8 +105,8 @@ public static class Vector2Extensions
 	// public static ref Vector2<T> Max<T, TOther>(this ref Vector2<T> vector, Vector2<TOther> other)
 	// where T : struct, INumber<T> where TOther : struct, INumber<TOther>
 	// {
-	// 	var otherX = T.Create(other.X);
-	// 	var otherY = T.Create(other.Y);
+	// 	var otherX = T.CreateTruncating(other.X);
+	// 	var otherY = T.CreateTruncating(other.Y);
 	// 	
 	// 	vector.X = vector.X > otherX ? vector.X : otherX;
 	// 	vector.Y = vector.Y > otherY ? vector.Y : otherY;
@@ -114,7 +126,7 @@ public static class Vector2Extensions
 	// public static double Cross<T, TOther, TDest>(this Vector2<T> vector, Vector2<TOther> other, ref Vector2<TDest> destination)
 	// 	where T : struct, INumber<T> where TOther : struct, INumber<TOther> where TDest : struct, INumber<TDest>
 	// {
-	// 	return vector.X * T.Create(other.X) + vector.Y * T.Create(other.Y);
+	// 	return vector.X * T.CreateTruncating(other.X) + vector.Y * T.CreateTruncating(other.Y);
 	// }
 
 	// public static ref Vector2<TDest> Add<T, TOther, TDest>(this Vector2<T> vector, Vector2<TOther> other, ref Vector2<TDest> destination)

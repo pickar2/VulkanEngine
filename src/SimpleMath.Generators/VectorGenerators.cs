@@ -36,6 +36,7 @@ public class VectorGenerators : ISourceGenerator
 			#region VectorNDescription
 
 			var source = new StringBuilder($@"using System.Runtime.CompilerServices;
+using System.Numerics;
 
 namespace SimpleMath.Vectors;
 
@@ -77,7 +78,7 @@ public struct {name}<T> where T : struct, INumber<T>
 			source.Append($"{string.Join(" + ", components.Select(s => $"{s} * {s}"))};\n\n");
 
 			source.Append("\tpublic double Length => ");
-			source.Append("Math.Sqrt(Double.Create(LengthSquared));\n\n");
+			source.Append("Math.Sqrt((double)(object)LengthSquared);\n\n");
 
 			source.Append($"\tpublic bool Equals({name}<T> other) => ");
 			source.Append(string.Join(" && ", components.Select(s => $"{s}.Equals(other.{s})")));
@@ -124,7 +125,7 @@ public struct {name}<T> where T : struct, INumber<T>
 			// foreach (string type in Types)
 			// {
 			// 	source.Append($"\tpublic static implicit operator {name}<T>(({string.Join(", ", components.Select(s => $"{type} {s}"))}) input) => ");
-			// 	source.Append($"new({string.Join(", ", components.Select(s => $"T.Create(input.{s})"))});\n");
+			// 	source.Append($"new({string.Join(", ", components.Select(s => $"T.CreateTruncating(input.{s})"))});\n");
 			// }
 			//
 			// source.Append("\n");
@@ -132,7 +133,7 @@ public struct {name}<T> where T : struct, INumber<T>
 			foreach (string type in Types)
 			{
 				source.Append($"\tpublic static explicit operator {name}<{type}>({name}<T> input) => ");
-				source.Append($"new({string.Join(", ", components.Select(s => $"{type}.Create(input.{s})"))});\n");
+				source.Append($"new({string.Join(", ", components.Select(s => $"({type})(object)(input.{s})"))});\n");
 			}
 
 			#endregion
@@ -145,7 +146,7 @@ public struct {name}<T> where T : struct, INumber<T>
 
 			source.Append("\t[MethodImpl(MethodImplOptions.AggressiveInlining)]\n");
 			source.Append($"\tpublic static {name}<T> Normalized<T>(this {name}<T> vector) where T : struct, INumber<T> => ");
-			source.Append("vector * Math.ReciprocalSqrtEstimate(Double.Create(vector.LengthSquared));\n\n");
+			source.Append("vector * Math.ReciprocalSqrtEstimate((double)(object)(vector.LengthSquared));\n\n");
 
 			source.Append("\t[MethodImpl(MethodImplOptions.AggressiveInlining)]\n");
 			source.Append($"\tpublic static {name}<T> Negated<T>(this {name}<T> vector) where T : struct, INumber<T> => -vector;\n\n");
@@ -164,7 +165,7 @@ public struct {name}<T> where T : struct, INumber<T>
 
 			source.Append(
 				$"\tpublic static {name}<TTo> Cast<TFrom, TTo>(this {name}<TFrom> vector) where TFrom : struct, INumber<TFrom> where TTo : struct, INumber<TTo> =>\n");
-			source.Append($"\t\tnew {name}<TTo>({string.Join(", ", components.Select(s => $"TTo.Create(vector.{s})"))});\n\n");
+			source.Append($"\t\tnew {name}<TTo>({string.Join(", ", components.Select(s => $"TTo.CreateTruncating(vector.{s})"))});\n\n");
 
 			source.Append(CreateExtensionFunction(name, components, "Set", "=")).Append("\n");
 
@@ -190,7 +191,7 @@ public struct {name}<T> where T : struct, INumber<T>
 			source.Append(CreateVoidDestinationFunction(name, components, "Round", "Math.Round")).Append("\n\n");
 
 			source.Append($"\tpublic static ref {name}<T> Normalize<T>(this ref {name}<T> vector) where T : struct, INumber<T> => ");
-			source.Append("ref vector.Mul(Math.ReciprocalSqrtEstimate(Double.Create(vector.LengthSquared)));\n\n");
+			source.Append("ref vector.Mul(Math.ReciprocalSqrtEstimate((double)(object)(vector.LengthSquared)));\n\n");
 
 			source.Append($"\tpublic static ref {name}<T> Negate<T>(this ref {name}<T> vector) where T : struct, INumber<T>\n\t{{\n");
 			source.Append($"{String.Join("", components.Select(s => $"\t\tvector.{s} = -vector.{s};\n"))}");
@@ -215,7 +216,7 @@ public struct {name}<T> where T : struct, INumber<T>
 		foreach (string type in Types)
 		{
 			sb.Append($"\tpublic static {name}<T> operator {op}({name}<T> vector, {type} value) => ");
-			sb.Append($"new({string.Join(", ", components.Select(s => $"vector.{s} {op} T.Create(value)"))});\n");
+			sb.Append($"new({string.Join(", ", components.Select(s => $"vector.{s} {op} T.CreateTruncating(value)"))});\n");
 		}
 
 		return sb;
@@ -231,7 +232,7 @@ public struct {name}<T> where T : struct, INumber<T>
 		foreach (string type in Types)
 		{
 			sb.Append($"\tpublic static {name}<T> operator {op}({name}<T> vector, {name}<{type}> other) => ");
-			sb.Append($"new({string.Join(", ", components.Select(s => $"vector.{s} {op} T.Create(other.{s})"))});\n");
+			sb.Append($"new({string.Join(", ", components.Select(s => $"vector.{s} {op} T.CreateTruncating(other.{s})"))});\n");
 		}
 
 		sb.Append("\n");
@@ -244,7 +245,7 @@ public struct {name}<T> where T : struct, INumber<T>
 		{
 			string tuple = string.Join(", ", components.Select(s => $"{type} {s}"));
 			sb.Append($"\tpublic static {name}<T> operator {op}({name}<T> vector, ({tuple}) other) => ");
-			sb.Append($"new({string.Join(", ", components.Select(s => $"vector.{s} {op} T.Create(other.{s})"))});\n");
+			sb.Append($"new({string.Join(", ", components.Select(s => $"vector.{s} {op} T.CreateTruncating(other.{s})"))});\n");
 		}
 
 		return sb;
@@ -255,19 +256,19 @@ public struct {name}<T> where T : struct, INumber<T>
 		var sb = new StringBuilder(
 			@$"	public static ref {name}<T> {functionName}<T, TOther>(this ref {name}<T> vector, {name}<TOther> other) where T : struct, INumber<T> where TOther : struct, INumber<TOther>
 	{{
-{string.Join("", components.Select(s => $"\t\tvector.{s} {functionUsage} (T.Create(other.{s}));\n"))}
+{string.Join("", components.Select(s => $"\t\tvector.{s} {functionUsage} (T.CreateTruncating(other.{s}));\n"))}
 		return ref vector;
 	}}
 
 	public static ref {name}<T> {functionName}<T, TOther>(this ref {name}<T> vector, ({String.Join(", ", components.Select(s => $"TOther {s}"))}) other) where T : struct, INumber<T> where TOther : struct, INumber<TOther>
 	{{
-{string.Join("", components.Select(s => $"\t\tvector.{s} {functionUsage} (T.Create(other.{s}));\n"))}
+{string.Join("", components.Select(s => $"\t\tvector.{s} {functionUsage} (T.CreateTruncating(other.{s}));\n"))}
 		return ref vector;
 	}}
 
 	public static ref {name}<T> {functionName}<T, TOther>(this ref {name}<T> vector, {String.Join(", ", components.Select(s => $"TOther {s.ToLower()}"))}) where T : struct, INumber<T> where TOther : struct, INumber<TOther>
 	{{
-{string.Join("", components.Select(s => $"\t\tvector.{s} {functionUsage} (T.Create({s.ToLower()}));\n"))}
+{string.Join("", components.Select(s => $"\t\tvector.{s} {functionUsage} (T.CreateTruncating({s.ToLower()}));\n"))}
 		return ref vector;
 	}}
 
@@ -283,7 +284,7 @@ public struct {name}<T> where T : struct, INumber<T>
 		sb.Append(
 			@$"	public static ref {name}<T> {functionName}<T, TOther>(this ref {name}<T> vector, TOther value) where T : struct, INumber<T> where TOther : struct, INumber<TOther>
 	{{
-		var tValue = T.Create(value);
+		var tValue = T.CreateTruncating(value);
 {string.Join("", components.Select(s => $"\t\tvector.{s} {functionUsage} (tValue);\n"))}
 		return ref vector;
 	}}");
@@ -313,7 +314,7 @@ public struct {name}<T> where T : struct, INumber<T>
 
 		sb.Append(@$"	public static ref {name}<TDest> {functionName}<T, TOther, TDest>(this {name}<T> vector, TOther value, ref {name}<TDest> destination)
 		where T : struct, INumber<T> where TOther : struct, INumber<TOther> where TDest : struct, INumber<TDest> =>
-		ref destination.Set(vector {functionUsage} (T.Create(value)));");
+		ref destination.Set(vector {functionUsage} (T.CreateTruncating(value)));");
 
 		return sb;
 	}
@@ -324,7 +325,7 @@ public struct {name}<T> where T : struct, INumber<T>
 
 		sb.Append(@$"	public static ref {name}<T> {functionName}<T>(this ref {name}<T> vector) where T : struct, INumber<T>
 	{{
-{string.Join("", components.Select(s => $"\t\tvector.{s} = T.Create({functionUsage}(decimal.Create(vector.{s})));\n"))}
+{string.Join("", components.Select(s => $"\t\tvector.{s} = T.CreateTruncating({functionUsage}((double)(object)(vector.{s})));\n"))}
 		return ref vector;
 	}}");
 
@@ -337,7 +338,7 @@ public struct {name}<T> where T : struct, INumber<T>
 
 		sb.Append(@$"	public static ref {name}<TDest> {functionName}<T, TDest>(this {name}<T> vector, ref {name}<TDest> destination)
 		where T : struct, INumber<T> where TDest : struct, INumber<TDest> =>
-		ref destination.Set({string.Join(", ", components.Select(s => $"TDest.Create({functionUsage}(decimal.Create(vector.{s})))"))});");
+		ref destination.Set({string.Join(", ", components.Select(s => $"TDest.CreateTruncating({functionUsage}((double)(object)(vector.{s})))"))});");
 
 		return sb;
 	}
