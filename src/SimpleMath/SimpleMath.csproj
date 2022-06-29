@@ -19,7 +19,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\SimpleMath.Generators\SimpleMath.Generators.csproj" ReferenceOutputAssembly="true" OutputItemType="Analyzer"/>
+        <ProjectReference Include="..\SimpleMath.Generators\SimpleMath.Generators.csproj" ReferenceOutputAssembly="true" OutputItemType="Analyzer" />
     </ItemGroup>
 
 </Project>

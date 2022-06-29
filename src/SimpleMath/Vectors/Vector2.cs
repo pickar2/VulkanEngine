@@ -11,10 +11,10 @@ public static class Vector2Extensions
 	// public static TResult Dot<T, TOther, TResult>(this Vector2<T> vector, Vector2<TOther> other)
 	// 	where T : struct, INumber<T> where TOther : struct, INumber<TOther> where TResult : struct, INumber<TResult> =>
 	// 	TResult.CreateTruncating((vector.X * T.CreateTruncating(other.X)) + (vector.Y * T.CreateTruncating(other.Y)));
-	
+
 	public static double Dot<T, TOther>(this Vector2<T> vector, Vector2<TOther> other)
 		where T : struct, INumber<T> where TOther : struct, INumber<TOther> =>
-		(double)(object)((vector.X * T.CreateTruncating(other.X)) + (vector.Y * T.CreateTruncating(other.Y)));
+		((vector.X * T.CreateTruncating(other.X)) + (vector.Y * T.CreateTruncating(other.Y))).ToDoubleTruncating();
 	
 	// public static double Dot<T, TOther>(this Vector2<T> vector, Vector2<TOther> other)
 	// 	where T : struct, INumber<T> where TOther : struct, INumber<TOther> => vector.Dot<T, TOther, double>(other);

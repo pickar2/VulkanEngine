@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using Core.General;
 using Core.Native.Shaderc;
@@ -55,6 +56,7 @@ public static unsafe partial class UiRenderer
 	public static MultipleStructDataFactory GlobalData = default!;
 
 	public static StructHolder ProjectionMatrixHolder = default!;
+	public static StructHolder OrthoMatrixHolder = default!;
 	public static StructHolder FrameIndexHolder = default!;
 
 	public static void Init()
@@ -108,9 +110,27 @@ public static unsafe partial class UiRenderer
 
 	private static void UpdateGlobalBuffers()
 	{
-		ProjectionMatrixHolder.Get<Matrix4X4<float>>()[0] =
-			Matrix4X4<float>.Identity.SetOrtho(0, SwapchainHelper.Extent.Width, 0, SwapchainHelper.Extent.Height, 2, -2);
-		FrameIndexHolder.Get<int>()[0] = MainRenderer.FrameIndex;
+		float aspect = (float) SwapchainHelper.Extent.Width / SwapchainHelper.Extent.Height;
+
+		var ortho = Matrix4X4<float>.Identity.SetOrtho(0, UiManager.Root.Size.X, 0, UiManager.Root.Size.Y, 4096, -4096);
+
+		var view = Matrix4x4.CreateTranslation(0, 0, 0).ToGeneric();
+		view *= Matrix4x4.CreateFromYawPitchRoll(0, 0, 0).ToGeneric();
+
+		var model = Matrix4X4<float>.Identity;
+		model *= Matrix4x4.CreateScale(aspect, 1, 1).ToGeneric();
+		model *= Matrix4x4.CreateRotationY(MainRenderer.FrameIndex / 50.0f).ToGeneric();
+		model *= Matrix4x4.CreateTranslation(0, 0, -3).ToGeneric();
+
+		// var proj = Matrix4X4<float>.Identity.SetPerspective(90f.ToRadians(), aspect, 0.01f, 1000.0f);
+
+		// var mvp = model * view * proj;
+
+		// *ProjectionMatrixHolder.Get<Matrix4X4<float>>() = mvp;
+		*ProjectionMatrixHolder.Get<Matrix4X4<float>>() = Matrix4X4<float>.Identity;
+		*OrthoMatrixHolder.Get<Matrix4X4<float>>() = ortho;
+
+		*FrameIndexHolder.Get<int>() = MainRenderer.FrameIndex;
 
 		if (!GlobalData.BufferChanged) return;
 
@@ -776,8 +796,8 @@ public static unsafe partial class UiRenderer
 		var multisampling = new PipelineMultisampleStateCreateInfo
 		{
 			SType = StructureType.PipelineMultisampleStateCreateInfo,
-			SampleShadingEnable = false,
-			MinSampleShading = 0.2f,
+			SampleShadingEnable = VulkanOptions.MsaaEnabled,
+			MinSampleShading = VulkanOptions.MsaaEnabled ? 1 : 0,
 			RasterizationSamples = VulkanOptions.MsaaSamples
 		};
 

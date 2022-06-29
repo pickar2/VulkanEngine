@@ -78,7 +78,7 @@ public struct {name}<T> where T : struct, INumber<T>
 			source.Append($"{string.Join(" + ", components.Select(s => $"{s} * {s}"))};\n\n");
 
 			source.Append("\tpublic double Length => ");
-			source.Append("Math.Sqrt((double)(object)LengthSquared);\n\n");
+			source.Append("Math.Sqrt(LengthSquared.ToDoubleTruncating());\n\n");
 
 			source.Append($"\tpublic bool Equals({name}<T> other) => ");
 			source.Append(string.Join(" && ", components.Select(s => $"{s}.Equals(other.{s})")));
@@ -133,7 +133,7 @@ public struct {name}<T> where T : struct, INumber<T>
 			foreach (string type in Types)
 			{
 				source.Append($"\tpublic static explicit operator {name}<{type}>({name}<T> input) => ");
-				source.Append($"new({string.Join(", ", components.Select(s => $"({type})(object)(input.{s})"))});\n");
+				source.Append($"new({string.Join(", ", components.Select(s => $"NumberExtensions.CastTruncating<T, {type}>(input.{s})"))});\n");
 			}
 
 			#endregion
@@ -146,7 +146,7 @@ public struct {name}<T> where T : struct, INumber<T>
 
 			source.Append("\t[MethodImpl(MethodImplOptions.AggressiveInlining)]\n");
 			source.Append($"\tpublic static {name}<T> Normalized<T>(this {name}<T> vector) where T : struct, INumber<T> => ");
-			source.Append("vector * Math.ReciprocalSqrtEstimate((double)(object)(vector.LengthSquared));\n\n");
+			source.Append("vector * Math.ReciprocalSqrtEstimate(vector.LengthSquared.ToDoubleTruncating());\n\n");
 
 			source.Append("\t[MethodImpl(MethodImplOptions.AggressiveInlining)]\n");
 			source.Append($"\tpublic static {name}<T> Negated<T>(this {name}<T> vector) where T : struct, INumber<T> => -vector;\n\n");
@@ -191,7 +191,7 @@ public struct {name}<T> where T : struct, INumber<T>
 			source.Append(CreateVoidDestinationFunction(name, components, "Round", "Math.Round")).Append("\n\n");
 
 			source.Append($"\tpublic static ref {name}<T> Normalize<T>(this ref {name}<T> vector) where T : struct, INumber<T> => ");
-			source.Append("ref vector.Mul(Math.ReciprocalSqrtEstimate((double)(object)(vector.LengthSquared)));\n\n");
+			source.Append("ref vector.Mul(Math.ReciprocalSqrtEstimate(vector.LengthSquared.ToDoubleTruncating()));\n\n");
 
 			source.Append($"\tpublic static ref {name}<T> Negate<T>(this ref {name}<T> vector) where T : struct, INumber<T>\n\t{{\n");
 			source.Append($"{String.Join("", components.Select(s => $"\t\tvector.{s} = -vector.{s};\n"))}");
@@ -325,7 +325,7 @@ public struct {name}<T> where T : struct, INumber<T>
 
 		sb.Append(@$"	public static ref {name}<T> {functionName}<T>(this ref {name}<T> vector) where T : struct, INumber<T>
 	{{
-{string.Join("", components.Select(s => $"\t\tvector.{s} = T.CreateTruncating({functionUsage}((double)(object)(vector.{s})));\n"))}
+{string.Join("", components.Select(s => $"\t\tvector.{s} = T.CreateTruncating({functionUsage}(vector.{s}.ToDoubleTruncating()));\n"))}
 		return ref vector;
 	}}");
 
@@ -338,7 +338,7 @@ public struct {name}<T> where T : struct, INumber<T>
 
 		sb.Append(@$"	public static ref {name}<TDest> {functionName}<T, TDest>(this {name}<T> vector, ref {name}<TDest> destination)
 		where T : struct, INumber<T> where TDest : struct, INumber<TDest> =>
-		ref destination.Set({string.Join(", ", components.Select(s => $"TDest.CreateTruncating({functionUsage}((double)(object)(vector.{s})))"))});");
+		ref destination.Set({string.Join(", ", components.Select(s => $"TDest.CreateTruncating({functionUsage}(vector.{s}.ToDoubleTruncating()))"))});");
 
 		return sb;
 	}
