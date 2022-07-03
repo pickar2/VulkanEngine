@@ -32,7 +32,7 @@ public static unsafe partial class UiRenderer
 
 	private static DescriptorSet _texturesSet;
 	private static DescriptorSet _globalDataSet;
-	private static DescriptorSet _componentDataSet;
+	private static DescriptorSet[] _componentDataSets = default!;
 
 	private static DescriptorSet _vertexMaterialDataSet;
 	private static DescriptorSet _fragmentMaterialDataSet;
@@ -56,7 +56,7 @@ public static unsafe partial class UiRenderer
 	public static MultipleStructDataFactory GlobalData = default!;
 
 	public static StructHolder ProjectionMatrixHolder = default!;
-	// public static StructHolder OrthoMatrixHolder = default!;
+	public static StructHolder OrthoMatrixHolder = default!;
 	public static StructHolder FrameIndexHolder = default!;
 
 	public static void Init()
@@ -112,7 +112,7 @@ public static unsafe partial class UiRenderer
 	{
 		float aspect = (float) SwapchainHelper.Extent.Width / SwapchainHelper.Extent.Height;
 
-		var ortho = Matrix4X4<float>.Identity.SetOrtho(0, SwapchainHelper.Extent.Width, 0, SwapchainHelper.Extent.Height, 2, -2);
+		var ortho = Matrix4X4<float>.Identity.SetOrtho(0, UiManager.MainRoot.Size.X, 0, UiManager.MainRoot.Size.Y, 4096, -4096);
 
 		var view = Matrix4x4.CreateTranslation(0, 0, 0).ToGeneric();
 		view *= Matrix4x4.CreateFromYawPitchRoll(0, 0, 0).ToGeneric();
@@ -122,13 +122,13 @@ public static unsafe partial class UiRenderer
 		model *= Matrix4x4.CreateRotationY(MainRenderer.FrameIndex / 50.0f).ToGeneric();
 		model *= Matrix4x4.CreateTranslation(0, 0, -3).ToGeneric();
 
-		// var proj = Matrix4X4<float>.Identity.SetPerspective(90f.ToRadians(), aspect, 0.01f, 1000.0f);
+		var proj = Matrix4X4<float>.Identity.SetPerspective(90f.ToRadians(), aspect, 0.01f, 1000.0f);
 
-		// var mvp = model * view * proj;
+		var mvp = model * view * proj;
 
-		// *ProjectionMatrixHolder.Get<Matrix4X4<float>>() = mvp;
-		*ProjectionMatrixHolder.Get<Matrix4X4<float>>() = ortho;
-		// *OrthoMatrixHolder.Get<Matrix4X4<float>>() = ortho;
+		*ProjectionMatrixHolder.Get<Matrix4X4<float>>() = mvp;
+		// *ProjectionMatrixHolder.Get<Matrix4X4<float>>() = Matrix4X4<float>.Identity;
+		*OrthoMatrixHolder.Get<Matrix4X4<float>>() = ortho;
 
 		*FrameIndexHolder.Get<int>() = MainRenderer.FrameIndex;
 
@@ -142,7 +142,7 @@ public static unsafe partial class UiRenderer
 	private static void CheckAndUpdateDataBuffers()
 	{
 		if (!UiComponentFactory.Instance.BufferChanged) return;
-		// App.Logger.Info.Message($"Component buffer changed");
+		// Program.Logger.Info.Message($"Component buffer changed");
 		UiComponentFactory.Instance.BufferChanged = false;
 
 		foreach (var indexBuffer in _indexBuffers) indexBuffer.EnqueueFrameDispose(MainRenderer.GetLastFrameIndex());
@@ -151,7 +151,7 @@ public static unsafe partial class UiRenderer
 				BufferUsageFlags.BufferUsageIndexBufferBit | BufferUsageFlags.BufferUsageStorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
 
 		UpdateComponentDataDescriptorSets();
-		// _dirty = SwapchainHelper.ImageCountInt;
+		_dirty = SwapchainHelper.ImageCountInt;
 
 		UpdateIndicesDescriptorSet();
 		_sortDirty = SwapchainHelper.ImageCountInt;
@@ -170,10 +170,10 @@ public static unsafe partial class UiRenderer
 		}
 
 		if (!changed) return;
-		// App.Logger.Info.Message($"{MainRenderer.FrameIndex} Material data buffer changed");
+		// Program.Logger.Info.Message($"Material data buffer changed");
 
 		UpdateMaterialDataDescriptorSets();
-		// _dirty = SwapchainHelper.ImageCountInt;
+		_dirty = SwapchainHelper.ImageCountInt;
 	}
 
 	private static void UpdateBuffers(int frameIndex, int imageIndex)
@@ -219,21 +219,25 @@ public static unsafe partial class UiRenderer
 			RenderPass = SwapchainHelper.RenderPass,
 			Subpass = 0
 		};
+
 		commandBuffer.Begin(CommandBufferUsageFlags.CommandBufferUsageRenderPassContinueBit, inheritanceInfo);
 
-		Context.Vk.CmdBindPipeline(commandBuffer, PipelineBindPoint.Graphics, _pipelines[1]);
+		foreach (var pipeline in _pipelines)
+		{
+			Context.Vk.CmdBindPipeline(commandBuffer, PipelineBindPoint.Graphics, pipeline);
 
-		Context.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Graphics, _pipelineLayout, 0, 1, _texturesSet.AsPointer(), null);
-		Context.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Graphics, _pipelineLayout, 1, 1, _globalDataSet.AsPointer(), null);
-		Context.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Graphics, _pipelineLayout, 2, 1, _componentDataSet.AsPointer(),
-			null);
+			Context.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Graphics, _pipelineLayout, 0, 1, _texturesSet.AsPointer(), null);
+			Context.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Graphics, _pipelineLayout, 1, 1, _globalDataSet.AsPointer(), null);
+			Context.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Graphics, _pipelineLayout, 2, 1, _componentDataSets[imageIndex].AsPointer(),
+				null);
 
-		Context.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Graphics, _pipelineLayout, 3, 1, _vertexMaterialDataSet.AsPointer(), null);
-		Context.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Graphics, _pipelineLayout, 4, 1, _fragmentMaterialDataSet.AsPointer(), null);
+			Context.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Graphics, _pipelineLayout, 3, 1, _vertexMaterialDataSet.AsPointer(), null);
+			Context.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Graphics, _pipelineLayout, 4, 1, _fragmentMaterialDataSet.AsPointer(), null);
 
-		Context.Vk.CmdBindIndexBuffer(commandBuffer, _indexBuffers[imageIndex].Buffer, 0, IndexType.Uint32);
+			Context.Vk.CmdBindIndexBuffer(commandBuffer, _indexBuffers[imageIndex].Buffer, 0, IndexType.Uint32);
 
-		Context.Vk.CmdDrawIndexedIndirect(commandBuffer, _indirectBuffer.Buffer, 0, 1, 0);
+			Context.Vk.CmdDrawIndexedIndirect(commandBuffer, _indirectBuffer.Buffer, 0, 1, 0);
+		}
 
 		commandBuffer.End();
 
@@ -576,15 +580,19 @@ public static unsafe partial class UiRenderer
 			"Failed to allocate ui textures descriptor sets.");
 		UpdateTexturesDescriptorSets();
 
+		var dataLayouts = stackalloc DescriptorSetLayout[SwapchainHelper.ImageCountInt];
+		for (int i = 0; i < SwapchainHelper.ImageCountInt; i++) dataLayouts[i] = _componentDataLayout;
+
 		var dataAllocInfo = new DescriptorSetAllocateInfo
 		{
 			SType = StructureType.DescriptorSetAllocateInfo,
 			DescriptorPool = _componentDataPool,
-			DescriptorSetCount = 1,
-			PSetLayouts = _componentDataLayout.AsPointer()
+			DescriptorSetCount = SwapchainHelper.ImageCount,
+			PSetLayouts = dataLayouts
 		};
 
-		VulkanUtils.Check(Context.Vk.AllocateDescriptorSets(Context.Device, dataAllocInfo, out _componentDataSet),
+		_componentDataSets = new DescriptorSet[SwapchainHelper.ImageCountInt];
+		VulkanUtils.Check(Context.Vk.AllocateDescriptorSets(Context.Device, dataAllocInfo, out _componentDataSets[0]),
 			"Failed to allocate ui data descriptor sets.");
 		UpdateComponentDataDescriptorSets();
 
@@ -643,24 +651,27 @@ public static unsafe partial class UiRenderer
 
 	private static void UpdateComponentDataDescriptorSets()
 	{
-		var bufferInfo = new DescriptorBufferInfo
+		for (int i = 0; i < _componentDataSets.Length; i++)
 		{
-			Offset = 0,
-			Range = Vk.WholeSize,
-			Buffer = UiComponentFactory.Instance.DataBufferGpu.Buffer
-		};
+			var bufferInfo = new DescriptorBufferInfo
+			{
+				Offset = 0,
+				Range = Vk.WholeSize,
+				Buffer = UiComponentFactory.Instance.DataBufferGpu.Buffer
+			};
 
-		var write = new WriteDescriptorSet
-		{
-			SType = StructureType.WriteDescriptorSet,
-			DescriptorCount = 1,
-			DstBinding = 0,
-			DescriptorType = DescriptorType.StorageBuffer,
-			DstSet = _componentDataSet,
-			PBufferInfo = bufferInfo.AsPointer()
-		};
+			var write = new WriteDescriptorSet
+			{
+				SType = StructureType.WriteDescriptorSet,
+				DescriptorCount = 1,
+				DstBinding = 0,
+				DescriptorType = DescriptorType.StorageBuffer,
+				DstSet = _componentDataSets[i],
+				PBufferInfo = bufferInfo.AsPointer()
+			};
 
-		Context.Vk.UpdateDescriptorSets(Context.Device, 1, write, 0, null);
+			Context.Vk.UpdateDescriptorSets(Context.Device, 1, write, 0, null);
+		}
 	}
 
 	private static void UpdateMaterialDataDescriptorSets()
@@ -849,7 +860,7 @@ public static unsafe partial class UiRenderer
 		var depthStencilDepth = new PipelineDepthStencilStateCreateInfo
 		{
 			SType = StructureType.PipelineDepthStencilStateCreateInfo,
-			DepthTestEnable = false,
+			DepthTestEnable = true,
 			DepthBoundsTestEnable = false,
 			StencilTestEnable = false,
 			DepthCompareOp = CompareOp.Less,
@@ -859,7 +870,7 @@ public static unsafe partial class UiRenderer
 		var depthStencilColor = new PipelineDepthStencilStateCreateInfo
 		{
 			SType = StructureType.PipelineDepthStencilStateCreateInfo,
-			DepthTestEnable = false,
+			DepthTestEnable = true,
 			DepthBoundsTestEnable = false,
 			StencilTestEnable = false,
 			DepthCompareOp = CompareOp.GreaterOrEqual,

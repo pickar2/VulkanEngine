@@ -9,7 +9,7 @@ struct cool_material_struct { // 16 bytes (aligned for 4 bytes)
     int i2;
 };
 
-readonly layout(std430, set = 4, binding = cool_material_binding) buffer cool_material_buffer {
+readonly layout(std430, set = FRAGMENT_MATERIAL_SET, binding = cool_material_binding) buffer cool_material_buffer {
     cool_material_struct cool_material_data[];
 };
 

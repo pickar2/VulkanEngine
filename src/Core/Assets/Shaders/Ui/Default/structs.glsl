@@ -24,7 +24,8 @@ struct UiElementData { // 60 bytes (aligned for 4 bytes)
     int vertexDataIndex;
     int fragmentDataIndex;
 
-    int flags;
+    int16_t rootIndex;
+    int16_t flags;
 };
 
 // flags:

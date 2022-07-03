@@ -89,8 +89,8 @@ public static unsafe class MainRenderer
 		var fpsLabel = new Label {MarginLT = (10, 10), OffsetZ = 30};
 		var frameTimeLabel = new Label {MarginLT = (10, 26), OffsetZ = 31};
 
-		UiManager.Root.AddChild(fpsLabel);
-		UiManager.Root.AddChild(frameTimeLabel);
+		UiManager.MainRoot.AddChild(fpsLabel);
+		UiManager.MainRoot.AddChild(frameTimeLabel);
 
 		Context.Window.SetTitle($"{(VulkanOptions.DebugMode ? "[DEBUG] " : "")}{Context.Window.Title}");
 

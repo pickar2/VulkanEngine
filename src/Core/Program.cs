@@ -21,6 +21,9 @@ internal static class Program
 	{
 		Console.OutputEncoding = System.Text.Encoding.UTF8;
 
+		var fullSw = new Stopwatch();
+		fullSw.Start();
+		
 		var stopwatch = new Stopwatch();
 		stopwatch.Start();
 		string appName = App.Details.AppName;
@@ -32,7 +35,10 @@ internal static class Program
 		if (VulkanOptions.DebugMode)
 			App.Logger.Warn.Message($"DEBUG MODE IS ENABLED");
 
+		stopwatch.Restart();
 		var window = new SdlWindow();
+		stopwatch.Stop();
+		App.Logger.Info.Message($"Created SDL window. Ticks: {stopwatch.ElapsedTicks}. Time: {stopwatch.ElapsedMilliseconds}ms.");
 
 		KeyboardInput.GlobalContext.AddKeyBind(new NamedFunc("exit_program", () =>
 		{
@@ -84,7 +90,12 @@ internal static class Program
 		MainRenderer.Init();
 		UiRenderer.Init();
 
-		DisposalQueue.EnqueueInFrame(0, () => Context.Window.Show());
+		DisposalQueue.EnqueueInFrame(0, () =>
+		{
+			Context.Window.Show();
+			fullSw.Stop();
+			App.Logger.Info.Message($"Window shown. Full load time: {fullSw.ElapsedMilliseconds}ms.");
+		});
 		// ReSharper disable once ConvertClosureToMethodGroup
 		var renderThread = new Thread(() => MainRenderer.RenderLoop())
 		{

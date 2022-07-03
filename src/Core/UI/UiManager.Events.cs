@@ -8,16 +8,14 @@ namespace Core.UI;
 
 public static partial class UiManager
 {
-	public delegate bool OnClickDelegate(UiControl control, MouseButton button, Vector2<int> pos);
+	public delegate void OnCursorMoveDelegate(UiControl control, Vector2<int> newPos, Vector2<int> motion);
+	public delegate void OnHoverDelegate(UiControl control, Vector2<int> pos, HoverType hoverType);
+	public delegate bool OnClickDelegate(UiControl control, MouseButton button, Vector2<int> pos, ClickType clickType);
 	public delegate bool OnDragDelegate(UiControl control, Vector2<int> newPos, Vector2<int> motion, MouseButton button, DragType dragType);
-	public delegate void OnHoverDelegate(UiControl control, Vector2<int> pos);
 
-	private static readonly Dictionary<UiControl, OnHoverDelegate> OnHoverStartDelegates = new();
-	private static readonly Dictionary<UiControl, OnHoverDelegate> OnHoverEndDelegates = new();
-
-	private static readonly Dictionary<UiControl, OnClickDelegate> OnMouseDownDelegates = new();
-	private static readonly Dictionary<UiControl, OnClickDelegate> OnMouseUpDelegates = new();
-
+	private static readonly Dictionary<UiControl, OnCursorMoveDelegate> OnCursorMoveDelegates = new();
+	private static readonly Dictionary<UiControl, OnHoverDelegate> OnHoverDelegates = new();
+	private static readonly Dictionary<UiControl, OnClickDelegate> OnMouseClickDelegates = new();
 	private static readonly Dictionary<UiControl, OnDragDelegate> OnDragDelegates = new();
 
 	private static readonly HashSet<UiControl> HoveredControls = new();
@@ -40,31 +38,13 @@ public static partial class UiManager
 		MouseInput.OnMouseDragMove += HandleDragMove;
 		MouseInput.OnMouseDragEnd += HandleDragEnd;
 
-		MouseInput.OnMouseButtonUp += HandleMouseUp;
-		MouseInput.OnMouseButtonDown += HandleMouseDown;
+		MouseInput.OnMouseButtonUp += HandleClickEnd;
+		MouseInput.OnMouseButtonDown += HandleClickStart;
 	}
 
 	private static void HandleCursorMove(Vector2<int> newPos, Vector2<int> motion)
 	{
-		// hover start
-		foreach (var control in ControlsOnMousePos)
-		{
-			if (HoveredControls.Contains(control)) continue;
-			HoveredControls.Add(control);
-
-			if (!OnHoverStartDelegates.TryGetValue(control, out var onHoverStart)) continue;
-			onHoverStart.Invoke(control, newPos);
-		}
-
-		// hover end
-		foreach (var control in HoveredControls)
-		{
-			if (ControlsOnMousePos.Contains(control)) continue;
-			HoveredControls.Remove(control);
-
-			if (!OnHoverEndDelegates.TryGetValue(control, out var onHoverEnd)) continue;
-			onHoverEnd.Invoke(control, newPos);
-		}
+		
 	}
 
 	private static void HandleDragStart(Vector2<int> newPos, Vector2<int> motion, MouseButton button)
@@ -105,55 +85,72 @@ public static partial class UiManager
 		}
 	}
 
-	private static void HandleMouseUp(MouseButton button)
+	private static void HandleClickEnd(MouseButton button)
 	{
 		foreach (var control in ControlsOnMousePos)
 		{
-			if (!OnMouseUpDelegates.TryGetValue(control, out var onMouseUp)) continue;
-			if (onMouseUp.Invoke(control, button, MouseInput.MousePos)) break;
+			if (!OnMouseClickDelegates.TryGetValue(control, out var onMouseClick)) continue;
+			if (onMouseClick.Invoke(control, button, MouseInput.MousePos, ClickType.End)) break;
 		}
 	}
 
-	private static void HandleMouseDown(MouseButton button)
+	private static void HandleClickStart(MouseButton button)
 	{
 		foreach (var control in ControlsOnMousePos)
 		{
-			if (!OnMouseDownDelegates.TryGetValue(control, out var onMouseDown)) continue;
-			if (onMouseDown.Invoke(control, button, MouseInput.MousePos)) break;
+			if (!OnMouseClickDelegates.TryGetValue(control, out var onMouseClick)) continue;
+			if (onMouseClick.Invoke(control, button, MouseInput.MousePos, ClickType.Start)) break;
 		}
 	}
 
-	private static void EventsPreUpdate() => BeforeUpdate?.Invoke();
+	private static void EventsPreUpdate()
+	{
+		BeforeUpdate?.Invoke();
+
+		// hover start
+		foreach (var control in ControlsOnMousePos)
+		{
+			if (HoveredControls.Contains(control)) continue;
+			HoveredControls.Add(control);
+
+			if (!OnHoverDelegates.TryGetValue(control, out var onHover)) continue;
+			onHover.Invoke(control, MouseInput.MousePos, HoverType.Start);
+		}
+
+		// hover end
+		foreach (var control in HoveredControls)
+		{
+			if (ControlsOnMousePos.Contains(control)) continue;
+			HoveredControls.Remove(control);
+
+			if (!OnHoverDelegates.TryGetValue(control, out var onHover)) continue;
+			onHover.Invoke(control, MouseInput.MousePos, HoverType.End);
+		}
+	}
 
 	private static void EventsPostUpdate()
 	{
-		ControlsOnMousePos = ControlsOnPos(MouseInput.MousePos.Cast<int, float>(), Root, new MList<UiControl>());
+		ControlsOnMousePos = ControlsOnPos(MouseInput.MousePos.Cast<int, float>(), MainRoot, new MList<UiControl>());
 
 		AfterUpdate?.Invoke();
 	}
 
-	public static void OnHoverStart(this UiControl control, OnHoverDelegate onHoverStart) => OnHoverStartDelegates[control] = onHoverStart;
-	public static void OnHoverEnd(this UiControl control, OnHoverDelegate onHoverEnd) => OnHoverEndDelegates[control] = onHoverEnd;
+	public static void OnHover(this UiControl control, OnHoverDelegate onHover) => OnHoverDelegates[control] = onHover;
 
-	public static void OnMouseDown(this UiControl control, OnClickDelegate onClickStart) => OnMouseDownDelegates[control] = onClickStart;
-	public static void OnMouseUp(this UiControl control, OnClickDelegate onClickEnd) => OnMouseUpDelegates[control] = onClickEnd;
+	public static void OnClick(this UiControl control, OnClickDelegate onClick) => OnMouseClickDelegates[control] = onClick;
 
 	public static void OnDrag(this UiControl control, OnDragDelegate onDrag) => OnDragDelegates[control] = onDrag;
 
 	public static void RemoveAllEvents(this UiControl control)
 	{
-		RemoveOnHoverStart(control);
-		RemoveOnHoverEnd(control);
-		RemoveOnMouseDown(control);
-		RemoveOnMouseUp(control);
+		RemoveOnHover(control);
+		RemoveOnClick(control);
 		RemoveOnDrag(control);
 	}
 
-	public static void RemoveOnHoverStart(this UiControl control) => OnHoverStartDelegates.Remove(control);
-	public static void RemoveOnHoverEnd(this UiControl control) => OnHoverEndDelegates.Remove(control);
+	public static void RemoveOnHover(this UiControl control) => OnHoverDelegates.Remove(control);
 
-	public static void RemoveOnMouseDown(this UiControl control) => OnMouseDownDelegates.Remove(control);
-	public static void RemoveOnMouseUp(this UiControl control) => OnMouseUpDelegates.Remove(control);
+	public static void RemoveOnClick(this UiControl control) => OnMouseClickDelegates.Remove(control);
 
 	public static void RemoveOnDrag(this UiControl control) => OnDragDelegates.Remove(control);
 }
@@ -161,6 +158,19 @@ public static partial class UiManager
 public enum DragType : byte
 {
 	Start,
-	End,
-	Move
+	Move,
+	End
+}
+
+public enum ClickType : byte
+{
+	Start,
+	Hold,
+	End
+}
+
+public enum HoverType : byte
+{
+	Start,
+	End
 }

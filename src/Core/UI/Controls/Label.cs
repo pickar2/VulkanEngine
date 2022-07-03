@@ -12,7 +12,7 @@ public class Label : StackPanel
 	private static readonly MaterialDataFactory UvMaterial = UiMaterialManager.GetFactory("core:texture_uv_material");
 	private static readonly MaterialDataFactory FontMaterial = UiMaterialManager.GetFactory("core:font_material");
 
-	private Vector2<float> _computedScale;
+	private Vector2<float> _parentScale;
 
 	private bool _needsUpdate = true;
 	private string _text = string.Empty;
@@ -22,13 +22,22 @@ public class Label : StackPanel
 
 	public Label() => Scale = new Vector2<float>(0.5f);
 
-	public override Vector2<float> ParentScale
+	public override unsafe Vector2<float> ParentScale
 	{
-		get => _computedScale;
+		get => _parentScale;
 		set
 		{
-			_computedScale = value;
-			_needsUpdate = true;
+			_parentScale = value;
+			if (_needsUpdate) return;
+			foreach (var child in ChildrenList)
+			{
+				var scale = Math.Max(CombinedScale.X, CombinedScale.Y);
+				if (child is CustomBox box && box.FragMaterial.MaterialId == FontMaterial.Index)
+				{
+					var data = box.FragMaterial.GetMemPtr<FontMaterialData>();
+					data->FontScale = scale;
+				}
+			}
 		}
 	}
 
@@ -54,7 +63,7 @@ public class Label : StackPanel
 
 	private unsafe void UpdateText()
 	{
-		foreach (var child in Children) child.Dispose();
+		foreach (var child in ChildrenList) child.Dispose();
 		ClearChildren();
 
 		foreach (char ch in _text)

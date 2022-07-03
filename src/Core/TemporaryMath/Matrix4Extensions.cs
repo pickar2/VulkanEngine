@@ -17,6 +17,26 @@ public static class Matrix4Extensions
 		return mat;
 	}
 
+	public static Matrix4X4<float> SetPerspective(this Matrix4X4<float> mat, float fovY, float aspect, float zNear, float zFar, bool zZeroToOne = false)
+	{
+		mat.M11 = 0;
+		mat.M22 = 0;
+		mat.M33 = 0;
+		mat.M44 = 0;
+
+		float h = (float) Math.Tan(fovY * 0.5f);
+
+		mat.M11 = 1.0f / (h * aspect);
+		mat.M22 = 1.0f / h;
+
+		mat.M33 = (zZeroToOne ? zFar : zFar + zNear) / (zNear - zFar);
+		mat.M43 = (zZeroToOne ? zFar : zFar + zFar) * zNear / (zNear - zFar);
+
+		mat.M34 = -1.0f;
+
+		return mat;
+	}
+
 	public static Matrix4X4<float> RotationZ(this Matrix4X4<float> mat, float ang)
 	{
 		float sin = (float) Math.Sin(ang);

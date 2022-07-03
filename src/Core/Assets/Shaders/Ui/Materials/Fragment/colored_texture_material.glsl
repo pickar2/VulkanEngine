@@ -7,7 +7,7 @@ struct colored_texture_material_struct { // 8 bytes (aligned for 4 bytes)
     int textureId;
 };
 
-readonly layout(std430, set = 4, binding = colored_texture_material_binding) buffer colored_texture_material_buffer {
+readonly layout(std430, set = FRAGMENT_MATERIAL_SET, binding = colored_texture_material_binding) buffer colored_texture_material_buffer {
     colored_texture_material_struct colored_texture_material_data[];
 };
 

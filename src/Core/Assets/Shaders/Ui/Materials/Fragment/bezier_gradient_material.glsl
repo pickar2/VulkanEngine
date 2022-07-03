@@ -8,7 +8,7 @@ struct bezier_gradient_material_struct { // 12 bytes
     float smoothing;
 };
 
-readonly layout(std430, set = 4, binding = bezier_gradient_material_binding) buffer bezier_gradient_material_buffer {
+readonly layout(std430, set = FRAGMENT_MATERIAL_SET, binding = bezier_gradient_material_binding) buffer bezier_gradient_material_buffer {
     bezier_gradient_material_struct bezier_gradient_material_data[];
 };
 

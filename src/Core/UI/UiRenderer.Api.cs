@@ -33,6 +33,7 @@ public static unsafe partial class UiRenderer
 		InitGlobalData();
 
 		ProjectionMatrixHolder = GlobalData.GetOrDefault("core:projection-matrix");
+		OrthoMatrixHolder = GlobalData.GetOrDefault("core:ortho-matrix");
 		FrameIndexHolder = GlobalData.GetOrDefault("core:frame-index");
 		MousePositionHolder = GlobalData.GetOrDefault("core:mouse-position");
 
@@ -237,5 +238,6 @@ public static unsafe partial class UiRenderer
 		GlobalData.CreateHolder(64, NamespacedName.CreateWithName("projection-matrix"));
 		GlobalData.CreateHolder(4, NamespacedName.CreateWithName("frame-index"));
 		GlobalData.CreateHolder(8, NamespacedName.CreateWithName("mouse-position"));
+		GlobalData.CreateHolder(64, NamespacedName.CreateWithName("ortho-matrix"));
 	}
 }

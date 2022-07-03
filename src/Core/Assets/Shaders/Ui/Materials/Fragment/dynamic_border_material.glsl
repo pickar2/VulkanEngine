@@ -11,7 +11,7 @@ struct dynamic_border_material_struct {
     int16_t null;
 };
 
-readonly layout(std430, set = 4, binding = dynamic_border_material_binding) buffer dynamic_border_material_buffer {
+readonly layout(std430, set = FRAGMENT_MATERIAL_SET, binding = dynamic_border_material_binding) buffer dynamic_border_material_buffer {
     dynamic_border_material_struct dynamic_border_material_data[];
 };
 

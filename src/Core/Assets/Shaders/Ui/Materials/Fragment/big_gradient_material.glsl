@@ -11,7 +11,7 @@ struct big_gradient_material_struct { // 16 bytes (aligned for 4 bytes)
     int16_t endY;
 };
 
-readonly layout(std430, set = 4, binding = big_gradient_material_binding) buffer big_gradient_material_buffer {
+readonly layout(std430, set = FRAGMENT_MATERIAL_SET, binding = big_gradient_material_binding) buffer big_gradient_material_buffer {
     big_gradient_material_struct big_gradient_material_data[];
 };
 

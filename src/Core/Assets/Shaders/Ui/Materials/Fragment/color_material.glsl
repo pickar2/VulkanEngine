@@ -6,7 +6,7 @@ struct color_material_struct { // 4 bytes
     int color;
 };
 
-readonly layout(std430, set = 4, binding = color_material_binding) buffer color_material_buffer {
+readonly layout(std430, set = FRAGMENT_MATERIAL_SET, binding = color_material_binding) buffer color_material_buffer {
     color_material_struct color_material_data[];
 };
 

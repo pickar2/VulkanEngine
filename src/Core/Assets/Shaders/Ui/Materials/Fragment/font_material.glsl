@@ -9,7 +9,7 @@ struct font_material_struct { // 16 bytes (aligned for 4 bytes)
     float outlineDistance;
 };
 
-readonly layout(std430, set = 4, binding = font_material_binding) buffer font_material_buffer {
+readonly layout(std430, set = FRAGMENT_MATERIAL_SET, binding = font_material_binding) buffer font_material_buffer {
     font_material_struct font_material_data[];
 };
 

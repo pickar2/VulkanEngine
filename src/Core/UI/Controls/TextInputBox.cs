@@ -48,8 +48,10 @@ public class TextInputBox : UiControl
 
 		Text = "Text input";
 
-		this.OnMouseUp((control, button, pos) =>
+		this.OnClick((control, button, pos, clickType) =>
 		{
+			if (clickType != ClickType.End) return false;
+
 			if (_isEditing) { }
 			else
 			{

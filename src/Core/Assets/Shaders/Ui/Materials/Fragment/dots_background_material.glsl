@@ -6,7 +6,7 @@ struct dots_background_material_struct { // 4 bytes
     float scale;
 };
 
-readonly layout(std430, set = 4, binding = dots_background_material_binding) buffer dots_background_material_buffer {
+readonly layout(std430, set = FRAGMENT_MATERIAL_SET, binding = dots_background_material_binding) buffer dots_background_material_buffer {
 	dots_background_material_struct dots_background_material_data[];
 };
 

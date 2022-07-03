@@ -19,26 +19,22 @@ public static partial class UiManager
 {
 	private static unsafe void InitTestScene()
 	{
-		// off root control example
-		var infoPanel = new AbsolutePanel();
+		// off main root control example:
+		var infoBoxRoot = new FullScreenRootPanel();
 		var infoBox = new ControlInfoBox();
-		infoPanel.AddChild(infoBox);
+		infoBoxRoot.AddChild(infoBox);
 		AfterUpdate += () =>
 		{
 			infoBox.Control = KeyboardInput.IsKeyPressed(SDL.SDL_Keycode.SDLK_LALT) && TopControl is not null && TopControl.Selectable ? TopControl : null;
-
-			var screenSize = new Vector2<float>(Context.Window.WindowWidth, Context.Window.WindowHeight);
-			infoPanel.UpdateControl(new Vector2<float>(1), screenSize);
-			// TODO: investigate, why do we need full update of a child
-			infoBox.UpdateControl(new Vector2<float>(1), screenSize);
+			infoBoxRoot.Update();
 		};
 
 		var mainControl = new AbsolutePanel();
 		// mainControl.Selectable = false;
 		// mainControl.MarginLT = new Vector2<float>(300, 100);
 		// mainControl.Scale = new Vector2<float>(0.5f);
-		Root.AddChild(mainControl);
-		
+		MainRoot.AddChild(mainControl);
+
 		var bg = new CustomBox();
 		bg.VertMaterial = UiMaterialManager.GetFactory("core:default_vertex_material").Create();
 		bg.FragMaterial = UiMaterialManager.GetFactory("core:dots_background_material").Create();
@@ -46,7 +42,7 @@ public static partial class UiManager
 		bg.FragMaterial.MarkForGPUUpdate();
 		bg.Selectable = false;
 		mainControl.AddChild(bg);
-		
+
 		LabelTest(mainControl);
 		StackPanelTest(mainControl);
 		WrapPanelTest(mainControl);
@@ -197,7 +193,7 @@ public static partial class UiManager
 		{
 			if (button != MouseButton.Left) return false;
 			if (dragType == DragType.Move)
-				control.MarginLT += motion / control.CombinedScale;
+				control.MarginLT += motion.Cast<int, float>() / control.CombinedScale;
 
 			return true;
 		});
@@ -355,7 +351,11 @@ public static partial class UiManager
 		// 	Interpolator = new Vector2Interpolator<float>((1, 1), (0.5f, 0.5f), v =>
 		// 	{
 		// 		parent.Scale = v;
-		// 		*((CustomBox) parent.Children.First()).FragMaterial.GetMemPtr<float>() = v.X;
+		// 		unsafe
+		// 		{
+		// 			*((CustomBox) parent.Children.First()).FragMaterial.GetMemPtr<float>() = v.X;
+		// 		}
+		//
 		// 		((CustomBox) parent.Children.First()).FragMaterial.MarkForGPUUpdate();
 		// 	})
 		// };
@@ -382,21 +382,24 @@ public static partial class UiManager
 			Interpolator = new RGBInterpolator(Color.FromArgb(color), Color.Red, c => button.Color = c.ToArgb())
 		};
 
-		button.OnHoverStart((control, pos) =>
+		button.OnHover((_, _, hoverType) =>
 		{
-			hoverAnimation.ResetDirection();
-			hoverAnimation.Start();
-		});
-		button.OnHoverEnd((control, pos) =>
-		{
-			hoverAnimation.ReverseDirection();
+			switch (hoverType)
+			{
+				case HoverType.Start:
+					hoverAnimation.ResetDirection();
+					break;
+				case HoverType.End:
+					hoverAnimation.ReverseDirection();
+					break;
+			}
 			hoverAnimation.Start();
 		});
 
 		bool started = false;
-		button.OnMouseUp((_, mb, _) =>
+		button.OnClick((_, mouseButton, _, clickType) =>
 		{
-			if (mb != MouseButton.Left) return false;
+			if (clickType != ClickType.End || mouseButton != MouseButton.Left) return false;
 			if (!started)
 			{
 				animation1.Start();

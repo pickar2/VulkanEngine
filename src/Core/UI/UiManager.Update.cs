@@ -3,39 +3,30 @@ using System.Collections.Generic;
 using Core.UI.Controls;
 using Core.UI.Controls.Panels;
 using Core.Utils;
-using Core.Vulkan;
 using SimpleMath.Vectors;
 
 namespace Core.UI;
 
 public static partial class UiManager
 {
-	public static readonly UiControl Root = new AbsolutePanel {Selectable = false};
+	public static readonly RootPanel MainRoot = new FullScreenRootPanel();
+	public static readonly HashSet<RootPanel> Roots = new();
 	public static readonly IComparer<UiControl> ZComparer = new ZComparer();
 
 	static UiManager()
 	{
 		InitEvents();
 		InitTestScene();
+		Roots.Add(MainRoot);
 	}
 
 	public static void Update()
 	{
 		EventsPreUpdate();
 
-		var screenSize = new Vector2<float>(Context.Window.WindowWidth, Context.Window.WindowHeight);
-		Root.UpdateControl(new Vector2<float>(1), screenSize);
+		foreach (var root in Roots) root.Update();
 
 		EventsPostUpdate();
-	}
-
-	public static void UpdateControl(this UiControl control, Vector2<float> scale, Vector2<float> area)
-	{
-		control.Update();
-		control.PropagateScale(scale);
-		control.ComputeSizeAndArea(area);
-		control.ArrangeChildren(area);
-		control.UpdateChildrenMask(new Vector2<float>(float.NegativeInfinity), new Vector2<float>(float.PositiveInfinity));
 	}
 
 	public static MList<UiControl> ControlsOnPos(Vector2<float> point, UiControl? startControl, MList<UiControl> list)

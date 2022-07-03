@@ -6,7 +6,7 @@ struct texture_material_struct { // 4 bytes
     int textureId;
 };
 
-readonly layout(std430, set = 4, binding = texture_material_binding) buffer texture_material_buffer {
+readonly layout(std430, set = FRAGMENT_MATERIAL_SET, binding = texture_material_binding) buffer texture_material_buffer {
     texture_material_struct texture_material_data[];
 };
 

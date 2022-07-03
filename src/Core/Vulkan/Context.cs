@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -18,6 +19,8 @@ namespace Core.Vulkan;
 
 public unsafe class Context : IDisposable
 {
+	private static Stopwatch _stopwatch = new();
+
 	public static readonly Vk Vk = Vk.GetApi();
 	public static VulkanConfig Config = default!;
 	public static Window.SdlWindow Window = default!;
@@ -44,6 +47,8 @@ public unsafe class Context : IDisposable
 
 	public Context(VulkanConfig config, Window.SdlWindow window)
 	{
+		_stopwatch.Start();
+
 		Config = config;
 		Window = window;
 		KhrSurface = new KhrSurface(Vk.Context);
@@ -110,7 +115,11 @@ public unsafe class Context : IDisposable
 		GraphicsCommandPool = CreateCommandPool(0, Queues.Graphics);
 		DisposalQueue.EnqueueInGlobal(() => Vk.DestroyCommandPool(Device, GraphicsCommandPool, null));
 
-		App.Logger.Info.Message($"VULKAN INITIALIZED");
+		Vk.GetPhysicalDeviceProperties2(PhysicalDevice, out var properties);
+
+		_stopwatch.Stop();
+		App.Logger.Info.Message($"Physical Device: {GetDeviceString(properties)}.");
+		App.Logger.Info.Message($"Vulkan initialized. Ticks: {_stopwatch.ElapsedTicks}. Time: {_stopwatch.ElapsedMilliseconds}ms.");
 		AfterVulkanInit?.Invoke();
 	}
 
@@ -267,7 +276,6 @@ public unsafe class Context : IDisposable
 		}
 
 		Vk.GetPhysicalDeviceProperties2(PhysicalDevice, out var properties);
-		App.Logger.Info.Message($"Physical Device: {GetDeviceString(properties)}");
 
 		IsIntegratedGpu = properties.Properties.DeviceType == PhysicalDeviceType.IntegratedGpu;
 	}

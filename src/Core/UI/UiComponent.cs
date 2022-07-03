@@ -75,7 +75,8 @@ public struct UiComponentData
 			int vertexDataIndex;
 			int fragmentDataIndex;
 
-			int flags;
+		    int16_t rootIndex;
+		    int16_t flags;
 		};
 	 */
 
@@ -100,11 +101,12 @@ public struct UiComponentData
 	[Obsolete("Use fragment material setter from UiComponent")]
 	public int FragmentDataIndex;
 
+	public Int16 RootIndex;
 	public UiComponentFlags Flags;
 }
 
 [Flags]
-public enum UiComponentFlags
+public enum UiComponentFlags : Int16
 {
 	Disabled = 1 << 0,
 	HasTransformation = 1 << 3,

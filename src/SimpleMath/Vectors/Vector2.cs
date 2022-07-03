@@ -8,23 +8,9 @@ public static class Vector2Extensions
 
 	public static ref Vector2<T> Rotate90DegClockwise<T>(this ref Vector2<T> vector) where T : struct, INumber<T> => ref vector.Set(vector.Y, -vector.X);
 
-	// public static TResult Dot<T, TOther, TResult>(this Vector2<T> vector, Vector2<TOther> other)
-	// 	where T : struct, INumber<T> where TOther : struct, INumber<TOther> where TResult : struct, INumber<TResult> =>
-	// 	TResult.CreateTruncating((vector.X * T.CreateTruncating(other.X)) + (vector.Y * T.CreateTruncating(other.Y)));
-
 	public static double Dot<T, TOther>(this Vector2<T> vector, Vector2<TOther> other)
 		where T : struct, INumber<T> where TOther : struct, INumber<TOther> =>
 		((vector.X * T.CreateTruncating(other.X)) + (vector.Y * T.CreateTruncating(other.Y))).ToDoubleTruncating();
-	
-	// public static double Dot<T, TOther>(this Vector2<T> vector, Vector2<TOther> other)
-	// 	where T : struct, INumber<T> where TOther : struct, INumber<TOther> => vector.Dot<T, TOther, double>(other);
-
-	// public static TResult Dot<T, TOther, TResult>(this Vector2<T> vector, (TOther X, TOther Y) other)
-	// 	where T : struct, INumber<T> where TOther : struct, INumber<TOther> where TResult : struct, INumber<TResult> =>
-	// 	TResult.CreateTruncating((vector.X * T.CreateTruncating(other.X)) + (vector.Y * T.CreateTruncating(other.Y)));
-	//
-	// public static TResult Dot<T, TOther, TResult>(this Vector2<T> vector, (TOther X, TOther Y) other)
-	// 	where T : struct, INumber<T> where TOther : struct, INumber<TOther> where TResult : struct, INumber<TResult> => vector.Dot<T, TOther, double>(other);
 
 	public static ref Vector2<T> Min<T, TOther>(this ref Vector2<T> vector, Vector2<TOther> other)
 		where T : struct, INumber<T> where TOther : struct, INumber<TOther> => ref Min(vector, other, ref vector);

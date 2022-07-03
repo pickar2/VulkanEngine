@@ -2,7 +2,7 @@
 //type=vertex
 //size=4
 
-readonly layout(std430, set = 3, binding = follow_cursor_material_binding) buffer follow_cursor_material_buffer {
+readonly layout(std430, set = VERTEX_MATERIAL_SET, binding = follow_cursor_material_binding) buffer follow_cursor_material_buffer {
     int follow_cursor_null;
 };
 
@@ -23,5 +23,5 @@ void follow_cursor_material(UiElementData data) {
     0, 0, 0, 1
     );
 
-    gl_Position = proj * globalMatrix * rotateZ * modelMatrix * vec4(vertexPos[gl_VertexIndex & 3], 0, 1.0);
+    gl_Position = proj * ortho * globalMatrix * rotateZ * modelMatrix * vec4(vertexPos[gl_VertexIndex & 3], 0, 1.0);
 }

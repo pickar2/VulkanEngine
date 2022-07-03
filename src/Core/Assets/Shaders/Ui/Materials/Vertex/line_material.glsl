@@ -12,7 +12,7 @@ struct line_material_struct {
     int16_t size;
 };
 
-readonly layout(std430, set = 3, binding = line_material_binding) buffer line_material_buffer {
+readonly layout(std430, set = VERTEX_MATERIAL_SET, binding = line_material_binding) buffer line_material_buffer {
     line_material_struct line_material_data[];
 };
 
@@ -36,5 +36,5 @@ void line_material(UiElementData data) {
         fragTexCoord = vec2(1, 1);
         break;
     }
-    gl_Position = proj * globalMatrix * modelMatrix * vec4(fragTexCoord, 0, 1.0);
+    gl_Position = proj * ortho * globalMatrix * modelMatrix * vec4(fragTexCoord, 0, 1.0);
 }

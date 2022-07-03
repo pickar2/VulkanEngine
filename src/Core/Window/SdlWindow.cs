@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using Core.Utils;
 using Core.Vulkan;
@@ -20,7 +21,7 @@ public class SdlWindow : IDisposable
 
 	public int WindowWidth { get; private set; }
 	public int WindowHeight { get; private set; }
-	
+
 	public event Action? OnResize;
 
 	public SdlWindow()
@@ -31,12 +32,12 @@ public class SdlWindow : IDisposable
 		SDL_SetHint(SDL_HINT_IME_SHOW_UI, "1");
 
 		WindowHandle = SDL_CreateWindow(Title, (int) (mode.w - VulkanOptions.WindowWidth) / 2, (int) (mode.h - VulkanOptions.WindowHeight) / 2,
-			(int) VulkanOptions.WindowWidth, (int) VulkanOptions.WindowHeight, 
+			(int) VulkanOptions.WindowWidth, (int) VulkanOptions.WindowHeight,
 			SDL_WindowFlags.SDL_WINDOW_VULKAN | SDL_WindowFlags.SDL_WINDOW_RESIZABLE | SDL_WindowFlags.SDL_WINDOW_HIDDEN);
 
 		WindowWidth = (int) VulkanOptions.WindowWidth;
 		WindowHeight = (int) VulkanOptions.WindowHeight;
-		
+
 		SDL_AddEventWatch(WindowResizeEventFilter, IntPtr.Zero);
 	}
 
@@ -49,6 +50,7 @@ public class SdlWindow : IDisposable
 			Context.Window.WindowHeight = eventPtr->window.data2;
 			Context.Window.OnResize?.Invoke();
 		}
+
 		return 0;
 	}
 
@@ -92,7 +94,7 @@ public class SdlWindow : IDisposable
 				SDL_eventaction.SDL_GETEVENT,
 				SDL_EventType.SDL_FIRSTEVENT,
 				SDL_EventType.SDL_LASTEVENT);
-			
+
 			for (int index = 0; index < result; index++)
 				HandleEvent(events[index]);
 			handle.WaitOne(1);
@@ -100,7 +102,7 @@ public class SdlWindow : IDisposable
 
 		_stopwatch.Stop();
 	}
-	
+
 	private void HandleEvent(SDL_Event sdlEvent)
 	{
 		switch (sdlEvent.type)
@@ -142,6 +144,7 @@ public class SdlWindow : IDisposable
 	}
 
 	private bool _firstTimeFocus = true;
+
 	private void HandleWindowEvent(SDL_WindowEvent windowEvent)
 	{
 		switch (windowEvent.windowEvent)

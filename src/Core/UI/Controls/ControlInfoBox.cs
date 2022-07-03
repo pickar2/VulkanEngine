@@ -10,7 +10,11 @@ public class ControlInfoBox : AbsolutePanel
 {
 	private UiControl? _control;
 
-	public ControlInfoBox() => OffsetZ = 2046;
+	public ControlInfoBox()
+	{
+		OffsetZ = 2045;
+		Selectable = false;
+	}
 
 	private bool _needsUpdate;
 	public UiControl? Control
@@ -23,8 +27,6 @@ public class ControlInfoBox : AbsolutePanel
 		}
 	}
 
-	public override bool Selectable { get; set; } = false;
-
 	public override void Update()
 	{
 		if (_needsUpdate)
@@ -33,12 +35,6 @@ public class ControlInfoBox : AbsolutePanel
 			_needsUpdate = false;
 		}
 		base.Update();
-	}
-
-	public override void PropagateScale(Vector2<float> parentScale)
-	{
-		ParentScale = new Vector2<float>(1);
-		foreach (var child in Children) child.PropagateScale(ParentScale);
 	}
 
 	private void UpdateControl()
