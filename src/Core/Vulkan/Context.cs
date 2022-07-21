@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using Core.Native.Shaderc;
 using Core.Utils;
+using Core.Vulkan.Options;
 using Silk.NET.Core;
 using Silk.NET.Core.Native;
 using Silk.NET.Vulkan;
@@ -36,7 +37,7 @@ public unsafe class Context : IDisposable
 	public static Instance Instance;
 	public static DebugUtilsMessenger DebugMessenger = default!;
 	public static PhysicalDevice PhysicalDevice;
-	public static QueueFamilies Queues = default!;
+	// public static QueueFamilies Queues = default!;
 	public static Device Device;
 	public static SurfaceKHR Surface;
 	public static nint VmaHandle;
@@ -55,7 +56,7 @@ public unsafe class Context : IDisposable
 
 		FrameGraph = new FrameGraph();
 
-		var options = new Options(true);
+		var options = new ShadercOptions();
 		options.EnableDebugInfo();
 		options.Optimization = OptimizationLevel.Performance;
 		options.TargetSpirVVersion = new SpirVVersion(1, 5);
@@ -91,9 +92,12 @@ public unsafe class Context : IDisposable
 
 		CreateInstance();
 
-		Vk.TryGetInstanceExtension(Instance, out ExtDebugUtils).ThrowIfFalse($"Failed to load the DebugUtils extension.");
+		if (VulkanOptions.DebugMode)
+		{
+			Vk.TryGetInstanceExtension(Instance, out ExtDebugUtils).ThrowIfFalse($"Failed to load the DebugUtils extension.");
 
-		if (VulkanOptions.DebugMode) DebugMessenger.Init();
+			DebugMessenger.Init();
+		}
 
 		Surface = Window.GetVulkanSurface(Instance);
 
@@ -112,7 +116,7 @@ public unsafe class Context : IDisposable
 		CreateDeviceQueues();
 		CreateVma();
 
-		GraphicsCommandPool = CreateCommandPool(0, Queues.Graphics);
+		// GraphicsCommandPool = CreateCommandPool(0, Queues.Graphics);
 		DisposalQueue.EnqueueInGlobal(() => Vk.DestroyCommandPool(Device, GraphicsCommandPool, null));
 
 		Vk.GetPhysicalDeviceProperties2(PhysicalDevice, out var properties);
@@ -250,7 +254,7 @@ public unsafe class Context : IDisposable
 				Vk.GetPhysicalDeviceProperties2(device, out var props);
 				reasons[device] = $"{GetDeviceString(props)}: \r\n";
 
-				Config.FeatureWorker.ReCreateChain(false);
+				// Config.FeatureWorker.ReCreateChain(false);
 				bool suitable = IsDeviceSuitable(device, out string reason);
 				reasons[device] += reason;
 
@@ -268,7 +272,7 @@ public unsafe class Context : IDisposable
 			var device = devices[VulkanOptions.GpuId];
 			Vk.GetPhysicalDeviceProperties2(device, out var props);
 
-			Config.FeatureWorker.ReCreateChain(false);
+			// Config.FeatureWorker.ReCreateChain(false);
 			if (!IsDeviceSuitable(devices[VulkanOptions.GpuId], out string reason))
 				throw new NotSupportedException($"{GetDeviceString(props)}: \r\n{reason}").AsExpectedException();
 
@@ -313,52 +317,52 @@ public unsafe class Context : IDisposable
 		return false;
 	}
 
-	private bool CheckDeviceFeatures(PhysicalDevice device, StringBuilder sb)
-	{
-		var features2 = new PhysicalDeviceFeatures2
-		{
-			SType = StructureType.PhysicalDeviceFeatures2,
-			PNext = Config.FeatureWorker.FirstPtr
-		};
-
-		Vk.GetPhysicalDeviceFeatures2(device, &features2);
-
-		bool supported = true;
-
-		var fields = typeof(PhysicalDeviceFeatures).GetFields();
-		object baseFeatures = Config.DeviceFeatures;
-		object checkFeatures = features2.Features;
-		foreach (var fieldInfo in fields)
-		{
-			if (((Bool32) fieldInfo.GetValue(baseFeatures)!).Value != 1 || ((Bool32) fieldInfo.GetValue(checkFeatures)!).Value == 1) continue;
-
-			if (supported) sb.Append("\tFeatures [");
-			sb.Append($"{fieldInfo.Name}, ");
-			supported = false;
-		}
-
-		var startPtr = Config.FeatureWorker.FirstPtr;
-		foreach (var type in Config.FeatureWorker.Types)
-		{
-			if (Config.FeatureWorker.IsFeatureAvailable(type, startPtr))
-			{
-				startPtr = startPtr->PNext;
-				continue;
-			}
-
-			if (supported) sb.Append("\tFeatures [");
-			sb.Append($"{type.Name}, ");
-			supported = false;
-			startPtr = startPtr->PNext;
-		}
-
-		if (supported) return true;
-
-		sb.Remove(sb.Length - 2, 2);
-		sb.Append("] are not available on this device");
-
-		return false;
-	}
+	// private bool CheckDeviceFeatures(PhysicalDevice device, StringBuilder sb)
+	// {
+	// 	var features2 = new PhysicalDeviceFeatures2
+	// 	{
+	// 		SType = StructureType.PhysicalDeviceFeatures2,
+	// 		PNext = Config.FeatureWorker.FirstPtr
+	// 	};
+	//
+	// 	Vk.GetPhysicalDeviceFeatures2(device, &features2);
+	//
+	// 	bool supported = true;
+	//
+	// 	var fields = typeof(PhysicalDeviceFeatures).GetFields();
+	// 	object baseFeatures = Config.DeviceFeatures;
+	// 	object checkFeatures = features2.Features;
+	// 	foreach (var fieldInfo in fields)
+	// 	{
+	// 		if (((Bool32) fieldInfo.GetValue(baseFeatures)!).Value != 1 || ((Bool32) fieldInfo.GetValue(checkFeatures)!).Value == 1) continue;
+	//
+	// 		if (supported) sb.Append("\tFeatures [");
+	// 		sb.Append($"{fieldInfo.Name}, ");
+	// 		supported = false;
+	// 	}
+	//
+	// 	var startPtr = Config.FeatureWorker.FirstPtr;
+	// 	foreach (var type in Config.FeatureWorker.Types)
+	// 	{
+	// 		if (Config.FeatureWorker.IsFeatureAvailable(type, startPtr))
+	// 		{
+	// 			startPtr = startPtr->PNext;
+	// 			continue;
+	// 		}
+	//
+	// 		if (supported) sb.Append("\tFeatures [");
+	// 		sb.Append($"{type.Name}, ");
+	// 		supported = false;
+	// 		startPtr = startPtr->PNext;
+	// 	}
+	//
+	// 	if (supported) return true;
+	//
+	// 	sb.Remove(sb.Length - 2, 2);
+	// 	sb.Append("] are not available on this device");
+	//
+	// 	return false;
+	// }
 
 	public static SwapchainDetails GetSwapchainDetails(PhysicalDevice device)
 	{
@@ -415,7 +419,7 @@ public unsafe class Context : IDisposable
 
 		suitable &= CheckDeviceExtensions(device, sb);
 
-		suitable &= CheckDeviceFeatures(device, sb);
+		// suitable &= CheckDeviceFeatures(device, sb);
 
 		suitable &= CheckDeviceSwapchain(device, sb);
 
@@ -434,67 +438,67 @@ public unsafe class Context : IDisposable
 
 	private void FindQueueFamilies(PhysicalDevice device)
 	{
-		var graphics = new QueueFamily {Index = 0};
-		QueueFamily? compute = null;
-		QueueFamily? transfer = null;
-
-		uint count = 0;
-		Vk.GetPhysicalDeviceQueueFamilyProperties(device, &count, null);
-		var properties = stackalloc QueueFamilyProperties[(int) count];
-		Vk.GetPhysicalDeviceQueueFamilyProperties(device, &count, properties);
-
-		for (uint i = 0; i < count; i++)
-		{
-			if ((properties[i].QueueFlags & QueueFlags.QueueGraphicsBit) != 0)
-			{
-				graphics = new QueueFamily {Index = i};
-			}
-			else
-			{
-				if ((properties[i].QueueFlags & QueueFlags.QueueComputeBit) != 0) compute = new QueueFamily {Index = i};
-
-				if ((properties[i].QueueFlags & QueueFlags.QueueTransferBit) != 0 &&
-				    (properties[i].QueueFlags & QueueFlags.QueueComputeBit) == 0)
-					transfer = new QueueFamily {Index = i};
-			}
-		}
-
-		compute ??= graphics;
-		transfer ??= graphics;
-
-		Queues = new QueueFamilies(graphics, transfer, compute);
+		// var graphics = new VulkanQueue {FamilyIndex = 0};
+		// VulkanQueue? compute = null;
+		// VulkanQueue? transfer = null;
+		//
+		// uint count = 0;
+		// Vk.GetPhysicalDeviceQueueFamilyProperties(device, &count, null);
+		// var properties = stackalloc QueueFamilyProperties[(int) count];
+		// Vk.GetPhysicalDeviceQueueFamilyProperties(device, &count, properties);
+		//
+		// for (uint i = 0; i < count; i++)
+		// {
+		// 	if ((properties[i].QueueFlags & QueueFlags.QueueGraphicsBit) != 0)
+		// 	{
+		// 		graphics = new VulkanQueue {FamilyIndex = i};
+		// 	}
+		// 	else
+		// 	{
+		// 		if ((properties[i].QueueFlags & QueueFlags.QueueComputeBit) != 0) compute = new VulkanQueue {FamilyIndex = i};
+		//
+		// 		if ((properties[i].QueueFlags & QueueFlags.QueueTransferBit) != 0 &&
+		// 		    (properties[i].QueueFlags & QueueFlags.QueueComputeBit) == 0)
+		// 			transfer = new VulkanQueue {FamilyIndex = i};
+		// 	}
+		// }
+		//
+		// compute ??= graphics;
+		// transfer ??= graphics;
+		//
+		// Queues = new QueueFamilies(graphics, transfer, compute);
 	}
 
 	private void CreateLogicalDevice()
 	{
 		float priority = 1f;
-		uint[] indices = new[] {Queues.Graphics.Index, Queues.Transfer.Index, Queues.Compute.Index}.Distinct().ToArray();
+		// uint[] indices = new[] {Queues.Graphics.Index, Queues.Transfer.Index, Queues.Compute.Index}.Distinct().ToArray();
 
-		var queueCreateInfos = stackalloc DeviceQueueCreateInfo[indices.Length];
-		for (int i = 0; i < indices.Length; i++)
-		{
-			queueCreateInfos[i] = new DeviceQueueCreateInfo
-			{
-				SType = StructureType.DeviceQueueCreateInfo,
-				QueueFamilyIndex = indices[i],
-				QueueCount = 1,
-				PQueuePriorities = &priority
-			};
-		}
+		// var queueCreateInfos = stackalloc DeviceQueueCreateInfo[indices.Length];
+		// for (int i = 0; i < indices.Length; i++)
+		// {
+		// 	queueCreateInfos[i] = new DeviceQueueCreateInfo
+		// 	{
+		// 		SType = StructureType.DeviceQueueCreateInfo,
+		// 		QueueFamilyIndex = indices[i],
+		// 		QueueCount = 1,
+		// 		PQueuePriorities = &priority
+		// 	};
+		// }
 
-		Config.FeatureWorker.ReCreateChain(true);
+		// Config.FeatureWorker.ReCreateChain(true);
 		var features2 = new PhysicalDeviceFeatures2
 		{
 			SType = StructureType.PhysicalDeviceFeatures2,
 			Features = Config.DeviceFeatures,
-			PNext = Config.FeatureWorker.FirstPtr
+			// PNext = Config.FeatureWorker.FirstPtr
 		};
 
 		var deviceCreateInfo = new DeviceCreateInfo
 		{
 			SType = StructureType.DeviceCreateInfo,
-			QueueCreateInfoCount = (uint) indices.Length,
-			PQueueCreateInfos = queueCreateInfos,
+			// QueueCreateInfoCount = (uint) indices.Length,
+			// PQueueCreateInfos = queueCreateInfos,
 			PpEnabledExtensionNames = (byte**) SilkMarshal.StringArrayToPtr(Config.DeviceExtensions),
 			EnabledExtensionCount = (uint) Config.DeviceExtensions.Length,
 			PNext = features2.AsPointer()
@@ -514,12 +518,12 @@ public unsafe class Context : IDisposable
 
 	private void CreateDeviceQueues()
 	{
-		Vk.GetDeviceQueue(Device, Queues.Graphics.Index, 0, out var graphics);
-		Queues.Graphics.Queue = graphics;
-		Vk.GetDeviceQueue(Device, Queues.Compute.Index, 0, out var compute);
-		Queues.Compute.Queue = compute;
-		Vk.GetDeviceQueue(Device, Queues.Transfer.Index, 0, out var transfer);
-		Queues.Transfer.Queue = transfer;
+		// Vk.GetDeviceQueue(Device, Queues.Graphics.Index, 0, out var graphics);
+		// Queues.Graphics.Queue = graphics;
+		// Vk.GetDeviceQueue(Device, Queues.Compute.Index, 0, out var compute);
+		// Queues.Compute.Queue = compute;
+		// Vk.GetDeviceQueue(Device, Queues.Transfer.Index, 0, out var transfer);
+		// Queues.Transfer.Queue = transfer;
 	}
 
 	private void CreateVma()

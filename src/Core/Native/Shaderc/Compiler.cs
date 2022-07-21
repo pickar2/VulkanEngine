@@ -15,15 +15,15 @@ public class Compiler : IDisposable
 	///     Initializes a new instance of the <see cref="T:Vulkan.Shaderc.Compiler" /> class.
 	///     If `Options` is null, a default one will be created with Includes resolution enabled.
 	/// </summary>
-	public Compiler(Options? options = null)
+	public Compiler(ShadercOptions? options = null)
 	{
 		handle = NativeMethods.shaderc_compiler_initialize();
 		if (handle == IntPtr.Zero)
 			throw new Exception("error");
-		Options = options ?? new Options();
+		ShadercOptions = options ?? new ShadercOptions();
 	}
 
-	public Options Options { get; }
+	public ShadercOptions ShadercOptions { get; }
 
 	public static void GetSpvVersion(out SpirVVersion version, out uint revision) => NativeMethods.shaderc_get_spv_version(out version, out revision);
 
@@ -85,7 +85,7 @@ public class Compiler : IDisposable
 	/// <param name="entryPoint">defines the name of the entry point to associate with this GLSL source.</param>
 	public Result Compile(string source, string fileName, ShaderKind shaderKind, string entryPoint = "main") =>
 		new(NativeMethods.shaderc_compile_into_spv(handle, source, (ulong) source.Length,
-			(byte) shaderKind, fileName, entryPoint, Options.handle));
+			(byte) shaderKind, fileName, entryPoint, ShadercOptions.handle));
 
 	#region IDisposable implementation
 
@@ -101,7 +101,7 @@ public class Compiler : IDisposable
 			return;
 
 		if (disposing)
-			Options.Dispose();
+			ShadercOptions.Dispose();
 		else
 			Console.WriteLine("[shaderc] Compiler disposed by finalizer");
 

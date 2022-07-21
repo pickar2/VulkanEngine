@@ -55,6 +55,9 @@ public static unsafe class VulkanUtils
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static T* AsPointer<T>(this ref T value) where T : unmanaged => (T*) Unsafe.AsPointer(ref value);
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static T* AsPointer<T>(this T[] value) where T : unmanaged => (T*) Unsafe.AsPointer(ref value[0]);
 
 	public static void WriteToSpan<T>(this ref T value, Span<byte> span, int index) where T : struct
 	{
@@ -62,7 +65,7 @@ public static unsafe class VulkanUtils
 		valueSpan[0] = value;
 	}
 
-	public static int FormatSize(Format format)
+	public static int SizeOfFormat(Format format)
 	{
 		int result = format switch
 		{
@@ -195,13 +198,13 @@ public static unsafe class VulkanUtils
 		return result;
 	}
 
-	public static CommandPool CreateCommandPool(int flags, QueueFamily queue)
+	public static CommandPool CreateCommandPool(int flags, VulkanQueue vulkanQueue)
 	{
 		CommandPoolCreateInfo poolInfo = new()
 		{
 			SType = StructureType.CommandPoolCreateInfo,
 			Flags = (CommandPoolCreateFlags) flags,
-			QueueFamilyIndex = queue.Index
+			QueueFamilyIndex = vulkanQueue.Family.FamilyIndex
 		};
 
 		Check(Context.Vk.CreateCommandPool(Context.Device, poolInfo, null, out var pool), "Failed to create command pool");
@@ -227,13 +230,12 @@ public static unsafe class VulkanUtils
 			}
 		};
 
-		Check(Context.Vk.CreateImageView(Context.Device, createInfo, null, out var imageView), "Failed to create texture image view");
+		Check(Context2.Vk.CreateImageView(Context2.Device, createInfo, null, out var imageView), "Failed to create texture image view");
 
 		return imageView;
 	}
 
-	public static Format FindSupportedFormat(Format[] formatCandidates, ImageTiling tiling,
-		FormatFeatureFlags features)
+	public static Format FindSupportedFormat(Format[] formatCandidates, ImageTiling tiling, FormatFeatureFlags features)
 	{
 		foreach (var format in formatCandidates)
 		{
@@ -354,7 +356,7 @@ public static unsafe class VulkanUtils
 		Context.Vk.CmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0,
 			null, 0, null, 1, barrier);
 
-		CommandBuffers.EndSingleTimeCommands(ref commandBuffer, GraphicsCommandPool, Queues.Graphics);
+		CommandBuffers.EndSingleTimeCommands(ref commandBuffer, GraphicsCommandPool, Context2.GraphicsQueue);
 	}
 
 	private static bool HasStencilComponent(Format format) => format is Format.D32SfloatS8Uint or Format.D24UnormS8Uint;
@@ -414,7 +416,7 @@ public static unsafe class VulkanUtils
 			Size = size
 		};
 
-		uint[] indices = Queues.UniqueIndices();
+		uint[] indices = Context2.QueueFamilies.Select(f => f.FamilyIndex).Distinct().ToArray();
 		if (indices.Length == 1)
 		{
 			createInfo.SharingMode = SharingMode.Exclusive;
@@ -478,10 +480,10 @@ public static unsafe class VulkanUtils
 
 		Context.Vk.CmdCopyBuffer(commandBuffer, src.Buffer, dst.Buffer, 1, copy);
 
-		CommandBuffers.EndSingleTimeCommands(ref commandBuffer, GraphicsCommandPool, Queues.Graphics);
+		CommandBuffers.EndSingleTimeCommands(ref commandBuffer, GraphicsCommandPool, Context2.GraphicsQueue);
 	}
 
-	public static VulkanPipeline CreateComputePipeline(VulkanShader shader, DescriptorSetLayout[] layouts, PushConstantRange[]? pushConstantRanges = null)
+	public static VulkanPipeline CreateComputePipeline(VulkanShader shader, DescriptorSetLayout[] layouts, PushConstantRange[]? pushConstantRanges = null, PipelineCache pipelineCache = default)
 	{
 		pushConstantRanges ??= Array.Empty<PushConstantRange>();
 
@@ -511,7 +513,7 @@ public static unsafe class VulkanUtils
 			Layout = layout
 		};
 
-		Context.Vk.CreateComputePipelines(Context.Device, default, 1, &createInfo, null, out var pipeline);
+		Context.Vk.CreateComputePipelines(Context.Device, pipelineCache, 1, &createInfo, null, out var pipeline);
 
 		return new VulkanPipeline
 		{
@@ -541,7 +543,7 @@ public static unsafe class VulkanUtils
 
 		Context.Vk.CmdCopyBufferToImage(cb, buffer, image.Image, ImageLayout.TransferDstOptimal, 1, &imageCopy);
 
-		CommandBuffers.EndSingleTimeCommands(ref cb, GraphicsCommandPool, Queues.Graphics);
+		CommandBuffers.EndSingleTimeCommands(ref cb, GraphicsCommandPool, Context2.GraphicsQueue);
 	}
 
 	public static void GenerateMipmaps(VulkanImage image)
@@ -625,7 +627,7 @@ public static unsafe class VulkanUtils
 		Context.Vk.CmdPipelineBarrier(cb, PipelineStageFlags.PipelineStageTransferBit, PipelineStageFlags.PipelineStageFragmentShaderBit, 0, null, null, 1,
 			&barrier);
 
-		CommandBuffers.EndSingleTimeCommands(ref cb, GraphicsCommandPool, Queues.Graphics);
+		CommandBuffers.EndSingleTimeCommands(ref cb, GraphicsCommandPool, Context2.GraphicsQueue);
 	}
 
 	public static VulkanImage CreateTextureFromBytes(byte[] bytes, ulong bytesCount, uint width, uint height, int channels, bool generateMipmaps)

@@ -50,7 +50,7 @@ public static unsafe class ReflectUtils
 				Offset = bindingDescriptions[0].Stride
 			};
 
-			bindingDescriptions[0].Stride += (uint) VulkanUtils.FormatSize(desc.Format);
+			bindingDescriptions[0].Stride += (uint) VulkanUtils.SizeOfFormat(desc.Format);
 		}
 
 		var arr = attributeDescriptions.ToArray();
@@ -62,6 +62,7 @@ public static unsafe class ReflectUtils
 
 		if (attributeDescriptions.Count <= 0) return createInfo;
 
+		// TODO: fix possible memory access violation (Unsafe.AsPointer on stack variable, stack is closing before pointer is used)
 		createInfo.VertexBindingDescriptionCount = 1;
 		createInfo.PVertexBindingDescriptions = bindingDescriptions[0].AsPointer();
 		createInfo.VertexAttributeDescriptionCount = (uint) attributeDescriptions.Count;

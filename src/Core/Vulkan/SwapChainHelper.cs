@@ -1,5 +1,6 @@
 ﻿using System;
 using Core.Utils;
+using Core.Vulkan.Options;
 using Silk.NET.Vulkan;
 using static Core.Utils.VulkanUtils;
 using static Core.Native.VMA.VulkanMemoryAllocator;
@@ -185,7 +186,8 @@ public static unsafe class SwapchainHelper
 		Format = surfaceFormat.Format;
 		Extent = extent;
 
-		uint minImageCount = details.SurfaceCapabilities.MinImageCount + 1;
+		// uint minImageCount = Math.Max(details.SurfaceCapabilities.MinImageCount, (presentMode == PresentModeKHR.PresentModeImmediateKhr) ? 2u : 3u) + MainRenderer.FrameOverlap - 1;
+		uint minImageCount = Math.Max(details.SurfaceCapabilities.MinImageCount, MainRenderer.FrameOverlap);
 		if (details.SurfaceCapabilities.MaxImageCount > 0 && minImageCount > details.SurfaceCapabilities.MaxImageCount)
 			minImageCount = details.SurfaceCapabilities.MaxImageCount;
 
@@ -217,6 +219,7 @@ public static unsafe class SwapchainHelper
 		Swapchain = swapchain;
 
 		Context.KhrSwapchain.GetSwapchainImages(Context.Device, Swapchain, ref ImageCount, null);
+		// App.Logger.Info.Message($"DriverMinImageCount: {details.SurfaceCapabilities.MinImageCount}, CalculatedMinImageCount: {minImageCount}, ImageCount: {ImageCount}");
 
 		SwapchainImages = new Image[(int) ImageCount];
 		Context.KhrSwapchain.GetSwapchainImages(Context.Device, Swapchain, ref ImageCount, SwapchainImages[0].AsPointer());
@@ -309,15 +312,14 @@ public static unsafe class SwapchainHelper
 			Width = Extent.Width,
 			Height = Extent.Height,
 			Layers = 1,
-			AttachmentCount = (uint) (VulkanOptions.MsaaEnabled ? 3 : 2)
+			AttachmentCount = (uint) (VulkanOptions.MsaaEnabled ? 3 : 2),
+			PAttachments = attachments
 		};
 
 		for (int i = 0; i < SwapchainImageViews.Length; i++)
 		{
-			var imageView = SwapchainImageViews[i];
-			attachments[VulkanOptions.MsaaEnabled ? 2 : 0] = imageView;
+			attachments[VulkanOptions.MsaaEnabled ? 2 : 0] = SwapchainImageViews[i];
 
-			createInfo.PAttachments = attachments;
 			Context.Vk.CreateFramebuffer(Context.Device, &createInfo, null, out frameBuffers[i]);
 		}
 

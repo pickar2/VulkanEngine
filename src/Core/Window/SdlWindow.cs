@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using Core.Utils;
 using Core.Vulkan;
+using Core.Vulkan.Options;
 using Silk.NET.Vulkan;
 using static SDL2.SDL;
 
@@ -31,9 +31,19 @@ public class SdlWindow : IDisposable
 
 		SDL_SetHint(SDL_HINT_IME_SHOW_UI, "1");
 
-		WindowHandle = SDL_CreateWindow(Title, (int) (mode.w - VulkanOptions.WindowWidth) / 2, (int) (mode.h - VulkanOptions.WindowHeight) / 2,
-			(int) VulkanOptions.WindowWidth, (int) VulkanOptions.WindowHeight,
-			SDL_WindowFlags.SDL_WINDOW_VULKAN | SDL_WindowFlags.SDL_WINDOW_RESIZABLE | SDL_WindowFlags.SDL_WINDOW_HIDDEN);
+		var flags = SDL_WindowFlags.SDL_WINDOW_VULKAN | SDL_WindowFlags.SDL_WINDOW_RESIZABLE | SDL_WindowFlags.SDL_WINDOW_HIDDEN;
+
+		int width = (int) VulkanOptions.WindowWidth;
+		int height = (int) VulkanOptions.WindowHeight;
+
+		if (VulkanOptions.Fullscreen)
+		{
+			flags |= SDL_WindowFlags.SDL_WINDOW_FULLSCREEN;
+			// width = mode.w;
+			// height = mode.h;
+		}
+
+		WindowHandle = SDL_CreateWindow(Title, (mode.w - width) / 2, (mode.h - height) / 2, width, height, flags);
 
 		WindowWidth = (int) VulkanOptions.WindowWidth;
 		WindowHeight = (int) VulkanOptions.WindowHeight;

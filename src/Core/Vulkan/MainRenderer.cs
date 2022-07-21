@@ -6,6 +6,7 @@ using System.Threading;
 using Core.UI;
 using Core.UI.Controls;
 using Core.Utils;
+using Core.Vulkan.Options;
 using Silk.NET.Vulkan;
 
 namespace Core.Vulkan;
@@ -22,10 +23,10 @@ public static unsafe class MainRenderer
 	// private static Frame[] _images = new Frame[FrameOverlap];
 	private static int _imageIndex;
 
-	private static CommandPool[] _commandPools = default!;
-	private static CommandBuffer[] _primaryCommandBuffers = default!;
+	public static CommandPool[] CommandPools = default!;
+	public static CommandBuffer[] PrimaryCommandBuffers = default!;
 
-	private static MList<Fence>[] _fences = default!;
+	private static List<Fence>[] _fences = default!;
 
 	private static bool _framebufferResized;
 
@@ -47,23 +48,23 @@ public static unsafe class MainRenderer
 		var createInfo = new CommandPoolCreateInfo
 		{
 			SType = StructureType.CommandPoolCreateInfo,
-			QueueFamilyIndex = Context.Queues.Graphics.Index
+			QueueFamilyIndex = Context2.GraphicsQueue.Family.FamilyIndex
 		};
 
-		_commandPools = new CommandPool[SwapchainHelper.FrameBuffers.Length];
-		_primaryCommandBuffers = new CommandBuffer[SwapchainHelper.FrameBuffers.Length];
-		for (int j = 0; j < _commandPools.Length; j++)
+		CommandPools = new CommandPool[SwapchainHelper.FrameBuffers.Length];
+		PrimaryCommandBuffers = new CommandBuffer[SwapchainHelper.FrameBuffers.Length];
+		for (int j = 0; j < CommandPools.Length; j++)
 		{
 			Context.Vk.CreateCommandPool(Context.Device, createInfo, null, out var commandPool);
 			DisposalQueue.EnqueueInGlobal(() => Context.Vk.DestroyCommandPool(Context.Device, commandPool, null));
 
-			_commandPools[j] = commandPool;
-			_primaryCommandBuffers[j] = CommandBuffers.CreateCommandBuffer(CommandBufferLevel.Primary, commandPool);
+			CommandPools[j] = commandPool;
+			PrimaryCommandBuffers[j] = CommandBuffers.CreateCommandBuffer(CommandBufferLevel.Primary, commandPool);
 		}
 
 		SwapchainHelper.OnRecreateSwapchain += () =>
 		{
-			foreach (var commandPool in _commandPools)
+			foreach (var commandPool in CommandPools)
 			{
 				Context.Vk.ResetCommandPool(Context.Device, commandPool, 0);
 			}
@@ -71,8 +72,8 @@ public static unsafe class MainRenderer
 
 		CreateFrames();
 
-		_fences = new MList<Fence>[SwapchainHelper.ImageCountInt];
-		for (int i = 0; i < _fences.Length; i++) _fences[i] = new MList<Fence>();
+		_fences = new List<Fence>[SwapchainHelper.ImageCountInt];
+		for (int i = 0; i < _fences.Length; i++) _fences[i] = new List<Fence>();
 	}
 
 	public static void RenderLoop()
@@ -98,6 +99,8 @@ public static unsafe class MainRenderer
 		
 		while (Context.Window.IsRunning)
 		{
+			// TODO: if settings changed => reset required vulkan stuff
+			
 			lag += sw.ElapsedTicks / 10000d;
 			sw.Restart();
 			if (lag < MsPerUpdate)
@@ -159,14 +162,14 @@ public static unsafe class MainRenderer
 
 		BeforeDrawFrame?.Invoke(FrameIndex, _imageIndex);
 
-		Context.Vk.ResetCommandPool(Context.Device, _commandPools[_imageIndex], 0);
+		Context.Vk.ResetCommandPool(Context.Device, CommandPools[_imageIndex], 0);
 		RecordPrimaryCommandBuffers(_imageIndex);
 
 		var waitStage = PipelineStageFlags.PipelineStageColorAttachmentOutputBit;
 
 		var presentSemaphore = currentFrame.PresentSemaphore;
 		var renderSemaphore = currentFrame.RenderSemaphore;
-		var cmd = _primaryCommandBuffers[_imageIndex];
+		var cmd = PrimaryCommandBuffers[_imageIndex];
 
 		var submitInfo = new SubmitInfo
 		{
@@ -189,7 +192,7 @@ public static unsafe class MainRenderer
 			}
 		}
 
-		Context.Queues.Graphics.Submit(ref submitInfo, ref currentFrame.Fence);
+		Context2.GraphicsQueue.Submit(ref submitInfo, ref currentFrame.Fence);
 
 		var swapchain = SwapchainHelper.Swapchain;
 		var presentInfo = new PresentInfoKHR
@@ -202,7 +205,7 @@ public static unsafe class MainRenderer
 			PImageIndices = &swapchainImageIndex
 		};
 
-		result = Context.KhrSwapchain.QueuePresent(Context.Queues.Graphics.Queue, &presentInfo);
+		result = Context.KhrSwapchain.QueuePresent(Context2.GraphicsQueue.Queue, &presentInfo);
 		if (result is Result.ErrorOutOfDateKhr or Result.SuboptimalKhr)
 			SwapchainHelper.RecreateSwapchain();
 		else if (result != Result.Success)
@@ -269,7 +272,7 @@ public static unsafe class MainRenderer
 		clearValues[1] = new ClearValue();
 		clearValues[1].DepthStencil.Depth = 1;
 
-		var cmd = _primaryCommandBuffers[imageIndex];
+		var cmd = PrimaryCommandBuffers[imageIndex];
 
 		VulkanUtils.Check(cmd.Begin(CommandBufferUsageFlags.CommandBufferUsageOneTimeSubmitBit), "Failed to begin command buffer.");
 

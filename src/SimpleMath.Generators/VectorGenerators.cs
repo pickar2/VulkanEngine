@@ -41,7 +41,7 @@ using System.Numerics;
 namespace SimpleMath.Vectors;
 
 #nullable enable
-public struct {name}<T> where T : struct, INumber<T>
+public struct {name}<T> : IEquatable<{name}<T>> where T : struct, INumber<T>
 {{
 	public T {componentStr};
 

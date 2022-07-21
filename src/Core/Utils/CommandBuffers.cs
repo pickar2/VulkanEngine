@@ -32,7 +32,7 @@ public static class CommandBuffers
 		return commandBuffer;
 	}
 
-	public static unsafe void EndSingleTimeCommands(ref CommandBuffer commandBuffer, CommandPool commandPool, QueueFamily queue)
+	public static unsafe void EndSingleTimeCommands(ref CommandBuffer commandBuffer, CommandPool commandPool, VulkanQueue vulkanQueue)
 	{
 		commandBuffer.End();
 
@@ -44,14 +44,14 @@ public static class CommandBuffers
 		};
 
 		var fence = VulkanUtils.CreateFence(false);
-		queue.Submit(ref submitInfo, ref fence);
+		vulkanQueue.Submit(ref submitInfo, ref fence);
 		fence.Wait(ulong.MaxValue);
 
 		Context.Vk.DestroyFence(Context.Device, fence, null);
 		Context.Vk.FreeCommandBuffers(Context.Device, commandPool, 1, commandBuffer);
 	}
 
-	public static unsafe void EndSingleTimeCommands(ref CommandBuffer commandBuffer, CommandPool commandPool, ref Fence fence, QueueFamily queue)
+	public static unsafe void EndSingleTimeCommands(ref CommandBuffer commandBuffer, CommandPool commandPool, ref Fence fence, VulkanQueue vulkanQueue)
 	{
 		commandBuffer.End();
 
@@ -62,7 +62,7 @@ public static class CommandBuffers
 			CommandBufferCount = 1
 		};
 
-		queue.Submit(ref submitInfo, ref fence);
+		vulkanQueue.Submit(ref submitInfo, ref fence);
 		fence.Wait(ulong.MaxValue);
 
 		Context.Vk.FreeCommandBuffers(Context.Device, commandPool, 1, commandBuffer);

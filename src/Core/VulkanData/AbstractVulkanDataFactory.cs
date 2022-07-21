@@ -6,7 +6,7 @@ using static Core.Native.VMA.VulkanMemoryAllocator;
 
 namespace Core.VulkanData;
 
-public abstract unsafe class AbstractVulkanDataFactory<TDataHolder> : IVulkanDataFactory where TDataHolder : class, IVulkanDataHolder, new()
+public abstract unsafe class AbstractVulkanDataFactory<TDataHolder> : IVulkanDataFactory where TDataHolder : VulkanDataHolder, new()
 {
 	private const int MaxCopyRegions = 2048;
 	private readonly IntPtr[] _ptr = new IntPtr[1];

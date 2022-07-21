@@ -7,6 +7,7 @@ using Core.Registries.Entities;
 using Core.TemporaryMath;
 using Core.Utils;
 using Core.Vulkan;
+using Core.Vulkan.Options;
 using Core.VulkanData;
 using Silk.NET.Core.Native;
 using Silk.NET.Maths;
@@ -53,6 +54,8 @@ public static unsafe partial class UiRenderer
 
 	private static int _dirty;
 
+	private static PipelineCache _pipelineCache;
+
 	public static MultipleStructDataFactory GlobalData = default!;
 
 	public static StructHolder ProjectionMatrixHolder = default!;
@@ -71,7 +74,7 @@ public static unsafe partial class UiRenderer
 		_commandPools = new CommandPool[SwapchainHelper.ImageCount];
 		for (int i = 0; i < _commandPools.Length; i++)
 		{
-			var pool = VulkanUtils.CreateCommandPool(0, Context.Queues.Graphics);
+			var pool = VulkanUtils.CreateCommandPool(0, Context2.GraphicsQueue);
 			_commandPools[i] = pool;
 			DisposalQueue.EnqueueInGlobal(() => Context.Vk.DestroyCommandPool(Context.Device, pool, null));
 		}
@@ -87,6 +90,7 @@ public static unsafe partial class UiRenderer
 		CreateDescriptorPools();
 		CreateDescriptorSets();
 		CreateGlobalDataDescriptors();
+		CreatePipelineCache();
 		CreatePipelines();
 
 		_commandBuffers = new CommandBuffer[SwapchainHelper.ImageCountInt];
@@ -108,6 +112,19 @@ public static unsafe partial class UiRenderer
 		});
 	}
 
+	private static void CreatePipelineCache()
+	{
+		// TODO: file system cache
+		// TODO: global cache, not only for ui
+		var cacheCreateInfo = new PipelineCacheCreateInfo
+		{
+			SType = StructureType.PipelineCacheCreateInfo,
+			InitialDataSize = 0
+		};
+		Context.Vk.CreatePipelineCache(Context.Device, &cacheCreateInfo, null, out _pipelineCache);
+		DisposalQueue.EnqueueInGlobal(() => Context.Vk.DestroyPipelineCache(Context.Device, _pipelineCache, null));
+	}
+
 	private static void UpdateGlobalBuffers()
 	{
 		float aspect = (float) SwapchainHelper.Extent.Width / SwapchainHelper.Extent.Height;
@@ -126,8 +143,8 @@ public static unsafe partial class UiRenderer
 
 		var mvp = model * view * proj;
 
-		*ProjectionMatrixHolder.Get<Matrix4X4<float>>() = mvp;
-		// *ProjectionMatrixHolder.Get<Matrix4X4<float>>() = Matrix4X4<float>.Identity;
+		// *ProjectionMatrixHolder.Get<Matrix4X4<float>>() = mvp;
+		*ProjectionMatrixHolder.Get<Matrix4X4<float>>() = Matrix4X4<float>.Identity;
 		*OrthoMatrixHolder.Get<Matrix4X4<float>>() = ortho;
 
 		*FrameIndexHolder.Get<int>() = MainRenderer.FrameIndex;
@@ -190,7 +207,7 @@ public static unsafe partial class UiRenderer
 		{
 			var copyBuffer = CommandBuffers.BeginSingleTimeCommands(_copyCommandPool);
 			foreach ((string _, var factory) in UiMaterialManager.Instance) factory.RecordCopyCommand(copyBuffer);
-			CommandBuffers.EndSingleTimeCommands(ref copyBuffer, _copyCommandPool, Context.Queues.Transfer);
+			CommandBuffers.EndSingleTimeCommands(ref copyBuffer, _copyCommandPool, Context2.TransferToHostQueue);
 		}
 
 		if (_dirty <= 0) return;
@@ -723,36 +740,6 @@ public static unsafe partial class UiRenderer
 			}
 		};
 
-		// Program.Logger.Info.Message($"\r\n{string.Join("\r\n", _vertexShader.ReflectModule.GetInputVariables().Select(v => $"{v.name} : {v.format}"))}");
-		// Program.Logger.Info.Message($"\r\n{string.Join("\r\n", _vertexShader.ReflectModule.GetOutputVariables().Select(v => $"{v.name} : {v.format}"))}");
-		//
-		// var format = stackalloc Native.SpvReflectFormat[1];
-		//
-		// var sets = _fragmentShader.ReflectModule.GetDescriptorSets();
-		// foreach (var set in sets)
-		// {
-		// 	var bindings = Utils.ToArray(set.bindings, (int) set.binding_count);
-		// 	foreach (var binding in bindings)
-		// 	{
-		// 		Program.Logger.Info.Message($"{binding.name} : {binding.resource_type} : {binding.descriptor_type}");
-		// 		var block = binding.block;
-		// 		for (int i = 0; i < block.member_count; i++)
-		// 		{
-		// 			var member = block.members[i];
-		// 			Program.Logger.Info.Message($"{member.name} : {member.size}");
-		// 			for (int j = 0; j < member.member_count; j++)
-		// 			{
-		// 				var inner = member.members[j];
-		// 				Native.spvParseFormat(inner.type_description, format);
-		// 				Program.Logger.Info.Message($"{inner.name} : {inner.size} : {format[0]}");
-		// 			}
-		// 		}
-		// 	}
-		// }
-		//
-		// Program.Logger.Info.Message($"\r\n{string.Join("\r\n", _fragmentShader.ReflectModule.GetInputVariables().Select(v => $"{v.name} : {v.format}"))}");
-		// Program.Logger.Info.Message($"\r\n{string.Join("\r\n", _fragmentShader.ReflectModule.GetOutputVariables().Select(v => $"{v.name} : {v.format}"))}");
-
 		var vertexInfo = ReflectUtils.VertexInputStateFromShader(_vertexShader);
 
 		var inputAssembly = new PipelineInputAssemblyStateCreateInfo
@@ -914,23 +901,13 @@ public static unsafe partial class UiRenderer
 
 		_pipelines = new Pipeline[2];
 
-		// TODO: use real cache
-		var cacheCreateInfo = new PipelineCacheCreateInfo
-		{
-			SType = StructureType.PipelineCacheCreateInfo,
-			InitialDataSize = 0
-		};
-		Context.Vk.CreatePipelineCache(Context.Device, &cacheCreateInfo, null, out var pipelineCache);
-
-		VulkanUtils.Check(Context.Vk.CreateGraphicsPipelines(Context.Device, pipelineCache, 2, createInfos[0].AsPointer(),
+		VulkanUtils.Check(Context.Vk.CreateGraphicsPipelines(Context.Device, _pipelineCache, 2, createInfos[0].AsPointer(),
 			null, _pipelines[0].AsPointer()), "Failed to create ui pipelines.");
 
 		DisposalQueue.EnqueueInSwapchain(() => Context.Vk.DestroyPipelineLayout(Context.Device, _pipelineLayout, null));
 
 		DisposalQueue.EnqueueInSwapchain(() => Context.Vk.DestroyPipeline(Context.Device, _pipelines[0], null));
 		DisposalQueue.EnqueueInSwapchain(() => Context.Vk.DestroyPipeline(Context.Device, _pipelines[1], null));
-
-		DisposalQueue.EnqueueInSwapchain(() => Context.Vk.DestroyPipelineCache(Context.Device, pipelineCache, null));
 
 		_dirty = SwapchainHelper.ImageCountInt;
 	}

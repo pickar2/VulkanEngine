@@ -48,7 +48,7 @@ public unsafe partial class UiRenderer
 
 	private static void InitCompute()
 	{
-		_copyCommandPool = VulkanUtils.CreateCommandPool(0, Context.Queues.Transfer);
+		_copyCommandPool = VulkanUtils.CreateCommandPool(0, Context2.TransferToHostQueue);
 		DisposalQueue.EnqueueInGlobal(() => Context.Vk.DestroyCommandPool(Context.Device, _copyCommandPool, null));
 
 		_fence = VulkanUtils.CreateFence(true);
@@ -57,7 +57,7 @@ public unsafe partial class UiRenderer
 		_sortCommandPools = new CommandPool[SwapchainHelper.ImageCount];
 		for (int i = 0; i < _sortCommandPools.Length; i++)
 		{
-			var pool = VulkanUtils.CreateCommandPool(0, Context.Queues.Compute);
+			var pool = VulkanUtils.CreateCommandPool(0, Context2.ComputeQueue);
 			_sortCommandPools[i] = pool;
 			DisposalQueue.EnqueueInGlobal(() => Context.Vk.DestroyCommandPool(Context.Device, pool, null));
 		}
@@ -354,17 +354,17 @@ public unsafe partial class UiRenderer
 
 	private static void CreateSortPipelines()
 	{
-		_sortClearPipeline = VulkanUtils.CreateComputePipeline(_sortClearPass, new[] {_sortCountersLayout});
+		_sortClearPipeline = VulkanUtils.CreateComputePipeline(_sortClearPass, new[] {_sortCountersLayout}, null, _pipelineCache);
 		_sortClearPipeline.EnqueueGlobalDispose();
 
-		_sortCountPipeline = VulkanUtils.CreateComputePipeline(_sortCountPass, new[] {_componentDataLayout, _sortCountersLayout});
+		_sortCountPipeline = VulkanUtils.CreateComputePipeline(_sortCountPass, new[] {_componentDataLayout, _sortCountersLayout}, null, _pipelineCache);
 		_sortCountPipeline.EnqueueGlobalDispose();
 
-		_sortOffsetsPipeline = VulkanUtils.CreateComputePipeline(_sortOffsetsPass, new[] {_sortCountersLayout});
+		_sortOffsetsPipeline = VulkanUtils.CreateComputePipeline(_sortOffsetsPass, new[] {_sortCountersLayout}, null, _pipelineCache);
 		_sortOffsetsPipeline.EnqueueGlobalDispose();
 
-		_sortMainPipeline = VulkanUtils.CreateComputePipeline(_sortMainPass,
-			new[] {_componentDataLayout, _sortCountersLayout, _sortIndicesLayout});
+		_sortMainPipeline = VulkanUtils.CreateComputePipeline(_sortMainPass, new[] {_componentDataLayout, _sortCountersLayout, _sortIndicesLayout}, null,
+			_pipelineCache);
 		_sortMainPipeline.EnqueueGlobalDispose();
 	}
 
@@ -473,7 +473,7 @@ public unsafe partial class UiRenderer
 		{
 			var copyBuffer = CommandBuffers.BeginSingleTimeCommands(_copyCommandPool);
 			UiComponentFactory.Instance.RecordCopyCommand(copyBuffer);
-			CommandBuffers.EndSingleTimeCommands(ref copyBuffer, _copyCommandPool, Context.Queues.Transfer);
+			CommandBuffers.EndSingleTimeCommands(ref copyBuffer, _copyCommandPool, Context2.TransferToHostQueue);
 		}
 
 		VulkanUtils.MapDataToVulkanBuffer(span =>
@@ -493,7 +493,7 @@ public unsafe partial class UiRenderer
 		};
 
 		_fence.Reset();
-		Context.Queues.Compute.Submit(ref submitInfo, ref _fence);
+		Context2.ComputeQueue.Submit(ref submitInfo, ref _fence);
 		_fence.WaitInRenderer(imageIndex);
 	}
 }

@@ -24,7 +24,7 @@ public sealed class Config<T> : IComplexEntry
 		_value is T1 result ? result : throw new ArgumentException($"Can't cast from {_value?.GetType()} to {typeof(T)}").AsExpectedException();
 
 	public void Set<T1>(in T1 value) =>
-		_value = value is T result ? result : throw new ArgumentException($"Can't cast from {_value?.GetType()} to {typeof(T)}").AsExpectedException();
+		_value = value is T result ? result : throw new ArgumentException($"Can't cast from {_value?.GetType()} to {typeof(T1)}").AsExpectedException();
 
 	public override string ToString() => _value?.ToString() ?? "[Null reference]";
 }

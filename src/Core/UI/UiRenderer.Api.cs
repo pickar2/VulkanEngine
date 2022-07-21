@@ -50,6 +50,29 @@ public static unsafe partial class UiRenderer
 		_textures.Add(texture);
 
 		UiManager.Update();
+		
+		// var followCursorMaterial = UiMaterialManager.GetFactory("core:follow_cursor_material");
+		// var coolMaterial = UiMaterialManager.GetFactory("core:cool_material");
+		//
+		// var cursorVertMat = followCursorMaterial.Create();
+		// cursorVertMat.MarkForGPUUpdate();
+		// var cursorFragMat = coolMaterial.Create();
+		// var cursorFragData = cursorFragMat.GetMemPtr<CoolMaterialData>();
+		// cursorFragData->Color1 = Color.Blue.ToArgb();
+		// cursorFragData->Color2 = Color.DarkViolet.ToArgb();
+		// cursorFragMat.MarkForGPUUpdate();
+		//
+		// var cursor = UiComponentFactory.Instance.Create();
+		// var cursorData = cursor.GetData();
+		// cursorData->MaskStart = (0, 0);
+		// cursorData->MaskEnd = (1000, 1000);
+		// cursorData->BasePos = (0, 0);
+		// cursorData->BaseZ = 500;
+		// cursorData->Size = (50, 50);
+		//
+		// cursor.VertMaterial = cursorVertMat;
+		// cursor.FragMaterial = cursorFragMat;
+		// cursor.MarkForGPUUpdate();
 
 		// RelativeCoordinatesFactory.Instance.Create();
 

@@ -25,11 +25,11 @@ namespace Core.Native.Shaderc;
 // 	}
 // }
 
-public class Options : IDisposable, ICloneable
+public class ShadercOptions : IDisposable, ICloneable
 {
 	private static int curId; //id counter
 
-	internal static Dictionary<int, Options> optionsDic = new(); //context data for callbacks
+	internal static Dictionary<int, ShadercOptions> optionsDic = new(); //context data for callbacks
 	internal readonly int id; //dic key
 
 	/// <summary>
@@ -45,10 +45,10 @@ public class Options : IDisposable, ICloneable
 	///     Create a new instance of the Options class.
 	/// </summary>
 	/// <param name="enableIncludes">If set to 'true' include resolution is activated</param>
-	public Options(bool enableIncludes = true) : this(NativeMethods.shaderc_compile_options_initialize(),
+	public ShadercOptions(bool enableIncludes = true) : this(NativeMethods.shaderc_compile_options_initialize(),
 		enableIncludes) { }
 
-	private Options(IntPtr handle, bool enableIncludes)
+	private ShadercOptions(IntPtr handle, bool enableIncludes)
 	{
 		this.handle = handle;
 		if (handle == IntPtr.Zero)
@@ -158,7 +158,7 @@ public class Options : IDisposable, ICloneable
 	///     Returns a copy of the given shaderc Options.
 	/// </summary>
 	/// <returns>The clone.</returns>
-	public object Clone() => new Options(NativeMethods.shaderc_compile_options_clone(handle), includeEnabled);
+	public object Clone() => new ShadercOptions(NativeMethods.shaderc_compile_options_clone(handle), includeEnabled);
 
 	/// <summary>
 	///     Adds a predefined macro to the compilation options. This has the same
