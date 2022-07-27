@@ -1,15 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using Core.Registries.Entities;
 using Core.Utils;
 using Core.Vulkan.Options;
 using Silk.NET.Vulkan;
+using SimpleMath.Vectors;
+using static Core.Native.VMA.VulkanMemoryAllocator;
 using static Core.Utils.VulkanUtils;
 
 namespace Core.Vulkan;
 
-public unsafe class FrameGraph
+public static unsafe class FrameGraph
 {
 	public static readonly Dictionary<NamespacedName, RenderPassNode> RenderPasses = new();
 	public static readonly Dictionary<NamespacedName, ImageView> Attachments = new();
@@ -19,21 +22,205 @@ public unsafe class FrameGraph
 	{
 		Context2.BeforeLevelDeviceDispose += () => Dispose();
 		Context2.AfterLevelSwapchainCreate += () => AfterSwapchainCreation();
+		Context2.BeforeLevelSwapchainDispose += () => BeforeSwapchainDispose();
 	}
+
+	public static CommandPool ImageTransitionCommandPool;
 
 	public static void Init()
 	{
-		
+		var commandPoolCreateInfo = new CommandPoolCreateInfo
+		{
+			SType = StructureType.CommandPoolCreateInfo,
+			QueueFamilyIndex = Context2.GraphicsQueue.Family.Index,
+			Flags = CommandPoolCreateFlags.CommandPoolCreateTransientBit
+		};
+		Check(Context2.Vk.CreateCommandPool(Context2.Device, commandPoolCreateInfo, null, out ImageTransitionCommandPool),
+			"Failed to create ImageTransitionCommandPool.");
 	}
 
 	public static void Dispose()
 	{
-		
+		Context2.Vk.DestroyCommandPool(Context2.Device, ImageTransitionCommandPool, null);
 	}
 
 	public static void AfterSwapchainCreation()
 	{
+		// var formats = GetDepthFormats();
+		// App.Logger.Info.Message($"{string.Join(", ", formats)}");
+
+		// var swapchainAttachment = new VulkanImage2(Context2.);
+		var positionAttachment = CreateAttachment(Format.R16G16B16A16Sfloat, ImageAspectFlags.ImageAspectColorBit, Context2.State.WindowSize.Value);
+		var normalAttachment = CreateAttachment(Format.R16G16B16A16Sfloat, ImageAspectFlags.ImageAspectColorBit, Context2.State.WindowSize.Value);
+		var albedoAttachment = CreateAttachment(Format.R8G8B8A8Unorm, ImageAspectFlags.ImageAspectColorBit, Context2.State.WindowSize.Value);
+		var depthAttachment = CreateAttachment(Format.D32Sfloat, ImageAspectFlags.ImageAspectDepthBit, Context2.State.WindowSize.Value);
+		var maskAttachment = CreateAttachment(Format.R8Uint, ImageAspectFlags.ImageAspectColorBit, Context2.State.WindowSize.Value);
+
+		// App.Logger.Info.Message($"{positionAttachment.CurrentLayout}");
+
+		var attachmentDescriptions = new AttachmentDescription2[5];
+		attachmentDescriptions[0] = new AttachmentDescription2
+		{
+			SType = StructureType.AttachmentDescription2,
+			Format = Context2.SwapchainSurfaceFormat.Format,
+			Samples = SampleCountFlags.SampleCount1Bit,
+			LoadOp = AttachmentLoadOp.Clear,
+			StoreOp = AttachmentStoreOp.Store,
+			StencilLoadOp = AttachmentLoadOp.DontCare,
+			StencilStoreOp = AttachmentStoreOp.DontCare,
+			InitialLayout = ImageLayout.Undefined,
+			FinalLayout = ImageLayout.PresentSrcKhr,
+		};
+
+		var attachmentReferences = new AttachmentReference2[5];
+		attachmentReferences[0] = new AttachmentReference2
+		{
+			SType = StructureType.AttachmentReference2,
+			Attachment = 0,
+			Layout = ImageLayout.ColorAttachmentOptimal,
+			AspectMask = ImageAspectFlags.ImageAspectColorBit
+		};
+		// Subpass "Opaque UI"
 		
+
+		positionAttachment.Dispose();
+		normalAttachment.Dispose();
+		albedoAttachment.Dispose();
+		depthAttachment.Dispose();
+		maskAttachment.Dispose();
+	}
+
+	public static void BeforeSwapchainDispose()
+	{
+		
+	}
+
+	public static List<Format> GetDepthFormats()
+	{
+		// get all formats, exclude astc blocks
+		var candidates = Enum.GetValues<Format>().Where(f => (int) f > 1000288029 || (int) f < 1000288000).ToArray();
+		var list = new List<Format>();
+		
+		foreach (var candidate in candidates)
+		{
+			Context2.Vk.GetPhysicalDeviceFormatProperties2(Context2.PhysicalDevice, candidate, out var props);
+			if ((props.FormatProperties.OptimalTilingFeatures & FormatFeatureFlags.FormatFeatureDepthStencilAttachmentBit) != 0) list.Add(candidate);
+		}
+
+		return list;
+	}
+
+	public static VulkanImage2 CreateAttachment(Format format, ImageAspectFlags aspectFlags, Vector2<uint> size)
+	{
+		var usageFlags = (ImageUsageFlags) 0;
+
+		if ((aspectFlags & ImageAspectFlags.ImageAspectColorBit) != 0)
+		{
+			usageFlags |= ImageUsageFlags.ImageUsageColorAttachmentBit;
+		}
+
+		if ((aspectFlags & ImageAspectFlags.ImageAspectDepthBit) != 0 || (aspectFlags & ImageAspectFlags.ImageAspectStencilBit) != 0)
+		{
+			usageFlags |= ImageUsageFlags.ImageUsageDepthStencilAttachmentBit;
+		}
+
+		// if ((usageFlags & ImageUsageFlags.ImageUsageColorAttachmentBit) != 0 && (usageFlags & ImageUsageFlags.ImageUsageDepthStencilAttachmentBit) != 0)
+		// {
+		// 	throw new ArgumentException("Attachment cannot be both color and depth/stencil.").AsExpectedException();
+		// }
+
+		var imageCreateInfo = new ImageCreateInfo
+		{
+			SType = StructureType.ImageCreateInfo,
+			ImageType = ImageType.ImageType2D,
+			Extent = new Extent3D(size.X, size.Y, 1),
+			Format = format,
+			MipLevels = 1,
+			ArrayLayers = 1,
+			Samples = SampleCountFlags.SampleCount1Bit,
+			Tiling = ImageTiling.Optimal,
+			Usage = usageFlags | ImageUsageFlags.ImageUsageInputAttachmentBit,
+			InitialLayout = ImageLayout.Undefined,
+			SharingMode = SharingMode.Exclusive
+		};
+
+		var allocationInfo = new VmaAllocationCreateInfo
+		{
+			usage = VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY
+		};
+
+		Check((Result) vmaCreateImage(Context2.VmaHandle, ref imageCreateInfo, ref allocationInfo, out var imageHandle, out var allocation, IntPtr.Zero),
+			"Failed to create attachment image.");
+
+		var image = new Image(imageHandle);
+
+		var imageViewCreateInfo = new ImageViewCreateInfo
+		{
+			SType = StructureType.ImageViewCreateInfo,
+			ViewType = ImageViewType.ImageViewType2D,
+			Image = image,
+			SubresourceRange = new ImageSubresourceRange
+			{
+				AspectMask = aspectFlags,
+				LevelCount = 1,
+				BaseMipLevel = 0,
+				LayerCount = 1,
+				BaseArrayLayer = 0
+			},
+			Format = format
+		};
+
+		Check(Context2.Vk.CreateImageView(Context2.Device, imageViewCreateInfo, null, out var imageView), "Failed to create attachment image view.");
+
+		var vulkanImage = new VulkanImage2(image, allocation, imageView, format);
+
+		// var barrier = new ImageMemoryBarrier2
+		// {
+		// 	SType = StructureType.ImageMemoryBarrier2,
+		// 	OldLayout = vulkanImage.CurrentLayout,
+		// 	NewLayout = ImageLayout.AttachmentOptimal,
+		// 	SrcQueueFamilyIndex = Vk.QueueFamilyIgnored,
+		// 	DstQueueFamilyIndex = Vk.QueueFamilyIgnored,
+		// 	Image = vulkanImage.Image,
+		// 	SubresourceRange = new ImageSubresourceRange
+		// 	{
+		// 		LevelCount = vulkanImage.MipLevels,
+		// 		BaseMipLevel = 0,
+		// 		LayerCount = 1,
+		// 		BaseArrayLayer = 0,
+		// 		AspectMask = aspectFlags
+		// 	},
+		// 	SrcAccessMask = AccessFlags2.Access2None,
+		// 	SrcStageMask = PipelineStageFlags2.PipelineStage2None
+		// };
+		// if ((usageFlags & ImageUsageFlags.ImageUsageColorAttachmentBit) != 0)
+		// {
+		// 	barrier.DstAccessMask = AccessFlags2.Access2ColorAttachmentReadBit | AccessFlags2.Access2ColorAttachmentWriteBit;
+		// 	barrier.DstStageMask = PipelineStageFlags2.PipelineStage2ColorAttachmentOutputBit;
+		// }
+		// else
+		// {
+		// 	barrier.DstAccessMask = AccessFlags2.Access2DepthStencilAttachmentReadBit | AccessFlags2.Access2DepthStencilAttachmentWriteBit;
+		// 	barrier.DstStageMask = PipelineStageFlags2.PipelineStage2EarlyFragmentTestsBit;
+		// }
+		//
+		// var dependencyInfo = new DependencyInfo
+		// {
+		// 	SType = StructureType.DependencyInfo,
+		// 	ImageMemoryBarrierCount = 1,
+		// 	PImageMemoryBarriers = &barrier,
+		// 	DependencyFlags = DependencyFlags.DependencyByRegionBit
+		// };
+		//
+		// var commandBuffer = CommandBuffers.BeginSingleTimeCommands(ImageTransitionCommandPool);
+		//
+		// Context2.KhrSynchronization2.CmdPipelineBarrier2(commandBuffer, dependencyInfo);
+		//
+		// CommandBuffers.EndSingleTimeCommands(ref commandBuffer, ImageTransitionCommandPool, Context2.GraphicsQueue);
+		//
+		// vulkanImage.CurrentLayout = ImageLayout.AttachmentOptimal;
+		
+		return vulkanImage;
 	}
 
 	public static bool TryGetSubpass(NamespacedName renderPassName, NamespacedName subpassName, [MaybeNullWhen(false)] out SubpassNode subpassNode)
@@ -157,7 +344,8 @@ public unsafe class FrameGraph
 			SrcStageMask = PipelineStageFlags.PipelineStageColorAttachmentOutputBit,
 			SrcAccessMask = 0,
 			DstStageMask = PipelineStageFlags.PipelineStageColorAttachmentOutputBit,
-			DstAccessMask = AccessFlags.AccessColorAttachmentWriteBit
+			DstAccessMask = AccessFlags.AccessColorAttachmentWriteBit,
+			DependencyFlags = DependencyFlags.DependencyByRegionBit
 		};
 
 		dependencies[1] = new SubpassDependency
@@ -167,7 +355,8 @@ public unsafe class FrameGraph
 			SrcStageMask = PipelineStageFlags.PipelineStageEarlyFragmentTestsBit | PipelineStageFlags.PipelineStageLateFragmentTestsBit,
 			SrcAccessMask = 0,
 			DstStageMask = PipelineStageFlags.PipelineStageEarlyFragmentTestsBit | PipelineStageFlags.PipelineStageLateFragmentTestsBit,
-			DstAccessMask = AccessFlags.AccessDepthStencilAttachmentWriteBit
+			DstAccessMask = AccessFlags.AccessDepthStencilAttachmentWriteBit,
+			DependencyFlags = DependencyFlags.DependencyByRegionBit
 		};
 
 		if (VulkanOptions.MsaaEnabled)
@@ -275,4 +464,31 @@ public class SubpassNode
 public class SubpassDependencyNode
 {
 	
+}
+
+public class VulkanImage2
+{
+	public Image Image { get; init; }
+	public nint Allocation { get; init; }
+	public ImageView ImageView { get; init; }
+	public Format Format { get; init; }
+	public ImageLayout CurrentLayout { get; set; }
+	public uint MipLevels { get; init; }
+
+	public VulkanImage2(Image image, nint allocation, ImageView imageView, Format format, uint mipLevels = 1, ImageLayout currentLayout = ImageLayout.Undefined)
+	{
+		Image = image;
+		Allocation = allocation;
+		ImageView = imageView;
+		Format = format;
+		MipLevels = mipLevels;
+		CurrentLayout = currentLayout;
+	}
+
+	public unsafe void Dispose()
+	{
+		Context2.Vk.DestroyImageView(Context2.Device, ImageView, null);
+		vmaDestroyImage(Context2.VmaHandle, Image.Handle, Allocation);
+		GC.SuppressFinalize(this);
+	}
 }

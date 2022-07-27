@@ -285,7 +285,7 @@ public static class VulkanMemoryAllocator
 	 * allocation always refers to a VmaAllocation
 	 */
 
-	/* pCreateInfo is a const VmaAlloactorCreateInfo*
+	/* pCreateInfo is a const VmaAllocatorCreateInfo*
 	 * pAllocator is a VmaAllocator*
 	 */
 	[DllImport(libraryName, CallingConvention = CallingConvention.Cdecl)]

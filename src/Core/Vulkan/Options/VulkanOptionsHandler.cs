@@ -39,9 +39,10 @@ public class VulkanState
 	public readonly VulkanOption<string[]> DeviceExtensions = new(new string[]
 	{
 		"VK_KHR_swapchain",
-		"VK_KHR_synchronization2" // layer needs to be precompiled and added for mobile and vulkan <= 1.1
+		"VK_KHR_synchronization2" // layer needs to be precompiled and added for mobile and vulkan < 1.2
+		// "VK_KHR_separate_depth_stencil_layouts", // was promoted to vulkan 1.2 core
+		// "VK_KHR_create_renderpass2", // was promoted to vulkan 1.2 core
 		// "VK_KHR_uniform_buffer_standard_layout", // was promoted to vulkan 1.2 core
-		// "VK_KHR_16bit_storage", // was promoted to vulkan 1.1 core
 		// "VK_EXT_descriptor_indexing", // was promoted to vulkan 1.2 core
 		// "VK_KHR_draw_indirect_count", // was promoted to vulkan 1.2 core
 		// "VK_EXT_shader_atomic_float", // isn't used right now
@@ -65,7 +66,7 @@ public class VulkanState
 		new PhysicalDeviceShaderAtomicFloatFeaturesEXT
 		{
 			// ShaderBufferFloat32AtomicAdd = true,
-			ShaderBufferFloat32Atomics = true
+			ShaderBufferFloat32Atomics = false
 		},
 		new PhysicalDeviceUniformBufferStandardLayoutFeaturesKHR
 		{
@@ -75,6 +76,10 @@ public class VulkanState
 		{
 			StorageBuffer16BitAccess = true,
 			// StorageInputOutput16 = true
+		},
+		new PhysicalDeviceSeparateDepthStencilLayoutsFeatures
+		{
+			SeparateDepthStencilLayouts = true
 		}
 	}, VulkanLevel.Device);
 
@@ -94,13 +99,13 @@ public class VulkanState
 		// ShaderResourceMinLod = true
 	}, VulkanLevel.Device);
 
-	public readonly VulkanOption<int> SelectedGpu = new(-1, VulkanLevel.Device);
+	public readonly VulkanOption<int> SelectedGpuIndex = new(-1, VulkanLevel.Device);
 
 	public readonly VulkanOption<int> FrameOverlap = new(3, VulkanLevel.Frame);
 
 	public readonly VulkanOption<PresentModeKHR> PresentMode = new(PresentModeKHR.PresentModeMailboxKhr, VulkanLevel.Swapchain, false);
-
 	public readonly VulkanOption<Vector2<uint>> WindowSize = new(new Vector2<uint>(1280, 720), VulkanLevel.Swapchain, false);
+	public readonly VulkanOption<bool> Fullscreen = new(false, VulkanLevel.Swapchain, false);
 
 	// public readonly VulkanOption<Vector2<uint>> RenderResolution = new(new Vector2<uint>(1), VulkanLevel.RenderGraph, false);
 	// public readonly VulkanOption<Vector2<uint>> UiRenderResolution = new(new Vector2<uint>(1920, 1080), VulkanLevel.RenderGraph, false);
@@ -126,7 +131,7 @@ public class VulkanState
 		Options["ValidationLayers"] = ValidationLayers;
 		Options["ProgramLayers"] = ProgramLayers;
 		Options["DeviceExtensions"] = DeviceExtensions;
-		Options["SelectedGpu"] = SelectedGpu;
+		Options["SelectedGpu"] = SelectedGpuIndex;
 		Options["FrameOverlap"] = FrameOverlap;
 		Options["PresentMode"] = PresentMode;
 		Options["WindowSize"] = WindowSize;
@@ -168,6 +173,8 @@ public class VulkanOption<T> : VulkanOption
 
 	public VulkanOption(T value, VulkanLevel level = VulkanLevel.None, bool requiresFullReset = true) : base(level, requiresFullReset) =>
 		_previousValue = NewValue = value;
+
+	public void UpdateImmediately(T newValue) => _previousValue = NewValue = newValue;
 
 	public override bool IsChanged() => !Equals(_previousValue, NewValue);
 	public override void ApplyChange() => _previousValue = NewValue;

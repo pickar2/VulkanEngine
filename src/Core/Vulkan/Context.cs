@@ -25,7 +25,7 @@ public unsafe class Context : IDisposable
 	public static readonly Vk Vk = Vk.GetApi();
 	public static VulkanConfig Config = default!;
 	public static Window.SdlWindow Window = default!;
-	public static FrameGraph FrameGraph = default!;
+	// public static FrameGraph FrameGraph = default!;
 
 	public static Compiler Compiler = default!;
 
@@ -54,7 +54,7 @@ public unsafe class Context : IDisposable
 		Window = window;
 		KhrSurface = new KhrSurface(Vk.Context);
 
-		FrameGraph = new FrameGraph();
+		// FrameGraph = new FrameGraph();
 
 		var options = new ShadercOptions();
 		options.EnableDebugInfo();

@@ -18,7 +18,7 @@ public static class CommandBuffers
 		};
 
 		var commandBuffers = new CommandBuffer[count];
-		VulkanUtils.Check(Context.Vk.AllocateCommandBuffers(Context.Device, allocateInfo, out commandBuffers[0]), "Failed to allocate command buffers");
+		VulkanUtils.Check(Context2.Vk.AllocateCommandBuffers(Context2.Device, allocateInfo, out commandBuffers[0]), "Failed to allocate command buffers");
 
 		return commandBuffers;
 	}
@@ -47,8 +47,8 @@ public static class CommandBuffers
 		vulkanQueue.Submit(ref submitInfo, ref fence);
 		fence.Wait(ulong.MaxValue);
 
-		Context.Vk.DestroyFence(Context.Device, fence, null);
-		Context.Vk.FreeCommandBuffers(Context.Device, commandPool, 1, commandBuffer);
+		Context2.Vk.DestroyFence(Context2.Device, fence, null);
+		Context2.Vk.FreeCommandBuffers(Context2.Device, commandPool, 1, commandBuffer);
 	}
 
 	public static unsafe void EndSingleTimeCommands(ref CommandBuffer commandBuffer, CommandPool commandPool, ref Fence fence, VulkanQueue vulkanQueue)
@@ -65,6 +65,6 @@ public static class CommandBuffers
 		vulkanQueue.Submit(ref submitInfo, ref fence);
 		fence.Wait(ulong.MaxValue);
 
-		Context.Vk.FreeCommandBuffers(Context.Device, commandPool, 1, commandBuffer);
+		Context2.Vk.FreeCommandBuffers(Context2.Device, commandPool, 1, commandBuffer);
 	}
 }

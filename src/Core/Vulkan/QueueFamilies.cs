@@ -52,14 +52,14 @@ public class VulkanQueue
 
 public class QueueFamily
 {
-	public uint FamilyIndex { get; init; }
+	public uint Index { get; init; }
 	public uint QueueCount { get; init; }
 	public QueueFlags QueueFlags { get; init; }
 	public uint QueuesTaken { get; private set; }
 
-	public QueueFamily(uint familyIndex, uint queueCount, QueueFlags queueFlags)
+	public QueueFamily(uint index, uint queueCount, QueueFlags queueFlags)
 	{
-		FamilyIndex = familyIndex;
+		Index = index;
 		QueueCount = queueCount;
 		QueueFlags = queueFlags;
 	}

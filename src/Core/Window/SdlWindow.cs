@@ -5,27 +5,28 @@ using Core.Utils;
 using Core.Vulkan;
 using Core.Vulkan.Options;
 using Silk.NET.Vulkan;
+using SimpleMath.Vectors;
 using static SDL2.SDL;
 
 namespace Core.Window;
 
 public class SdlWindow : IDisposable
 {
-	private readonly Stopwatch _stopwatch = new();
-
 	public string Title { get; private set; } = App.Details.AppName;
-	public IntPtr WindowHandle { get; }
+	public IntPtr WindowHandle { get; private set; }
 
+	public bool IsInitialized { get; private set; }
 	public bool IsRunning { get; private set; }
 	public bool IsMinimized => ((SDL_WindowFlags) SDL_GetWindowFlags(WindowHandle) & SDL_WindowFlags.SDL_WINDOW_MINIMIZED) > 0;
 
-	public int WindowWidth { get; private set; }
-	public int WindowHeight { get; private set; }
+	public uint WindowWidth => Context2.State.WindowSize.Value.X;
+	public uint WindowHeight => Context2.State.WindowSize.Value.Y;
 
-	public event Action? OnResize;
-
-	public SdlWindow()
+	public void Init()
 	{
+		var sw = new Stopwatch();
+		sw.Start();
+
 		SDL_Init(SDL_INIT_EVERYTHING);
 		SDL_GetDesktopDisplayMode(0, out var mode);
 
@@ -33,22 +34,26 @@ public class SdlWindow : IDisposable
 
 		var flags = SDL_WindowFlags.SDL_WINDOW_VULKAN | SDL_WindowFlags.SDL_WINDOW_RESIZABLE | SDL_WindowFlags.SDL_WINDOW_HIDDEN;
 
-		int width = (int) VulkanOptions.WindowWidth;
-		int height = (int) VulkanOptions.WindowHeight;
+		var size = Context2.State.WindowSize.Value;
+		int width = (int) size.X;
+		int height = (int) size.Y;
 
-		if (VulkanOptions.Fullscreen)
+		if (Context2.State.Fullscreen.Value)
 		{
 			flags |= SDL_WindowFlags.SDL_WINDOW_FULLSCREEN;
-			// width = mode.w;
-			// height = mode.h;
+			width = mode.w;
+			height = mode.h;
 		}
 
 		WindowHandle = SDL_CreateWindow(Title, (mode.w - width) / 2, (mode.h - height) / 2, width, height, flags);
 
-		WindowWidth = (int) VulkanOptions.WindowWidth;
-		WindowHeight = (int) VulkanOptions.WindowHeight;
+		Context2.State.WindowSize.Value = new Vector2<uint>((uint) width, (uint) height);
 
 		SDL_AddEventWatch(WindowResizeEventFilter, IntPtr.Zero);
+		IsInitialized = true;
+
+		sw.Stop();
+		App.Logger.Info.Message($"Created SDL window. Ticks: {sw.ElapsedTicks}. Time: {sw.ElapsedMilliseconds}ms.");
 	}
 
 	private static unsafe int WindowResizeEventFilter(IntPtr data, IntPtr e)
@@ -56,9 +61,7 @@ public class SdlWindow : IDisposable
 		var eventPtr = (SDL_Event*) e;
 		if (eventPtr->type == SDL_EventType.SDL_WINDOWEVENT && eventPtr->window.windowEvent == SDL_WindowEventID.SDL_WINDOWEVENT_RESIZED)
 		{
-			Context.Window.WindowWidth = eventPtr->window.data1;
-			Context.Window.WindowHeight = eventPtr->window.data2;
-			Context.Window.OnResize?.Invoke();
+			Context2.State.WindowSize.Value = new Vector2<uint>((uint) eventPtr->window.data1, (uint) eventPtr->window.data2);
 		}
 
 		return 0;
@@ -83,7 +86,6 @@ public class SdlWindow : IDisposable
 		return strings;
 	}
 
-	public double GetTime() => _stopwatch.Elapsed.TotalSeconds;
 	public void Close() => IsRunning = false;
 	public void SetTitle(string title) => SDL_SetWindowTitle(WindowHandle, Title = title);
 	public void Hide() => SDL_HideWindow(WindowHandle);
@@ -91,7 +93,6 @@ public class SdlWindow : IDisposable
 
 	public void MainLoop()
 	{
-		_stopwatch.Start();
 		var handle = new EventWaitHandle(false, EventResetMode.AutoReset);
 
 		const int maxNumEvents = 4;
@@ -109,8 +110,6 @@ public class SdlWindow : IDisposable
 				HandleEvent(events[index]);
 			handle.WaitOne(1);
 		}
-
-		_stopwatch.Stop();
 	}
 
 	private void HandleEvent(SDL_Event sdlEvent)

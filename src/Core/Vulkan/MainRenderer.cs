@@ -41,14 +41,14 @@ public static unsafe class MainRenderer
 
 	public static void Init()
 	{
-		Context.Window.OnResize += () => _framebufferResized = true;
+		// Context.Window.OnResize += () => _framebufferResized = true;
 
 		SwapchainHelper.CreateSwapchainObjects();
 
 		var createInfo = new CommandPoolCreateInfo
 		{
 			SType = StructureType.CommandPoolCreateInfo,
-			QueueFamilyIndex = Context2.GraphicsQueue.Family.FamilyIndex
+			QueueFamilyIndex = Context2.GraphicsQueue.Family.Index
 		};
 
 		CommandPools = new CommandPool[SwapchainHelper.FrameBuffers.Length];

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 using Core.Utils;
 using Core.Vulkan.Options;
 using Core.Window;
@@ -73,6 +74,8 @@ public static unsafe partial class Context2
 
 		if (IsDebug) RequiredLayers.UnionWith(State.ValidationLayers.Value);
 		CheckLayerSupport(RequiredLayers);
+
+		// if (!Window.IsInitialized) SpinWait.SpinUntil(() => Window.IsInitialized);
 
 		var requiredExtensions = new HashSet<string>(Window.GetRequiredInstanceExtensions());
 		requiredExtensions.UnionWith(State.InstanceExtensions.Value);
@@ -144,6 +147,8 @@ public static unsafe partial class Context2
 			Vk.TryGetInstanceExtension(Instance, out ExtDebugUtils).ThrowIfFalse($"Failed to load the DebugUtils extension.");
 
 			DebugUtilsMessenger.Init();
+
+			App.Logger.Info.Message($"Initialized vulkan Instance with debug mode on.");
 		}
 
 		Vk.TryGetInstanceExtension(Instance, out KhrSurface).ThrowIfFalse($"Failed to load the KhrSurface extension.");
@@ -260,32 +265,33 @@ public static unsafe partial class Context2
 		AfterLevelDeviceCreate?.Invoke();
 	}
 
-	private static string GetDeviceString(PhysicalDeviceProperties2 properties)
+	private static string GetDeviceString(int deviceId, PhysicalDeviceProperties2 properties)
 	{
 		var version = (Version32) properties.Properties.DriverVersion;
-		return $"{Marshal.PtrToStringUTF8((nint) properties.Properties.DeviceName)} ({version.Major}.{version.Minor / 4}.{version.Patch})";
+		return $"[{deviceId}] {Marshal.PtrToStringUTF8((nint) properties.Properties.DeviceName)} ({version.Major}.{version.Minor / 4}.{version.Patch})";
 	}
 
 	private static void PickPhysicalDevice()
 	{
-		uint count = 0;
-		Vk.EnumeratePhysicalDevices(Instance, &count, null);
+		uint deviceCount = 0;
+		Vk.EnumeratePhysicalDevices(Instance, &deviceCount, null);
 
-		if (count == 0) throw new Exception("Failed to find GPUs with Vulkan support");
+		if (deviceCount == 0) throw new Exception("Failed to find GPUs with Vulkan support");
 
-		var devices = stackalloc PhysicalDevice[(int) count];
-		Vk.EnumeratePhysicalDevices(Instance, &count, devices);
+		var devices = stackalloc PhysicalDevice[(int) deviceCount];
+		Vk.EnumeratePhysicalDevices(Instance, &deviceCount, devices);
 
-		if (State.SelectedGpu.Value == -1 || State.SelectedGpu.Value >= count)
+		int selectedGpuIndex = State.SelectedGpuIndex.Value;
+		if (State.SelectedGpuIndex.Value == -1 || State.SelectedGpuIndex.Value >= deviceCount)
 		{
 			var reasons = new Dictionary<PhysicalDevice, string>();
 			var scores = new Dictionary<PhysicalDevice, int>();
 
-			for (int i = 0; i < count; i++)
+			for (int i = 0; i < deviceCount; i++)
 			{
 				var device = devices[i];
 				Vk.GetPhysicalDeviceProperties2(device, out var props);
-				reasons[device] = $"{GetDeviceString(props)}: \r\n";
+				reasons[device] = $"{GetDeviceString(i, props)}: \r\n";
 
 				bool suitable = IsDeviceSuitable(device, out string reason);
 				reasons[device] += reason;
@@ -297,22 +303,33 @@ public static unsafe partial class Context2
 			if (scores.Count == 0)
 				throw new NotSupportedException($"Failed to find suitable GPU: \r\n{string.Join("\r\n", reasons.Values)}").AsExpectedException();
 
-			PhysicalDevice = (from entry in scores orderby entry.Value descending select entry.Key).First();
+			int maxScore = scores[devices[0]];
+			PhysicalDevice = devices[0];
+			selectedGpuIndex = 0;
+			for (var i = 1; i < deviceCount; i++)
+			{
+				var current = devices[i];
+				if (maxScore >= scores[current]) continue;
+
+				maxScore = scores[current];
+				PhysicalDevice = current;
+				selectedGpuIndex = i;
+			}
 		}
 		else
 		{
-			var device = devices[State.SelectedGpu.Value];
+			var device = devices[State.SelectedGpuIndex.Value];
 			Vk.GetPhysicalDeviceProperties2(device, out var props);
 
-			if (!IsDeviceSuitable(devices[State.SelectedGpu.Value], out string reason))
-				throw new NotSupportedException($"{GetDeviceString(props)}: \r\n{reason}").AsExpectedException();
+			if (!IsDeviceSuitable(devices[State.SelectedGpuIndex.Value], out string reason))
+				throw new NotSupportedException($"{GetDeviceString(State.SelectedGpuIndex.Value, props)}: \r\n{reason}").AsExpectedException();
 
 			PhysicalDevice = device;
 		}
 
 		Vk.GetPhysicalDeviceProperties2(PhysicalDevice, out var properties);
 
-		App.Logger.Info.Message($"Picked {GetDeviceString(properties)} as GPU");
+		App.Logger.Info.Message($"Picked {GetDeviceString(selectedGpuIndex, properties)} as GPU.");
 
 		IsIntegratedGpu = properties.Properties.DeviceType == PhysicalDeviceType.IntegratedGpu;
 	}
@@ -533,8 +550,7 @@ public static unsafe partial class Context2
 		else if (queueFamilies.Length == 4 &&
 		         queueFamilies.Select(f => (int) f.QueueCount).Sum() == 4 &&
 		         queueFamilies.Select(f => f.QueueFlags).Distinct().Count() == 1)
-		{
-			// Apple Mac or iOS
+		{ // Apple Mac or iOS
 			GraphicsQueue = new VulkanQueue
 			{
 				Family = queueFamilies[0],
@@ -609,23 +625,23 @@ public static unsafe partial class Context2
 
 	private static void CreateLogicalDevice()
 	{
-		uint[] indices = QueueFamilies.Select(f => f.FamilyIndex).Distinct().ToArray();
+		uint[] indices = QueueFamilies.Select(f => f.Index).Distinct().ToArray();
 		uint[] queueCounts = new uint[indices.Length];
 		float[][] priorities = new float[indices.Length][];
 
 		var queues = new[] {GraphicsQueue, ComputeQueue, TransferToDeviceQueue, TransferToHostQueue};
-		foreach (var q in queues) queueCounts[q.Family.FamilyIndex] = Math.Max(queueCounts[q.Family.FamilyIndex], q.QueueIndex);
+		foreach (var q in queues) queueCounts[q.Family.Index] = Math.Min(queueCounts[q.Family.Index] + 1, q.Family.QueueCount);
 
 		var queueCreateInfos = stackalloc DeviceQueueCreateInfo[indices.Length];
 		for (int i = 0; i < indices.Length; i++)
 		{
-			priorities[i] = new float[QueueFamilies[indices[i]].QueueCount];
+			priorities[i] = new float[queueCounts[i]];
 			priorities[i].Fill(1);
 			queueCreateInfos[i] = new DeviceQueueCreateInfo
 			{
 				SType = StructureType.DeviceQueueCreateInfo,
 				QueueFamilyIndex = indices[i],
-				QueueCount = queueCounts[i] + 1, // high queue counts increase load times up to 8x
+				QueueCount = queueCounts[i], // high queue counts increase load times up to 8x
 				PQueuePriorities = priorities[i].AsPointer()
 			};
 		}
@@ -661,16 +677,16 @@ public static unsafe partial class Context2
 
 	private static void CreateDeviceQueues()
 	{
-		Vk.GetDeviceQueue(Device, GraphicsQueue.Family.FamilyIndex, GraphicsQueue.QueueIndex, out var graphics);
+		Vk.GetDeviceQueue(Device, GraphicsQueue.Family.Index, GraphicsQueue.QueueIndex, out var graphics);
 		GraphicsQueue = GraphicsQueue.WithQueue(graphics);
 
-		Vk.GetDeviceQueue(Device, ComputeQueue.Family.FamilyIndex, ComputeQueue.QueueIndex, out var compute);
+		Vk.GetDeviceQueue(Device, ComputeQueue.Family.Index, ComputeQueue.QueueIndex, out var compute);
 		ComputeQueue = ComputeQueue.WithQueue(compute);
 
-		Vk.GetDeviceQueue(Device, TransferToDeviceQueue.Family.FamilyIndex, TransferToDeviceQueue.QueueIndex, out var transferToDevice);
+		Vk.GetDeviceQueue(Device, TransferToDeviceQueue.Family.Index, TransferToDeviceQueue.QueueIndex, out var transferToDevice);
 		TransferToDeviceQueue = TransferToDeviceQueue.WithQueue(transferToDevice);
 
-		Vk.GetDeviceQueue(Device, TransferToHostQueue.Family.FamilyIndex, TransferToHostQueue.QueueIndex, out var transferToHost);
+		Vk.GetDeviceQueue(Device, TransferToHostQueue.Family.Index, TransferToHostQueue.QueueIndex, out var transferToHost);
 		TransferToHostQueue = TransferToHostQueue.WithQueue(transferToHost);
 	}
 
@@ -810,7 +826,7 @@ public static unsafe partial class Context2
 
 		KhrSwapchain.GetSwapchainImages(Device, Swapchain, ref SwapchainImageCount, null);
 
-		SwapchainImages = new Image[(int) SwapchainImageCount];
+		SwapchainImages = new Image[SwapchainImageCount];
 		KhrSwapchain.GetSwapchainImages(Device, Swapchain, ref SwapchainImageCount, SwapchainImages.AsPointer());
 
 		SwapchainImageViews = new ImageView[SwapchainImageCount];
@@ -825,7 +841,7 @@ public static unsafe partial class Context2
 	{
 		foreach (var format in availableFormats)
 		{
-			if (format.Format == Format.B8G8R8A8Srgb &&
+			if (format.Format == Format.R8G8B8A8Srgb &&
 			    format.ColorSpace == ColorSpaceKHR.ColorspaceSrgbNonlinearKhr)
 				return format;
 		}
@@ -833,22 +849,14 @@ public static unsafe partial class Context2
 		return availableFormats[0];
 	}
 
-	private static PresentModeKHR ChoosePresentMode(PresentModeKHR[] presentModes)
-	{
-		foreach (var presentMode in presentModes)
-		{
-			if (presentMode == State.PresentMode.Value)
-				return presentMode;
-		}
-
-		return PresentModeKHR.PresentModeFifoKhr;
-	}
+	private static PresentModeKHR ChoosePresentMode(PresentModeKHR[] presentModes) =>
+		presentModes.Contains(State.PresentMode.Value) ? State.PresentMode.Value : PresentModeKHR.PresentModeImmediateKhr;
 
 	private static Extent2D ChooseSurfaceExtent(SurfaceCapabilitiesKHR capabilities)
 	{
 		if (capabilities.CurrentExtent.Width != uint.MaxValue && capabilities.CurrentExtent.Width != 0) return capabilities.CurrentExtent;
 
-		var extent = new Extent2D((uint) Window.WindowWidth, (uint) Window.WindowHeight);
+		var extent = new Extent2D(State.WindowSize.Value.X, State.WindowSize.Value.Y);
 
 		if (Window.IsMinimized) return extent;
 
@@ -866,7 +874,6 @@ public static unsafe partial class Context2
 		foreach (var view in SwapchainImageViews) Vk.DestroyImageView(Device, view, null);
 
 		KhrSwapchain.DestroySwapchain(Device, Swapchain, null);
-		Swapchain.Handle = default;
 
 		AfterLevelSwapchainDispose?.Invoke();
 	}

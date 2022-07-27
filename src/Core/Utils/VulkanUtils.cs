@@ -65,7 +65,7 @@ public static unsafe class VulkanUtils
 		valueSpan[0] = value;
 	}
 
-	public static int SizeOfFormat(Format format)
+	public static int SizeOfFormat(this Format format)
 	{
 		int result = format switch
 		{
@@ -204,7 +204,7 @@ public static unsafe class VulkanUtils
 		{
 			SType = StructureType.CommandPoolCreateInfo,
 			Flags = (CommandPoolCreateFlags) flags,
-			QueueFamilyIndex = vulkanQueue.Family.FamilyIndex
+			QueueFamilyIndex = vulkanQueue.Family.Index
 		};
 
 		Check(Context.Vk.CreateCommandPool(Context.Device, poolInfo, null, out var pool), "Failed to create command pool");
@@ -359,13 +359,13 @@ public static unsafe class VulkanUtils
 		CommandBuffers.EndSingleTimeCommands(ref commandBuffer, GraphicsCommandPool, Context2.GraphicsQueue);
 	}
 
-	private static bool HasStencilComponent(Format format) => format is Format.D32SfloatS8Uint or Format.D24UnormS8Uint;
+	public static bool HasStencilComponent(Format format) => format is Format.D32SfloatS8Uint or Format.D24UnormS8Uint or Format.D16UnormS8Uint;
 
 	public static Fence CreateFence(bool signaled)
 	{
 		var createInfo = new FenceCreateInfo {SType = StructureType.FenceCreateInfo, Flags = signaled ? FenceCreateFlags.FenceCreateSignaledBit : 0};
 
-		Check(Context.Vk.CreateFence(Context.Device, createInfo, null, out var fence), "Failed to create fence");
+		Check(Context2.Vk.CreateFence(Context2.Device, createInfo, null, out var fence), "Failed to create fence");
 
 		return fence;
 	}
@@ -416,7 +416,7 @@ public static unsafe class VulkanUtils
 			Size = size
 		};
 
-		uint[] indices = Context2.QueueFamilies.Select(f => f.FamilyIndex).Distinct().ToArray();
+		uint[] indices = Context2.QueueFamilies.Select(f => f.Index).Distinct().ToArray();
 		if (indices.Length == 1)
 		{
 			createInfo.SharingMode = SharingMode.Exclusive;
