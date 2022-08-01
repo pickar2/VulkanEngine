@@ -20,9 +20,9 @@ public static unsafe class FrameGraph
 	[SuppressMessage("ReSharper", "ConvertClosureToMethodGroup")]
 	static FrameGraph()
 	{
-		Context2.BeforeLevelDeviceDispose += () => Dispose();
-		Context2.AfterLevelSwapchainCreate += () => AfterSwapchainCreation();
-		Context2.BeforeLevelSwapchainDispose += () => BeforeSwapchainDispose();
+		Context2.DeviceEvents.BeforeDispose += () => Dispose();
+		Context2.SwapchainEvents.AfterCreate += () => AfterSwapchainCreation();
+		Context2.SwapchainEvents.BeforeDispose += () => BeforeSwapchainDispose();
 	}
 
 	public static CommandPool ImageTransitionCommandPool;
@@ -50,15 +50,17 @@ public static unsafe class FrameGraph
 		// App.Logger.Info.Message($"{string.Join(", ", formats)}");
 
 		// var swapchainAttachment = new VulkanImage2(Context2.);
-		var positionAttachment = CreateAttachment(Format.R16G16B16A16Sfloat, ImageAspectFlags.ImageAspectColorBit, Context2.State.WindowSize.Value);
-		var normalAttachment = CreateAttachment(Format.R16G16B16A16Sfloat, ImageAspectFlags.ImageAspectColorBit, Context2.State.WindowSize.Value);
-		var albedoAttachment = CreateAttachment(Format.R8G8B8A8Unorm, ImageAspectFlags.ImageAspectColorBit, Context2.State.WindowSize.Value);
-		var depthAttachment = CreateAttachment(Format.D32Sfloat, ImageAspectFlags.ImageAspectDepthBit, Context2.State.WindowSize.Value);
-		var maskAttachment = CreateAttachment(Format.R8Uint, ImageAspectFlags.ImageAspectColorBit, Context2.State.WindowSize.Value);
+		var attachments = new Dictionary<string, VulkanImage2>();
+		attachments["position"] = CreateAttachment(Format.R16G16B16A16Sfloat, ImageAspectFlags.ImageAspectColorBit, Context2.State.WindowSize.Value);
+		attachments["normal"] = CreateAttachment(Format.R16G16B16A16Sfloat, ImageAspectFlags.ImageAspectColorBit, Context2.State.WindowSize.Value);
+		attachments["albedo"] = CreateAttachment(Format.R8G8B8A8Unorm, ImageAspectFlags.ImageAspectColorBit, Context2.State.WindowSize.Value);
+		attachments["depth"] = CreateAttachment(Format.D32Sfloat, ImageAspectFlags.ImageAspectDepthBit, Context2.State.WindowSize.Value);
+
+		// var maskAttachment = CreateAttachment(Format.R8Uint, ImageAspectFlags.ImageAspectColorBit, Context2.State.WindowSize.Value);
 
 		// App.Logger.Info.Message($"{positionAttachment.CurrentLayout}");
 
-		var attachmentDescriptions = new AttachmentDescription2[5];
+		var attachmentDescriptions = new AttachmentDescription2[attachments.Count + 1];
 		attachmentDescriptions[0] = new AttachmentDescription2
 		{
 			SType = StructureType.AttachmentDescription2,
@@ -69,10 +71,10 @@ public static unsafe class FrameGraph
 			StencilLoadOp = AttachmentLoadOp.DontCare,
 			StencilStoreOp = AttachmentStoreOp.DontCare,
 			InitialLayout = ImageLayout.Undefined,
-			FinalLayout = ImageLayout.PresentSrcKhr,
+			FinalLayout = ImageLayout.PresentSrcKhr
 		};
 
-		var attachmentReferences = new AttachmentReference2[5];
+		var attachmentReferences = new AttachmentReference2[attachments.Count + 1];
 		attachmentReferences[0] = new AttachmentReference2
 		{
 			SType = StructureType.AttachmentReference2,
@@ -80,14 +82,35 @@ public static unsafe class FrameGraph
 			Layout = ImageLayout.ColorAttachmentOptimal,
 			AspectMask = ImageAspectFlags.ImageAspectColorBit
 		};
-		// Subpass "Opaque UI"
-		
 
-		positionAttachment.Dispose();
-		normalAttachment.Dispose();
-		albedoAttachment.Dispose();
-		depthAttachment.Dispose();
-		maskAttachment.Dispose();
+		int index = 0;
+		foreach ((string? _, var image) in attachments)
+		{
+			attachmentDescriptions[++index] = new AttachmentDescription2
+			{
+				SType = StructureType.AttachmentDescription2,
+				Format = image.Format,
+				Samples = SampleCountFlags.SampleCount1Bit,
+				LoadOp = AttachmentLoadOp.Clear,
+				StoreOp = AttachmentStoreOp.Store,
+				StencilLoadOp = AttachmentLoadOp.DontCare,
+				StencilStoreOp = AttachmentStoreOp.DontCare,
+				InitialLayout = image.CurrentLayout,
+				FinalLayout = ImageLayout.AttachmentOptimal
+			};
+
+			attachmentReferences[index] = new AttachmentReference2
+			{
+				SType = StructureType.AttachmentReference2,
+				Attachment = (uint) index,
+				Layout = ImageLayout.AttachmentOptimal,
+				AspectMask = image.AspectFlags
+			};
+		}
+
+		GeneralRenderer.Root.PrintTree("", true);
+		
+		foreach ((string? _, var image) in attachments) image.Dispose();
 	}
 
 	public static void BeforeSwapchainDispose()
@@ -110,10 +133,8 @@ public static unsafe class FrameGraph
 		return list;
 	}
 
-	public static VulkanImage2 CreateAttachment(Format format, ImageAspectFlags aspectFlags, Vector2<uint> size)
+	public static VulkanImage2 CreateAttachment(Format format, ImageAspectFlags aspectFlags, Vector2<uint> size, ImageUsageFlags usageFlags = 0)
 	{
-		var usageFlags = (ImageUsageFlags) 0;
-
 		if ((aspectFlags & ImageAspectFlags.ImageAspectColorBit) != 0)
 		{
 			usageFlags |= ImageUsageFlags.ImageUsageColorAttachmentBit;
@@ -172,53 +193,53 @@ public static unsafe class FrameGraph
 
 		Check(Context2.Vk.CreateImageView(Context2.Device, imageViewCreateInfo, null, out var imageView), "Failed to create attachment image view.");
 
-		var vulkanImage = new VulkanImage2(image, allocation, imageView, format);
+		var vulkanImage = new VulkanImage2(image, allocation, imageView, format, aspectFlags: aspectFlags);
 
-		// var barrier = new ImageMemoryBarrier2
-		// {
-		// 	SType = StructureType.ImageMemoryBarrier2,
-		// 	OldLayout = vulkanImage.CurrentLayout,
-		// 	NewLayout = ImageLayout.AttachmentOptimal,
-		// 	SrcQueueFamilyIndex = Vk.QueueFamilyIgnored,
-		// 	DstQueueFamilyIndex = Vk.QueueFamilyIgnored,
-		// 	Image = vulkanImage.Image,
-		// 	SubresourceRange = new ImageSubresourceRange
-		// 	{
-		// 		LevelCount = vulkanImage.MipLevels,
-		// 		BaseMipLevel = 0,
-		// 		LayerCount = 1,
-		// 		BaseArrayLayer = 0,
-		// 		AspectMask = aspectFlags
-		// 	},
-		// 	SrcAccessMask = AccessFlags2.Access2None,
-		// 	SrcStageMask = PipelineStageFlags2.PipelineStage2None
-		// };
-		// if ((usageFlags & ImageUsageFlags.ImageUsageColorAttachmentBit) != 0)
-		// {
-		// 	barrier.DstAccessMask = AccessFlags2.Access2ColorAttachmentReadBit | AccessFlags2.Access2ColorAttachmentWriteBit;
-		// 	barrier.DstStageMask = PipelineStageFlags2.PipelineStage2ColorAttachmentOutputBit;
-		// }
-		// else
-		// {
-		// 	barrier.DstAccessMask = AccessFlags2.Access2DepthStencilAttachmentReadBit | AccessFlags2.Access2DepthStencilAttachmentWriteBit;
-		// 	barrier.DstStageMask = PipelineStageFlags2.PipelineStage2EarlyFragmentTestsBit;
-		// }
-		//
-		// var dependencyInfo = new DependencyInfo
-		// {
-		// 	SType = StructureType.DependencyInfo,
-		// 	ImageMemoryBarrierCount = 1,
-		// 	PImageMemoryBarriers = &barrier,
-		// 	DependencyFlags = DependencyFlags.DependencyByRegionBit
-		// };
-		//
-		// var commandBuffer = CommandBuffers.BeginSingleTimeCommands(ImageTransitionCommandPool);
-		//
-		// Context2.KhrSynchronization2.CmdPipelineBarrier2(commandBuffer, dependencyInfo);
-		//
-		// CommandBuffers.EndSingleTimeCommands(ref commandBuffer, ImageTransitionCommandPool, Context2.GraphicsQueue);
-		//
-		// vulkanImage.CurrentLayout = ImageLayout.AttachmentOptimal;
+		var barrier = new ImageMemoryBarrier2
+		{
+			SType = StructureType.ImageMemoryBarrier2,
+			OldLayout = vulkanImage.CurrentLayout,
+			NewLayout = ImageLayout.AttachmentOptimal,
+			SrcQueueFamilyIndex = Vk.QueueFamilyIgnored,
+			DstQueueFamilyIndex = Vk.QueueFamilyIgnored,
+			Image = vulkanImage.Image,
+			SubresourceRange = new ImageSubresourceRange
+			{
+				LevelCount = vulkanImage.MipLevels,
+				BaseMipLevel = 0,
+				LayerCount = 1,
+				BaseArrayLayer = 0,
+				AspectMask = aspectFlags
+			},
+			SrcAccessMask = AccessFlags2.Access2None,
+			SrcStageMask = PipelineStageFlags2.PipelineStage2None
+		};
+		if ((usageFlags & ImageUsageFlags.ImageUsageColorAttachmentBit) != 0)
+		{
+			barrier.DstAccessMask = AccessFlags2.Access2ColorAttachmentReadBit | AccessFlags2.Access2ColorAttachmentWriteBit;
+			barrier.DstStageMask = PipelineStageFlags2.PipelineStage2ColorAttachmentOutputBit;
+		}
+		else
+		{
+			barrier.DstAccessMask = AccessFlags2.Access2DepthStencilAttachmentReadBit | AccessFlags2.Access2DepthStencilAttachmentWriteBit;
+			barrier.DstStageMask = PipelineStageFlags2.PipelineStage2EarlyFragmentTestsBit;
+		}
+		
+		var dependencyInfo = new DependencyInfo
+		{
+			SType = StructureType.DependencyInfo,
+			ImageMemoryBarrierCount = 1,
+			PImageMemoryBarriers = &barrier,
+			DependencyFlags = DependencyFlags.DependencyByRegionBit
+		};
+		
+		var commandBuffer = CommandBuffers.BeginSingleTimeCommands(ImageTransitionCommandPool);
+		
+		Context2.KhrSynchronization2.CmdPipelineBarrier2(commandBuffer, dependencyInfo);
+		
+		CommandBuffers.EndSingleTimeCommands(ref commandBuffer, ImageTransitionCommandPool, Context2.GraphicsQueue);
+		
+		vulkanImage.CurrentLayout = ImageLayout.AttachmentOptimal;
 		
 		return vulkanImage;
 	}
@@ -256,18 +277,18 @@ public static unsafe class FrameGraph
 			// 	ClearValueCount = 2,
 			// 	PClearValues = clearValues
 			// };
-			Context.Vk.CmdBeginRenderPass(cmd, renderPass.BeginInfos[imageIndex], SubpassContents.SecondaryCommandBuffers);
+			Context2.Vk.CmdBeginRenderPass(cmd, renderPass.BeginInfos[imageIndex], SubpassContents.SecondaryCommandBuffers);
 
 			foreach (var (subpassName, subpass) in renderPass.Subpasses)
 			{
 				
 			}
 
-			Context.Vk.CmdEndRenderPass(cmd);
+			Context2.Vk.CmdEndRenderPass(cmd);
 		}
 
 		/*
-		Context.Vk.CmdBeginRenderPass(cmd, renderPassBeginInfo, SubpassContents.SecondaryCommandBuffers);
+		Context2.Vk.CmdBeginRenderPass(cmd, renderPassBeginInfo, SubpassContents.SecondaryCommandBuffers);
 
 		var list = FillCommandBuffers?.GetInvocationList();
 		if (list is not null)
@@ -278,10 +299,10 @@ public static unsafe class FrameGraph
 				arr[index] = ((Func<int, CommandBuffer>) list[index]).Invoke(imageIndex);
 			}
 
-			Context.Vk.CmdExecuteCommands(cmd, (uint) list.Length, arr);
+			Context2.Vk.CmdExecuteCommands(cmd, (uint) list.Length, arr);
 		}
 
-		Context.Vk.CmdEndRenderPass(cmd);
+		Context2.Vk.CmdEndRenderPass(cmd);
 		*/
 
 		Check(cmd.End(), "Failed to end command buffer.");
@@ -391,7 +412,7 @@ public static unsafe class FrameGraph
 			PDependencies = dependencies[0].AsPointer()
 		};
 
-		Check(Context.Vk.CreateRenderPass(Context.Device, renderPassInfo, null, out var renderPass),
+		Check(Context2.Vk.CreateRenderPass(Context2.Device, renderPassInfo, null, out var renderPass),
 			"Failed to create render pass");
 	}
 
@@ -428,7 +449,7 @@ public unsafe class RenderPassNode
 		// 	PDependencies = dependencies[0].AsPointer()
 		// };
 
-		// Check(Context.Vk.CreateRenderPass(Context.Device, renderPassInfo, null, out var renderPass), "Failed to create render pass");
+		// Check(Context2.Vk.CreateRenderPass(Context2.Device, renderPassInfo, null, out var renderPass), "Failed to create render pass");
 
 		var clearValues = stackalloc ClearValue[2];
 
@@ -474,8 +495,9 @@ public class VulkanImage2
 	public Format Format { get; init; }
 	public ImageLayout CurrentLayout { get; set; }
 	public uint MipLevels { get; init; }
+	public ImageAspectFlags AspectFlags { get; init; }
 
-	public VulkanImage2(Image image, nint allocation, ImageView imageView, Format format, uint mipLevels = 1, ImageLayout currentLayout = ImageLayout.Undefined)
+	public VulkanImage2(Image image, nint allocation, ImageView imageView, Format format, uint mipLevels = 1, ImageLayout currentLayout = ImageLayout.Undefined, ImageAspectFlags aspectFlags = ImageAspectFlags.ImageAspectColorBit)
 	{
 		Image = image;
 		Allocation = allocation;
@@ -483,6 +505,7 @@ public class VulkanImage2
 		Format = format;
 		MipLevels = mipLevels;
 		CurrentLayout = currentLayout;
+		AspectFlags = aspectFlags;
 	}
 
 	public unsafe void Dispose()

@@ -9,7 +9,7 @@ public class FullScreenRootPanel : RootPanel
 
 	public override void Update()
 	{
-		var screenSize = new Vector2<float>(Context.Window.WindowWidth, Context.Window.WindowHeight);
+		var screenSize = new Vector2<float>(Context2.Window.WindowWidth, Context2.Window.WindowHeight);
 		Size = screenSize;
 		base.Update();
 

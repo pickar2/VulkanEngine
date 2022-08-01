@@ -1,0 +1,71 @@
+		// var testFamilies = new[]
+		// {
+		// 	new[]
+		// 	{
+		// 		new QueueFamily(0, 1, QueueFlags.QueueComputeBit | QueueFlags.QueueGraphicsBit)
+		// 	},
+		// 	new[]
+		// 	{
+		// 		new QueueFamily(0, 2, QueueFlags.QueueComputeBit | QueueFlags.QueueGraphicsBit)
+		// 	},
+		// 	new[]
+		// 	{
+		// 		new QueueFamily(0, 3, QueueFlags.QueueComputeBit | QueueFlags.QueueGraphicsBit)
+		// 	},
+		// 	new[]
+		// 	{
+		// 		new QueueFamily(0, 4, QueueFlags.QueueComputeBit | QueueFlags.QueueGraphicsBit)
+		// 	},
+		// 	new[]
+		// 	{
+		// 		new QueueFamily(0, 5, QueueFlags.QueueComputeBit | QueueFlags.QueueGraphicsBit)
+		// 	},
+		// 	new [] {
+		// 		new QueueFamily(0, 1, QueueFlags.QueueComputeBit | QueueFlags.QueueGraphicsBit),
+		// 		new QueueFamily(1, 1, QueueFlags.QueueComputeBit | QueueFlags.QueueTransferBit),
+		// 	},
+		// 	new [] {
+		// 		new QueueFamily(0, 1, QueueFlags.QueueComputeBit | QueueFlags.QueueGraphicsBit),
+		// 		new QueueFamily(1, 2, QueueFlags.QueueComputeBit | QueueFlags.QueueTransferBit),
+		// 	},
+		// 	new [] {
+		// 		new QueueFamily(0, 1, QueueFlags.QueueComputeBit | QueueFlags.QueueGraphicsBit),
+		// 		new QueueFamily(1, 3, QueueFlags.QueueComputeBit | QueueFlags.QueueTransferBit),
+		// 	},
+		// 	new [] {
+		// 		new QueueFamily(0, 1, QueueFlags.QueueComputeBit | QueueFlags.QueueGraphicsBit),
+		// 		new QueueFamily(1, 4, QueueFlags.QueueComputeBit | QueueFlags.QueueTransferBit),
+		// 	},
+		// 	new [] {
+		// 		new QueueFamily(0, 1, QueueFlags.QueueComputeBit | QueueFlags.QueueGraphicsBit | QueueFlags.QueueTransferBit),
+		// 		new QueueFamily(1, 1, QueueFlags.QueueComputeBit | QueueFlags.QueueGraphicsBit | QueueFlags.QueueTransferBit),
+		// 		new QueueFamily(2, 1, QueueFlags.QueueComputeBit | QueueFlags.QueueGraphicsBit | QueueFlags.QueueTransferBit),
+		// 		new QueueFamily(3, 1, QueueFlags.QueueComputeBit | QueueFlags.QueueGraphicsBit | QueueFlags.QueueTransferBit),
+		// 	},
+		// };
+
+		// Console.WriteLine("QUEUE SELECTION DEBUG START");
+		// Console.WriteLine("-----------------------------------------------------------------------------------------");
+		// Console.WriteLine($"QueueFamilies:");
+		// Console.WriteLine($"Index\t| Count\t| Graphics\t| Compute\t| Transfer\t| Decode\t| Encode\t");
+		// Console.WriteLine("-----------------------------------------------------------------------------------------");
+		// foreach (var family in QueueFamilies)
+		// {
+		// 	Console.WriteLine($"{family.FamilyIndex}\t|" +
+		// 	                  $" {family.QueueCount}\t|" +
+		// 	                  $" {(family.QueueFlags & QueueFlags.QueueGraphicsBit) != 0}\t\t|" +
+		// 	                  $" {(family.QueueFlags & QueueFlags.QueueComputeBit) != 0}\t\t|" +
+		// 	                  $" {(family.QueueFlags & QueueFlags.QueueTransferBit) != 0}\t\t|" +
+		// 	                  $" {(family.QueueFlags & QueueFlags.QueueVideoDecodeBitKhr) != 0}\t\t|" +
+		// 	                  $" {(family.QueueFlags & QueueFlags.QueueVideoEncodeBitKhr) != 0}\t\t");
+		// }
+		// Console.WriteLine("-----------------------------------------------------------------------------------------");
+		// Console.WriteLine($"Queues:");
+		// Console.WriteLine($"Name\t\t\t| Family Index\t| Queue Index\t");
+		// Console.WriteLine("-----------------------------------------------------------------------------------------");
+		// Console.WriteLine($"Graphics \t\t| {GraphicsQueue.Family.FamilyIndex}\t\t| {GraphicsQueue.QueueIndex}");
+		// Console.WriteLine($"Compute \t\t| {ComputeQueue.Family.FamilyIndex}\t\t| {ComputeQueue.QueueIndex}");
+		// Console.WriteLine($"TransferToHost \t\t| {TransferToHostQueue.Family.FamilyIndex}\t\t| {TransferToHostQueue.QueueIndex}");
+		// Console.WriteLine($"TransferToDevice \t| {TransferToDeviceQueue.Family.FamilyIndex}\t\t| {TransferToDeviceQueue.QueueIndex}");
+		// Console.WriteLine("-----------------------------------------------------------------------------------------");
+		// Console.WriteLine("QUEUE SELECTION DEBUG END");

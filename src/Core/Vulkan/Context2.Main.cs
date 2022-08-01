@@ -39,14 +39,14 @@ public static unsafe partial class Context2
 
 	public static void CreateLevelContext()
 	{
-		BeforeLevelContextCreate?.Invoke();
-		AfterLevelContextCreate?.Invoke();
+		ContextEvents.InvokeBeforeCreate();
+		ContextEvents.InvokeAfterCreate();
 	}
 
 	public static void DisposeLevelContext()
 	{
-		BeforeLevelContextDispose?.Invoke();
-		AfterLevelContextDispose?.Invoke();
+		ContextEvents.InvokeBeforeDispose();
+		ContextEvents.InvokeAfterDispose();
 	}
 
 	#endregion
@@ -67,7 +67,7 @@ public static unsafe partial class Context2
 
 	public static void CreateLevelInstance()
 	{
-		BeforeLevelInstanceCreate?.Invoke();
+		InstanceEvents.InvokeBeforeCreate();
 
 		RequiredLayers.Clear();
 		RequiredLayers.UnionWith(State.ProgramLayers.Value);
@@ -155,7 +155,7 @@ public static unsafe partial class Context2
 
 		Surface = Window.GetVulkanSurface(Instance);
 
-		AfterLevelInstanceCreate?.Invoke();
+		InstanceEvents.InvokeAfterCreate();
 	}
 
 	private static void CheckLayerSupport(HashSet<string> requiredLayers)
@@ -197,7 +197,7 @@ public static unsafe partial class Context2
 
 	public static void DisposeLevelInstance()
 	{
-		BeforeLevelInstanceDispose?.Invoke();
+		InstanceEvents.InvokeBeforeDispose();
 
 		KhrSurface.DestroySurface(Instance, Surface, null);
 		KhrSurface.Dispose();
@@ -209,7 +209,7 @@ public static unsafe partial class Context2
 
 		Vk.DestroyInstance(Instance, null);
 
-		AfterLevelInstanceDispose?.Invoke();
+		InstanceEvents.InvokeAfterDispose();
 	}
 
 	#endregion
@@ -240,7 +240,7 @@ public static unsafe partial class Context2
 
 	public static void CreateLevelDevice()
 	{
-		BeforeLevelDeviceCreate?.Invoke();
+		DeviceEvents.InvokeBeforeCreate();
 
 		_types = State.DeviceFeatures2.Value.Select(f => f.GetType()).ToArray();
 		var typeOfBool32 = typeof(Bool32);
@@ -262,7 +262,7 @@ public static unsafe partial class Context2
 
 		FrameGraph.Init();
 
-		AfterLevelDeviceCreate?.Invoke();
+		DeviceEvents.InvokeAfterCreate();
 	}
 
 	private static string GetDeviceString(int deviceId, PhysicalDeviceProperties2 properties)
@@ -714,7 +714,7 @@ public static unsafe partial class Context2
 	public static void DisposeLevelDevice()
 	{
 		Vk.DeviceWaitIdle(Device);
-		BeforeLevelDeviceDispose?.Invoke();
+		DeviceEvents.InvokeBeforeDispose();
 		
 		if (_oldSwapchainInfo.swapchain.Handle != default && _oldSwapchainInfo.device.Handle == Device.Handle)
 			KhrSwapchain.DestroySwapchain(Device, _oldSwapchainInfo.swapchain, null);
@@ -724,7 +724,7 @@ public static unsafe partial class Context2
 		vmaDestroyAllocator(VmaHandle);
 		Vk.DestroyDevice(Device, null);
 
-		AfterLevelDeviceDispose?.Invoke();
+		DeviceEvents.InvokeAfterDispose();
 	}
 
 	#endregion
@@ -735,7 +735,7 @@ public static unsafe partial class Context2
 
 	public static void CreateLevelFrame()
 	{
-		BeforeLevelFrameCreate?.Invoke();
+		FrameEvents.InvokeBeforeCreate();
 
 		var semaphoreCreateInfo = new SemaphoreCreateInfo
 		{
@@ -761,16 +761,16 @@ public static unsafe partial class Context2
 			Frames[i] = new Frame(presentSemaphore, renderSemaphore, fence);
 		}
 
-		AfterLevelFrameCreate?.Invoke();
+		FrameEvents.InvokeAfterCreate();
 	}
 
 	public static void DisposeLevelFrame()
 	{
-		BeforeLevelFrameDispose?.Invoke();
+		FrameEvents.InvokeBeforeDispose();
 
 		foreach (var frame in Frames) frame.Dispose();
 
-		AfterLevelFrameDispose?.Invoke();
+		FrameEvents.InvokeAfterDispose();
 	}
 
 	#endregion
@@ -782,12 +782,11 @@ public static unsafe partial class Context2
 	public static Extent2D SwapchainExtent;
 	public static SwapchainKHR Swapchain;
 	public static uint SwapchainImageCount;
-	public static Image[] SwapchainImages = Array.Empty<Image>();
-	public static ImageView[] SwapchainImageViews = Array.Empty<ImageView>();
+	public static VulkanImage2[] SwapchainImages = Array.Empty<VulkanImage2>();
 
 	public static void CreateLevelSwapchain()
 	{
-		BeforeLevelSwapchainCreate?.Invoke();
+		SwapchainEvents.InvokeBeforeCreate();
 
 		SwapchainSurfaceFormat = ChooseSurfaceFormat(SwapchainDetails.SurfaceFormats);
 		PresentMode = ChoosePresentMode(SwapchainDetails.PresentModes);
@@ -826,14 +825,18 @@ public static unsafe partial class Context2
 
 		KhrSwapchain.GetSwapchainImages(Device, Swapchain, ref SwapchainImageCount, null);
 
-		SwapchainImages = new Image[SwapchainImageCount];
-		KhrSwapchain.GetSwapchainImages(Device, Swapchain, ref SwapchainImageCount, SwapchainImages.AsPointer());
+		var images = new Image[SwapchainImageCount];
+		KhrSwapchain.GetSwapchainImages(Device, Swapchain, ref SwapchainImageCount, images.AsPointer());
 
-		SwapchainImageViews = new ImageView[SwapchainImageCount];
-		for (int i = 0; i < SwapchainImages.Length; i++)
-			SwapchainImageViews[i] = CreateImageView(ref SwapchainImages[i], ref SwapchainSurfaceFormat.Format, ImageAspectFlags.ImageAspectColorBit, 1);
+		var imageViews = new ImageView[SwapchainImageCount];
+		for (int i = 0; i < imageViews.Length; i++)
+			imageViews[i] = CreateImageView(ref images[i], ref SwapchainSurfaceFormat.Format, ImageAspectFlags.ImageAspectColorBit, 1);
 
-		AfterLevelSwapchainCreate?.Invoke();
+		SwapchainImages = new VulkanImage2[SwapchainImageCount];
+		for (int i = 0; i < SwapchainImageCount; i++)
+			SwapchainImages[i] = new VulkanImage2(images[i], IntPtr.Zero, imageViews[i], SwapchainSurfaceFormat.Format);
+
+		SwapchainEvents.InvokeAfterCreate();
 	}
 
 	// Default surface format is {VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR}
@@ -869,30 +872,15 @@ public static unsafe partial class Context2
 	public static void DisposeLevelSwapchain()
 	{
 		Vk.QueueWaitIdle(GraphicsQueue.Queue);
-		BeforeLevelSwapchainDispose?.Invoke();
+		SwapchainEvents.InvokeBeforeDispose();
 
-		foreach (var view in SwapchainImageViews) Vk.DestroyImageView(Device, view, null);
+		foreach (var image in SwapchainImages) Vk.DestroyImageView(Device, image.ImageView, null);
 
 		KhrSwapchain.DestroySwapchain(Device, Swapchain, null);
+		Swapchain.Handle = default;
 
-		AfterLevelSwapchainDispose?.Invoke();
+		SwapchainEvents.InvokeAfterDispose();
 	}
 
 	#endregion
-	
-	// #region LevelFrameGraph
-	//
-	// public static void CreateLevelRenderGraph()
-	// {
-	// 	BeforeLevelRenderGraphCreate?.Invoke();
-	// 	AfterLevelRenderGraphCreate?.Invoke();
-	// }
-	//
-	// public static void DisposeLevelRenderGraph()
-	// {
-	// 	BeforeLevelRenderGraphDispose?.Invoke();
-	// 	AfterLevelRenderGraphDispose?.Invoke();
-	// }
-	//
-	// #endregion
 }

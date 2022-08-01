@@ -42,32 +42,26 @@ public static unsafe class SwapchainHelper
 		if (VulkanOptions.MsaaEnabled) ColorImage.Dispose();
 		DepthImage.Dispose();
 
-		foreach (var frameBuffer in FrameBuffers) Context.Vk.DestroyFramebuffer(Context.Device, frameBuffer, null);
+		foreach (var frameBuffer in FrameBuffers) Context2.Vk.DestroyFramebuffer(Context2.Device, frameBuffer, null);
 
-		Context.Vk.DestroyRenderPass(Context.Device, RenderPass, null);
+		Context2.Vk.DestroyRenderPass(Context2.Device, RenderPass, null);
 
-		foreach (var imageView in SwapchainImageViews) Context.Vk.DestroyImageView(Context.Device, imageView, null);
+		foreach (var imageView in SwapchainImageViews) Context2.Vk.DestroyImageView(Context2.Device, imageView, null);
 
-		Context.KhrSwapchain.DestroySwapchain(Context.Device, Swapchain, null);
+		Context.KhrSwapchain.DestroySwapchain(Context2.Device, Swapchain, null);
 
-		// if (_oldSwapchain.Handle != default) Context.KhrSwapchain.DestroySwapchain(Context.Device, _oldSwapchain, null);
+		// if (_oldSwapchain.Handle != default) Context.KhrSwapchain.DestroySwapchain(Context2.Device, _oldSwapchain, null);
 	}
 
 	public static void RecreateSwapchain()
 	{
-		Context.Vk.DeviceWaitIdle(Context.Device);
+		Context2.Vk.DeviceWaitIdle(Context2.Device);
 		if (!Context.Window.IsRunning) { return; }
 
 		CleanupSwapchain();
 		CreateSwapchainObjects();
 
 		OnRecreateSwapchain?.Invoke();
-	}
-
-	public static void Dispose()
-	{
-		ColorImage.Dispose();
-		DepthImage.Dispose();
 	}
 
 	public static void CreateRenderPass()
@@ -167,7 +161,7 @@ public static unsafe class SwapchainHelper
 			PDependencies = dependencies[0].AsPointer()
 		};
 
-		Check(Context.Vk.CreateRenderPass(Context.Device, renderPassInfo, null, out RenderPass),
+		Check(Context2.Vk.CreateRenderPass(Context2.Device, renderPassInfo, null, out RenderPass),
 			"Failed to create render pass");
 	}
 
@@ -211,18 +205,18 @@ public static unsafe class SwapchainHelper
 		// if (_oldSwapchain.Handle != default)
 		// {
 		// 	createInfo.OldSwapchain = _oldSwapchain;
-		// 	DisposalQueue.EnqueueInSwapchain(()=>Context.KhrSwapchain.DestroySwapchain(Context.Device, _oldSwapchain, null));
+		// 	DisposalQueue.EnqueueInSwapchain(()=>Context.KhrSwapchain.DestroySwapchain(Context2.Device, _oldSwapchain, null));
 		// }
 		// _oldSwapchain = Swapchain;
 
-		Check(Context.KhrSwapchain.CreateSwapchain(Context.Device, createInfo, null, out var swapchain), "Failed to create swap chain.");
+		Check(Context.KhrSwapchain.CreateSwapchain(Context2.Device, createInfo, null, out var swapchain), "Failed to create swap chain.");
 		Swapchain = swapchain;
 
-		Context.KhrSwapchain.GetSwapchainImages(Context.Device, Swapchain, ref ImageCount, null);
+		Context.KhrSwapchain.GetSwapchainImages(Context2.Device, Swapchain, ref ImageCount, null);
 		// App.Logger.Info.Message($"DriverMinImageCount: {details.SurfaceCapabilities.MinImageCount}, CalculatedMinImageCount: {minImageCount}, ImageCount: {ImageCount}");
 
 		SwapchainImages = new Image[(int) ImageCount];
-		Context.KhrSwapchain.GetSwapchainImages(Context.Device, Swapchain, ref ImageCount, SwapchainImages[0].AsPointer());
+		Context.KhrSwapchain.GetSwapchainImages(Context2.Device, Swapchain, ref ImageCount, SwapchainImages[0].AsPointer());
 
 		SwapchainImageViews = new ImageView[ImageCount];
 		for (int i = 0; i < SwapchainImages.Length; i++)
@@ -320,7 +314,7 @@ public static unsafe class SwapchainHelper
 		{
 			attachments[VulkanOptions.MsaaEnabled ? 2 : 0] = SwapchainImageViews[i];
 
-			Context.Vk.CreateFramebuffer(Context.Device, &createInfo, null, out frameBuffers[i]);
+			Context2.Vk.CreateFramebuffer(Context2.Device, &createInfo, null, out frameBuffers[i]);
 		}
 
 		return frameBuffers;

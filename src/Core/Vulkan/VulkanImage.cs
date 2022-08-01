@@ -16,7 +16,7 @@ public class VulkanImage : IDisposable
 
 	public unsafe void Dispose()
 	{
-		Context.Vk.DestroyImageView(Context.Device, ImageView, null);
+		Context2.Vk.DestroyImageView(Context2.Device, ImageView, null);
 		vmaDestroyImage(Context.VmaHandle, Image.Handle, Allocation);
 		GC.SuppressFinalize(this);
 	}

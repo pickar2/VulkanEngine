@@ -20,7 +20,7 @@ public unsafe class MultipleStructDataFactory : SimpleRegistry<NoneEventManager<
 	public MultipleStructDataFactory(NamespacedName identifier, bool cpuToGpuMemory = false) : base(identifier)
 	{
 		// TODO: cache properties
-		Context.Vk.GetPhysicalDeviceProperties(Context.PhysicalDevice, out var properties);
+		Context2.Vk.GetPhysicalDeviceProperties(Context.PhysicalDevice, out var properties);
 		_minAlignment = (int) properties.Limits.MinStorageBufferOffsetAlignment;
 
 		CpuToGpuMemory = cpuToGpuMemory;

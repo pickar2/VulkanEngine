@@ -48,18 +48,18 @@ public unsafe partial class UiRenderer
 
 	private static void InitCompute()
 	{
-		_copyCommandPool = VulkanUtils.CreateCommandPool(0, Context2.TransferToHostQueue);
-		DisposalQueue.EnqueueInGlobal(() => Context.Vk.DestroyCommandPool(Context.Device, _copyCommandPool, null));
+		_copyCommandPool = VulkanUtils.CreateCommandPool(Context2.TransferToHostQueue, 0);
+		DisposalQueue.EnqueueInGlobal(() => Context2.Vk.DestroyCommandPool(Context2.Device, _copyCommandPool, null));
 
 		_fence = VulkanUtils.CreateFence(true);
-		DisposalQueue.EnqueueInGlobal(() => Context.Vk.DestroyFence(Context.Device, _fence, null));
+		DisposalQueue.EnqueueInGlobal(() => Context2.Vk.DestroyFence(Context2.Device, _fence, null));
 
 		_sortCommandPools = new CommandPool[SwapchainHelper.ImageCount];
 		for (int i = 0; i < _sortCommandPools.Length; i++)
 		{
-			var pool = VulkanUtils.CreateCommandPool(0, Context2.ComputeQueue);
+			var pool = VulkanUtils.CreateCommandPool(Context2.ComputeQueue, 0);
 			_sortCommandPools[i] = pool;
-			DisposalQueue.EnqueueInGlobal(() => Context.Vk.DestroyCommandPool(Context.Device, pool, null));
+			DisposalQueue.EnqueueInGlobal(() => Context2.Vk.DestroyCommandPool(Context2.Device, pool, null));
 		}
 
 		_sortClearPass = VulkanUtils.CreateShader("./assets/shaders/ui/compute/sort_clear_pass.comp", ShaderKind.ComputeShader);
@@ -146,10 +146,10 @@ public unsafe partial class UiRenderer
 			PBindings = countersLayoutBindings[0].AsPointer()
 		};
 
-		VulkanUtils.Check(Context.Vk.CreateDescriptorSetLayout(Context.Device, &countersLayoutCreateInfo, null, out _sortCountersLayout),
+		VulkanUtils.Check(Context2.Vk.CreateDescriptorSetLayout(Context2.Device, &countersLayoutCreateInfo, null, out _sortCountersLayout),
 			"Failed to create ui sort counters descriptor set layout.");
 
-		DisposalQueue.EnqueueInGlobal(() => Context.Vk.DestroyDescriptorSetLayout(Context.Device, _sortCountersLayout, null));
+		DisposalQueue.EnqueueInGlobal(() => Context2.Vk.DestroyDescriptorSetLayout(Context2.Device, _sortCountersLayout, null));
 
 		var indicesLayoutBindings = new DescriptorSetLayoutBinding
 		{
@@ -166,9 +166,9 @@ public unsafe partial class UiRenderer
 			PBindings = &indicesLayoutBindings
 		};
 
-		VulkanUtils.Check(Context.Vk.CreateDescriptorSetLayout(Context.Device, &indicesLayoutCreateInfo, null, out _sortIndicesLayout),
+		VulkanUtils.Check(Context2.Vk.CreateDescriptorSetLayout(Context2.Device, &indicesLayoutCreateInfo, null, out _sortIndicesLayout),
 			"Failed to create ui sort indices descriptor set layout.");
-		DisposalQueue.EnqueueInGlobal(() => Context.Vk.DestroyDescriptorSetLayout(Context.Device, _sortIndicesLayout, null));
+		DisposalQueue.EnqueueInGlobal(() => Context2.Vk.DestroyDescriptorSetLayout(Context2.Device, _sortIndicesLayout, null));
 	}
 
 	private static void CreateSortPools()
@@ -196,9 +196,9 @@ public unsafe partial class UiRenderer
 			Flags = DescriptorPoolCreateFlags.DescriptorPoolCreateFreeDescriptorSetBit
 		};
 
-		VulkanUtils.Check(Context.Vk.CreateDescriptorPool(Context.Device, &countersCreateInfo, null, out _sortCountersPool),
+		VulkanUtils.Check(Context2.Vk.CreateDescriptorPool(Context2.Device, &countersCreateInfo, null, out _sortCountersPool),
 			"Failed to create ui counters descriptor pool.");
-		DisposalQueue.EnqueueInGlobal(() => Context.Vk.DestroyDescriptorPool(Context.Device, _sortCountersPool, null));
+		DisposalQueue.EnqueueInGlobal(() => Context2.Vk.DestroyDescriptorPool(Context2.Device, _sortCountersPool, null));
 
 		var indicesPoolSizes = new DescriptorPoolSize
 		{
@@ -215,9 +215,9 @@ public unsafe partial class UiRenderer
 			Flags = DescriptorPoolCreateFlags.DescriptorPoolCreateFreeDescriptorSetBit
 		};
 
-		VulkanUtils.Check(Context.Vk.CreateDescriptorPool(Context.Device, &indicesCreateInfo, null, out _sortIndicesPool),
+		VulkanUtils.Check(Context2.Vk.CreateDescriptorPool(Context2.Device, &indicesCreateInfo, null, out _sortIndicesPool),
 			"Failed to create ui indices descriptor pool.");
-		DisposalQueue.EnqueueInGlobal(() => Context.Vk.DestroyDescriptorPool(Context.Device, _sortIndicesPool, null));
+		DisposalQueue.EnqueueInGlobal(() => Context2.Vk.DestroyDescriptorPool(Context2.Device, _sortIndicesPool, null));
 	}
 
 	private static void CreateSortSets()
@@ -230,7 +230,7 @@ public unsafe partial class UiRenderer
 			PSetLayouts = _sortCountersLayout.AsPointer()
 		};
 
-		VulkanUtils.Check(Context.Vk.AllocateDescriptorSets(Context.Device, &countersAllocInfo, out _sortCountersSet),
+		VulkanUtils.Check(Context2.Vk.AllocateDescriptorSets(Context2.Device, &countersAllocInfo, out _sortCountersSet),
 			"Failed to allocate ui sort counters descriptor sets.");
 		UpdateCountersDescriptorSet();
 
@@ -246,7 +246,7 @@ public unsafe partial class UiRenderer
 		};
 
 		_sortIndicesSets = new DescriptorSet[SwapchainHelper.ImageCountInt];
-		VulkanUtils.Check(Context.Vk.AllocateDescriptorSets(Context.Device, &indicesAllocInfo, out _sortIndicesSets[0]),
+		VulkanUtils.Check(Context2.Vk.AllocateDescriptorSets(Context2.Device, &indicesAllocInfo, out _sortIndicesSets[0]),
 			"Failed to allocate ui sort indices descriptor sets.");
 		UpdateIndicesDescriptorSet();
 	}
@@ -321,7 +321,7 @@ public unsafe partial class UiRenderer
 			}
 		};
 
-		Context.Vk.UpdateDescriptorSets(Context.Device, (uint) writes.Length, writes[0], 0, null);
+		Context2.Vk.UpdateDescriptorSets(Context2.Device, (uint) writes.Length, writes[0], 0, null);
 	}
 
 	private static void UpdateIndicesDescriptorSet()
@@ -349,7 +349,7 @@ public unsafe partial class UiRenderer
 			};
 		}
 
-		Context.Vk.UpdateDescriptorSets(Context.Device, SwapchainHelper.ImageCount, writes, 0, null);
+		Context2.Vk.UpdateDescriptorSets(Context2.Device, SwapchainHelper.ImageCount, writes, 0, null);
 	}
 
 	private static void CreateSortPipelines()
@@ -370,7 +370,7 @@ public unsafe partial class UiRenderer
 
 	private static CommandBuffer CreateSortCommandBuffer(int imageIndex)
 	{
-		Context.Vk.ResetCommandPool(Context.Device, _sortCommandPools[imageIndex], 0);
+		Context2.Vk.ResetCommandPool(Context2.Device, _sortCommandPools[imageIndex], 0);
 		var allocInfo = new CommandBufferAllocateInfo
 		{
 			SType = StructureType.CommandBufferAllocateInfo,
@@ -379,7 +379,7 @@ public unsafe partial class UiRenderer
 			Level = CommandBufferLevel.Primary
 		};
 
-		VulkanUtils.Check(Context.Vk.AllocateCommandBuffers(Context.Device, allocInfo, out var commandBuffer), "Failed to allocate ui command buffer.");
+		VulkanUtils.Check(Context2.Vk.AllocateCommandBuffers(Context2.Device, allocInfo, out var commandBuffer), "Failed to allocate ui command buffer.");
 
 		var memoryBarrier = new MemoryBarrier2
 		{
@@ -420,39 +420,39 @@ public unsafe partial class UiRenderer
 
 		commandBuffer.Begin();
 
-		Context.Vk.CmdCopyBuffer(commandBuffer, _countBufferCpu.Buffer, _countBuffer.Buffer, 1, countDataCopyRegion);
+		Context2.Vk.CmdCopyBuffer(commandBuffer, _countBufferCpu.Buffer, _countBuffer.Buffer, 1, countDataCopyRegion);
 		Context.KhrSynchronization2.CmdPipelineBarrier2(commandBuffer, &dependencyInfo);
 
-		Context.Vk.CmdBindPipeline(commandBuffer, PipelineBindPoint.Compute, _sortClearPipeline.Pipeline);
-		Context.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Compute, _sortClearPipeline.PipelineLayout, 0, 1, _sortCountersSet.AsPointer(),
+		Context2.Vk.CmdBindPipeline(commandBuffer, PipelineBindPoint.Compute, _sortClearPipeline.Pipeline);
+		Context2.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Compute, _sortClearPipeline.PipelineLayout, 0, 1, _sortCountersSet.AsPointer(),
 			null);
-		Context.Vk.CmdDispatch(commandBuffer, (uint) Math.Ceiling((float) ZCount / 32), 1, 1);
+		Context2.Vk.CmdDispatch(commandBuffer, (uint) Math.Ceiling((float) ZCount / 32), 1, 1);
 
 		Context.KhrSynchronization2.CmdPipelineBarrier2(commandBuffer, &dependencyInfoStorage);
 
-		Context.Vk.CmdBindPipeline(commandBuffer, PipelineBindPoint.Compute, _sortCountPipeline.Pipeline);
-		Context.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Compute, _sortCountPipeline.PipelineLayout, 0, 1,
-			_componentDataSet.AsPointer(),
+		Context2.Vk.CmdBindPipeline(commandBuffer, PipelineBindPoint.Compute, _sortCountPipeline.Pipeline);
+		Context2.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Compute, _sortCountPipeline.PipelineLayout, 0, 1,
+			_componentDataSets[imageIndex].AsPointer(),
 			null);
-		Context.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Compute, _sortCountPipeline.PipelineLayout, 1, 1, _sortCountersSet.AsPointer(), null);
-		Context.Vk.CmdDispatch(commandBuffer, (uint) Math.Ceiling((float) UiComponentFactory.Instance.MaxComponents / 32), 1, 1);
+		Context2.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Compute, _sortCountPipeline.PipelineLayout, 1, 1, _sortCountersSet.AsPointer(), null);
+		Context2.Vk.CmdDispatch(commandBuffer, (uint) Math.Ceiling((float) UiComponentFactory.Instance.MaxComponents / 32), 1, 1);
 
 		Context.KhrSynchronization2.CmdPipelineBarrier2(commandBuffer, &dependencyInfoStorage);
 
-		Context.Vk.CmdBindPipeline(commandBuffer, PipelineBindPoint.Compute, _sortOffsetsPipeline.Pipeline);
-		Context.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Compute, _sortOffsetsPipeline.PipelineLayout, 0, 1, _sortCountersSet.AsPointer(),
+		Context2.Vk.CmdBindPipeline(commandBuffer, PipelineBindPoint.Compute, _sortOffsetsPipeline.Pipeline);
+		Context2.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Compute, _sortOffsetsPipeline.PipelineLayout, 0, 1, _sortCountersSet.AsPointer(),
 			null);
-		Context.Vk.CmdDispatch(commandBuffer, 1, 1, 1);
+		Context2.Vk.CmdDispatch(commandBuffer, 1, 1, 1);
 
 		Context.KhrSynchronization2.CmdPipelineBarrier2(commandBuffer, &dependencyInfoStorage);
 
-		Context.Vk.CmdBindPipeline(commandBuffer, PipelineBindPoint.Compute, _sortMainPipeline.Pipeline);
-		Context.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Compute, _sortMainPipeline.PipelineLayout, 0, 1,
-			_componentDataSet.AsPointer(), null);
-		Context.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Compute, _sortMainPipeline.PipelineLayout, 1, 1, _sortCountersSet.AsPointer(), null);
-		Context.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Compute, _sortMainPipeline.PipelineLayout, 2, 1,
+		Context2.Vk.CmdBindPipeline(commandBuffer, PipelineBindPoint.Compute, _sortMainPipeline.Pipeline);
+		Context2.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Compute, _sortMainPipeline.PipelineLayout, 0, 1,
+			_componentDataSets[imageIndex].AsPointer(), null);
+		Context2.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Compute, _sortMainPipeline.PipelineLayout, 1, 1, _sortCountersSet.AsPointer(), null);
+		Context2.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Compute, _sortMainPipeline.PipelineLayout, 2, 1,
 			_sortIndicesSets[imageIndex].AsPointer(), null);
-		Context.Vk.CmdDispatch(commandBuffer, (uint) Math.Ceiling((float) UiComponentFactory.Instance.MaxComponents / 32), 1, 1);
+		Context2.Vk.CmdDispatch(commandBuffer, (uint) Math.Ceiling((float) UiComponentFactory.Instance.MaxComponents / 32), 1, 1);
 
 		Context.KhrSynchronization2.CmdPipelineBarrier2(commandBuffer, &dependencyInfoStorage);
 

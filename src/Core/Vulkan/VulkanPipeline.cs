@@ -10,8 +10,8 @@ public unsafe class VulkanPipeline : IDisposable
 
 	public void Dispose()
 	{
-		Context.Vk.DestroyPipelineLayout(Context.Device, PipelineLayout, null);
-		Context.Vk.DestroyPipeline(Context.Device, Pipeline, null);
+		Context2.Vk.DestroyPipelineLayout(Context2.Device, PipelineLayout, null);
+		Context2.Vk.DestroyPipeline(Context2.Device, Pipeline, null);
 		GC.SuppressFinalize(this);
 	}
 }

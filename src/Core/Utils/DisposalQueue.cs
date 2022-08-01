@@ -4,6 +4,7 @@ using Core.Vulkan;
 
 namespace Core.Utils;
 
+[Obsolete($"Use {nameof(ExecuteOnce)} instead.")]
 public static class DisposalQueue
 {
 	private static readonly List<Action> GlobalDisposables = new();

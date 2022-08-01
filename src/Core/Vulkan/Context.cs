@@ -18,6 +18,7 @@ using Result = Silk.NET.Vulkan.Result;
 
 namespace Core.Vulkan;
 
+[Obsolete($"Use {nameof(Context2)} instead.")]
 public unsafe class Context : IDisposable
 {
 	private static Stopwatch _stopwatch = new();

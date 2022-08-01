@@ -198,16 +198,16 @@ public static unsafe class VulkanUtils
 		return result;
 	}
 
-	public static CommandPool CreateCommandPool(int flags, VulkanQueue vulkanQueue)
+	public static CommandPool CreateCommandPool(VulkanQueue vulkanQueue, CommandPoolCreateFlags flags = 0)
 	{
 		CommandPoolCreateInfo poolInfo = new()
 		{
 			SType = StructureType.CommandPoolCreateInfo,
-			Flags = (CommandPoolCreateFlags) flags,
+			Flags = flags,
 			QueueFamilyIndex = vulkanQueue.Family.Index
 		};
 
-		Check(Context.Vk.CreateCommandPool(Context.Device, poolInfo, null, out var pool), "Failed to create command pool");
+		Check(Context2.Vk.CreateCommandPool(Context2.Device, poolInfo, null, out var pool), "Failed to create command pool");
 
 		return pool;
 	}
@@ -239,7 +239,7 @@ public static unsafe class VulkanUtils
 	{
 		foreach (var format in formatCandidates)
 		{
-			Context.Vk.GetPhysicalDeviceFormatProperties(Context.PhysicalDevice, format, out var properties);
+			Context2.Vk.GetPhysicalDeviceFormatProperties(Context2.PhysicalDevice, format, out var properties);
 
 			if ((tiling == ImageTiling.Linear && (properties.LinearTilingFeatures & features) == features) ||
 			    (tiling == ImageTiling.Optimal && (properties.OptimalTilingFeatures & features) == features))
@@ -353,7 +353,7 @@ public static unsafe class VulkanUtils
 
 		var commandBuffer = CommandBuffers.BeginSingleTimeCommands(GraphicsCommandPool);
 
-		Context.Vk.CmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0,
+		Context2.Vk.CmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0,
 			null, 0, null, 1, barrier);
 
 		CommandBuffers.EndSingleTimeCommands(ref commandBuffer, GraphicsCommandPool, Context2.GraphicsQueue);
@@ -382,7 +382,7 @@ public static unsafe class VulkanUtils
 			CodeSize = shader.CodeLength
 		};
 
-		Check(Context.Vk.CreateShaderModule(Context.Device, createInfo, null, out var vulkanShaderModule),
+		Check(Context2.Vk.CreateShaderModule(Context2.Device, createInfo, null, out var vulkanShaderModule),
 			$"Failed to create shader module {path}");
 		shader.Dispose();
 
@@ -478,7 +478,7 @@ public static unsafe class VulkanUtils
 
 		var copy = new BufferCopy {Size = size};
 
-		Context.Vk.CmdCopyBuffer(commandBuffer, src.Buffer, dst.Buffer, 1, copy);
+		Context2.Vk.CmdCopyBuffer(commandBuffer, src.Buffer, dst.Buffer, 1, copy);
 
 		CommandBuffers.EndSingleTimeCommands(ref commandBuffer, GraphicsCommandPool, Context2.GraphicsQueue);
 	}
@@ -504,7 +504,7 @@ public static unsafe class VulkanUtils
 		};
 		if (pushConstantRanges.Length > 0) layoutCreateInfo.PPushConstantRanges = pushConstantRanges[0].AsPointer();
 
-		Context.Vk.CreatePipelineLayout(Context.Device, &layoutCreateInfo, null, out var layout);
+		Context2.Vk.CreatePipelineLayout(Context2.Device, &layoutCreateInfo, null, out var layout);
 
 		var createInfo = new ComputePipelineCreateInfo
 		{
@@ -513,7 +513,7 @@ public static unsafe class VulkanUtils
 			Layout = layout
 		};
 
-		Context.Vk.CreateComputePipelines(Context.Device, pipelineCache, 1, &createInfo, null, out var pipeline);
+		Context2.Vk.CreateComputePipelines(Context2.Device, pipelineCache, 1, &createInfo, null, out var pipeline);
 
 		return new VulkanPipeline
 		{
@@ -541,7 +541,7 @@ public static unsafe class VulkanUtils
 			ImageExtent = new Extent3D(image.Width, image.Height, 1)
 		};
 
-		Context.Vk.CmdCopyBufferToImage(cb, buffer, image.Image, ImageLayout.TransferDstOptimal, 1, &imageCopy);
+		Context2.Vk.CmdCopyBufferToImage(cb, buffer, image.Image, ImageLayout.TransferDstOptimal, 1, &imageCopy);
 
 		CommandBuffers.EndSingleTimeCommands(ref cb, GraphicsCommandPool, Context2.GraphicsQueue);
 	}
@@ -549,7 +549,7 @@ public static unsafe class VulkanUtils
 	public static void GenerateMipmaps(VulkanImage image)
 	{
 		// TODO: make cache of format properties to reduce amount of calls to GPU
-		Context.Vk.GetPhysicalDeviceFormatProperties(Context.PhysicalDevice, image.Format, out var properties);
+		Context2.Vk.GetPhysicalDeviceFormatProperties(Context.PhysicalDevice, image.Format, out var properties);
 		if ((properties.OptimalTilingFeatures & FormatFeatureFlags.FormatFeatureSampledImageFilterLinearBit) == 0)
 			throw new Exception($"Texture image format `{image.Format}` does not support linear blitting.");
 
@@ -578,7 +578,7 @@ public static unsafe class VulkanUtils
 			barrier.SrcAccessMask = AccessFlags.AccessTransferWriteBit;
 			barrier.DstAccessMask = AccessFlags.AccessTransferReadBit;
 
-			Context.Vk.CmdPipelineBarrier(cb, PipelineStageFlags.PipelineStageTransferBit, PipelineStageFlags.PipelineStageTransferBit, 0, null, null, 1,
+			Context2.Vk.CmdPipelineBarrier(cb, PipelineStageFlags.PipelineStageTransferBit, PipelineStageFlags.PipelineStageTransferBit, 0, null, null, 1,
 				&barrier);
 
 			var blit = new ImageBlit
@@ -607,14 +607,14 @@ public static unsafe class VulkanUtils
 				}
 			};
 
-			Context.Vk.CmdBlitImage(cb, image.Image, ImageLayout.TransferSrcOptimal, image.Image, ImageLayout.TransferDstOptimal, 1, &blit, Filter.Linear);
+			Context2.Vk.CmdBlitImage(cb, image.Image, ImageLayout.TransferSrcOptimal, image.Image, ImageLayout.TransferDstOptimal, 1, &blit, Filter.Linear);
 
 			barrier.OldLayout = ImageLayout.TransferSrcOptimal;
 			barrier.NewLayout = ImageLayout.ShaderReadOnlyOptimal;
 			barrier.SrcAccessMask = AccessFlags.AccessTransferWriteBit;
 			barrier.DstAccessMask = AccessFlags.AccessShaderReadBit;
 
-			Context.Vk.CmdPipelineBarrier(cb, PipelineStageFlags.PipelineStageTransferBit, PipelineStageFlags.PipelineStageFragmentShaderBit, 0, null, null, 1,
+			Context2.Vk.CmdPipelineBarrier(cb, PipelineStageFlags.PipelineStageTransferBit, PipelineStageFlags.PipelineStageFragmentShaderBit, 0, null, null, 1,
 				&barrier);
 		}
 
@@ -624,7 +624,7 @@ public static unsafe class VulkanUtils
 		barrier.DstAccessMask = AccessFlags.AccessShaderReadBit;
 		barrier.SubresourceRange.BaseMipLevel = image.MipLevels - 1;
 
-		Context.Vk.CmdPipelineBarrier(cb, PipelineStageFlags.PipelineStageTransferBit, PipelineStageFlags.PipelineStageFragmentShaderBit, 0, null, null, 1,
+		Context2.Vk.CmdPipelineBarrier(cb, PipelineStageFlags.PipelineStageTransferBit, PipelineStageFlags.PipelineStageFragmentShaderBit, 0, null, null, 1,
 			&barrier);
 
 		CommandBuffers.EndSingleTimeCommands(ref cb, GraphicsCommandPool, Context2.GraphicsQueue);
@@ -680,7 +680,7 @@ public static unsafe class VulkanUtils
 			MipLodBias = 0
 		};
 
-		Check(Context.Vk.CreateSampler(Context.Device, &createInfo, null, out var sampler), "Failed to create image sampler.");
+		Check(Context2.Vk.CreateSampler(Context2.Device, &createInfo, null, out var sampler), "Failed to create image sampler.");
 
 		return sampler;
 	}

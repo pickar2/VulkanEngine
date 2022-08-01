@@ -75,7 +75,7 @@ internal static class Program
 			// Context2.State.DebugMode.Value = !Context2.State.DebugMode.Value;
 			// Context2.State.TestFrame.Value++;
 			// Context2.State.TestSwapchain.Value++;
-			// Context2.State.TestRenderGraph.Value++;
+			// Context2.State.TestInstance.Value++;
 			// gpu = (gpu + 1) % 3;
 			// Context2.State.SelectedGpuIndex.Value = gpu - 1;
 			// Context2.State.PresentMode.Value = Context2.State.PresentMode.Value == PresentModeKHR.PresentModeMailboxKhr

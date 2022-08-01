@@ -27,6 +27,7 @@ public class SdlWindow : IDisposable
 		var sw = new Stopwatch();
 		sw.Start();
 
+		SDL_SetHint(SDL_HINT_WINDOWS_DISABLE_THREAD_NAMING, "1");
 		SDL_Init(SDL_INIT_EVERYTHING);
 		SDL_GetDesktopDisplayMode(0, out var mode);
 

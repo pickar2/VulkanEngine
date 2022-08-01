@@ -8,6 +8,7 @@ using Core.UI.Controls;
 using Core.Utils;
 using Core.Vulkan.Options;
 using Silk.NET.Vulkan;
+using static Core.Utils.VulkanUtils;
 
 namespace Core.Vulkan;
 
@@ -55,8 +56,8 @@ public static unsafe class MainRenderer
 		PrimaryCommandBuffers = new CommandBuffer[SwapchainHelper.FrameBuffers.Length];
 		for (int j = 0; j < CommandPools.Length; j++)
 		{
-			Context.Vk.CreateCommandPool(Context.Device, createInfo, null, out var commandPool);
-			DisposalQueue.EnqueueInGlobal(() => Context.Vk.DestroyCommandPool(Context.Device, commandPool, null));
+			Context2.Vk.CreateCommandPool(Context2.Device, createInfo, null, out var commandPool);
+			DisposalQueue.EnqueueInGlobal(() => Context2.Vk.DestroyCommandPool(Context2.Device, commandPool, null));
 
 			CommandPools[j] = commandPool;
 			PrimaryCommandBuffers[j] = CommandBuffers.CreateCommandBuffer(CommandBufferLevel.Primary, commandPool);
@@ -66,7 +67,7 @@ public static unsafe class MainRenderer
 		{
 			foreach (var commandPool in CommandPools)
 			{
-				Context.Vk.ResetCommandPool(Context.Device, commandPool, 0);
+				Context2.Vk.ResetCommandPool(Context2.Device, commandPool, 0);
 			}
 		};
 
@@ -137,7 +138,7 @@ public static unsafe class MainRenderer
 	{
 		var currentFrame = GetCurrentFrame();
 
-		VulkanUtils.Check(currentFrame.Fence.Wait(), "Failed to finish frame");
+		Check(currentFrame.Fence.Wait(), "Failed to finish frame");
 		currentFrame.Fence.Reset();
 
 		if (_framebufferResized)
@@ -147,7 +148,7 @@ public static unsafe class MainRenderer
 		}
 
 		uint swapchainImageIndex;
-		var result = Context.KhrSwapchain.AcquireNextImage(Context.Device, SwapchainHelper.Swapchain, 1000000000, currentFrame.PresentSemaphore, default,
+		var result = Context.KhrSwapchain.AcquireNextImage(Context2.Device, SwapchainHelper.Swapchain, 1000000000, currentFrame.PresentSemaphore, default,
 			&swapchainImageIndex);
 
 		_imageIndex = (int) swapchainImageIndex;
@@ -162,7 +163,7 @@ public static unsafe class MainRenderer
 
 		BeforeDrawFrame?.Invoke(FrameIndex, _imageIndex);
 
-		Context.Vk.ResetCommandPool(Context.Device, CommandPools[_imageIndex], 0);
+		Context2.Vk.ResetCommandPool(Context2.Device, CommandPools[_imageIndex], 0);
 		RecordPrimaryCommandBuffers(_imageIndex);
 
 		var waitStage = PipelineStageFlags.PipelineStageColorAttachmentOutputBit;
@@ -187,10 +188,42 @@ public static unsafe class MainRenderer
 		{
 			if (_fences[_imageIndex].Count > 0)
 			{
-				Context.Vk.WaitForFences(Context.Device, _fences[_imageIndex].ToArray(), true, ulong.MaxValue);
+				Context2.Vk.WaitForFences(Context2.Device, _fences[_imageIndex].ToArray(), true, ulong.MaxValue);
 				_fences[_imageIndex].Clear();
 			}
 		}
+
+		// var cbSubmitInfo = new CommandBufferSubmitInfo
+		// {
+		// 	SType = StructureType.CommandBufferSubmitInfo,
+		// 	CommandBuffer = cmd
+		// };
+		//
+		// var waitSemaphoreSubmitInfo = new SemaphoreSubmitInfo
+		// {
+		// 	SType = StructureType.SemaphoreSubmitInfo,
+		// 	Semaphore = presentSemaphore,
+		// 	StageMask = PipelineStageFlags2.PipelineStage2ColorAttachmentOutputBit
+		// };
+		//
+		// var signalSemaphoreSubmitInfo = new SemaphoreSubmitInfo
+		// {
+		// 	SType = StructureType.SemaphoreSubmitInfo,
+		// 	Semaphore = renderSemaphore
+		// };
+		//
+		// var submitInfo2 = new SubmitInfo2
+		// {
+		// 	SType = StructureType.SubmitInfo2,
+		// 	WaitSemaphoreInfoCount = 1,
+		// 	PWaitSemaphoreInfos = &waitSemaphoreSubmitInfo,
+		// 	SignalSemaphoreInfoCount = 1,
+		// 	PSignalSemaphoreInfos = &signalSemaphoreSubmitInfo,
+		// 	CommandBufferInfoCount = 1,
+		// 	PCommandBufferInfos = &cbSubmitInfo
+		// };
+		//
+		// Context2.Vk.QueueSubmit2(Context2.GraphicsQueue.Queue, 1, &submitInfo2, currentFrame.Fence);
 
 		Context2.GraphicsQueue.Submit(ref submitInfo, ref currentFrame.Fence);
 
@@ -247,11 +280,11 @@ public static unsafe class MainRenderer
 
 		for (int i = 0; i < FrameOverlap; i++)
 		{
-			VulkanUtils.Check(Context.Vk.CreateSemaphore(Context.Device, semaphoreCreateInfo, null, out var presentSemaphore),
+			Check(Context2.Vk.CreateSemaphore(Context2.Device, semaphoreCreateInfo, null, out var presentSemaphore),
 				$"Failed to create synchronization objects for the frame {i}");
-			VulkanUtils.Check(Context.Vk.CreateSemaphore(Context.Device, semaphoreCreateInfo, null, out var renderSemaphore),
+			Check(Context2.Vk.CreateSemaphore(Context2.Device, semaphoreCreateInfo, null, out var renderSemaphore),
 				$"Failed to create synchronization objects for the frame {i}");
-			VulkanUtils.Check(Context.Vk.CreateFence(Context.Device, fenceCreateInfo, null, out var fence),
+			Check(Context2.Vk.CreateFence(Context2.Device, fenceCreateInfo, null, out var fence),
 				$"Failed to create synchronization objects for the frame {i}");
 
 			Frames[i] = new Frame(presentSemaphore, renderSemaphore, fence);
@@ -274,7 +307,7 @@ public static unsafe class MainRenderer
 
 		var cmd = PrimaryCommandBuffers[imageIndex];
 
-		VulkanUtils.Check(cmd.Begin(CommandBufferUsageFlags.CommandBufferUsageOneTimeSubmitBit), "Failed to begin command buffer.");
+		Check(cmd.Begin(CommandBufferUsageFlags.CommandBufferUsageOneTimeSubmitBit), "Failed to begin command buffer.");
 
 		var renderPassBeginInfo = new RenderPassBeginInfo
 		{
@@ -288,7 +321,7 @@ public static unsafe class MainRenderer
 
 		// TODO: multi render pass api; will be in frame graph?
 
-		Context.Vk.CmdBeginRenderPass(cmd, renderPassBeginInfo, SubpassContents.SecondaryCommandBuffers);
+		Context2.Vk.CmdBeginRenderPass(cmd, renderPassBeginInfo, SubpassContents.SecondaryCommandBuffers);
 
 		var list = FillCommandBuffers?.GetInvocationList();
 		if (list is not null)
@@ -299,11 +332,11 @@ public static unsafe class MainRenderer
 				arr[index] = ((Func<int, CommandBuffer>) list[index]).Invoke(imageIndex);
 			}
 
-			Context.Vk.CmdExecuteCommands(cmd, (uint) list.Length, arr);
+			Context2.Vk.CmdExecuteCommands(cmd, (uint) list.Length, arr);
 		}
 
-		Context.Vk.CmdEndRenderPass(cmd);
+		Context2.Vk.CmdEndRenderPass(cmd);
 
-		VulkanUtils.Check(cmd.End(), "Failed to end command buffer.");
+		Check(cmd.End(), "Failed to end command buffer.");
 	}
 }

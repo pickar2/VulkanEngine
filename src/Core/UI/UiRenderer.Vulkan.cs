@@ -69,14 +69,14 @@ public static unsafe partial class UiRenderer
 		InitApi();
 
 		_sampler = VulkanUtils.CreateImageSampler(16); // Do we need to filter ui?
-		DisposalQueue.EnqueueInGlobal(() => Context.Vk.DestroySampler(Context.Device, _sampler, null));
+		DisposalQueue.EnqueueInGlobal(() => Context2.Vk.DestroySampler(Context2.Device, _sampler, null));
 
 		_commandPools = new CommandPool[SwapchainHelper.ImageCount];
 		for (int i = 0; i < _commandPools.Length; i++)
 		{
-			var pool = VulkanUtils.CreateCommandPool(0, Context2.GraphicsQueue);
+			var pool = VulkanUtils.CreateCommandPool(Context2.GraphicsQueue, 0);
 			_commandPools[i] = pool;
-			DisposalQueue.EnqueueInGlobal(() => Context.Vk.DestroyCommandPool(Context.Device, pool, null));
+			DisposalQueue.EnqueueInGlobal(() => Context2.Vk.DestroyCommandPool(Context2.Device, pool, null));
 		}
 
 		_vertexShader = VulkanUtils.CreateShader("./assets/shaders/ui/rectangle.vert", ShaderKind.VertexShader);
@@ -107,8 +107,8 @@ public static unsafe partial class UiRenderer
 		{
 			foreach (var indexBuffer in _indexBuffers) indexBuffer.Dispose();
 
-			Context.Vk.DestroyDescriptorSetLayout(Context.Device, _globalDataLayout, null);
-			Context.Vk.DestroyDescriptorPool(Context.Device, _globalDataPool, null);
+			Context2.Vk.DestroyDescriptorSetLayout(Context2.Device, _globalDataLayout, null);
+			Context2.Vk.DestroyDescriptorPool(Context2.Device, _globalDataPool, null);
 		});
 	}
 
@@ -121,8 +121,8 @@ public static unsafe partial class UiRenderer
 			SType = StructureType.PipelineCacheCreateInfo,
 			InitialDataSize = 0
 		};
-		Context.Vk.CreatePipelineCache(Context.Device, &cacheCreateInfo, null, out _pipelineCache);
-		DisposalQueue.EnqueueInGlobal(() => Context.Vk.DestroyPipelineCache(Context.Device, _pipelineCache, null));
+		Context2.Vk.CreatePipelineCache(Context2.Device, &cacheCreateInfo, null, out _pipelineCache);
+		DisposalQueue.EnqueueInGlobal(() => Context2.Vk.DestroyPipelineCache(Context2.Device, _pipelineCache, null));
 	}
 
 	private static void UpdateGlobalBuffers()
@@ -218,7 +218,7 @@ public static unsafe partial class UiRenderer
 
 	private static CommandBuffer CreateCommandBuffer(int imageIndex)
 	{
-		Context.Vk.ResetCommandPool(Context.Device, _commandPools[imageIndex], 0);
+		Context2.Vk.ResetCommandPool(Context2.Device, _commandPools[imageIndex], 0);
 		var allocInfo = new CommandBufferAllocateInfo
 		{
 			SType = StructureType.CommandBufferAllocateInfo,
@@ -227,7 +227,7 @@ public static unsafe partial class UiRenderer
 			Level = CommandBufferLevel.Secondary
 		};
 
-		VulkanUtils.Check(Context.Vk.AllocateCommandBuffers(Context.Device, allocInfo, out var commandBuffer), "Failed to allocate ui command buffer.");
+		VulkanUtils.Check(Context2.Vk.AllocateCommandBuffers(Context2.Device, allocInfo, out var commandBuffer), "Failed to allocate ui command buffer.");
 
 		var inheritanceInfo = new CommandBufferInheritanceInfo
 		{
@@ -241,19 +241,19 @@ public static unsafe partial class UiRenderer
 
 		foreach (var pipeline in _pipelines)
 		{
-			Context.Vk.CmdBindPipeline(commandBuffer, PipelineBindPoint.Graphics, pipeline);
+			Context2.Vk.CmdBindPipeline(commandBuffer, PipelineBindPoint.Graphics, pipeline);
 
-			Context.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Graphics, _pipelineLayout, 0, 1, _texturesSet.AsPointer(), null);
-			Context.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Graphics, _pipelineLayout, 1, 1, _globalDataSet.AsPointer(), null);
-			Context.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Graphics, _pipelineLayout, 2, 1, _componentDataSets[imageIndex].AsPointer(),
+			Context2.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Graphics, _pipelineLayout, 0, 1, _texturesSet.AsPointer(), null);
+			Context2.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Graphics, _pipelineLayout, 1, 1, _globalDataSet.AsPointer(), null);
+			Context2.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Graphics, _pipelineLayout, 2, 1, _componentDataSets[imageIndex].AsPointer(),
 				null);
 
-			Context.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Graphics, _pipelineLayout, 3, 1, _vertexMaterialDataSet.AsPointer(), null);
-			Context.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Graphics, _pipelineLayout, 4, 1, _fragmentMaterialDataSet.AsPointer(), null);
+			Context2.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Graphics, _pipelineLayout, 3, 1, _vertexMaterialDataSet.AsPointer(), null);
+			Context2.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Graphics, _pipelineLayout, 4, 1, _fragmentMaterialDataSet.AsPointer(), null);
 
-			Context.Vk.CmdBindIndexBuffer(commandBuffer, _indexBuffers[imageIndex].Buffer, 0, IndexType.Uint32);
+			Context2.Vk.CmdBindIndexBuffer(commandBuffer, _indexBuffers[imageIndex].Buffer, 0, IndexType.Uint32);
 
-			Context.Vk.CmdDrawIndexedIndirect(commandBuffer, _indirectBuffer.Buffer, 0, 1, 0);
+			Context2.Vk.CmdDrawIndexedIndirect(commandBuffer, _indirectBuffer.Buffer, 0, 1, 0);
 		}
 
 		commandBuffer.End();
@@ -285,8 +285,8 @@ public static unsafe partial class UiRenderer
 			Flags = DescriptorSetLayoutCreateFlags.DescriptorSetLayoutCreateUpdateAfterBindPoolBitExt
 		};
 
-		if (_globalDataLayout.Handle != 0) Context.Vk.DestroyDescriptorSetLayout(Context.Device, _globalDataLayout, null);
-		VulkanUtils.Check(Context.Vk.CreateDescriptorSetLayout(Context.Device, &globalDataLayoutCreateInfo, null, out _globalDataLayout),
+		if (_globalDataLayout.Handle != 0) Context2.Vk.DestroyDescriptorSetLayout(Context2.Device, _globalDataLayout, null);
+		VulkanUtils.Check(Context2.Vk.CreateDescriptorSetLayout(Context2.Device, &globalDataLayoutCreateInfo, null, out _globalDataLayout),
 			"Failed to create ui matrix descriptor set layout.");
 
 		var globalDataPoolSizes = new DescriptorPoolSize
@@ -304,8 +304,8 @@ public static unsafe partial class UiRenderer
 			Flags = DescriptorPoolCreateFlags.DescriptorPoolCreateUpdateAfterBindBitExt | DescriptorPoolCreateFlags.DescriptorPoolCreateFreeDescriptorSetBit
 		};
 
-		if (_globalDataPool.Handle != 0) Context.Vk.DestroyDescriptorPool(Context.Device, _globalDataPool, null);
-		VulkanUtils.Check(Context.Vk.CreateDescriptorPool(Context.Device, &globalDataPoolCreateInfo, null, out _globalDataPool),
+		if (_globalDataPool.Handle != 0) Context2.Vk.DestroyDescriptorPool(Context2.Device, _globalDataPool, null);
+		VulkanUtils.Check(Context2.Vk.CreateDescriptorPool(Context2.Device, &globalDataPoolCreateInfo, null, out _globalDataPool),
 			"Failed to create ui matrix descriptor pool.");
 
 		var globalLayouts = stackalloc DescriptorSetLayout[1];
@@ -319,7 +319,7 @@ public static unsafe partial class UiRenderer
 			PSetLayouts = globalLayouts
 		};
 
-		VulkanUtils.Check(Context.Vk.AllocateDescriptorSets(Context.Device, &globalAllocInfo, out _globalDataSet),
+		VulkanUtils.Check(Context2.Vk.AllocateDescriptorSets(Context2.Device, &globalAllocInfo, out _globalDataSet),
 			"Failed to allocate ui global data descriptor sets.");
 
 		var bufferInfos = stackalloc DescriptorBufferInfo[GlobalData.Count];
@@ -346,7 +346,7 @@ public static unsafe partial class UiRenderer
 			index++;
 		}
 
-		Context.Vk.UpdateDescriptorSets(Context.Device, (uint) GlobalData.Count, writes, 0, null);
+		Context2.Vk.UpdateDescriptorSets(Context2.Device, (uint) GlobalData.Count, writes, 0, null);
 	}
 
 	private static void CreateDescriptorSetLayouts()
@@ -379,9 +379,9 @@ public static unsafe partial class UiRenderer
 			Flags = DescriptorSetLayoutCreateFlags.DescriptorSetLayoutCreateUpdateAfterBindPoolBitExt
 		};
 
-		VulkanUtils.Check(Context.Vk.CreateDescriptorSetLayout(Context.Device, &texturesCreateInfo, null, out _texturesLayout),
+		VulkanUtils.Check(Context2.Vk.CreateDescriptorSetLayout(Context2.Device, &texturesCreateInfo, null, out _texturesLayout),
 			"Failed to create ui data descriptor set layout.");
-		DisposalQueue.EnqueueInGlobal(() => Context.Vk.DestroyDescriptorSetLayout(Context.Device, _texturesLayout, null));
+		DisposalQueue.EnqueueInGlobal(() => Context2.Vk.DestroyDescriptorSetLayout(Context2.Device, _texturesLayout, null));
 
 		var componentFlags = stackalloc DescriptorBindingFlags[1];
 		componentFlags[0] = DescriptorBindingFlags.DescriptorBindingUpdateAfterBindBit;
@@ -410,9 +410,9 @@ public static unsafe partial class UiRenderer
 			PNext = componentFlagsInfo.AsPointer()
 		};
 
-		VulkanUtils.Check(Context.Vk.CreateDescriptorSetLayout(Context.Device, &componentDataCreateInfo, null, out _componentDataLayout),
+		VulkanUtils.Check(Context2.Vk.CreateDescriptorSetLayout(Context2.Device, &componentDataCreateInfo, null, out _componentDataLayout),
 			"Failed to create ui data descriptor set layout.");
-		DisposalQueue.EnqueueInGlobal(() => Context.Vk.DestroyDescriptorSetLayout(Context.Device, _componentDataLayout, null));
+		DisposalQueue.EnqueueInGlobal(() => Context2.Vk.DestroyDescriptorSetLayout(Context2.Device, _componentDataLayout, null));
 
 		var vertMaterialDataBindings = new DescriptorSetLayoutBinding[UiMaterialManager.Instance.VertMaterialCount];
 		var fragMaterialDataBindings = new DescriptorSetLayoutBinding[UiMaterialManager.Instance.FragMaterialCount];
@@ -468,9 +468,9 @@ public static unsafe partial class UiRenderer
 			PNext = vertFlagsInfo.AsPointer()
 		};
 
-		VulkanUtils.Check(Context.Vk.CreateDescriptorSetLayout(Context.Device, &vertMaterialDataCreateInfo, null, out _vertMaterialDataLayout),
+		VulkanUtils.Check(Context2.Vk.CreateDescriptorSetLayout(Context2.Device, &vertMaterialDataCreateInfo, null, out _vertMaterialDataLayout),
 			"Failed to create ui vert material data descriptor set layout.");
-		DisposalQueue.EnqueueInGlobal(() => Context.Vk.DestroyDescriptorSetLayout(Context.Device, _vertMaterialDataLayout, null));
+		DisposalQueue.EnqueueInGlobal(() => Context2.Vk.DestroyDescriptorSetLayout(Context2.Device, _vertMaterialDataLayout, null));
 
 		var fragMaterialDataCreateInfo = new DescriptorSetLayoutCreateInfo
 		{
@@ -481,9 +481,9 @@ public static unsafe partial class UiRenderer
 			PNext = fragFlagsInfo.AsPointer()
 		};
 
-		VulkanUtils.Check(Context.Vk.CreateDescriptorSetLayout(Context.Device, &fragMaterialDataCreateInfo, null, out _fragMaterialDataLayout),
+		VulkanUtils.Check(Context2.Vk.CreateDescriptorSetLayout(Context2.Device, &fragMaterialDataCreateInfo, null, out _fragMaterialDataLayout),
 			"Failed to create ui frag material data descriptor set layout.");
-		DisposalQueue.EnqueueInGlobal(() => Context.Vk.DestroyDescriptorSetLayout(Context.Device, _fragMaterialDataLayout, null));
+		DisposalQueue.EnqueueInGlobal(() => Context2.Vk.DestroyDescriptorSetLayout(Context2.Device, _fragMaterialDataLayout, null));
 	}
 
 	private static void CreateDescriptorPools()
@@ -503,9 +503,9 @@ public static unsafe partial class UiRenderer
 			Flags = DescriptorPoolCreateFlags.DescriptorPoolCreateUpdateAfterBindBitExt | DescriptorPoolCreateFlags.DescriptorPoolCreateFreeDescriptorSetBit
 		};
 
-		VulkanUtils.Check(Context.Vk.CreateDescriptorPool(Context.Device, &texturesCreateInfo, null, out _texturesPool),
+		VulkanUtils.Check(Context2.Vk.CreateDescriptorPool(Context2.Device, &texturesCreateInfo, null, out _texturesPool),
 			"Failed to create ui textures descriptor pool.");
-		DisposalQueue.EnqueueInGlobal(() => Context.Vk.DestroyDescriptorPool(Context.Device, _texturesPool, null));
+		DisposalQueue.EnqueueInGlobal(() => Context2.Vk.DestroyDescriptorPool(Context2.Device, _texturesPool, null));
 
 		var dataPoolSizes = new DescriptorPoolSize
 		{
@@ -522,9 +522,9 @@ public static unsafe partial class UiRenderer
 			Flags = DescriptorPoolCreateFlags.DescriptorPoolCreateUpdateAfterBindBitExt | DescriptorPoolCreateFlags.DescriptorPoolCreateFreeDescriptorSetBit
 		};
 
-		VulkanUtils.Check(Context.Vk.CreateDescriptorPool(Context.Device, &dataCreateInfo, null, out _componentDataPool),
+		VulkanUtils.Check(Context2.Vk.CreateDescriptorPool(Context2.Device, &dataCreateInfo, null, out _componentDataPool),
 			"Failed to create ui data descriptor pool.");
-		DisposalQueue.EnqueueInGlobal(() => Context.Vk.DestroyDescriptorPool(Context.Device, _componentDataPool, null));
+		DisposalQueue.EnqueueInGlobal(() => Context2.Vk.DestroyDescriptorPool(Context2.Device, _componentDataPool, null));
 
 		var materialDataPoolSizes = new DescriptorPoolSize
 		{
@@ -541,9 +541,9 @@ public static unsafe partial class UiRenderer
 			Flags = DescriptorPoolCreateFlags.DescriptorPoolCreateUpdateAfterBindBitExt | DescriptorPoolCreateFlags.DescriptorPoolCreateFreeDescriptorSetBit
 		};
 
-		VulkanUtils.Check(Context.Vk.CreateDescriptorPool(Context.Device, &materialDataCreateInfo, null, out _materialDataPool),
+		VulkanUtils.Check(Context2.Vk.CreateDescriptorPool(Context2.Device, &materialDataCreateInfo, null, out _materialDataPool),
 			"Failed to create ui materialData descriptor pool.");
-		DisposalQueue.EnqueueInGlobal(() => Context.Vk.DestroyDescriptorPool(Context.Device, _materialDataPool, null));
+		DisposalQueue.EnqueueInGlobal(() => Context2.Vk.DestroyDescriptorPool(Context2.Device, _materialDataPool, null));
 	}
 
 	private static void FillIndirectBuffer() =>
@@ -593,7 +593,7 @@ public static unsafe partial class UiRenderer
 			PNext = variableCount.AsPointer()
 		};
 
-		VulkanUtils.Check(Context.Vk.AllocateDescriptorSets(Context.Device, &texturesAllocInfo, out _texturesSet),
+		VulkanUtils.Check(Context2.Vk.AllocateDescriptorSets(Context2.Device, &texturesAllocInfo, out _texturesSet),
 			"Failed to allocate ui textures descriptor sets.");
 		UpdateTexturesDescriptorSets();
 
@@ -609,7 +609,7 @@ public static unsafe partial class UiRenderer
 		};
 
 		_componentDataSets = new DescriptorSet[SwapchainHelper.ImageCountInt];
-		VulkanUtils.Check(Context.Vk.AllocateDescriptorSets(Context.Device, dataAllocInfo, out _componentDataSets[0]),
+		VulkanUtils.Check(Context2.Vk.AllocateDescriptorSets(Context2.Device, dataAllocInfo, out _componentDataSets[0]),
 			"Failed to allocate ui data descriptor sets.");
 		UpdateComponentDataDescriptorSets();
 
@@ -621,7 +621,7 @@ public static unsafe partial class UiRenderer
 			PSetLayouts = _vertMaterialDataLayout.AsPointer()
 		};
 
-		VulkanUtils.Check(Context.Vk.AllocateDescriptorSets(Context.Device, &vertMaterialDataAllocInfo, out _vertexMaterialDataSet),
+		VulkanUtils.Check(Context2.Vk.AllocateDescriptorSets(Context2.Device, &vertMaterialDataAllocInfo, out _vertexMaterialDataSet),
 			"Failed to allocate ui data descriptor sets.");
 
 		var fragMaterialDataAllocInfo = new DescriptorSetAllocateInfo
@@ -632,7 +632,7 @@ public static unsafe partial class UiRenderer
 			PSetLayouts = _fragMaterialDataLayout.AsPointer()
 		};
 
-		VulkanUtils.Check(Context.Vk.AllocateDescriptorSets(Context.Device, &fragMaterialDataAllocInfo, out _fragmentMaterialDataSet),
+		VulkanUtils.Check(Context2.Vk.AllocateDescriptorSets(Context2.Device, &fragMaterialDataAllocInfo, out _fragmentMaterialDataSet),
 			"Failed to allocate ui data descriptor sets.");
 		UpdateMaterialDataDescriptorSets();
 	}
@@ -663,7 +663,7 @@ public static unsafe partial class UiRenderer
 			PImageInfo = imageInfo[0].AsPointer()
 		};
 
-		Context.Vk.UpdateDescriptorSets(Context.Device, 1, write, 0, null);
+		Context2.Vk.UpdateDescriptorSets(Context2.Device, 1, write, 0, null);
 	}
 
 	private static void UpdateComponentDataDescriptorSets()
@@ -687,7 +687,7 @@ public static unsafe partial class UiRenderer
 				PBufferInfo = bufferInfo.AsPointer()
 			};
 
-			Context.Vk.UpdateDescriptorSets(Context.Device, 1, write, 0, null);
+			Context2.Vk.UpdateDescriptorSets(Context2.Device, 1, write, 0, null);
 		}
 	}
 
@@ -717,7 +717,7 @@ public static unsafe partial class UiRenderer
 			index++;
 		}
 
-		Context.Vk.UpdateDescriptorSets(Context.Device, (uint) UiMaterialManager.Instance.MaterialCount, writes, 0, null);
+		Context2.Vk.UpdateDescriptorSets(Context2.Device, (uint) UiMaterialManager.Instance.MaterialCount, writes, 0, null);
 	}
 
 	private static void CreatePipelines()
@@ -842,7 +842,7 @@ public static unsafe partial class UiRenderer
 			PSetLayouts = setLayouts
 		};
 
-		Context.Vk.CreatePipelineLayout(Context.Device, &layoutCreateInfo, null, out _pipelineLayout);
+		Context2.Vk.CreatePipelineLayout(Context2.Device, &layoutCreateInfo, null, out _pipelineLayout);
 
 		var depthStencilDepth = new PipelineDepthStencilStateCreateInfo
 		{
@@ -901,13 +901,13 @@ public static unsafe partial class UiRenderer
 
 		_pipelines = new Pipeline[2];
 
-		VulkanUtils.Check(Context.Vk.CreateGraphicsPipelines(Context.Device, _pipelineCache, 2, createInfos[0].AsPointer(),
+		VulkanUtils.Check(Context2.Vk.CreateGraphicsPipelines(Context2.Device, _pipelineCache, 2, createInfos[0].AsPointer(),
 			null, _pipelines[0].AsPointer()), "Failed to create ui pipelines.");
 
-		DisposalQueue.EnqueueInSwapchain(() => Context.Vk.DestroyPipelineLayout(Context.Device, _pipelineLayout, null));
+		DisposalQueue.EnqueueInSwapchain(() => Context2.Vk.DestroyPipelineLayout(Context2.Device, _pipelineLayout, null));
 
-		DisposalQueue.EnqueueInSwapchain(() => Context.Vk.DestroyPipeline(Context.Device, _pipelines[0], null));
-		DisposalQueue.EnqueueInSwapchain(() => Context.Vk.DestroyPipeline(Context.Device, _pipelines[1], null));
+		DisposalQueue.EnqueueInSwapchain(() => Context2.Vk.DestroyPipeline(Context2.Device, _pipelines[0], null));
+		DisposalQueue.EnqueueInSwapchain(() => Context2.Vk.DestroyPipeline(Context2.Device, _pipelines[1], null));
 
 		_dirty = SwapchainHelper.ImageCountInt;
 	}

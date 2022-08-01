@@ -68,7 +68,7 @@ public abstract unsafe class AbstractVulkanDataFactory<TDataHolder> : IVulkanDat
 	public void RecordCopyCommand(CommandBuffer cb)
 	{
 		GetCopyRegions(out uint copyCount, out var copyRegions);
-		if (copyCount > 0) Context.Vk.CmdCopyBuffer(cb, DataBufferCpu.Buffer, DataBufferGpu.Buffer, copyCount, copyRegions[0]);
+		if (copyCount > 0) Context2.Vk.CmdCopyBuffer(cb, DataBufferCpu.Buffer, DataBufferGpu.Buffer, copyCount, copyRegions[0]);
 	}
 
 	public void GetCopyRegions(out uint copyCount, out BufferCopy[] regions)
