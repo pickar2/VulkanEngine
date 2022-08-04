@@ -174,9 +174,9 @@ public unsafe class Context : IDisposable
 		{
 			var validationFeatures = stackalloc ValidationFeatureEnableEXT[]
 			{
-				ValidationFeatureEnableEXT.ValidationFeatureEnableBestPracticesExt,
-				ValidationFeatureEnableEXT.ValidationFeatureEnableGpuAssistedExt,
-				ValidationFeatureEnableEXT.ValidationFeatureEnableSynchronizationValidationExt
+				ValidationFeatureEnableEXT.BestPracticesExt,
+				ValidationFeatureEnableEXT.GpuAssistedExt,
+				ValidationFeatureEnableEXT.SynchronizationValidationExt
 			};
 
 			var validationFeaturesExt = new ValidationFeaturesEXT
@@ -404,7 +404,7 @@ public unsafe class Context : IDisposable
 
 		for (int i = 0; i < count; i++)
 		{
-			if ((properties[i].QueueFlags & QueueFlags.QueueGraphicsBit) == 0) continue;
+			if ((properties[i].QueueFlags & QueueFlags.GraphicsBit) == 0) continue;
 			KhrSurface.GetPhysicalDeviceSurfaceSupport(device, (uint) i, Surface, out var supported);
 			if (supported) return true;
 		}

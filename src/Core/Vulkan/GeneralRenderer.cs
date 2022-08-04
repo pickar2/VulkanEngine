@@ -118,7 +118,7 @@ public unsafe class UiRootChain : RenderChain
 		var renderPass = GetRenderPass();
 		var cmd = CommandBuffers.CreateCommandBuffer(CommandBufferLevel.Primary, _commandPool!.Value);
 
-		Check(cmd.Begin(CommandBufferUsageFlags.CommandBufferUsageOneTimeSubmitBit), "Failed to begin command buffer.");
+		Check(cmd.Begin(CommandBufferUsageFlags.OneTimeSubmitBit), "Failed to begin command buffer.");
 
 		var renderPassBeginInfo = new RenderPassBeginInfo
 		{
@@ -156,7 +156,7 @@ public unsafe class UiRootChain : RenderChain
 		_attachmentSize = Context2.State.WindowSize.Value.Cast<uint, float>();
 		var size = _attachmentSize.Cast<float, uint>();
 		App.Logger.Info.Message($"{size}");
-		_attachment = FrameGraph.CreateAttachment(Format.R8G8B8A8Unorm, ImageAspectFlags.ImageAspectColorBit, size, ImageUsageFlags.ImageUsageTransferSrcBit);
+		_attachment = FrameGraph.CreateAttachment(Format.R8G8B8A8Unorm, ImageAspectFlags.ColorBit, size, ImageUsageFlags.TransferSrcBit);
 		
 		_commandPool = CreateCommandPool(Context2.GraphicsQueue);
 		
@@ -164,7 +164,7 @@ public unsafe class UiRootChain : RenderChain
 		{
 			SType = StructureType.AttachmentDescription2,
 			Format = _attachment.Format,
-			Samples = SampleCountFlags.SampleCount1Bit,
+			Samples = SampleCountFlags.Count1Bit,
 			LoadOp = AttachmentLoadOp.Clear,
 			StoreOp = AttachmentStoreOp.Store,
 			StencilLoadOp = AttachmentLoadOp.DontCare,
@@ -177,7 +177,7 @@ public unsafe class UiRootChain : RenderChain
 		{
 			SType = StructureType.AttachmentReference2,
 			Attachment = 0,
-			AspectMask = ImageAspectFlags.ImageAspectColorBit,
+			AspectMask = ImageAspectFlags.ColorBit,
 			Layout = _attachment.CurrentLayout
 		};
 
@@ -194,11 +194,11 @@ public unsafe class UiRootChain : RenderChain
 			SType = StructureType.SubpassDependency2,
 			SrcSubpass = Vk.SubpassExternal,
 			DstSubpass = 0,
-			SrcStageMask = PipelineStageFlags.PipelineStageColorAttachmentOutputBit,
+			SrcStageMask = PipelineStageFlags.ColorAttachmentOutputBit,
 			SrcAccessMask = 0,
-			DstStageMask = PipelineStageFlags.PipelineStageColorAttachmentOutputBit,
-			DstAccessMask = AccessFlags.AccessColorAttachmentWriteBit,
-			DependencyFlags = DependencyFlags.DependencyByRegionBit
+			DstStageMask = PipelineStageFlags.ColorAttachmentOutputBit,
+			DstAccessMask = AccessFlags.ColorAttachmentWriteBit,
+			DependencyFlags = DependencyFlags.ByRegionBit
 		};
 		
 		var renderPassInfo2 = new RenderPassCreateInfo2

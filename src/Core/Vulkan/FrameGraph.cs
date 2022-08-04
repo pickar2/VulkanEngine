@@ -33,7 +33,7 @@ public static unsafe class FrameGraph
 		{
 			SType = StructureType.CommandPoolCreateInfo,
 			QueueFamilyIndex = Context2.GraphicsQueue.Family.Index,
-			Flags = CommandPoolCreateFlags.CommandPoolCreateTransientBit
+			Flags = CommandPoolCreateFlags.TransientBit
 		};
 		Check(Context2.Vk.CreateCommandPool(Context2.Device, commandPoolCreateInfo, null, out ImageTransitionCommandPool),
 			"Failed to create ImageTransitionCommandPool.");
@@ -51,12 +51,12 @@ public static unsafe class FrameGraph
 
 		// var swapchainAttachment = new VulkanImage2(Context2.);
 		var attachments = new Dictionary<string, VulkanImage2>();
-		attachments["position"] = CreateAttachment(Format.R16G16B16A16Sfloat, ImageAspectFlags.ImageAspectColorBit, Context2.State.WindowSize.Value);
-		attachments["normal"] = CreateAttachment(Format.R16G16B16A16Sfloat, ImageAspectFlags.ImageAspectColorBit, Context2.State.WindowSize.Value);
-		attachments["albedo"] = CreateAttachment(Format.R8G8B8A8Unorm, ImageAspectFlags.ImageAspectColorBit, Context2.State.WindowSize.Value);
-		attachments["depth"] = CreateAttachment(Format.D32Sfloat, ImageAspectFlags.ImageAspectDepthBit, Context2.State.WindowSize.Value);
+		attachments["position"] = CreateAttachment(Format.R16G16B16A16Sfloat, ImageAspectFlags.ColorBit, Context2.State.WindowSize.Value);
+		attachments["normal"] = CreateAttachment(Format.R16G16B16A16Sfloat, ImageAspectFlags.ColorBit, Context2.State.WindowSize.Value);
+		attachments["albedo"] = CreateAttachment(Format.R8G8B8A8Unorm, ImageAspectFlags.ColorBit, Context2.State.WindowSize.Value);
+		attachments["depth"] = CreateAttachment(Format.D32Sfloat, ImageAspectFlags.DepthBit, Context2.State.WindowSize.Value);
 
-		// var maskAttachment = CreateAttachment(Format.R8Uint, ImageAspectFlags.ImageAspectColorBit, Context2.State.WindowSize.Value);
+		// var maskAttachment = CreateAttachment(Format.R8Uint, ImageAspectFlags.ColorBit, Context2.State.WindowSize.Value);
 
 		// App.Logger.Info.Message($"{positionAttachment.CurrentLayout}");
 
@@ -65,7 +65,7 @@ public static unsafe class FrameGraph
 		{
 			SType = StructureType.AttachmentDescription2,
 			Format = Context2.SwapchainSurfaceFormat.Format,
-			Samples = SampleCountFlags.SampleCount1Bit,
+			Samples = SampleCountFlags.Count1Bit,
 			LoadOp = AttachmentLoadOp.Clear,
 			StoreOp = AttachmentStoreOp.Store,
 			StencilLoadOp = AttachmentLoadOp.DontCare,
@@ -80,7 +80,7 @@ public static unsafe class FrameGraph
 			SType = StructureType.AttachmentReference2,
 			Attachment = 0,
 			Layout = ImageLayout.ColorAttachmentOptimal,
-			AspectMask = ImageAspectFlags.ImageAspectColorBit
+			AspectMask = ImageAspectFlags.ColorBit
 		};
 
 		int index = 0;
@@ -90,7 +90,7 @@ public static unsafe class FrameGraph
 			{
 				SType = StructureType.AttachmentDescription2,
 				Format = image.Format,
-				Samples = SampleCountFlags.SampleCount1Bit,
+				Samples = SampleCountFlags.Count1Bit,
 				LoadOp = AttachmentLoadOp.Clear,
 				StoreOp = AttachmentStoreOp.Store,
 				StencilLoadOp = AttachmentLoadOp.DontCare,
@@ -127,7 +127,7 @@ public static unsafe class FrameGraph
 		foreach (var candidate in candidates)
 		{
 			Context2.Vk.GetPhysicalDeviceFormatProperties2(Context2.PhysicalDevice, candidate, out var props);
-			if ((props.FormatProperties.OptimalTilingFeatures & FormatFeatureFlags.FormatFeatureDepthStencilAttachmentBit) != 0) list.Add(candidate);
+			if ((props.FormatProperties.OptimalTilingFeatures & FormatFeatureFlags.DepthStencilAttachmentBit) != 0) list.Add(candidate);
 		}
 
 		return list;
@@ -135,17 +135,17 @@ public static unsafe class FrameGraph
 
 	public static VulkanImage2 CreateAttachment(Format format, ImageAspectFlags aspectFlags, Vector2<uint> size, ImageUsageFlags usageFlags = 0)
 	{
-		if ((aspectFlags & ImageAspectFlags.ImageAspectColorBit) != 0)
+		if ((aspectFlags & ImageAspectFlags.ColorBit) != 0)
 		{
-			usageFlags |= ImageUsageFlags.ImageUsageColorAttachmentBit;
+			usageFlags |= ImageUsageFlags.ColorAttachmentBit;
 		}
 
-		if ((aspectFlags & ImageAspectFlags.ImageAspectDepthBit) != 0 || (aspectFlags & ImageAspectFlags.ImageAspectStencilBit) != 0)
+		if ((aspectFlags & ImageAspectFlags.DepthBit) != 0 || (aspectFlags & ImageAspectFlags.StencilBit) != 0)
 		{
-			usageFlags |= ImageUsageFlags.ImageUsageDepthStencilAttachmentBit;
+			usageFlags |= ImageUsageFlags.DepthStencilAttachmentBit;
 		}
 
-		// if ((usageFlags & ImageUsageFlags.ImageUsageColorAttachmentBit) != 0 && (usageFlags & ImageUsageFlags.ImageUsageDepthStencilAttachmentBit) != 0)
+		// if ((usageFlags & ImageUsageFlags.ColorAttachmentBit) != 0 && (usageFlags & ImageUsageFlags.DepthStencilAttachmentBit) != 0)
 		// {
 		// 	throw new ArgumentException("Attachment cannot be both color and depth/stencil.").AsExpectedException();
 		// }
@@ -153,14 +153,14 @@ public static unsafe class FrameGraph
 		var imageCreateInfo = new ImageCreateInfo
 		{
 			SType = StructureType.ImageCreateInfo,
-			ImageType = ImageType.ImageType2D,
+			ImageType = ImageType.Type2D,
 			Extent = new Extent3D(size.X, size.Y, 1),
 			Format = format,
 			MipLevels = 1,
 			ArrayLayers = 1,
-			Samples = SampleCountFlags.SampleCount1Bit,
+			Samples = SampleCountFlags.Count1Bit,
 			Tiling = ImageTiling.Optimal,
-			Usage = usageFlags | ImageUsageFlags.ImageUsageInputAttachmentBit,
+			Usage = usageFlags | ImageUsageFlags.InputAttachmentBit,
 			InitialLayout = ImageLayout.Undefined,
 			SharingMode = SharingMode.Exclusive
 		};
@@ -178,7 +178,7 @@ public static unsafe class FrameGraph
 		var imageViewCreateInfo = new ImageViewCreateInfo
 		{
 			SType = StructureType.ImageViewCreateInfo,
-			ViewType = ImageViewType.ImageViewType2D,
+			ViewType = ImageViewType.Type2D,
 			Image = image,
 			SubresourceRange = new ImageSubresourceRange
 			{
@@ -211,18 +211,18 @@ public static unsafe class FrameGraph
 				BaseArrayLayer = 0,
 				AspectMask = aspectFlags
 			},
-			SrcAccessMask = AccessFlags2.Access2None,
-			SrcStageMask = PipelineStageFlags2.PipelineStage2None
+			SrcAccessMask = AccessFlags2.None,
+			SrcStageMask = PipelineStageFlags2.None
 		};
-		if ((usageFlags & ImageUsageFlags.ImageUsageColorAttachmentBit) != 0)
+		if ((usageFlags & ImageUsageFlags.ColorAttachmentBit) != 0)
 		{
-			barrier.DstAccessMask = AccessFlags2.Access2ColorAttachmentReadBit | AccessFlags2.Access2ColorAttachmentWriteBit;
-			barrier.DstStageMask = PipelineStageFlags2.PipelineStage2ColorAttachmentOutputBit;
+			barrier.DstAccessMask = AccessFlags2.ColorAttachmentReadBit | AccessFlags2.ColorAttachmentWriteBit;
+			barrier.DstStageMask = PipelineStageFlags2.ColorAttachmentOutputBit;
 		}
 		else
 		{
-			barrier.DstAccessMask = AccessFlags2.Access2DepthStencilAttachmentReadBit | AccessFlags2.Access2DepthStencilAttachmentWriteBit;
-			barrier.DstStageMask = PipelineStageFlags2.PipelineStage2EarlyFragmentTestsBit;
+			barrier.DstAccessMask = AccessFlags2.DepthStencilAttachmentReadBit | AccessFlags2.DepthStencilAttachmentWriteBit;
+			barrier.DstStageMask = PipelineStageFlags2.EarlyFragmentTestsBit;
 		}
 		
 		var dependencyInfo = new DependencyInfo
@@ -230,7 +230,7 @@ public static unsafe class FrameGraph
 			SType = StructureType.DependencyInfo,
 			ImageMemoryBarrierCount = 1,
 			PImageMemoryBarriers = &barrier,
-			DependencyFlags = DependencyFlags.DependencyByRegionBit
+			DependencyFlags = DependencyFlags.ByRegionBit
 		};
 		
 		var commandBuffer = CommandBuffers.BeginSingleTimeCommands(ImageTransitionCommandPool);
@@ -264,7 +264,7 @@ public static unsafe class FrameGraph
 
 		var cmd = MainRenderer.PrimaryCommandBuffers[imageIndex];
 
-		Check(cmd.Begin(CommandBufferUsageFlags.CommandBufferUsageOneTimeSubmitBit), "Failed to begin command buffer.");
+		Check(cmd.Begin(CommandBufferUsageFlags.OneTimeSubmitBit), "Failed to begin command buffer.");
 
 		foreach (var (renderPassName, renderPass) in RenderPasses)
 		{
@@ -306,119 +306,6 @@ public static unsafe class FrameGraph
 		*/
 
 		Check(cmd.End(), "Failed to end command buffer.");
-	}
-
-	private static void DeferredRenderPass()
-	{
-		
-	}
-
-	private static void UiRenderPass(Format imageFormat, Format depthFormat)
-	{
-		int capacity = VulkanOptions.MsaaEnabled ? 3 : 2;
-
-		var attachmentDescriptions = new AttachmentDescription[capacity];
-		// var attachmentRefs = new AttachmentReference[capacity];
-
-		attachmentDescriptions[0] = new AttachmentDescription
-		{
-			Format = imageFormat,
-			Samples = VulkanOptions.MsaaSamples,
-			LoadOp = AttachmentLoadOp.Clear,
-			StoreOp = VulkanOptions.MsaaEnabled ? AttachmentStoreOp.DontCare : AttachmentStoreOp.Store,
-			StencilLoadOp = AttachmentLoadOp.DontCare,
-			StencilStoreOp = AttachmentStoreOp.DontCare,
-			InitialLayout = ImageLayout.Undefined,
-			FinalLayout = ImageLayout.PresentSrcKhr
-		};
-
-		var ref0 = new AttachmentReference(0, ImageLayout.ColorAttachmentOptimal);
-
-		attachmentDescriptions[1] = new AttachmentDescription
-		{
-			Format = depthFormat,
-			Samples = VulkanOptions.MsaaSamples,
-			LoadOp = AttachmentLoadOp.Clear,
-			StoreOp = AttachmentStoreOp.DontCare,
-			StencilLoadOp = AttachmentLoadOp.DontCare,
-			StencilStoreOp = AttachmentStoreOp.DontCare,
-			InitialLayout = ImageLayout.Undefined,
-			FinalLayout = ImageLayout.DepthStencilAttachmentOptimal
-		};
-
-		var ref1 = new AttachmentReference(1, ImageLayout.DepthStencilAttachmentOptimal);
-
-		var subpass = new SubpassDescription
-		{
-			PipelineBindPoint = PipelineBindPoint.Graphics,
-			ColorAttachmentCount = 1,
-			PColorAttachments = &ref0,
-			PDepthStencilAttachment = &ref1
-		};
-
-		var dependencies = new SubpassDependency[2];
-
-		dependencies[0] = new SubpassDependency
-		{
-			SrcSubpass = Vk.SubpassExternal,
-			DstSubpass = 0,
-			SrcStageMask = PipelineStageFlags.PipelineStageColorAttachmentOutputBit,
-			SrcAccessMask = 0,
-			DstStageMask = PipelineStageFlags.PipelineStageColorAttachmentOutputBit,
-			DstAccessMask = AccessFlags.AccessColorAttachmentWriteBit,
-			DependencyFlags = DependencyFlags.DependencyByRegionBit
-		};
-
-		dependencies[1] = new SubpassDependency
-		{
-			SrcSubpass = Vk.SubpassExternal,
-			DstSubpass = 0,
-			SrcStageMask = PipelineStageFlags.PipelineStageEarlyFragmentTestsBit | PipelineStageFlags.PipelineStageLateFragmentTestsBit,
-			SrcAccessMask = 0,
-			DstStageMask = PipelineStageFlags.PipelineStageEarlyFragmentTestsBit | PipelineStageFlags.PipelineStageLateFragmentTestsBit,
-			DstAccessMask = AccessFlags.AccessDepthStencilAttachmentWriteBit,
-			DependencyFlags = DependencyFlags.DependencyByRegionBit
-		};
-
-		if (VulkanOptions.MsaaEnabled)
-		{
-			attachmentDescriptions[0].FinalLayout = ImageLayout.ColorAttachmentOptimal;
-
-			attachmentDescriptions[2] = new AttachmentDescription
-			{
-				Format = imageFormat,
-				Samples = SampleCountFlags.SampleCount1Bit,
-				LoadOp = AttachmentLoadOp.DontCare,
-				StoreOp = AttachmentStoreOp.Store,
-				StencilLoadOp = AttachmentLoadOp.DontCare,
-				StencilStoreOp = AttachmentStoreOp.DontCare,
-				InitialLayout = ImageLayout.Undefined,
-				FinalLayout = ImageLayout.PresentSrcKhr
-			};
-
-			var ref2 = new AttachmentReference(2, ImageLayout.ColorAttachmentOptimal);
-
-			subpass.PResolveAttachments = &ref2;
-		}
-
-		var renderPassInfo = new RenderPassCreateInfo
-		{
-			SType = StructureType.RenderPassCreateInfo,
-			AttachmentCount = (uint) capacity,
-			PAttachments = attachmentDescriptions[0].AsPointer(),
-			SubpassCount = 1,
-			PSubpasses = &subpass,
-			DependencyCount = 2,
-			PDependencies = dependencies[0].AsPointer()
-		};
-
-		Check(Context2.Vk.CreateRenderPass(Context2.Device, renderPassInfo, null, out var renderPass),
-			"Failed to create render pass");
-	}
-
-	private static void OpaqueTranslucentUiRenderPass()
-	{
-		
 	}
 }
 
@@ -497,7 +384,7 @@ public class VulkanImage2
 	public uint MipLevels { get; init; }
 	public ImageAspectFlags AspectFlags { get; init; }
 
-	public VulkanImage2(Image image, nint allocation, ImageView imageView, Format format, uint mipLevels = 1, ImageLayout currentLayout = ImageLayout.Undefined, ImageAspectFlags aspectFlags = ImageAspectFlags.ImageAspectColorBit)
+	public VulkanImage2(Image image, nint allocation, ImageView imageView, Format format, uint mipLevels = 1, ImageLayout currentLayout = ImageLayout.Undefined, ImageAspectFlags aspectFlags = ImageAspectFlags.ColorBit)
 	{
 		Image = image;
 		Allocation = allocation;

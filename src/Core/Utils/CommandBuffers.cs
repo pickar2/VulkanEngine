@@ -27,7 +27,7 @@ public static class CommandBuffers
 	{
 		var commandBuffer = CreateCommandBuffer(CommandBufferLevel.Primary, commandPool);
 
-		commandBuffer.Begin(CommandBufferUsageFlags.CommandBufferUsageOneTimeSubmitBit);
+		commandBuffer.Begin(CommandBufferUsageFlags.OneTimeSubmitBit);
 
 		return commandBuffer;
 	}

@@ -10,12 +10,9 @@ namespace Core.Vulkan;
 
 public unsafe class DebugUtilsMessenger : IDisposable
 {
-	private const DebugUtilsMessageSeverityFlagsEXT MessageSeverity = DebugUtilsMessageSeverityErrorBitExt |
-	                                                                  DebugUtilsMessageSeverityWarningBitExt;
+	private const DebugUtilsMessageSeverityFlagsEXT MessageSeverity = ErrorBitExt | WarningBitExt;
 
-	private const DebugUtilsMessageTypeFlagsEXT MessageType = DebugUtilsMessageTypeGeneralBitExt |
-	                                                          DebugUtilsMessageTypePerformanceBitExt |
-	                                                          DebugUtilsMessageTypeValidationBitExt;
+	private const DebugUtilsMessageTypeFlagsEXT MessageType = GeneralBitExt | PerformanceBitExt | ValidationBitExt;
 
 	private readonly HashSet<uint> _suppressedDebugMessageIDs = new()
 	{
@@ -50,11 +47,11 @@ public unsafe class DebugUtilsMessenger : IDisposable
 		if (Marshal.PtrToStringAnsi((nint) pCallbackData->PMessageIdName) == "Loader Message") return Vk.False;
 		if (_suppressedDebugMessageIDs.Contains((uint) pCallbackData->MessageIdNumber)) return Vk.False;
 
-		if ((messageSeverity & DebugUtilsMessageSeverityInfoBitExt) != 0)
+		if ((messageSeverity & InfoBitExt) != 0)
 			App.Logger.Info.Message($"{messageTypes} {Marshal.PtrToStringAnsi((nint) pCallbackData->PMessage)}");
-		else if ((messageSeverity & DebugUtilsMessageSeverityWarningBitExt) != 0)
+		else if ((messageSeverity & WarningBitExt) != 0)
 			App.Logger.Warn.Message($"{messageTypes} {Marshal.PtrToStringAnsi((nint) pCallbackData->PMessage)}");
-		else if ((messageSeverity & DebugUtilsMessageSeverityErrorBitExt) != 0)
+		else if ((messageSeverity & ErrorBitExt) != 0)
 			App.Logger.Error.Message($"{messageTypes} {Marshal.PtrToStringAnsi((nint) pCallbackData->PMessage)}");
 
 		return Vk.False;

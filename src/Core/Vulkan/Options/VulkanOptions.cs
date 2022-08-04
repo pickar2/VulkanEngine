@@ -1,9 +1,11 @@
-﻿using Core.Configs.Entities;
+﻿using System;
+using Core.Configs.Entities;
 using Core.Registries.Entities;
 using Silk.NET.Vulkan;
 
 namespace Core.Vulkan.Options;
 
+[Obsolete($"Use {nameof(VulkanState)}.")]
 public static class VulkanOptions
 {
 	public static readonly NamespacedName WindowWidthName = NamespacedName.CreateWithName("window-width");
@@ -41,9 +43,9 @@ public static class VulkanOptions
 		if (reset || !VulkanStates.TryGetValue<int>(GpuIdName.FullName, out _)) VulkanStates.RegisterOrUpdate(GpuIdName, -1);
 		if (reset || !VulkanStates.TryGetValue<bool>(MsaaEnabledName.FullName, out _)) VulkanStates.RegisterOrUpdate(MsaaEnabledName, false);
 		if (reset || !VulkanStates.TryGetValue<SampleCountFlags>(MsaaSamplesName.FullName, out _))
-			VulkanStates.RegisterOrUpdate(MsaaSamplesName, SampleCountFlags.SampleCount1Bit);
+			VulkanStates.RegisterOrUpdate(MsaaSamplesName, SampleCountFlags.Count1Bit);
 		if (reset || !VulkanStates.TryGetValue<PresentModeKHR>(PresentModeName.FullName, out _))
-			VulkanStates.RegisterOrUpdate(PresentModeName, PresentModeKHR.PresentModeMailboxKhr);
+			VulkanStates.RegisterOrUpdate(PresentModeName, PresentModeKHR.MailboxKhr);
 
 		// App.Get<ConfigRegistry>().SaveStates();
 	}

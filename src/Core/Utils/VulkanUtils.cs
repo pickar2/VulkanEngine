@@ -218,7 +218,7 @@ public static unsafe class VulkanUtils
 		{
 			SType = StructureType.ImageViewCreateInfo,
 			Image = image,
-			ViewType = ImageViewType.ImageViewType2D,
+			ViewType = ImageViewType.Type2D,
 			Format = format,
 			SubresourceRange = new ImageSubresourceRange
 			{
@@ -256,7 +256,7 @@ public static unsafe class VulkanUtils
 		var createInfo = new ImageCreateInfo
 		{
 			SType = StructureType.ImageCreateInfo,
-			ImageType = ImageType.ImageType2D,
+			ImageType = ImageType.Type2D,
 			Extent = new Extent3D(width, height, 1),
 			MipLevels = mipLevels,
 			ArrayLayers = 1,
@@ -305,13 +305,13 @@ public static unsafe class VulkanUtils
 
 		if (newLayout == ImageLayout.DepthStencilAttachmentOptimal)
 		{
-			barrier.SubresourceRange.AspectMask = ImageAspectFlags.ImageAspectDepthBit;
+			barrier.SubresourceRange.AspectMask = ImageAspectFlags.DepthBit;
 			if (HasStencilComponent(image.Format))
-				barrier.SubresourceRange.AspectMask |= ImageAspectFlags.ImageAspectStencilBit;
+				barrier.SubresourceRange.AspectMask |= ImageAspectFlags.StencilBit;
 		}
 		else
 		{
-			barrier.SubresourceRange.AspectMask = ImageAspectFlags.ImageAspectColorBit;
+			barrier.SubresourceRange.AspectMask = ImageAspectFlags.ColorBit;
 		}
 
 		PipelineStageFlags sourceStage;
@@ -321,31 +321,31 @@ public static unsafe class VulkanUtils
 		{
 			case ImageLayout.Undefined when newLayout == ImageLayout.TransferDstOptimal:
 				barrier.SrcAccessMask = 0;
-				barrier.DstAccessMask = AccessFlags.AccessTransferWriteBit;
+				barrier.DstAccessMask = AccessFlags.TransferWriteBit;
 
-				sourceStage = PipelineStageFlags.PipelineStageTopOfPipeBit;
-				destinationStage = PipelineStageFlags.PipelineStageTransferBit;
+				sourceStage = PipelineStageFlags.TopOfPipeBit;
+				destinationStage = PipelineStageFlags.TransferBit;
 				break;
 			case ImageLayout.TransferDstOptimal when newLayout == ImageLayout.ShaderReadOnlyOptimal:
-				barrier.SrcAccessMask = AccessFlags.AccessTransferWriteBit;
-				barrier.DstAccessMask = AccessFlags.AccessShaderReadBit;
+				barrier.SrcAccessMask = AccessFlags.TransferWriteBit;
+				barrier.DstAccessMask = AccessFlags.ShaderReadBit;
 
-				sourceStage = PipelineStageFlags.PipelineStageTransferBit;
-				destinationStage = PipelineStageFlags.PipelineStageFragmentShaderBit;
+				sourceStage = PipelineStageFlags.TransferBit;
+				destinationStage = PipelineStageFlags.FragmentShaderBit;
 				break;
 			case ImageLayout.Undefined when newLayout == ImageLayout.DepthStencilAttachmentOptimal:
 				barrier.SrcAccessMask = 0;
-				barrier.DstAccessMask = AccessFlags.AccessDepthStencilAttachmentReadBit | AccessFlags.AccessDepthStencilAttachmentWriteBit;
+				barrier.DstAccessMask = AccessFlags.DepthStencilAttachmentReadBit | AccessFlags.DepthStencilAttachmentWriteBit;
 
-				sourceStage = PipelineStageFlags.PipelineStageTopOfPipeBit;
-				destinationStage = PipelineStageFlags.PipelineStageEarlyFragmentTestsBit;
+				sourceStage = PipelineStageFlags.TopOfPipeBit;
+				destinationStage = PipelineStageFlags.EarlyFragmentTestsBit;
 				break;
 			case ImageLayout.Undefined when newLayout == ImageLayout.ColorAttachmentOptimal:
 				barrier.SrcAccessMask = 0;
-				barrier.DstAccessMask = AccessFlags.AccessColorAttachmentReadBit | AccessFlags.AccessColorAttachmentWriteBit;
+				barrier.DstAccessMask = AccessFlags.ColorAttachmentReadBit | AccessFlags.ColorAttachmentWriteBit;
 
-				sourceStage = PipelineStageFlags.PipelineStageTopOfPipeBit;
-				destinationStage = PipelineStageFlags.PipelineStageColorAttachmentOutputBit;
+				sourceStage = PipelineStageFlags.TopOfPipeBit;
+				destinationStage = PipelineStageFlags.ColorAttachmentOutputBit;
 				break;
 			default:
 				throw new Exception($"Unsupported layout transition from {oldLayout} to {newLayout}");
@@ -363,7 +363,7 @@ public static unsafe class VulkanUtils
 
 	public static Fence CreateFence(bool signaled)
 	{
-		var createInfo = new FenceCreateInfo {SType = StructureType.FenceCreateInfo, Flags = signaled ? FenceCreateFlags.FenceCreateSignaledBit : 0};
+		var createInfo = new FenceCreateInfo {SType = StructureType.FenceCreateInfo, Flags = signaled ? FenceCreateFlags.SignaledBit : 0};
 
 		Check(Context2.Vk.CreateFence(Context2.Device, createInfo, null, out var fence), "Failed to create fence");
 
@@ -458,11 +458,11 @@ public static unsafe class VulkanUtils
 		}
 		else
 		{
-			var stagingBuffer = CreateBuffer(bufferSize, BufferUsageFlags.BufferUsageTransferSrcBit,
+			var stagingBuffer = CreateBuffer(bufferSize, BufferUsageFlags.TransferSrcBit,
 				VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_ONLY);
 			MapDataToVulkanBuffer(action, stagingBuffer, bufferSize);
 
-			buffer = CreateBuffer(bufferSize, BufferUsageFlags.BufferUsageTransferDstBit | bufferUsage,
+			buffer = CreateBuffer(bufferSize, BufferUsageFlags.TransferDstBit | bufferUsage,
 				VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
 			CopyBuffer(stagingBuffer, buffer, bufferSize);
 
@@ -491,7 +491,7 @@ public static unsafe class VulkanUtils
 		var shaderStage = new PipelineShaderStageCreateInfo
 		{
 			SType = StructureType.PipelineShaderStageCreateInfo,
-			Stage = ShaderStageFlags.ShaderStageComputeBit,
+			Stage = ShaderStageFlags.ComputeBit,
 			Module = shader.VulkanModule,
 			PName = (byte*) SilkMarshal.StringToPtr("main")
 		};
@@ -533,7 +533,7 @@ public static unsafe class VulkanUtils
 		{
 			ImageSubresource = new ImageSubresourceLayers
 			{
-				AspectMask = ImageAspectFlags.ImageAspectColorBit,
+				AspectMask = ImageAspectFlags.ColorBit,
 				MipLevel = 0,
 				BaseArrayLayer = 0,
 				LayerCount = 1
@@ -551,7 +551,7 @@ public static unsafe class VulkanUtils
 	{
 		// TODO: make cache of format properties to reduce amount of calls to GPU
 		Context2.Vk.GetPhysicalDeviceFormatProperties(Context.PhysicalDevice, image.Format, out var properties);
-		if ((properties.OptimalTilingFeatures & FormatFeatureFlags.FormatFeatureSampledImageFilterLinearBit) == 0)
+		if ((properties.OptimalTilingFeatures & FormatFeatureFlags.SampledImageFilterLinearBit) == 0)
 			throw new Exception($"Texture image format `{image.Format}` does not support linear blitting.");
 
 		var cb = CommandBuffers.BeginSingleTimeCommands(GraphicsCommandPool);
@@ -564,7 +564,7 @@ public static unsafe class VulkanUtils
 			DstQueueFamilyIndex = Vk.QueueFamilyIgnored,
 			SubresourceRange = new ImageSubresourceRange
 			{
-				AspectMask = ImageAspectFlags.ImageAspectColorBit,
+				AspectMask = ImageAspectFlags.ColorBit,
 				BaseArrayLayer = 0,
 				LayerCount = 1,
 				LevelCount = 1
@@ -576,10 +576,10 @@ public static unsafe class VulkanUtils
 			barrier.SubresourceRange.BaseMipLevel = (uint) (i - 1);
 			barrier.OldLayout = ImageLayout.TransferDstOptimal;
 			barrier.NewLayout = ImageLayout.TransferSrcOptimal;
-			barrier.SrcAccessMask = AccessFlags.AccessTransferWriteBit;
-			barrier.DstAccessMask = AccessFlags.AccessTransferReadBit;
+			barrier.SrcAccessMask = AccessFlags.TransferWriteBit;
+			barrier.DstAccessMask = AccessFlags.TransferReadBit;
 
-			Context2.Vk.CmdPipelineBarrier(cb, PipelineStageFlags.PipelineStageTransferBit, PipelineStageFlags.PipelineStageTransferBit, 0, null, null, 1,
+			Context2.Vk.CmdPipelineBarrier(cb, PipelineStageFlags.TransferBit, PipelineStageFlags.TransferBit, 0, null, null, 1,
 				&barrier);
 
 			var blit = new ImageBlit
@@ -590,7 +590,7 @@ public static unsafe class VulkanUtils
 				},
 				SrcSubresource = new ImageSubresourceLayers
 				{
-					AspectMask = ImageAspectFlags.ImageAspectColorBit,
+					AspectMask = ImageAspectFlags.ColorBit,
 					MipLevel = (uint) (i - 1),
 					BaseArrayLayer = 0,
 					LayerCount = 1
@@ -601,7 +601,7 @@ public static unsafe class VulkanUtils
 				},
 				DstSubresource = new ImageSubresourceLayers
 				{
-					AspectMask = ImageAspectFlags.ImageAspectColorBit,
+					AspectMask = ImageAspectFlags.ColorBit,
 					MipLevel = (uint) i,
 					BaseArrayLayer = 0,
 					LayerCount = 1
@@ -612,20 +612,20 @@ public static unsafe class VulkanUtils
 
 			barrier.OldLayout = ImageLayout.TransferSrcOptimal;
 			barrier.NewLayout = ImageLayout.ShaderReadOnlyOptimal;
-			barrier.SrcAccessMask = AccessFlags.AccessTransferWriteBit;
-			barrier.DstAccessMask = AccessFlags.AccessShaderReadBit;
+			barrier.SrcAccessMask = AccessFlags.TransferWriteBit;
+			barrier.DstAccessMask = AccessFlags.ShaderReadBit;
 
-			Context2.Vk.CmdPipelineBarrier(cb, PipelineStageFlags.PipelineStageTransferBit, PipelineStageFlags.PipelineStageFragmentShaderBit, 0, null, null, 1,
+			Context2.Vk.CmdPipelineBarrier(cb, PipelineStageFlags.TransferBit, PipelineStageFlags.FragmentShaderBit, 0, null, null, 1,
 				&barrier);
 		}
 
 		barrier.OldLayout = ImageLayout.TransferDstOptimal;
 		barrier.NewLayout = ImageLayout.ShaderReadOnlyOptimal;
-		barrier.SrcAccessMask = AccessFlags.AccessTransferWriteBit;
-		barrier.DstAccessMask = AccessFlags.AccessShaderReadBit;
+		barrier.SrcAccessMask = AccessFlags.TransferWriteBit;
+		barrier.DstAccessMask = AccessFlags.ShaderReadBit;
 		barrier.SubresourceRange.BaseMipLevel = image.MipLevels - 1;
 
-		Context2.Vk.CmdPipelineBarrier(cb, PipelineStageFlags.PipelineStageTransferBit, PipelineStageFlags.PipelineStageFragmentShaderBit, 0, null, null, 1,
+		Context2.Vk.CmdPipelineBarrier(cb, PipelineStageFlags.TransferBit, PipelineStageFlags.FragmentShaderBit, 0, null, null, 1,
 			&barrier);
 
 		CommandBuffers.EndSingleTimeCommands(ref cb, GraphicsCommandPool, Context2.GraphicsQueue);
@@ -635,7 +635,7 @@ public static unsafe class VulkanUtils
 	{
 		var format = channels == 4 ? Format.R8G8B8A8Srgb : Format.R8G8B8Srgb; // TODO: R8G8B8Srgb is not valid format ???
 
-		var stagingBuffer = CreateBuffer(bytesCount, BufferUsageFlags.BufferUsageTransferSrcBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_ONLY);
+		var stagingBuffer = CreateBuffer(bytesCount, BufferUsageFlags.TransferSrcBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_ONLY);
 
 		var ptr = new IntPtr[1];
 		Check(vmaMapMemory(VmaHandle, stagingBuffer.Allocation, ptr), "Failed to map memory.");
@@ -643,8 +643,8 @@ public static unsafe class VulkanUtils
 		vmaUnmapMemory(VmaHandle, stagingBuffer.Allocation);
 
 		uint mipLevels = generateMipmaps ? (uint) Math.ILogB(Math.Max(width, height)) + 1 : 1;
-		var image = CreateImage(width, height, mipLevels, SampleCountFlags.SampleCount1Bit, format, ImageTiling.Optimal,
-			ImageUsageFlags.ImageUsageTransferSrcBit | ImageUsageFlags.ImageUsageTransferDstBit | ImageUsageFlags.ImageUsageSampledBit,
+		var image = CreateImage(width, height, mipLevels, SampleCountFlags.Count1Bit, format, ImageTiling.Optimal,
+			ImageUsageFlags.TransferSrcBit | ImageUsageFlags.TransferDstBit | ImageUsageFlags.SampledBit,
 			VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
 
 		TransitionImageLayout(image, ImageLayout.Undefined, ImageLayout.TransferDstOptimal, mipLevels);
@@ -654,7 +654,7 @@ public static unsafe class VulkanUtils
 
 		if (generateMipmaps) GenerateMipmaps(image);
 
-		image.ImageView = CreateImageView(ref image.Image, ref format, ImageAspectFlags.ImageAspectColorBit, mipLevels);
+		image.ImageView = CreateImageView(ref image.Image, ref format, ImageAspectFlags.ColorBit, mipLevels);
 
 		return image;
 	}

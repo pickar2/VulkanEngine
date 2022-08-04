@@ -166,7 +166,7 @@ public static unsafe class MainRenderer
 		Context2.Vk.ResetCommandPool(Context2.Device, CommandPools[_imageIndex], 0);
 		RecordPrimaryCommandBuffers(_imageIndex);
 
-		var waitStage = PipelineStageFlags.PipelineStageColorAttachmentOutputBit;
+		var waitStage = PipelineStageFlags.ColorAttachmentOutputBit;
 
 		var presentSemaphore = currentFrame.PresentSemaphore;
 		var renderSemaphore = currentFrame.RenderSemaphore;
@@ -275,7 +275,7 @@ public static unsafe class MainRenderer
 		var fenceCreateInfo = new FenceCreateInfo
 		{
 			SType = StructureType.FenceCreateInfo,
-			Flags = FenceCreateFlags.FenceCreateSignaledBit
+			Flags = FenceCreateFlags.SignaledBit
 		};
 
 		for (int i = 0; i < FrameOverlap; i++)
@@ -307,7 +307,7 @@ public static unsafe class MainRenderer
 
 		var cmd = PrimaryCommandBuffers[imageIndex];
 
-		Check(cmd.Begin(CommandBufferUsageFlags.CommandBufferUsageOneTimeSubmitBit), "Failed to begin command buffer.");
+		Check(cmd.Begin(CommandBufferUsageFlags.OneTimeSubmitBit), "Failed to begin command buffer.");
 
 		var renderPassBeginInfo = new RenderPassBeginInfo
 		{

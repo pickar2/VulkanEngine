@@ -27,13 +27,13 @@ public unsafe class MultipleStructDataFactory : SimpleRegistry<NoneEventManager<
 
 		if (Context.IsIntegratedGpu || CpuToGpuMemory)
 		{
-			DataBufferCpu = VulkanUtils.CreateBuffer(BufferSize, BufferUsageFlags.BufferUsageStorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU);
+			DataBufferCpu = VulkanUtils.CreateBuffer(BufferSize, BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU);
 			DataBufferGpu = DataBufferCpu;
 		}
 		else
 		{
-			DataBufferCpu = VulkanUtils.CreateBuffer(BufferSize, BufferUsageFlags.BufferUsageTransferSrcBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_ONLY);
-			DataBufferGpu = VulkanUtils.CreateBuffer(BufferSize, BufferUsageFlags.BufferUsageStorageBufferBit | BufferUsageFlags.BufferUsageTransferDstBit,
+			DataBufferCpu = VulkanUtils.CreateBuffer(BufferSize, BufferUsageFlags.TransferSrcBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_ONLY);
+			DataBufferGpu = VulkanUtils.CreateBuffer(BufferSize, BufferUsageFlags.StorageBufferBit | BufferUsageFlags.TransferDstBit,
 				VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
 		}
 
@@ -67,8 +67,8 @@ public unsafe class MultipleStructDataFactory : SimpleRegistry<NoneEventManager<
 		ulong newBufferSize = BufferSize * 2;
 
 		var newDataBuffer = Context.IsIntegratedGpu || CpuToGpuMemory
-			? VulkanUtils.CreateBuffer(newBufferSize, BufferUsageFlags.BufferUsageStorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU)
-			: VulkanUtils.CreateBuffer(newBufferSize, BufferUsageFlags.BufferUsageTransferSrcBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_ONLY);
+			? VulkanUtils.CreateBuffer(newBufferSize, BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU)
+			: VulkanUtils.CreateBuffer(newBufferSize, BufferUsageFlags.TransferSrcBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_ONLY);
 
 		VulkanUtils.Check(Context2.VmaMapMemory(newDataBuffer.Allocation, _ptr), "Failed to map memory.");
 
@@ -88,7 +88,7 @@ public unsafe class MultipleStructDataFactory : SimpleRegistry<NoneEventManager<
 		else
 		{
 			DataBufferGpu.EnqueueFrameDispose(MainRenderer.GetLastFrameIndex());
-			DataBufferGpu = VulkanUtils.CreateBuffer(newBufferSize, BufferUsageFlags.BufferUsageStorageBufferBit | BufferUsageFlags.BufferUsageTransferDstBit,
+			DataBufferGpu = VulkanUtils.CreateBuffer(newBufferSize, BufferUsageFlags.StorageBufferBit | BufferUsageFlags.TransferDstBit,
 				VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
 			
 			VulkanUtils.CopyBuffer(DataBufferCpu, DataBufferGpu, BufferSize);

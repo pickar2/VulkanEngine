@@ -88,19 +88,19 @@ public unsafe partial class UiRenderer
 
 	private static void CreateSortBuffers()
 	{
-		_counters1Buffer = VulkanUtils.CreateBuffer(ZCount * 4, BufferUsageFlags.BufferUsageStorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
+		_counters1Buffer = VulkanUtils.CreateBuffer(ZCount * 4, BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
 		_counters1Buffer.EnqueueGlobalDispose();
 
-		_counters2Buffer = VulkanUtils.CreateBuffer(ZCount * 4, BufferUsageFlags.BufferUsageStorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
+		_counters2Buffer = VulkanUtils.CreateBuffer(ZCount * 4, BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
 		_counters2Buffer.EnqueueGlobalDispose();
 
-		_offsetsBuffer = VulkanUtils.CreateBuffer(ZCount * 4, BufferUsageFlags.BufferUsageStorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
+		_offsetsBuffer = VulkanUtils.CreateBuffer(ZCount * 4, BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
 		_offsetsBuffer.EnqueueGlobalDispose();
 
-		_countBufferCpu = VulkanUtils.CreateBuffer(CountDataSize, BufferUsageFlags.BufferUsageTransferSrcBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU);
+		_countBufferCpu = VulkanUtils.CreateBuffer(CountDataSize, BufferUsageFlags.TransferSrcBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU);
 		_countBufferCpu.EnqueueGlobalDispose();
 
-		_countBuffer = VulkanUtils.CreateBuffer(CountDataSize, BufferUsageFlags.BufferUsageUniformBufferBit | BufferUsageFlags.BufferUsageTransferDstBit,
+		_countBuffer = VulkanUtils.CreateBuffer(CountDataSize, BufferUsageFlags.UniformBufferBit | BufferUsageFlags.TransferDstBit,
 			VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
 		_countBuffer.EnqueueGlobalDispose();
 	}
@@ -114,28 +114,28 @@ public unsafe partial class UiRenderer
 				Binding = 0,
 				DescriptorCount = 1,
 				DescriptorType = DescriptorType.StorageBuffer,
-				StageFlags = ShaderStageFlags.ShaderStageComputeBit
+				StageFlags = ShaderStageFlags.ComputeBit
 			},
 			new()
 			{
 				Binding = 1,
 				DescriptorCount = 1,
 				DescriptorType = DescriptorType.StorageBuffer,
-				StageFlags = ShaderStageFlags.ShaderStageComputeBit
+				StageFlags = ShaderStageFlags.ComputeBit
 			},
 			new()
 			{
 				Binding = 2,
 				DescriptorCount = 1,
 				DescriptorType = DescriptorType.StorageBuffer,
-				StageFlags = ShaderStageFlags.ShaderStageComputeBit
+				StageFlags = ShaderStageFlags.ComputeBit
 			},
 			new()
 			{
 				Binding = 3,
 				DescriptorCount = 1,
 				DescriptorType = DescriptorType.UniformBuffer,
-				StageFlags = ShaderStageFlags.ShaderStageComputeBit
+				StageFlags = ShaderStageFlags.ComputeBit
 			}
 		};
 
@@ -156,7 +156,7 @@ public unsafe partial class UiRenderer
 			Binding = 0,
 			DescriptorCount = 1,
 			DescriptorType = DescriptorType.StorageBuffer,
-			StageFlags = ShaderStageFlags.ShaderStageComputeBit
+			StageFlags = ShaderStageFlags.ComputeBit
 		};
 
 		var indicesLayoutCreateInfo = new DescriptorSetLayoutCreateInfo
@@ -193,7 +193,7 @@ public unsafe partial class UiRenderer
 			MaxSets = 1,
 			PoolSizeCount = (uint) countersPoolSizes.Length,
 			PPoolSizes = countersPoolSizes[0].AsPointer(),
-			Flags = DescriptorPoolCreateFlags.DescriptorPoolCreateFreeDescriptorSetBit
+			Flags = DescriptorPoolCreateFlags.FreeDescriptorSetBit
 		};
 
 		VulkanUtils.Check(Context2.Vk.CreateDescriptorPool(Context2.Device, &countersCreateInfo, null, out _sortCountersPool),
@@ -212,7 +212,7 @@ public unsafe partial class UiRenderer
 			MaxSets = SwapchainHelper.ImageCount,
 			PoolSizeCount = 1,
 			PPoolSizes = &indicesPoolSizes,
-			Flags = DescriptorPoolCreateFlags.DescriptorPoolCreateFreeDescriptorSetBit
+			Flags = DescriptorPoolCreateFlags.FreeDescriptorSetBit
 		};
 
 		VulkanUtils.Check(Context2.Vk.CreateDescriptorPool(Context2.Device, &indicesCreateInfo, null, out _sortIndicesPool),
@@ -384,10 +384,10 @@ public unsafe partial class UiRenderer
 		var memoryBarrier = new MemoryBarrier2
 		{
 			SType = StructureType.MemoryBarrier2,
-			SrcStageMask = PipelineStageFlags2.PipelineStage2TransferBit,
-			SrcAccessMask = AccessFlags2.Access2TransferWriteBit,
-			DstStageMask = PipelineStageFlags2.PipelineStage2ComputeShaderBit,
-			DstAccessMask = AccessFlags2.Access2ShaderReadBit
+			SrcStageMask = PipelineStageFlags2.TransferBit,
+			SrcAccessMask = AccessFlags2.TransferWriteBit,
+			DstStageMask = PipelineStageFlags2.ComputeShaderBit,
+			DstAccessMask = AccessFlags2.ShaderReadBit
 		};
 
 		var dependencyInfo = new DependencyInfo
@@ -400,10 +400,10 @@ public unsafe partial class UiRenderer
 		var memoryBarrierCompute = new MemoryBarrier2
 		{
 			SType = StructureType.MemoryBarrier2,
-			SrcStageMask = PipelineStageFlags2.PipelineStage2ComputeShaderBit,
-			SrcAccessMask = AccessFlags2.Access2ShaderStorageWriteBit,
-			DstStageMask = PipelineStageFlags2.PipelineStage2ComputeShaderBit,
-			DstAccessMask = AccessFlags2.Access2ShaderStorageWriteBit | AccessFlags2.Access2ShaderStorageReadBit
+			SrcStageMask = PipelineStageFlags2.ComputeShaderBit,
+			SrcAccessMask = AccessFlags2.ShaderStorageWriteBit,
+			DstStageMask = PipelineStageFlags2.ComputeShaderBit,
+			DstAccessMask = AccessFlags2.ShaderStorageWriteBit | AccessFlags2.ShaderStorageReadBit
 		};
 
 		var dependencyInfoStorage = new DependencyInfo

@@ -113,20 +113,20 @@ public static unsafe class SwapchainHelper
 		{
 			SrcSubpass = Vk.SubpassExternal,
 			DstSubpass = 0,
-			SrcStageMask = PipelineStageFlags.PipelineStageColorAttachmentOutputBit,
+			SrcStageMask = PipelineStageFlags.ColorAttachmentOutputBit,
 			SrcAccessMask = 0,
-			DstStageMask = PipelineStageFlags.PipelineStageColorAttachmentOutputBit,
-			DstAccessMask = AccessFlags.AccessColorAttachmentWriteBit
+			DstStageMask = PipelineStageFlags.ColorAttachmentOutputBit,
+			DstAccessMask = AccessFlags.ColorAttachmentWriteBit
 		};
 
 		dependencies[1] = new SubpassDependency
 		{
 			SrcSubpass = Vk.SubpassExternal,
 			DstSubpass = 0,
-			SrcStageMask = PipelineStageFlags.PipelineStageEarlyFragmentTestsBit | PipelineStageFlags.PipelineStageLateFragmentTestsBit,
+			SrcStageMask = PipelineStageFlags.EarlyFragmentTestsBit | PipelineStageFlags.LateFragmentTestsBit,
 			SrcAccessMask = 0,
-			DstStageMask = PipelineStageFlags.PipelineStageEarlyFragmentTestsBit | PipelineStageFlags.PipelineStageLateFragmentTestsBit,
-			DstAccessMask = AccessFlags.AccessDepthStencilAttachmentWriteBit
+			DstStageMask = PipelineStageFlags.EarlyFragmentTestsBit | PipelineStageFlags.LateFragmentTestsBit,
+			DstAccessMask = AccessFlags.DepthStencilAttachmentWriteBit
 		};
 
 		if (VulkanOptions.MsaaEnabled)
@@ -136,7 +136,7 @@ public static unsafe class SwapchainHelper
 			attachmentDescriptions[2] = new AttachmentDescription
 			{
 				Format = Format,
-				Samples = SampleCountFlags.SampleCount1Bit,
+				Samples = SampleCountFlags.Count1Bit,
 				LoadOp = AttachmentLoadOp.DontCare,
 				StoreOp = AttachmentStoreOp.Store,
 				StencilLoadOp = AttachmentLoadOp.DontCare,
@@ -167,7 +167,7 @@ public static unsafe class SwapchainHelper
 
 	private static Format FindDepthFormat() =>
 		FindSupportedFormat(new[] {Format.D32Sfloat, Format.D32SfloatS8Uint, Format.D24UnormS8Uint},
-			ImageTiling.Optimal, FormatFeatureFlags.FormatFeatureDepthStencilAttachmentBit);
+			ImageTiling.Optimal, FormatFeatureFlags.DepthStencilAttachmentBit);
 
 	public static void CreateSwapchain()
 	{
@@ -194,9 +194,9 @@ public static unsafe class SwapchainHelper
 			ImageColorSpace = surfaceFormat.ColorSpace,
 			ImageExtent = extent,
 			ImageArrayLayers = 1,
-			ImageUsage = ImageUsageFlags.ImageUsageColorAttachmentBit,
+			ImageUsage = ImageUsageFlags.ColorAttachmentBit,
 			PreTransform = details.SurfaceCapabilities.CurrentTransform,
-			CompositeAlpha = CompositeAlphaFlagsKHR.CompositeAlphaOpaqueBitKhr,
+			CompositeAlpha = CompositeAlphaFlagsKHR.OpaqueBitKhr,
 			PresentMode = presentMode,
 			Clipped = true,
 			ImageSharingMode = SharingMode.Exclusive
@@ -220,7 +220,7 @@ public static unsafe class SwapchainHelper
 
 		SwapchainImageViews = new ImageView[ImageCount];
 		for (int i = 0; i < SwapchainImages.Length; i++)
-			SwapchainImageViews[i] = CreateImageView(ref SwapchainImages[i], ref Format, ImageAspectFlags.ImageAspectColorBit, 1);
+			SwapchainImageViews[i] = CreateImageView(ref SwapchainImages[i], ref Format, ImageAspectFlags.ColorBit, 1);
 
 		ImageCountInt = (int) ImageCount;
 	}
@@ -230,7 +230,7 @@ public static unsafe class SwapchainHelper
 	{
 		foreach (var format in availableFormats)
 		{
-			if (format.Format == Format.B8G8R8A8Srgb && format.ColorSpace == ColorSpaceKHR.ColorspaceSrgbNonlinearKhr)
+			if (format.Format == Format.B8G8R8A8Srgb && format.ColorSpace == ColorSpaceKHR.SpaceSrgbNonlinearKhr)
 				return format;
 		}
 
@@ -245,7 +245,7 @@ public static unsafe class SwapchainHelper
 				return presentMode;
 		}
 
-		return PresentModeKHR.PresentModeFifoKhr;
+		return PresentModeKHR.FifoKhr;
 	}
 
 	private static Extent2D ChooseSurfaceExtent(SurfaceCapabilitiesKHR capabilities)
@@ -267,10 +267,10 @@ public static unsafe class SwapchainHelper
 		var format = FindDepthFormat();
 
 		var image = CreateImage(Extent.Width, Extent.Height, 1, VulkanOptions.MsaaSamples, format,
-			ImageTiling.Optimal, ImageUsageFlags.ImageUsageDepthStencilAttachmentBit,
+			ImageTiling.Optimal, ImageUsageFlags.DepthStencilAttachmentBit,
 			VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
 
-		image.ImageView = CreateImageView(ref image.Image, ref format, ImageAspectFlags.ImageAspectDepthBit, 1);
+		image.ImageView = CreateImageView(ref image.Image, ref format, ImageAspectFlags.DepthBit, 1);
 
 		TransitionImageLayout(image, ImageLayout.Undefined, ImageLayout.DepthStencilAttachmentOptimal, 1);
 
@@ -280,10 +280,10 @@ public static unsafe class SwapchainHelper
 	private static VulkanImage CreateColorResources()
 	{
 		var image = CreateImage(Extent.Width, Extent.Height, 1, VulkanOptions.MsaaSamples, Format,
-			ImageTiling.Optimal, ImageUsageFlags.ImageUsageColorAttachmentBit,
+			ImageTiling.Optimal, ImageUsageFlags.ColorAttachmentBit,
 			VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
 
-		image.ImageView = CreateImageView(ref image.Image, ref Format, ImageAspectFlags.ImageAspectColorBit, 1);
+		image.ImageView = CreateImageView(ref image.Image, ref Format, ImageAspectFlags.ColorBit, 1);
 
 		TransitionImageLayout(image, ImageLayout.Undefined, ImageLayout.ColorAttachmentOptimal, 1);
 

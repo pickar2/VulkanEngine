@@ -35,8 +35,8 @@ public sealed class UiMaterialManager : SimpleRegistry<NoneEventManager<Material
 		MaterialCount++;
 		short factoryIndex = materialFactory.StageFlag switch
 		{
-			ShaderStageFlags.ShaderStageVertexBit => VertMaterialCount++,
-			ShaderStageFlags.ShaderStageFragmentBit => FragMaterialCount++,
+			ShaderStageFlags.VertexBit => VertMaterialCount++,
+			ShaderStageFlags.FragmentBit => FragMaterialCount++,
 			_ => 0
 		};
 		materialFactory.Index = factoryIndex;
@@ -92,7 +92,7 @@ public sealed class UiMaterialManager : SimpleRegistry<NoneEventManager<Material
 				Instance._vertexSwitch.Append("\t\t\t").Append("break;").AppendLine();
 
 				name = NamespacedName.CreateWithName(identifier);
-				Instance.Register(new MaterialDataFactory(size, ShaderStageFlags.ShaderStageVertexBit, name))
+				Instance.Register(new MaterialDataFactory(size, ShaderStageFlags.VertexBit, name))
 					.ThrowIfFalse($"Material factory `{name.FullName}` is already registered.");
 				break;
 			case "fragment":
@@ -104,7 +104,7 @@ public sealed class UiMaterialManager : SimpleRegistry<NoneEventManager<Material
 				Instance._fragmentSwitch.Append("\t\t\t").Append("break;").AppendLine();
 
 				name = NamespacedName.CreateWithName(identifier);
-				Instance.Register(new MaterialDataFactory(size, ShaderStageFlags.ShaderStageFragmentBit, name))
+				Instance.Register(new MaterialDataFactory(size, ShaderStageFlags.FragmentBit, name))
 					.ThrowIfFalse($"Material factory `{name.FullName}` is already registered.");
 				break;
 			default:

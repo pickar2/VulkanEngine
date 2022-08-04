@@ -124,9 +124,9 @@ public static unsafe partial class Context2
 		{
 			var validationFeatures = stackalloc ValidationFeatureEnableEXT[]
 			{
-				ValidationFeatureEnableEXT.ValidationFeatureEnableBestPracticesExt,
-				ValidationFeatureEnableEXT.ValidationFeatureEnableGpuAssistedExt,
-				ValidationFeatureEnableEXT.ValidationFeatureEnableSynchronizationValidationExt
+				ValidationFeatureEnableEXT.BestPracticesExt,
+				ValidationFeatureEnableEXT.GpuAssistedExt,
+				ValidationFeatureEnableEXT.SynchronizationValidationExt
 			};
 
 			var validationFeaturesExt = new ValidationFeaturesEXT
@@ -459,7 +459,7 @@ public static unsafe partial class Context2
 
 		for (int i = 0; i < count; i++)
 		{
-			if ((properties[i].QueueFlags & QueueFlags.QueueGraphicsBit) == 0) continue;
+			if ((properties[i].QueueFlags & QueueFlags.GraphicsBit) == 0) continue;
 			KhrSurface.GetPhysicalDeviceSurfaceSupport(device, (uint) i, Surface, out var supported);
 			if (supported) return true;
 		}
@@ -574,7 +574,7 @@ public static unsafe partial class Context2
 		}
 		else
 		{
-			var graphicsFamily = queueFamilies.First(f => (f.QueueFlags & QueueFlags.QueueGraphicsBit) != 0);
+			var graphicsFamily = queueFamilies.First(f => (f.QueueFlags & QueueFlags.GraphicsBit) != 0);
 			TransferToDeviceQueue = TransferToHostQueue = ComputeQueue = GraphicsQueue = new VulkanQueue
 			{
 				Family = graphicsFamily,
@@ -582,8 +582,8 @@ public static unsafe partial class Context2
 			};
 
 			var computeOnlyFamily = queueFamilies.Where(f =>
-				(f.QueueFlags & QueueFlags.QueueComputeBit) != 0 &&
-				(f.QueueFlags & QueueFlags.QueueGraphicsBit) == 0).ToArray();
+				(f.QueueFlags & QueueFlags.ComputeBit) != 0 &&
+				(f.QueueFlags & QueueFlags.GraphicsBit) == 0).ToArray();
 			if (computeOnlyFamily.Length != 0)
 			{
 				ComputeQueue = new VulkanQueue
@@ -594,17 +594,17 @@ public static unsafe partial class Context2
 			}
 
 			var transferFamily = queueFamilies.Where(f =>
-				(f.QueueFlags & QueueFlags.QueueTransferBit) != 0 &&
-				(f.QueueFlags & QueueFlags.QueueComputeBit) == 0 &&
-				(f.QueueFlags & QueueFlags.QueueGraphicsBit) == 0 &&
-				(f.QueueFlags & QueueFlags.QueueVideoDecodeBitKhr) == 0 &&
-				(f.QueueFlags & QueueFlags.QueueVideoDecodeBitKhr) == 0).ToArray();
+				(f.QueueFlags & QueueFlags.TransferBit) != 0 &&
+				(f.QueueFlags & QueueFlags.ComputeBit) == 0 &&
+				(f.QueueFlags & QueueFlags.GraphicsBit) == 0 &&
+				(f.QueueFlags & QueueFlags.VideoDecodeBitKhr) == 0 &&
+				(f.QueueFlags & QueueFlags.VideoDecodeBitKhr) == 0).ToArray();
 			if (transferFamily.Length == 0)
 			{
 				transferFamily = queueFamilies.OrderBy(f => -f.QueueCount).Where(f =>
-					(f.QueueFlags & QueueFlags.QueueTransferBit) != 0 ||
-					(f.QueueFlags & QueueFlags.QueueGraphicsBit) != 0 ||
-					(f.QueueFlags & QueueFlags.QueueComputeBit) != 0).ToArray();
+					(f.QueueFlags & QueueFlags.TransferBit) != 0 ||
+					(f.QueueFlags & QueueFlags.GraphicsBit) != 0 ||
+					(f.QueueFlags & QueueFlags.ComputeBit) != 0).ToArray();
 			}
 
 			if (transferFamily.Length != 0)
@@ -745,7 +745,7 @@ public static unsafe partial class Context2
 		var fenceCreateInfo = new FenceCreateInfo
 		{
 			SType = StructureType.FenceCreateInfo,
-			Flags = FenceCreateFlags.FenceCreateSignaledBit
+			Flags = FenceCreateFlags.SignaledBit
 		};
 
 		Frames = new Frame[State.FrameOverlap.Value];
@@ -805,9 +805,9 @@ public static unsafe partial class Context2
 			ImageColorSpace = SwapchainSurfaceFormat.ColorSpace,
 			ImageExtent = SwapchainExtent,
 			ImageArrayLayers = 1,
-			ImageUsage = ImageUsageFlags.ImageUsageColorAttachmentBit,
+			ImageUsage = ImageUsageFlags.ColorAttachmentBit,
 			PreTransform = SwapchainDetails.SurfaceCapabilities.CurrentTransform,
-			CompositeAlpha = CompositeAlphaFlagsKHR.CompositeAlphaOpaqueBitKhr,
+			CompositeAlpha = CompositeAlphaFlagsKHR.OpaqueBitKhr,
 			PresentMode = PresentMode,
 			Clipped = true,
 			ImageSharingMode = SharingMode.Exclusive,
@@ -830,7 +830,7 @@ public static unsafe partial class Context2
 
 		var imageViews = new ImageView[SwapchainImageCount];
 		for (int i = 0; i < imageViews.Length; i++)
-			imageViews[i] = CreateImageView(ref images[i], ref SwapchainSurfaceFormat.Format, ImageAspectFlags.ImageAspectColorBit, 1);
+			imageViews[i] = CreateImageView(ref images[i], ref SwapchainSurfaceFormat.Format, ImageAspectFlags.ColorBit, 1);
 
 		SwapchainImages = new VulkanImage2[SwapchainImageCount];
 		for (int i = 0; i < SwapchainImageCount; i++)
@@ -845,7 +845,7 @@ public static unsafe partial class Context2
 		foreach (var format in availableFormats)
 		{
 			if (format.Format == Format.R8G8B8A8Srgb &&
-			    format.ColorSpace == ColorSpaceKHR.ColorspaceSrgbNonlinearKhr)
+			    format.ColorSpace == ColorSpaceKHR.SpaceSrgbNonlinearKhr)
 				return format;
 		}
 
@@ -853,7 +853,7 @@ public static unsafe partial class Context2
 	}
 
 	private static PresentModeKHR ChoosePresentMode(PresentModeKHR[] presentModes) =>
-		presentModes.Contains(State.PresentMode.Value) ? State.PresentMode.Value : PresentModeKHR.PresentModeImmediateKhr;
+		presentModes.Contains(State.PresentMode.Value) ? State.PresentMode.Value : PresentModeKHR.ImmediateKhr;
 
 	private static Extent2D ChooseSurfaceExtent(SurfaceCapabilitiesKHR capabilities)
 	{

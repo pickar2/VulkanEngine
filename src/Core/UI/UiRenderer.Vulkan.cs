@@ -165,7 +165,7 @@ public static unsafe partial class UiRenderer
 		foreach (var indexBuffer in _indexBuffers) indexBuffer.EnqueueFrameDispose(MainRenderer.GetLastFrameIndex());
 		for (int i = 0; i < _indexBuffers.Length; i++)
 			_indexBuffers[i] = VulkanUtils.CreateBuffer((ulong) (6 * 4 * UiComponentFactory.Instance.MaxComponents),
-				BufferUsageFlags.BufferUsageIndexBufferBit | BufferUsageFlags.BufferUsageStorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
+				BufferUsageFlags.IndexBufferBit | BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
 
 		UpdateComponentDataDescriptorSets();
 		_dirty = SwapchainHelper.ImageCountInt;
@@ -237,7 +237,7 @@ public static unsafe partial class UiRenderer
 			Subpass = 0
 		};
 
-		cmd.Begin(CommandBufferUsageFlags.CommandBufferUsageRenderPassContinueBit, inheritanceInfo);
+		cmd.Begin(CommandBufferUsageFlags.RenderPassContinueBit, inheritanceInfo);
 
 		foreach (var pipeline in _pipelines)
 		{
@@ -271,7 +271,7 @@ public static unsafe partial class UiRenderer
 				Binding = index,
 				DescriptorCount = 1,
 				DescriptorType = DescriptorType.StorageBuffer,
-				StageFlags = ShaderStageFlags.ShaderStageVertexBit | ShaderStageFlags.ShaderStageFragmentBit
+				StageFlags = ShaderStageFlags.VertexBit | ShaderStageFlags.FragmentBit
 			};
 			index++;
 		}
@@ -281,7 +281,7 @@ public static unsafe partial class UiRenderer
 			SType = StructureType.DescriptorSetLayoutCreateInfo,
 			BindingCount = (uint) GlobalData.Count,
 			PBindings = bindings,
-			Flags = DescriptorSetLayoutCreateFlags.DescriptorSetLayoutCreateUpdateAfterBindPoolBitExt
+			Flags = DescriptorSetLayoutCreateFlags.UpdateAfterBindPoolBitExt
 		};
 
 		if (_globalDataLayout.Handle != 0) Context2.Vk.DestroyDescriptorSetLayout(Context2.Device, _globalDataLayout, null);
@@ -300,7 +300,7 @@ public static unsafe partial class UiRenderer
 			MaxSets = SwapchainHelper.ImageCount,
 			PoolSizeCount = 1,
 			PPoolSizes = globalDataPoolSizes.AsPointer(),
-			Flags = DescriptorPoolCreateFlags.DescriptorPoolCreateUpdateAfterBindBitExt | DescriptorPoolCreateFlags.DescriptorPoolCreateFreeDescriptorSetBit
+			Flags = DescriptorPoolCreateFlags.UpdateAfterBindBitExt | DescriptorPoolCreateFlags.FreeDescriptorSetBit
 		};
 
 		if (_globalDataPool.Handle != 0) Context2.Vk.DestroyDescriptorPool(Context2.Device, _globalDataPool, null);
@@ -352,7 +352,7 @@ public static unsafe partial class UiRenderer
 	{
 		// TODO: rebuild texture layout when more textures are needed
 		var textureFlags = stackalloc DescriptorBindingFlags[1];
-		textureFlags[0] = DescriptorBindingFlags.DescriptorBindingVariableDescriptorCountBit;
+		textureFlags[0] = DescriptorBindingFlags.VariableDescriptorCountBit;
 
 		var textureFlagsCreateInfo = new DescriptorSetLayoutBindingFlagsCreateInfoEXT
 		{
@@ -366,7 +366,7 @@ public static unsafe partial class UiRenderer
 			Binding = 0,
 			DescriptorCount = TextureCount,
 			DescriptorType = DescriptorType.CombinedImageSampler,
-			StageFlags = ShaderStageFlags.ShaderStageFragmentBit
+			StageFlags = ShaderStageFlags.FragmentBit
 		};
 
 		var texturesCreateInfo = new DescriptorSetLayoutCreateInfo
@@ -375,7 +375,7 @@ public static unsafe partial class UiRenderer
 			BindingCount = 1,
 			PBindings = texturesBindings.AsPointer(),
 			PNext = textureFlagsCreateInfo.AsPointer(),
-			Flags = DescriptorSetLayoutCreateFlags.DescriptorSetLayoutCreateUpdateAfterBindPoolBitExt
+			Flags = DescriptorSetLayoutCreateFlags.UpdateAfterBindPoolBitExt
 		};
 
 		VulkanUtils.Check(Context2.Vk.CreateDescriptorSetLayout(Context2.Device, &texturesCreateInfo, null, out _texturesLayout),
@@ -383,7 +383,7 @@ public static unsafe partial class UiRenderer
 		DisposalQueue.EnqueueInGlobal(() => Context2.Vk.DestroyDescriptorSetLayout(Context2.Device, _texturesLayout, null));
 
 		var componentFlags = stackalloc DescriptorBindingFlags[1];
-		componentFlags[0] = DescriptorBindingFlags.DescriptorBindingUpdateAfterBindBit;
+		componentFlags[0] = DescriptorBindingFlags.UpdateAfterBindBit;
 
 		var componentFlagsInfo = new DescriptorSetLayoutBindingFlagsCreateInfoEXT
 		{
@@ -397,7 +397,7 @@ public static unsafe partial class UiRenderer
 			Binding = 0,
 			DescriptorCount = 1,
 			DescriptorType = DescriptorType.StorageBuffer,
-			StageFlags = ShaderStageFlags.ShaderStageVertexBit | ShaderStageFlags.ShaderStageFragmentBit | ShaderStageFlags.ShaderStageComputeBit
+			StageFlags = ShaderStageFlags.VertexBit | ShaderStageFlags.FragmentBit | ShaderStageFlags.ComputeBit
 		};
 
 		var componentDataCreateInfo = new DescriptorSetLayoutCreateInfo
@@ -405,7 +405,7 @@ public static unsafe partial class UiRenderer
 			SType = StructureType.DescriptorSetLayoutCreateInfo,
 			BindingCount = 1,
 			PBindings = componentDataBindings.AsPointer(),
-			Flags = DescriptorSetLayoutCreateFlags.DescriptorSetLayoutCreateUpdateAfterBindPoolBitExt,
+			Flags = DescriptorSetLayoutCreateFlags.UpdateAfterBindPoolBitExt,
 			PNext = componentFlagsInfo.AsPointer()
 		};
 
@@ -445,13 +445,13 @@ public static unsafe partial class UiRenderer
 
 			switch (factory.StageFlag)
 			{
-				case ShaderStageFlags.ShaderStageVertexBit:
+				case ShaderStageFlags.VertexBit:
 					vertMaterialDataBindings[factory.Index] = binding;
-					vertFlags[factory.Index] = DescriptorBindingFlags.DescriptorBindingUpdateAfterBindBit;
+					vertFlags[factory.Index] = DescriptorBindingFlags.UpdateAfterBindBit;
 					break;
-				case ShaderStageFlags.ShaderStageFragmentBit:
+				case ShaderStageFlags.FragmentBit:
 					fragMaterialDataBindings[factory.Index] = binding;
-					fragFlags[factory.Index] = DescriptorBindingFlags.DescriptorBindingUpdateAfterBindBit;
+					fragFlags[factory.Index] = DescriptorBindingFlags.UpdateAfterBindBit;
 					break;
 				default:
 					throw new ArgumentException($"Found unknown material shader stage flag `{(int) factory.StageFlag}`.").AsExpectedException();
@@ -463,7 +463,7 @@ public static unsafe partial class UiRenderer
 			SType = StructureType.DescriptorSetLayoutCreateInfo,
 			BindingCount = (uint) vertMaterialDataBindings.Length,
 			PBindings = vertMaterialDataBindings[0].AsPointer(),
-			Flags = DescriptorSetLayoutCreateFlags.DescriptorSetLayoutCreateUpdateAfterBindPoolBitExt,
+			Flags = DescriptorSetLayoutCreateFlags.UpdateAfterBindPoolBitExt,
 			PNext = vertFlagsInfo.AsPointer()
 		};
 
@@ -476,7 +476,7 @@ public static unsafe partial class UiRenderer
 			SType = StructureType.DescriptorSetLayoutCreateInfo,
 			BindingCount = (uint) fragMaterialDataBindings.Length,
 			PBindings = fragMaterialDataBindings[0].AsPointer(),
-			Flags = DescriptorSetLayoutCreateFlags.DescriptorSetLayoutCreateUpdateAfterBindPoolBitExt,
+			Flags = DescriptorSetLayoutCreateFlags.UpdateAfterBindPoolBitExt,
 			PNext = fragFlagsInfo.AsPointer()
 		};
 
@@ -499,7 +499,7 @@ public static unsafe partial class UiRenderer
 			MaxSets = SwapchainHelper.ImageCount,
 			PoolSizeCount = 1,
 			PPoolSizes = texturesPoolSizes.AsPointer(),
-			Flags = DescriptorPoolCreateFlags.DescriptorPoolCreateUpdateAfterBindBitExt | DescriptorPoolCreateFlags.DescriptorPoolCreateFreeDescriptorSetBit
+			Flags = DescriptorPoolCreateFlags.UpdateAfterBindBitExt | DescriptorPoolCreateFlags.FreeDescriptorSetBit
 		};
 
 		VulkanUtils.Check(Context2.Vk.CreateDescriptorPool(Context2.Device, &texturesCreateInfo, null, out _texturesPool),
@@ -518,7 +518,7 @@ public static unsafe partial class UiRenderer
 			MaxSets = SwapchainHelper.ImageCount,
 			PoolSizeCount = 1,
 			PPoolSizes = componentDataPoolSizes.AsPointer(),
-			Flags = DescriptorPoolCreateFlags.DescriptorPoolCreateUpdateAfterBindBitExt | DescriptorPoolCreateFlags.DescriptorPoolCreateFreeDescriptorSetBit
+			Flags = DescriptorPoolCreateFlags.UpdateAfterBindBitExt | DescriptorPoolCreateFlags.FreeDescriptorSetBit
 		};
 
 		VulkanUtils.Check(Context2.Vk.CreateDescriptorPool(Context2.Device, &componentDataCreateInfo, null, out _componentDataPool),
@@ -537,7 +537,7 @@ public static unsafe partial class UiRenderer
 			MaxSets = 2,
 			PoolSizeCount = 1,
 			PPoolSizes = materialDataPoolSizes.AsPointer(),
-			Flags = DescriptorPoolCreateFlags.DescriptorPoolCreateUpdateAfterBindBitExt | DescriptorPoolCreateFlags.DescriptorPoolCreateFreeDescriptorSetBit
+			Flags = DescriptorPoolCreateFlags.UpdateAfterBindBitExt | DescriptorPoolCreateFlags.FreeDescriptorSetBit
 		};
 
 		VulkanUtils.Check(Context2.Vk.CreateDescriptorPool(Context2.Device, &materialDataCreateInfo, null, out _materialDataPool),
@@ -565,9 +565,9 @@ public static unsafe partial class UiRenderer
 		_indexBuffers = new VulkanBuffer[SwapchainHelper.ImageCountInt];
 		for (int i = 0; i < SwapchainHelper.ImageCountInt; i++)
 			_indexBuffers[i] = VulkanUtils.CreateBuffer((ulong) (6 * 4 * UiComponentFactory.Instance.MaxComponents),
-				BufferUsageFlags.BufferUsageIndexBufferBit | BufferUsageFlags.BufferUsageStorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
+				BufferUsageFlags.IndexBufferBit | BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
 
-		_indirectBuffer = VulkanUtils.CreateBuffer((ulong) sizeof(DrawIndexedIndirectCommand), BufferUsageFlags.BufferUsageIndirectBufferBit,
+		_indirectBuffer = VulkanUtils.CreateBuffer((ulong) sizeof(DrawIndexedIndirectCommand), BufferUsageFlags.IndirectBufferBit,
 			VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU);
 		_indirectBuffer.EnqueueGlobalDispose();
 		FillIndirectBuffer();
@@ -710,7 +710,7 @@ public static unsafe partial class UiRenderer
 				DescriptorCount = 1,
 				DstBinding = (uint) factory.Index,
 				DescriptorType = DescriptorType.StorageBuffer,
-				DstSet = factory.StageFlag == ShaderStageFlags.ShaderStageVertexBit ? _vertexMaterialDataSet : _fragmentMaterialDataSet,
+				DstSet = factory.StageFlag == ShaderStageFlags.VertexBit ? _vertexMaterialDataSet : _fragmentMaterialDataSet,
 				PBufferInfo = bufferInfos[index].AsPointer()
 			};
 			index++;
@@ -726,14 +726,14 @@ public static unsafe partial class UiRenderer
 			new()
 			{
 				SType = StructureType.PipelineShaderStageCreateInfo,
-				Stage = ShaderStageFlags.ShaderStageVertexBit,
+				Stage = ShaderStageFlags.VertexBit,
 				Module = _vertexShader.VulkanModule,
 				PName = (byte*) SilkMarshal.StringToPtr("main")
 			},
 			new()
 			{
 				SType = StructureType.PipelineShaderStageCreateInfo,
-				Stage = ShaderStageFlags.ShaderStageFragmentBit,
+				Stage = ShaderStageFlags.FragmentBit,
 				Module = _fragmentShader.VulkanModule,
 				PName = (byte*) SilkMarshal.StringToPtr("main")
 			}
@@ -773,7 +773,7 @@ public static unsafe partial class UiRenderer
 			SType = StructureType.PipelineRasterizationStateCreateInfo,
 			PolygonMode = PolygonMode.Fill,
 			LineWidth = 1,
-			CullMode = CullModeFlags.CullModeNone,
+			CullMode = CullModeFlags.None,
 			DepthClampEnable = false,
 			RasterizerDiscardEnable = false,
 			DepthBiasEnable = false,
@@ -797,7 +797,7 @@ public static unsafe partial class UiRenderer
 			SrcAlphaBlendFactor = BlendFactor.One,
 			DstAlphaBlendFactor = BlendFactor.Zero,
 			AlphaBlendOp = BlendOp.Add,
-			ColorWriteMask = ColorComponentFlags.ColorComponentRBit | ColorComponentFlags.ColorComponentGBit | ColorComponentFlags.ColorComponentBBit
+			ColorWriteMask = ColorComponentFlags.RBit | ColorComponentFlags.GBit | ColorComponentFlags.BBit
 		};
 
 		var colorBlendingDepth = new PipelineColorBlendStateCreateInfo
@@ -818,8 +818,8 @@ public static unsafe partial class UiRenderer
 			SrcAlphaBlendFactor = BlendFactor.One,
 			DstAlphaBlendFactor = BlendFactor.Zero,
 			AlphaBlendOp = BlendOp.Add,
-			ColorWriteMask = ColorComponentFlags.ColorComponentRBit | ColorComponentFlags.ColorComponentGBit | ColorComponentFlags.ColorComponentBBit |
-			                 ColorComponentFlags.ColorComponentABit
+			ColorWriteMask = ColorComponentFlags.RBit | ColorComponentFlags.GBit | ColorComponentFlags.BBit |
+			                 ColorComponentFlags.ABit
 		};
 
 		var colorBlending = new PipelineColorBlendStateCreateInfo

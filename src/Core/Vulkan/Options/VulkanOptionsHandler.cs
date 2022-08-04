@@ -103,7 +103,7 @@ public class VulkanState
 
 	public readonly VulkanOption<int> FrameOverlap = new(3, VulkanLevel.Frame);
 
-	public readonly VulkanOption<PresentModeKHR> PresentMode = new(PresentModeKHR.PresentModeMailboxKhr, VulkanLevel.Swapchain, false);
+	public readonly VulkanOption<PresentModeKHR> PresentMode = new(PresentModeKHR.MailboxKhr, VulkanLevel.Swapchain, false);
 	public readonly VulkanOption<Vector2<uint>> WindowSize = new(new Vector2<uint>(1280, 720), VulkanLevel.Swapchain, false);
 	public readonly VulkanOption<bool> Fullscreen = new(false, VulkanLevel.Swapchain, false);
 
