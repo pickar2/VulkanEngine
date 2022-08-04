@@ -90,6 +90,8 @@ public unsafe class MultipleStructDataFactory : SimpleRegistry<NoneEventManager<
 			DataBufferGpu.EnqueueFrameDispose(MainRenderer.GetLastFrameIndex());
 			DataBufferGpu = VulkanUtils.CreateBuffer(newBufferSize, BufferUsageFlags.BufferUsageStorageBufferBit | BufferUsageFlags.BufferUsageTransferDstBit,
 				VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
+			
+			VulkanUtils.CopyBuffer(DataBufferCpu, DataBufferGpu, BufferSize);
 		}
 
 		BufferSize = newBufferSize;

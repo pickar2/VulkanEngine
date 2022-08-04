@@ -472,6 +472,7 @@ public static unsafe class VulkanUtils
 		return buffer;
 	}
 
+	// TODO: Better abstraction to copying buffers: should use different and proper queues and command pools
 	public static void CopyBuffer(VulkanBuffer src, VulkanBuffer dst, ulong size)
 	{
 		var commandBuffer = CommandBuffers.BeginSingleTimeCommands(GraphicsCommandPool); // TODO: add DefaultCommandPools
