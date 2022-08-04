@@ -33,28 +33,28 @@ public static partial class UiManager
 			infoBox.UpdateControl(new Vector2<float>(1), screenSize);
 		};
 
-		// var mainControl = new AbsolutePanel();
-		// // mainControl.Selectable = false;
-		// // mainControl.MarginLT = new Vector2<float>(300, 100);
-		// // mainControl.Scale = new Vector2<float>(0.5f);
-		// Root.AddChild(mainControl);
-		//
-		// var bg = new CustomBox();
-		// bg.VertMaterial = UiMaterialManager.GetFactory("core:default_vertex_material").Create();
-		// bg.FragMaterial = UiMaterialManager.GetFactory("core:dots_background_material").Create();
-		// *bg.FragMaterial.GetMemPtr<float>() = 1f;
-		// bg.FragMaterial.MarkForGPUUpdate();
-		// bg.Selectable = false;
-		// mainControl.AddChild(bg);
-		//
-		// LabelTest(mainControl);
-		// StackPanelTest(mainControl);
-		// WrapPanelTest(mainControl);
-		// DockPanelTest(mainControl);
-		// Transform3DTest(mainControl);
-		// AnimationTest(mainControl);
-		// TextInputTest(mainControl);
-		// AlignPanelTest(mainControl);
+		var mainControl = new AbsolutePanel();
+		// mainControl.Selectable = false;
+		// mainControl.MarginLT = new Vector2<float>(300, 100);
+		// mainControl.Scale = new Vector2<float>(0.5f);
+		Root.AddChild(mainControl);
+		
+		var bg = new CustomBox();
+		bg.VertMaterial = UiMaterialManager.GetFactory("core:default_vertex_material").Create();
+		bg.FragMaterial = UiMaterialManager.GetFactory("core:dots_background_material").Create();
+		*bg.FragMaterial.GetMemPtr<float>() = 1f;
+		bg.FragMaterial.MarkForGPUUpdate();
+		bg.Selectable = false;
+		mainControl.AddChild(bg);
+		
+		LabelTest(mainControl);
+		StackPanelTest(mainControl);
+		WrapPanelTest(mainControl);
+		DockPanelTest(mainControl);
+		Transform3DTest(mainControl);
+		AnimationTest(mainControl);
+		TextInputTest(mainControl);
+		AlignPanelTest(mainControl);
 	}
 
 	private static void TextInputTest(AbsolutePanel parent)
