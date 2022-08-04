@@ -169,9 +169,8 @@ public abstract unsafe class AbstractVulkanDataFactory<TDataHolder> : IVulkanDat
 			_copyRegionSizeLog2++;
 		}
 
-		bool[] newCopyRegions = new bool[(int) Math.Ceiling((double) newMaxComponents / _copyRegionSize)];
-		_copyRegions.CopyTo(newCopyRegions, 0);
-		_copyRegions = newCopyRegions;
+		int copyRegionsCount = (int) Math.Ceiling((double) newMaxComponents / _copyRegionSize);
+		_copyRegions = new bool[copyRegionsCount];
 
 		BufferSize = (ulong) Math.Max(4, newMaxComponents * ComponentSize);
 		_copyRegionByteSize = Math.Min((ulong) (_copyRegionSize * ComponentSize), BufferSize);
@@ -200,6 +199,8 @@ public abstract unsafe class AbstractVulkanDataFactory<TDataHolder> : IVulkanDat
 			DataBufferGpu.EnqueueFrameDispose(MainRenderer.GetLastFrameIndex());
 			DataBufferGpu = VulkanUtils.CreateBuffer(BufferSize, BufferUsageFlags.BufferUsageStorageBufferBit | BufferUsageFlags.BufferUsageTransferDstBit,
 				VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
+			
+			VulkanUtils.CopyBuffer(DataBufferCpu, DataBufferGpu, (ulong) (MaxComponents * ComponentSize));
 		}
 
 		MaxComponents = newMaxComponents;

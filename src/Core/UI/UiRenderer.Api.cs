@@ -57,7 +57,7 @@ public static unsafe partial class UiRenderer
 		// var sw = new Stopwatch();
 		// sw.Start();
 		//
-		// InitExtremeTestScene();
+		InitExtremeTestScene();
 		//
 		// sw.Stop();
 		// Console.Out.WriteLine($"Total: {sw.ElapsedMilliseconds}ms");
@@ -85,6 +85,8 @@ public static unsafe partial class UiRenderer
 
 		var cursor = UiComponentFactory.Instance.Create();
 		var cursorData = cursor.GetData();
+		cursorData->MaskStart = (0, 0);
+		cursorData->MaskEnd = (1920, 1080);
 		cursorData->BasePos = (0, 0);
 		cursorData->BaseZ = 30;
 		cursorData->Size = (50, 50);
@@ -95,6 +97,8 @@ public static unsafe partial class UiRenderer
 
 		var comp = UiComponentFactory.Instance.Create();
 		var compData = comp.GetData();
+		compData->MaskStart = (0, 0);
+		compData->MaskEnd = (1920, 1080);
 		compData->BasePos = (450, 100);
 		compData->BaseZ = 25;
 		compData->Size = (300, 300);
@@ -147,6 +151,8 @@ public static unsafe partial class UiRenderer
 				gradient.MarkForGPUUpdate();
 
 				var squareData = square.GetData();
+				squareData->MaskStart = (0, 0);
+				squareData->MaskEnd = (1920, 1080);
 
 				squareData->BasePos = (startX, startY);
 				squareData->BaseZ = 600;
@@ -190,13 +196,16 @@ public static unsafe partial class UiRenderer
 				}
 			}
 
-			int randomIndex = random.Next(0, Components.Count);
-			var colorMaterialFactory = UiMaterialManager.GetFactory("core:color_material");
-			var colorMat = colorMaterialFactory.Create();
-			Components[randomIndex].FragMaterial = colorMat;
-			colorMat.GetMemPtr<ColorMaterialData>()->Color = Color.Blue.ToArgb();
-			colorMat.MarkForGPUUpdate();
-			Components[randomIndex].MarkForGPUUpdate();
+			for (int i = 0; i < 10; i++)
+			{
+				int randomIndex = random.Next(0, Components.Count);
+				var colorMaterialFactory = UiMaterialManager.GetFactory("core:color_material");
+				var colorMat = colorMaterialFactory.Create();
+				Components[randomIndex].FragMaterial = colorMat;
+				colorMat.GetMemPtr<ColorMaterialData>()->Color = Color.Blue.ToArgb();
+				colorMat.MarkForGPUUpdate();
+				Components[randomIndex].MarkForGPUUpdate();
+			}
 		};
 	}
 
@@ -228,11 +237,5 @@ public static unsafe partial class UiRenderer
 		GlobalData.CreateHolder(64, NamespacedName.CreateWithName("projection-matrix"));
 		GlobalData.CreateHolder(4, NamespacedName.CreateWithName("frame-index"));
 		GlobalData.CreateHolder(8, NamespacedName.CreateWithName("mouse-position"));
-	}
-
-	public struct Vec2I
-	{
-		public int X;
-		public int Y;
 	}
 }

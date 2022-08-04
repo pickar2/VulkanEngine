@@ -14,7 +14,7 @@
 
     <ItemGroup>
         <PackageReference Include="Ben.Demystifier" Version="0.4.1" />
-        <PackageReference Include="CommandLineParser" Version="2.8.0" />
+        <PackageReference Include="CommandLineParser" Version="2.9.1" />
         <PackageReference Include="Costura.Fody" Version="5.7.0" PrivateAssets="All" />
         <PackageReference Include="GitInfo" Version="2.2.0" />
         <PackageReference Include="InlineIL.Fody" Version="1.7.1" PrivateAssets="All" />
@@ -23,7 +23,7 @@
         <PackageReference Include="NullGuard.Fody" Version="3.1.0" PrivateAssets="All" />
         <PackageReference Include="Spectre.Console" Version="0.44.0" />
         <PackageReference Include="System.Collections.Immutable" Version="6.0.0" />
-        <PackageReference Include="System.Memory" Version="4.5.4" />
+        <PackageReference Include="System.Memory" Version="4.5.5" />
         <PackageReference Include="System.Reflection.Metadata" Version="6.0.1" />
         <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="6.0.0" />
         <PackageReference Include="ThisAssembly.AssemblyInfo" Version="1.0.9" />
@@ -31,10 +31,10 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Silk.NET.Vulkan" Version="2.15.0" />
-        <PackageReference Include="Silk.NET.Vulkan.Extensions.EXT" Version="2.15.0" />
-        <PackageReference Include="Silk.NET.Vulkan.Extensions.KHR" Version="2.15.0" />
-        <PackageReference Include="Silk.NET.Maths" Version="2.15.0" />
+        <PackageReference Include="Silk.NET.Vulkan" Version="2.16.0" />
+        <PackageReference Include="Silk.NET.Vulkan.Extensions.EXT" Version="2.16.0" />
+        <PackageReference Include="Silk.NET.Vulkan.Extensions.KHR" Version="2.16.0" />
+        <PackageReference Include="Silk.NET.Maths" Version="2.16.0" />
     </ItemGroup>
 
     <ItemGroup>

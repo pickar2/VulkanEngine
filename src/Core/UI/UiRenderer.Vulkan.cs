@@ -56,7 +56,7 @@ public static unsafe partial class UiRenderer
 	public static MultipleStructDataFactory GlobalData = default!;
 
 	public static StructHolder ProjectionMatrixHolder = default!;
-	public static StructHolder OrthoMatrixHolder = default!;
+	// public static StructHolder OrthoMatrixHolder = default!;
 	public static StructHolder FrameIndexHolder = default!;
 
 	public static void Init()
@@ -112,7 +112,7 @@ public static unsafe partial class UiRenderer
 	{
 		float aspect = (float) SwapchainHelper.Extent.Width / SwapchainHelper.Extent.Height;
 
-		var ortho = Matrix4X4<float>.Identity.SetOrtho(0, UiManager.Root.Size.X, 0, UiManager.Root.Size.Y, 4096, -4096);
+		var ortho = Matrix4X4<float>.Identity.SetOrtho(0, SwapchainHelper.Extent.Width, 0, SwapchainHelper.Extent.Height, 2, -2);
 
 		var view = Matrix4x4.CreateTranslation(0, 0, 0).ToGeneric();
 		view *= Matrix4x4.CreateFromYawPitchRoll(0, 0, 0).ToGeneric();
@@ -127,8 +127,8 @@ public static unsafe partial class UiRenderer
 		// var mvp = model * view * proj;
 
 		// *ProjectionMatrixHolder.Get<Matrix4X4<float>>() = mvp;
-		*ProjectionMatrixHolder.Get<Matrix4X4<float>>() = Matrix4X4<float>.Identity;
-		*OrthoMatrixHolder.Get<Matrix4X4<float>>() = ortho;
+		*ProjectionMatrixHolder.Get<Matrix4X4<float>>() = ortho;
+		// *OrthoMatrixHolder.Get<Matrix4X4<float>>() = ortho;
 
 		*FrameIndexHolder.Get<int>() = MainRenderer.FrameIndex;
 
@@ -142,7 +142,7 @@ public static unsafe partial class UiRenderer
 	private static void CheckAndUpdateDataBuffers()
 	{
 		if (!UiComponentFactory.Instance.BufferChanged) return;
-		// Program.Logger.Info.Message($"Component buffer changed");
+		App.Logger.Info.Message($"Component buffer changed");
 		UiComponentFactory.Instance.BufferChanged = false;
 
 		foreach (var indexBuffer in _indexBuffers) indexBuffer.EnqueueFrameDispose(MainRenderer.GetLastFrameIndex());
@@ -151,7 +151,7 @@ public static unsafe partial class UiRenderer
 				BufferUsageFlags.BufferUsageIndexBufferBit | BufferUsageFlags.BufferUsageStorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
 
 		UpdateComponentDataDescriptorSets();
-		_dirty = SwapchainHelper.ImageCountInt;
+		// _dirty = SwapchainHelper.ImageCountInt;
 
 		UpdateIndicesDescriptorSet();
 		_sortDirty = SwapchainHelper.ImageCountInt;
@@ -170,10 +170,10 @@ public static unsafe partial class UiRenderer
 		}
 
 		if (!changed) return;
-		// Program.Logger.Info.Message($"Material data buffer changed");
+		// App.Logger.Info.Message($"{MainRenderer.FrameIndex} Material data buffer changed");
 
 		UpdateMaterialDataDescriptorSets();
-		_dirty = SwapchainHelper.ImageCountInt;
+		// _dirty = SwapchainHelper.ImageCountInt;
 	}
 
 	private static void UpdateBuffers(int frameIndex, int imageIndex)
@@ -218,25 +218,21 @@ public static unsafe partial class UiRenderer
 			Framebuffer = SwapchainHelper.FrameBuffers[imageIndex],
 			RenderPass = SwapchainHelper.RenderPass
 		};
-
 		commandBuffer.Begin(CommandBufferUsageFlags.CommandBufferUsageRenderPassContinueBit, inheritanceInfo);
 
-		foreach (var pipeline in _pipelines)
-		{
-			Context.Vk.CmdBindPipeline(commandBuffer, PipelineBindPoint.Graphics, pipeline);
+		Context.Vk.CmdBindPipeline(commandBuffer, PipelineBindPoint.Graphics, _pipelines[1]);
 
-			Context.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Graphics, _pipelineLayout, 0, 1, _texturesSet.AsPointer(), null);
-			Context.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Graphics, _pipelineLayout, 1, 1, _globalDataSet.AsPointer(), null);
-			Context.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Graphics, _pipelineLayout, 2, 1, _componentDataSets[imageIndex].AsPointer(),
-				null);
+		Context.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Graphics, _pipelineLayout, 0, 1, _texturesSet.AsPointer(), null);
+		Context.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Graphics, _pipelineLayout, 1, 1, _globalDataSet.AsPointer(), null);
+		Context.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Graphics, _pipelineLayout, 2, 1, _componentDataSets[imageIndex].AsPointer(),
+			null);
 
-			Context.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Graphics, _pipelineLayout, 3, 1, _vertexMaterialDataSet.AsPointer(), null);
-			Context.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Graphics, _pipelineLayout, 4, 1, _fragmentMaterialDataSet.AsPointer(), null);
+		Context.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Graphics, _pipelineLayout, 3, 1, _vertexMaterialDataSet.AsPointer(), null);
+		Context.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Graphics, _pipelineLayout, 4, 1, _fragmentMaterialDataSet.AsPointer(), null);
 
-			Context.Vk.CmdBindIndexBuffer(commandBuffer, _indexBuffers[imageIndex].Buffer, 0, IndexType.Uint32);
+		Context.Vk.CmdBindIndexBuffer(commandBuffer, _indexBuffers[imageIndex].Buffer, 0, IndexType.Uint32);
 
-			Context.Vk.CmdDrawIndexedIndirect(commandBuffer, _indirectBuffer.Buffer, 0, 1, 0);
-		}
+		Context.Vk.CmdDrawIndexedIndirect(commandBuffer, _indirectBuffer.Buffer, 0, 1, 0);
 
 		commandBuffer.End();
 
@@ -859,7 +855,7 @@ public static unsafe partial class UiRenderer
 		var depthStencilDepth = new PipelineDepthStencilStateCreateInfo
 		{
 			SType = StructureType.PipelineDepthStencilStateCreateInfo,
-			DepthTestEnable = true,
+			DepthTestEnable = false,
 			DepthBoundsTestEnable = false,
 			StencilTestEnable = false,
 			DepthCompareOp = CompareOp.Less,
@@ -869,7 +865,7 @@ public static unsafe partial class UiRenderer
 		var depthStencilColor = new PipelineDepthStencilStateCreateInfo
 		{
 			SType = StructureType.PipelineDepthStencilStateCreateInfo,
-			DepthTestEnable = true,
+			DepthTestEnable = false,
 			DepthBoundsTestEnable = false,
 			StencilTestEnable = false,
 			DepthCompareOp = CompareOp.GreaterOrEqual,

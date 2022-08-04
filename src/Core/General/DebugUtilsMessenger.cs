@@ -9,17 +9,17 @@ namespace Core.General;
 
 public unsafe class DebugUtilsMessenger : IDisposable
 {
-	private const DebugUtilsMessageSeverityFlagsEXT MessageSeverity = DebugUtilsMessageSeverityErrorBitExt |
-	                                                                  DebugUtilsMessageSeverityWarningBitExt;
+	private const DebugUtilsMessageSeverityFlagsEXT MessageSeverity = ErrorBitExt |
+	                                                                  WarningBitExt;
 
-	private const DebugUtilsMessageTypeFlagsEXT MessageType = DebugUtilsMessageTypeGeneralBitExt |
-	                                                          DebugUtilsMessageTypePerformanceBitExt |
-	                                                          DebugUtilsMessageTypeValidationBitExt;
+	private const DebugUtilsMessageTypeFlagsEXT MessageType = GeneralBitExt |
+	                                                          PerformanceBitExt |
+	                                                          ValidationBitExt;
 
 	private readonly HashSet<uint> _suppressedDebugMessageIDs = new()
 	{
 		0x822806fa, // informs that debug extensions should not be used in prod
-		0x7cd0911d // broken layer check https://github.com/KhronosGroup/Vulkan-ValidationLayers/issues/1340
+		// 0x7cd0911d // broken layer check https://github.com/KhronosGroup/Vulkan-ValidationLayers/issues/1340
 	};
 
 	public DebugUtilsMessengerCreateInfoEXT CreateInfo;
