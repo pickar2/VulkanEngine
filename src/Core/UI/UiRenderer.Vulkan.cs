@@ -32,7 +32,7 @@ public static unsafe partial class UiRenderer
 
 	private static DescriptorSet _texturesSet;
 	private static DescriptorSet _globalDataSet;
-	private static DescriptorSet[] _componentDataSets = default!;
+	private static DescriptorSet _componentDataSet;
 
 	private static DescriptorSet _vertexMaterialDataSet;
 	private static DescriptorSet _fragmentMaterialDataSet;
@@ -142,7 +142,7 @@ public static unsafe partial class UiRenderer
 	private static void CheckAndUpdateDataBuffers()
 	{
 		if (!UiComponentFactory.Instance.BufferChanged) return;
-		App.Logger.Info.Message($"Component buffer changed");
+		// App.Logger.Info.Message($"Component buffer changed");
 		UiComponentFactory.Instance.BufferChanged = false;
 
 		foreach (var indexBuffer in _indexBuffers) indexBuffer.EnqueueFrameDispose(MainRenderer.GetLastFrameIndex());
@@ -224,7 +224,7 @@ public static unsafe partial class UiRenderer
 
 		Context.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Graphics, _pipelineLayout, 0, 1, _texturesSet.AsPointer(), null);
 		Context.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Graphics, _pipelineLayout, 1, 1, _globalDataSet.AsPointer(), null);
-		Context.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Graphics, _pipelineLayout, 2, 1, _componentDataSets[imageIndex].AsPointer(),
+		Context.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Graphics, _pipelineLayout, 2, 1, _componentDataSet.AsPointer(),
 			null);
 
 		Context.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Graphics, _pipelineLayout, 3, 1, _vertexMaterialDataSet.AsPointer(), null);
@@ -575,19 +575,15 @@ public static unsafe partial class UiRenderer
 			"Failed to allocate ui textures descriptor sets.");
 		UpdateTexturesDescriptorSets();
 
-		var dataLayouts = stackalloc DescriptorSetLayout[SwapchainHelper.ImageCountInt];
-		for (int i = 0; i < SwapchainHelper.ImageCountInt; i++) dataLayouts[i] = _componentDataLayout;
-
 		var dataAllocInfo = new DescriptorSetAllocateInfo
 		{
 			SType = StructureType.DescriptorSetAllocateInfo,
 			DescriptorPool = _componentDataPool,
-			DescriptorSetCount = SwapchainHelper.ImageCount,
-			PSetLayouts = dataLayouts
+			DescriptorSetCount = 1,
+			PSetLayouts = _componentDataLayout.AsPointer()
 		};
 
-		_componentDataSets = new DescriptorSet[SwapchainHelper.ImageCountInt];
-		VulkanUtils.Check(Context.Vk.AllocateDescriptorSets(Context.Device, dataAllocInfo, out _componentDataSets[0]),
+		VulkanUtils.Check(Context.Vk.AllocateDescriptorSets(Context.Device, dataAllocInfo, out _componentDataSet),
 			"Failed to allocate ui data descriptor sets.");
 		UpdateComponentDataDescriptorSets();
 
@@ -646,27 +642,24 @@ public static unsafe partial class UiRenderer
 
 	private static void UpdateComponentDataDescriptorSets()
 	{
-		for (int i = 0; i < _componentDataSets.Length; i++)
+		var bufferInfo = new DescriptorBufferInfo
 		{
-			var bufferInfo = new DescriptorBufferInfo
-			{
-				Offset = 0,
-				Range = Vk.WholeSize,
-				Buffer = UiComponentFactory.Instance.DataBufferGpu.Buffer
-			};
+			Offset = 0,
+			Range = Vk.WholeSize,
+			Buffer = UiComponentFactory.Instance.DataBufferGpu.Buffer
+		};
 
-			var write = new WriteDescriptorSet
-			{
-				SType = StructureType.WriteDescriptorSet,
-				DescriptorCount = 1,
-				DstBinding = 0,
-				DescriptorType = DescriptorType.StorageBuffer,
-				DstSet = _componentDataSets[i],
-				PBufferInfo = bufferInfo.AsPointer()
-			};
+		var write = new WriteDescriptorSet
+		{
+			SType = StructureType.WriteDescriptorSet,
+			DescriptorCount = 1,
+			DstBinding = 0,
+			DescriptorType = DescriptorType.StorageBuffer,
+			DstSet = _componentDataSet,
+			PBufferInfo = bufferInfo.AsPointer()
+		};
 
-			Context.Vk.UpdateDescriptorSets(Context.Device, 1, write, 0, null);
-		}
+		Context.Vk.UpdateDescriptorSets(Context.Device, 1, write, 0, null);
 	}
 
 	private static void UpdateMaterialDataDescriptorSets()
