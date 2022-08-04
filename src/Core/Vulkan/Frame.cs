@@ -24,3 +24,9 @@ public class Frame : IDisposable
 		GC.SuppressFinalize(this);
 	}
 }
+
+public struct FrameInfo
+{
+	public uint FrameIndex { get; init; }
+	public uint SwapchainImageViewId { get; init; }
+}

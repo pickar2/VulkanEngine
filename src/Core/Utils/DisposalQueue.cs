@@ -44,8 +44,13 @@ public static class DisposalQueue
 		}
 	}
 
+	[Obsolete($"Use {nameof(ExecuteOnce)} instead.")]
 	public static void EnqueueGlobalDispose(this IDisposable disposable) => EnqueueInGlobal(disposable.Dispose);
+
+	[Obsolete($"Use {nameof(ExecuteOnce)} instead.")]
 	public static void EnqueueSwapchainDispose(this IDisposable disposable) => EnqueueInSwapchain(disposable.Dispose);
+
+	[Obsolete($"Use {nameof(ExecuteOnce)} instead.")]
 	public static void EnqueueFrameDispose(this IDisposable disposable, int frameIndex) => EnqueueInFrame(frameIndex, disposable.Dispose);
 
 	private static void DisposeAll()

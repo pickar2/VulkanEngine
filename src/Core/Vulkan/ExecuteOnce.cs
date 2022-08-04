@@ -11,6 +11,20 @@ public static class ExecuteOnce
 	public static readonly LevelExecutor InDevice = new(VulkanLevel.Device);
 	public static readonly LevelExecutor InFrame = new(VulkanLevel.Frame);
 	public static readonly LevelExecutor InSwapchain = new(VulkanLevel.Swapchain);
+
+	public static LevelExecutor In(VulkanLevel level) =>
+		level switch
+		{
+			VulkanLevel.Context => InContext,
+			VulkanLevel.Instance => InInstance,
+			VulkanLevel.Device => InDevice,
+			VulkanLevel.Frame => InFrame,
+			VulkanLevel.Swapchain => InSwapchain,
+			_ or VulkanLevel.None => throw new ArgumentException($"Invalid level {level}.").AsExpectedException()
+		};
+
+	public static void DisposeBefore(this IDisposable disposable, VulkanLevel level) => In(level).BeforeDispose(() => disposable.Dispose());
+	public static void DisposeAfter(this IDisposable disposable, VulkanLevel level) => In(level).AfterDispose(() => disposable.Dispose());
 }
 
 public class LevelExecutor

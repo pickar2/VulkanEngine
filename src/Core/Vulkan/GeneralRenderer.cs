@@ -35,30 +35,30 @@ namespace Core.Vulkan;
  */
 public static class GeneralRenderer
 {
-	public static readonly RendererChainable Root = new UiChainable("Root");
+	public static readonly RenderChain Root = new UiRootChain("Root");
 
 	static GeneralRenderer()
 	{
-		var sceneWithNoDependencies = new VulkanSceneChainable("SceneWithNoDependencies");
+		var sceneWithNoDependencies = new VulkanSceneChain("SceneWithNoDependencies");
 		Root.AddChild(sceneWithNoDependencies);
 		
-		var sceneWithSceneDependency = new VulkanSceneChainable("SceneWithSceneDependency");
-		var sceneDependency = new VulkanSceneChainable("SceneDependency0");
+		var sceneWithSceneDependency = new VulkanSceneChain("SceneWithSceneDependency");
+		var sceneDependency = new VulkanSceneChain("SceneDependency0");
 		sceneWithSceneDependency.AddChild(sceneDependency);
 		Root.AddChild(sceneWithSceneDependency);
 		
-		var sceneWithUiDependency = new VulkanSceneChainable("SceneWithUiDependency");
-		var uiDependency = new UiChainable("UiDependency0");
+		var sceneWithUiDependency = new VulkanSceneChain("SceneWithUiDependency");
+		var uiDependency = new UiRootChain("UiDependency0");
 		sceneWithUiDependency.AddChild(uiDependency);
 		Root.AddChild(sceneWithUiDependency);
 
-		var complexUi = new UiChainable("ComplexUi");
-		var uiDep1 = new UiChainable("UiDep1");
-		var uiDep2 = new UiChainable("UiDep2");
-		var uiDep3 = new UiChainable("UiDep3");
-		var sceneDep1 = new VulkanSceneChainable("SceneDep1");
-		var sceneDep2 = new VulkanSceneChainable("SceneDep2");
-		var sceneDep3 = new VulkanSceneChainable("SceneDep3");
+		var complexUi = new UiRootChain("ComplexUi");
+		var uiDep1 = new UiRootChain("UiDep1");
+		var uiDep2 = new UiRootChain("UiDep2");
+		var uiDep3 = new UiRootChain("UiDep3");
+		var sceneDep1 = new VulkanSceneChain("SceneDep1");
+		var sceneDep2 = new VulkanSceneChain("SceneDep2");
+		var sceneDep3 = new VulkanSceneChain("SceneDep3");
 		uiDep1.AddChild(sceneDep1);
 		sceneDep1.AddChild(sceneDep2);
 		sceneDep2.AddChild(uiDep2);
@@ -66,12 +66,14 @@ public static class GeneralRenderer
 		complexUi.AddChild(uiDep3);
 		complexUi.AddChild(sceneDep3);
 		Root.AddChild(complexUi);
+		
+		// var cmd = CommandBuffers.CreateCommandBuffer(CommandBufferLevel.Primary, _commandPool!.Value);
 
-		Root.GetCommandBuffer();
+		Root.GetCommandBuffer(0);
 	}
 }
 
-public unsafe class UiChainable : RendererChainable
+public unsafe class UiRootChain : RenderChain
 {
 	private readonly Action _onDeviceCreate;
 
@@ -85,7 +87,7 @@ public unsafe class UiChainable : RendererChainable
 
 	public RootPanel RootPanel { get; set; } = new FullScreenRootPanel();
 
-	public UiChainable(string name) : base(name)
+	public UiRootChain(string name) : base(name)
 	{
 		_onDeviceCreate = () => {
 			CreateSemaphore();
@@ -104,7 +106,7 @@ public unsafe class UiChainable : RendererChainable
 		return _renderPass!.Value;
 	}
 
-	public override CommandBuffer GetCommandBuffer()
+	public override CommandBuffer GetCommandBuffer(int imageIndex)
 	{
 		var clearValues = stackalloc ClearValue[1];
 
@@ -128,21 +130,18 @@ public unsafe class UiChainable : RendererChainable
 			PClearValues = clearValues
 		};
 
-		Context2.Vk.CmdBeginRenderPass(cmd, renderPassBeginInfo, SubpassContents.SecondaryCommandBuffers);
+		cmd.BeginRenderPass(renderPassBeginInfo, SubpassContents.SecondaryCommandBuffers);
 
-		// var list = FillCommandBuffers?.GetInvocationList();
-		// if (list is not null)
-		// {
-		// 	var arr = stackalloc CommandBuffer[list.Length];
-		// 	for (int index = 0; index < list.Length; index++)
-		// 	{
-		// 		arr[index] = ((Func<int, CommandBuffer>) list[index]).Invoke(imageIndex);
-		// 	}
-		//
-		// 	Context2.Vk.CmdExecuteCommands(cmd, (uint) list.Length, arr);
-		// }
+		var list = GetEventInvocationList();
+		if (list is not null)
+		{
+			var arr = stackalloc CommandBuffer[list.Length];
+			for (int i = 0; i < list.Length; i++) arr[i] = ((Func<int, CommandBuffer>) list[i]).Invoke(imageIndex);
 
-		Context2.Vk.CmdEndRenderPass(cmd);
+			cmd.ExecuteCommands((uint) list.Length, arr);
+		}
+
+		cmd.EndRenderPass();
 
 		Check(cmd.End(), "Failed to end command buffer.");
 
@@ -292,28 +291,30 @@ public unsafe class UiChainable : RendererChainable
 	}
 }
 
-public class VulkanSceneChainable : RendererChainable
+public class VulkanSceneChain : RenderChain
 {
-	public VulkanSceneChainable(string name) : base(name) { }
+	public VulkanSceneChain(string name) : base(name) { }
 
 	public override RenderPass GetRenderPass() => throw new NotImplementedException();
-	public override CommandBuffer GetCommandBuffer() => throw new NotImplementedException();
+	public override CommandBuffer GetCommandBuffer(int imageIndex) => throw new NotImplementedException();
 
 	public override void Dispose() => throw new NotImplementedException();
 }
 
-public abstract unsafe class RendererChainable : IDisposable
+public abstract unsafe class RenderChain : IDisposable
 {
-	public RendererChainable? Parent;
+	public RenderChain? Parent;
 	public readonly string Name;
-	public readonly List<RendererChainable> Children = new();
+	public readonly List<RenderChain> Children = new();
 
-	protected RendererChainable(string name)
+	public event Func<int, CommandBuffer>? OnCommandBufferWrite;
+
+	protected RenderChain(string name)
 	{
 		Name = name;
 	}
 
-	public void AddChild(RendererChainable child)
+	public void AddChild(RenderChain child)
 	{
 		Children.Add(child);
 		child.Parent = this;
@@ -321,14 +322,16 @@ public abstract unsafe class RendererChainable : IDisposable
 
 	public abstract RenderPass GetRenderPass();
 
-	public abstract CommandBuffer GetCommandBuffer();
+	public abstract CommandBuffer GetCommandBuffer(int imageIndex);
+
+	protected Delegate[]? GetEventInvocationList() => OnCommandBufferWrite?.GetInvocationList();
 
 	public abstract void Dispose();
 }
 
 public static class RendererChainableExtensions
 {
-	public static void PrintTree(this RendererChainable tree, String indent, bool last)
+	public static void PrintTree(this RenderChain tree, String indent, bool last)
 	{
 	    Console.WriteLine($"{indent}{(last ? "└─" : "├─")} ({tree.GetType().Name}) {tree.Name}");
 	    indent += last ? "   " : "|  ";

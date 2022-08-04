@@ -21,6 +21,6 @@ public class MaterialDataFactory : AbstractVulkanDataFactory<MaterialDataHolder>
 
 public class MaterialDataHolder : VulkanDataHolder
 {
-	public MaterialDataFactory MaterialFactory => (VulkanDataFactory as MaterialDataFactory)!;
+	public MaterialDataFactory MaterialFactory => (MaterialDataFactory) VulkanDataFactory;
 	public short MaterialId => MaterialFactory.Index;
 }

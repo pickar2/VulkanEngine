@@ -70,14 +70,14 @@ public unsafe class MultipleStructDataFactory : SimpleRegistry<NoneEventManager<
 			? VulkanUtils.CreateBuffer(newBufferSize, BufferUsageFlags.BufferUsageStorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU)
 			: VulkanUtils.CreateBuffer(newBufferSize, BufferUsageFlags.BufferUsageTransferSrcBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_ONLY);
 
-		VulkanUtils.Check(vmaMapMemory(Context.VmaHandle, newDataBuffer.Allocation, _ptr), "Failed to map memory.");
+		VulkanUtils.Check(Context2.VmaMapMemory(newDataBuffer.Allocation, _ptr), "Failed to map memory.");
 
 		var oldSpan = new Span<byte>(Pointer, (int) BufferSize);
 		var newSpan = new Span<byte>((void*) _ptr[0], (int) newBufferSize);
 		oldSpan.CopyTo(newSpan);
 		newSpan.Slice((int) BufferSize, (int) newBufferSize).Fill(default);
 
-		vmaUnmapMemory(Context.VmaHandle, DataBufferCpu.Allocation);
+		Context2.VmaUnmapMemory(DataBufferCpu.Allocation);
 
 		DataBufferCpu.EnqueueFrameDispose(MainRenderer.GetLastFrameIndex());
 		DataBufferCpu = newDataBuffer;
