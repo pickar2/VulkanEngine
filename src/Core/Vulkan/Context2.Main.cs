@@ -9,6 +9,7 @@ using System.Threading;
 using Core.Utils;
 using Core.Vulkan.Options;
 using Core.Window;
+using SDL2;
 using Silk.NET.Core;
 using Silk.NET.Core.Native;
 using Silk.NET.Vulkan;

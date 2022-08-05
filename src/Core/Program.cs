@@ -52,15 +52,6 @@ internal static class Program
 		}), SDL.SDL_Keycode.SDLK_ESCAPE);
 
 		Context2.Init();
-		Context2.State.Window.Value.Show();
-
-		// DisposalQueue.EnqueueInFrame(0, () =>
-		// {
-		// 	Context.Window.Show();
-		// 	fullSw.Stop();
-		// 	App.Logger.Info.Message($"Window shown. Full load time: {fullSw.ElapsedMilliseconds}ms.");
-		// });
-
 		var test = new UiRootRenderer("");
 
 		int gpu = 0;

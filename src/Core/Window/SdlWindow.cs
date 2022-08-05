@@ -12,9 +12,12 @@ namespace Core.Window;
 
 public class SdlWindow : IDisposable
 {
+	private readonly Stopwatch _stopwatch = new();
+
 	public string Title { get; private set; } = App.Details.AppName;
 	public IntPtr WindowHandle { get; private set; }
 
+	public float Time => _stopwatch.Ms();
 	public bool IsInitialized { get; private set; }
 	public bool IsRunning { get; private set; }
 	public bool IsMinimized => ((SDL_WindowFlags) SDL_GetWindowFlags(WindowHandle) & SDL_WindowFlags.SDL_WINDOW_MINIMIZED) > 0;
@@ -24,8 +27,7 @@ public class SdlWindow : IDisposable
 
 	public void Init()
 	{
-		var sw = new Stopwatch();
-		sw.Start();
+		_stopwatch.Start();
 
 		SDL_SetHint(SDL_HINT_WINDOWS_DISABLE_THREAD_NAMING, "1");
 		SDL_Init(SDL_INIT_EVERYTHING);
@@ -53,8 +55,7 @@ public class SdlWindow : IDisposable
 		SDL_AddEventWatch(WindowResizeEventFilter, IntPtr.Zero);
 		IsInitialized = true;
 
-		sw.Stop();
-		App.Logger.Info.Message($"Created SDL window. Ticks: {sw.ElapsedTicks}. Time: {sw.ElapsedMilliseconds}ms.");
+		App.Logger.Info.Message($"Created SDL window. Ticks: {_stopwatch.ElapsedTicks}. Time: {_stopwatch.ElapsedMilliseconds}ms.");
 	}
 
 	private static unsafe int WindowResizeEventFilter(IntPtr data, IntPtr e)
@@ -91,6 +92,7 @@ public class SdlWindow : IDisposable
 	public void SetTitle(string title) => SDL_SetWindowTitle(WindowHandle, Title = title);
 	public void Hide() => SDL_HideWindow(WindowHandle);
 	public void Show() => SDL_ShowWindow(WindowHandle);
+	public bool IsShown => (((SDL_WindowFlags) SDL_GetWindowFlags(WindowHandle)) & SDL_WindowFlags.SDL_WINDOW_SHOWN) != 0;
 
 	public void MainLoop()
 	{

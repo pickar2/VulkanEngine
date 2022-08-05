@@ -54,6 +54,15 @@ public static unsafe partial class Context2
 		_actionsAtFrameEnd = new List<Action>[State.FrameOverlap.Value];
 		for (var i = 0; i < _actionsAtFrameEnd.Length; i++) _actionsAtFrameEnd[i] = new List<Action>();
 
+		if (!Window.IsShown)
+		{
+			ExecuteOnce.AtFrameEnd(0, () =>
+			{
+				Window.Show();
+				App.Logger.Info.Message($"Window shown. Full load time: {Window.Time}ms.");
+			});
+		}
+
 		FrameIndex = 0;
 		IsRendering = true;
 		while (IsReady && IsRunning)
@@ -94,8 +103,7 @@ public static unsafe partial class Context2
 	{
 		FrameTimeStopwatch.Restart();
 
-		FrameIndex++;
-		FrameId = (FrameId + 1) % State.FrameOverlap.Value;
+		FrameId = FrameIndex % State.FrameOverlap.Value;
 
 		var currentFrame = _frames[FrameId];
 		VulkanUtils.Check(currentFrame.Fence.Wait(), "Failed to finish frame.");
@@ -160,7 +168,8 @@ public static unsafe partial class Context2
 
 		ExecuteAndClearAtFrameEnd(FrameId);
 		OnFrameEnd?.Invoke(frameInfo);
-
+		
+		FrameIndex++;
 		FrameTimeStopwatch.Stop();
 	}
 
