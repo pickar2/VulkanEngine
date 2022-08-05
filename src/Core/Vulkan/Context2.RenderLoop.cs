@@ -39,10 +39,11 @@ public static unsafe partial class Context2
 		const int frameTimeQueueSize = 30;
 		var frameTimeQueue = new Queue<double>(frameTimeQueueSize);
 
-		MsPerUpdate = 1000d / State.MaxFps.Value;
+		FrameIndex = 0;
 		IsRendering = true;
 		while (IsReady && IsRunning)
 		{
+			MsPerUpdate = 1000d / State.MaxFps.Value;
 			Lag += LagStopwatch.Ms();
 			LagStopwatch.Restart();
 			if (Lag < MsPerUpdate)

@@ -49,8 +49,9 @@ public static partial class Context2
 		highestLevel = VulkanLevel.None;
 		foreach ((string? _, var option) in State.Options)
 		{
-			if (highestLevel <= option.Level || !option.IsChanged()) continue;
+			if (!option.IsChanged()) continue;
 			hasChanges = true;
+			if (highestLevel <= option.Level) continue;
 			highestLevel = option.Level;
 		}
 
@@ -61,7 +62,11 @@ public static partial class Context2
 
 	public static void RecreateLevels(VulkanLevel level)
 	{
-		if (level >= VulkanLevel.None) return;
+		if (level >= VulkanLevel.None)
+		{
+			foreach ((string? _, var option) in State.Options) option.ApplyChange();
+			return;
+		}
 
 		for (var vulkanLevel = VulkanLevel.None - 1; vulkanLevel >= level; vulkanLevel--) DisposeLevelActions[vulkanLevel].Invoke();
 
