@@ -9,16 +9,17 @@ namespace Core.Vulkan;
 public static unsafe partial class Context2
 {
 	private static Thread _renderThread = new(() => RenderLoop()) {Name = "Render Thread"};
-
 	private static double MsPerUpdate { get; set; } = 1000 / 60d;
+
+	public static bool IsRendering { get; private set; }
 	public static int FrameIndex { get; private set; }
 	public static int FrameId { get; private set; }
 	public static int SwapchainImageId { get; private set; }
 
-	public static float TotalTimeRendering => TotalTimeRenderingStopwatch.Ms();
-	public static float Lag { get; private set; }
-	public static float CurrentFrameTime => FrameTimeStopwatch.Ms();
-	public static float NormalizedFrameTime => (float) (CurrentFrameTime / MsPerUpdate);
+	public static double TotalTimeRendering => TotalTimeRenderingStopwatch.Ms();
+	public static double Lag { get; private set; }
+	public static double CurrentFrameTime => FrameTimeStopwatch.Ms();
+	public static double NormalizedFrameTime => CurrentFrameTime / MsPerUpdate;
 
 	private static readonly Stopwatch TotalTimeRenderingStopwatch = new();
 	private static readonly Stopwatch LagStopwatch = new();
@@ -36,9 +37,10 @@ public static unsafe partial class Context2
 		var waitHandle = new EventWaitHandle(false, EventResetMode.AutoReset);
 
 		const int frameTimeQueueSize = 30;
-		var frameTimeQueue = new Queue<float>(frameTimeQueueSize);
+		var frameTimeQueue = new Queue<double>(frameTimeQueueSize);
 
 		MsPerUpdate = 1000d / State.MaxFps.Value;
+		IsRendering = true;
 		while (IsReady && IsRunning)
 		{
 			Lag += LagStopwatch.Ms();
@@ -48,9 +50,10 @@ public static unsafe partial class Context2
 				waitHandle.WaitOne((int) ((MsPerUpdate - Lag) > 1 ? Math.Floor(MsPerUpdate - Lag) : 0));
 				continue;
 			}
+			Lag -= MsPerUpdate;
 
-			float fps = (float) Maths.Round(1000 / Lag, 1);
-			float frameTime = (float) Maths.Round(CurrentFrameTime, 2);
+			double fps = Maths.Round(1000 / Lag, 1);
+			double frameTime = Maths.Round(CurrentFrameTime, 2);
 
 			if (frameTimeQueue.Count >= frameTimeQueueSize) frameTimeQueue.Dequeue();
 			frameTimeQueue.Enqueue(frameTime);
@@ -60,6 +63,7 @@ public static unsafe partial class Context2
 			Lag = 0;
 		}
 
+		IsRendering = false;
 		TotalTimeRenderingStopwatch.Stop();
 	}
 
@@ -73,7 +77,7 @@ public static unsafe partial class Context2
 
 		// Thread.Sleep(5);
 		// App.Logger.Info.Message($"\r\nTotalTimeRendering: {TotalTimeRendering}, CurrentFrameTime: {CurrentFrameTime}, NormalizedFrameTime: {NormalizedFrameTime}\r\n" +
-		//                         $"FrameIndex: {FrameIndex}, FrameId: {FrameId}, SwapchainImageId: {SwapchainImageId}");
+		//                         $"Lag: {Lag}, FrameIndex: {FrameIndex}, FrameId: {FrameId}, SwapchainImageId: {SwapchainImageId}");
 
 		FrameTimeStopwatch.Stop();
 	}
