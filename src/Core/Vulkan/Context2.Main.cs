@@ -733,7 +733,7 @@ public static unsafe partial class Context2
 
 	#region LevelFrame
 
-	public static Frame[] Frames = Array.Empty<Frame>();
+	private static Frame[] _frames = Array.Empty<Frame>();
 
 	public static void CreateLevelFrame()
 	{
@@ -750,7 +750,7 @@ public static unsafe partial class Context2
 			Flags = FenceCreateFlags.SignaledBit
 		};
 
-		Frames = new Frame[State.FrameOverlap.Value];
+		_frames = new Frame[State.FrameOverlap.Value];
 		for (int i = 0; i < State.FrameOverlap.Value; i++)
 		{
 			Check(Vk.CreateSemaphore(Device, semaphoreCreateInfo, null, out var presentSemaphore),
@@ -760,7 +760,7 @@ public static unsafe partial class Context2
 			Check(Vk.CreateFence(Device, fenceCreateInfo, null, out var fence),
 				$"Failed to create synchronization objects for the frame {i}");
 
-			Frames[i] = new Frame(presentSemaphore, renderSemaphore, fence);
+			_frames[i] = new Frame(presentSemaphore, renderSemaphore, fence);
 		}
 
 		FrameEvents.InvokeAfterCreate();
@@ -770,7 +770,7 @@ public static unsafe partial class Context2
 	{
 		FrameEvents.InvokeBeforeDispose();
 
-		foreach (var frame in Frames) frame.Dispose();
+		foreach (var frame in _frames) frame.Dispose();
 
 		FrameEvents.InvokeAfterDispose();
 	}

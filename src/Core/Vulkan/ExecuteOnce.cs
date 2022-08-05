@@ -12,19 +12,14 @@ public static class ExecuteOnce
 	public static readonly LevelExecutor InFrame = new(VulkanLevel.Frame);
 	public static readonly LevelExecutor InSwapchain = new(VulkanLevel.Swapchain);
 
-	// public static LevelExecutor In(VulkanLevel level) =>
-	// 	level switch
-	// 	{
-	// 		VulkanLevel.Context => InContext,
-	// 		VulkanLevel.Instance => InInstance,
-	// 		VulkanLevel.Device => InDevice,
-	// 		VulkanLevel.Frame => InFrame,
-	// 		VulkanLevel.Swapchain => InSwapchain,
-	// 		_ or VulkanLevel.None => throw new ArgumentException($"Invalid level {level}.").AsExpectedException()
-	// 	};
-	//
-	// public static void DisposeBefore(this IDisposable disposable, VulkanLevel level) => In(level).BeforeDispose(() => disposable.Dispose());
-	// public static void DisposeAfter(this IDisposable disposable, VulkanLevel level) => In(level).AfterDispose(() => disposable.Dispose());
+	public static void AtFrameStart(int frameId, Action action) => Context2.ExecuteOnceAtFrameStart(frameId, action);
+	public static void AtFrameEnd(int frameId, Action action) => Context2.ExecuteOnceAtFrameEnd(frameId, action);
+
+	public static void AtCurrentFrameStart(Action action) => Context2.ExecuteOnceAtFrameStart(Context2.FrameId, action);
+	public static void AtCurrentFrameEnd(Action action) => Context2.ExecuteOnceAtFrameEnd(Context2.FrameId, action);
+
+	public static void AtNextFrameStart(Action action) => Context2.ExecuteOnceAtFrameStart(Context2.NextFrameId, action);
+	public static void AtNextFrameEnd(Action action) => Context2.ExecuteOnceAtFrameEnd(Context2.NextFrameId, action);
 }
 
 public class LevelExecutor

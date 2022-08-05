@@ -27,6 +27,6 @@ public class Frame : IDisposable
 
 public struct FrameInfo
 {
-	public uint FrameIndex { get; init; }
-	public uint SwapchainImageViewId { get; init; }
+	public int FrameId { get; init; }
+	public int SwapchainImageId { get; init; }
 }

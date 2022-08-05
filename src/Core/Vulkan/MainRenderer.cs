@@ -97,11 +97,11 @@ public static unsafe class MainRenderer
 		Context.Window.SetTitle($"{(VulkanOptions.DebugMode ? "[DEBUG] " : "")}{Context.Window.Title}");
 
 		var queue = new Queue<double>();
-		
+
 		while (Context.Window.IsRunning)
 		{
 			// TODO: if settings changed => reset required vulkan stuff
-			
+
 			lag += sw.ElapsedTicks / 10000d;
 			sw.Restart();
 			if (lag < MsPerUpdate)
@@ -257,6 +257,7 @@ public static unsafe class MainRenderer
 
 	public static Frame GetCurrentFrame() => Frames[FrameIndex % FrameOverlap];
 
+	[Obsolete]
 	public static void WaitInRenderer(this ref Fence fence, int imageIndex)
 	{
 		lock (_fences[imageIndex])
