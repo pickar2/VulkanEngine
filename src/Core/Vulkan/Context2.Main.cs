@@ -55,6 +55,7 @@ public static unsafe partial class Context2
 
 	public static bool IsDebug => State.DebugMode.Value;
 	public static SdlWindow Window => State.Window.Value;
+	public static bool IsRunning => Window.IsRunning;
 
 	public static Vk Vk = default!;
 	public static KhrSurface KhrSurface = default!;
@@ -550,7 +551,8 @@ public static unsafe partial class Context2
 		else if (queueFamilies.Length == 4 &&
 		         queueFamilies.Select(f => (int) f.QueueCount).Sum() == 4 &&
 		         queueFamilies.Select(f => f.QueueFlags).Distinct().Count() == 1)
-		{ // Apple Mac or iOS
+		{
+			// Apple Mac or iOS
 			GraphicsQueue = new VulkanQueue
 			{
 				Family = queueFamilies[0],
@@ -715,7 +717,7 @@ public static unsafe partial class Context2
 	{
 		Vk.DeviceWaitIdle(Device);
 		DeviceEvents.InvokeBeforeDispose();
-		
+
 		if (_oldSwapchainInfo.swapchain.Handle != default && _oldSwapchainInfo.device.Handle == Device.Handle)
 			KhrSwapchain.DestroySwapchain(Device, _oldSwapchainInfo.swapchain, null);
 
@@ -783,11 +785,13 @@ public static unsafe partial class Context2
 	public static SwapchainKHR Swapchain;
 	public static uint SwapchainImageCount;
 	public static VulkanImage2[] SwapchainImages = Array.Empty<VulkanImage2>();
+	public static bool IsReady { get; set; }
 
 	public static void CreateLevelSwapchain()
 	{
 		SwapchainEvents.InvokeBeforeCreate();
 
+		SwapchainDetails = GetSwapchainDetails(PhysicalDevice);
 		SwapchainSurfaceFormat = ChooseSurfaceFormat(SwapchainDetails.SurfaceFormats);
 		PresentMode = ChoosePresentMode(SwapchainDetails.PresentModes);
 		SwapchainExtent = ChooseSurfaceExtent(SwapchainDetails.SurfaceCapabilities);
@@ -837,6 +841,9 @@ public static unsafe partial class Context2
 			SwapchainImages[i] = new VulkanImage2(images[i], IntPtr.Zero, imageViews[i], SwapchainSurfaceFormat.Format);
 
 		SwapchainEvents.InvokeAfterCreate();
+
+		IsReady = true;
+		StartRenderLoop();
 	}
 
 	// Default surface format is {VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR}
@@ -871,6 +878,9 @@ public static unsafe partial class Context2
 
 	public static void DisposeLevelSwapchain()
 	{
+		IsReady = false;
+		_renderThread.Join();
+
 		Vk.QueueWaitIdle(GraphicsQueue.Queue);
 		SwapchainEvents.InvokeBeforeDispose();
 

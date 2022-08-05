@@ -17,7 +17,7 @@ public class VulkanBuffer : IDisposable
 
 	public void Dispose()
 	{
-		VulkanMemoryAllocator.vmaDestroyBuffer(Context.VmaHandle, Buffer.Handle, Allocation);
+		VulkanMemoryAllocator.vmaDestroyBuffer(Context2.VmaHandle, Buffer.Handle, Allocation);
 		GC.SuppressFinalize(this);
 	}
 }

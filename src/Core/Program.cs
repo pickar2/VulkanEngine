@@ -23,51 +23,45 @@ internal static class Program
 
 		var fullSw = new Stopwatch();
 		fullSw.Start();
-		
+
 		var stopwatch = new Stopwatch();
 		stopwatch.Start();
 		string appName = App.Details.AppName;
 		stopwatch.Stop();
 		App.Logger.Info.Message($"START");
+		App.Logger.Info.Message($"Version of {appName} is {App.Details.Version}. Ticks: {stopwatch.ElapsedTicks}. Time: {stopwatch.ElapsedMilliseconds}ms.");
 
-		App.Logger.Info.Message(
-			$"Version of {appName} is {App.Details.Version}. Ticks: {stopwatch.ElapsedTicks}. Time: {stopwatch.ElapsedMilliseconds}ms.");
-
-		var window = new SdlWindow();
-		Context2.State.Window.UpdateImmediately(window);
-		Context2.State.Window.Value.Init();
-		// var windowInitThread = new Thread(() => Context2.State.Window.Value.Init());
-		// windowInitThread.Start();
-		// windowInitThread.Join();
+		bool windowReady = false;
+		var windowThread = new Thread(() =>
+		{
+			Context2.State.Window.UpdateImmediately(new SdlWindow());
+			Context2.State.Window.Value.Init();
+			windowReady = true;
+			Context2.State.Window.Value.MainLoop();
+		})
+		{
+			Name = "Window Thread"
+		};
+		windowThread.Start();
+		SpinWait.SpinUntil(() => windowReady);
 
 		KeyboardInput.GlobalContext.AddKeyBind(new NamedFunc("exit_program", () =>
 		{
-			Context.Window.Close();
+			Context2.State.Window.Value.Close();
 			return true;
 		}), SDL.SDL_Keycode.SDLK_ESCAPE);
 
-		// vulkanContext.Init();
-		// MainRenderer.Init();
-		// UiRenderer.Init();
-		//
+		Context2.Init();
+		Context2.State.Window.Value.Show();
+
 		// DisposalQueue.EnqueueInFrame(0, () =>
 		// {
 		// 	Context.Window.Show();
 		// 	fullSw.Stop();
 		// 	App.Logger.Info.Message($"Window shown. Full load time: {fullSw.ElapsedMilliseconds}ms.");
 		// });
-		// // ReSharper disable once ConvertClosureToMethodGroup
-		// var renderThread = new Thread(() => MainRenderer.RenderLoop())
-		// {
-		// 	Name = "Render Thread"
-		// };
-		// renderThread.Start();
-		// window.MainLoop();
-		// renderThread.Join();
-		//
-		// vulkanContext.Dispose();
-		
-		Context2.Init();
+
+		var test = new UiRootRenderer("");
 
 		int gpu = 0;
 		for (int i = 0; i < 9; i++)
@@ -81,13 +75,16 @@ internal static class Program
 			// Context2.State.PresentMode.Value = Context2.State.PresentMode.Value == PresentModeKHR.PresentModeMailboxKhr
 			// 	? PresentModeKHR.PresentModeImmediateKhr
 			// 	: Context2.State.PresentMode.Value;
-			Context2.ApplyStateChanges();
+			if (Context2.IsStateChanged(out var level)) Context2.ApplyStateChanges(level);
+			// App.Logger.Info.Message($"{test._componentDataSet.Value.Handle}");
 			// GC.Collect();
 		}
-		
+
+		windowThread.Join();
+
 		Context2.Dispose();
-		
-		window.Dispose();
+
+		Context2.Window.Dispose();
 
 		SpinWait.SpinUntil(() => !App.Get<DevConsoleRegistry>().IsAlive);
 		App.Get<ConfigRegistry>().SaveStates();

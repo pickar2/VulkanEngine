@@ -12,19 +12,19 @@ public static class ExecuteOnce
 	public static readonly LevelExecutor InFrame = new(VulkanLevel.Frame);
 	public static readonly LevelExecutor InSwapchain = new(VulkanLevel.Swapchain);
 
-	public static LevelExecutor In(VulkanLevel level) =>
-		level switch
-		{
-			VulkanLevel.Context => InContext,
-			VulkanLevel.Instance => InInstance,
-			VulkanLevel.Device => InDevice,
-			VulkanLevel.Frame => InFrame,
-			VulkanLevel.Swapchain => InSwapchain,
-			_ or VulkanLevel.None => throw new ArgumentException($"Invalid level {level}.").AsExpectedException()
-		};
-
-	public static void DisposeBefore(this IDisposable disposable, VulkanLevel level) => In(level).BeforeDispose(() => disposable.Dispose());
-	public static void DisposeAfter(this IDisposable disposable, VulkanLevel level) => In(level).AfterDispose(() => disposable.Dispose());
+	// public static LevelExecutor In(VulkanLevel level) =>
+	// 	level switch
+	// 	{
+	// 		VulkanLevel.Context => InContext,
+	// 		VulkanLevel.Instance => InInstance,
+	// 		VulkanLevel.Device => InDevice,
+	// 		VulkanLevel.Frame => InFrame,
+	// 		VulkanLevel.Swapchain => InSwapchain,
+	// 		_ or VulkanLevel.None => throw new ArgumentException($"Invalid level {level}.").AsExpectedException()
+	// 	};
+	//
+	// public static void DisposeBefore(this IDisposable disposable, VulkanLevel level) => In(level).BeforeDispose(() => disposable.Dispose());
+	// public static void DisposeAfter(this IDisposable disposable, VulkanLevel level) => In(level).AfterDispose(() => disposable.Dispose());
 }
 
 public class LevelExecutor
@@ -48,12 +48,12 @@ public class LevelExecutor
 	{
 		lock (_beforeCreateActions) _beforeCreateActions.Add(action);
 	}
-	
+
 	public void AfterCreate(Action action)
 	{
 		lock (_afterCreateActions) _afterCreateActions.Add(action);
 	}
-	
+
 	public void BeforeDispose(Action action)
 	{
 		lock (_beforeDisposeActions) _beforeDisposeActions.Add(action);
@@ -90,7 +90,7 @@ public class LevelExecutor
 			_beforeDisposeActions.Clear();
 		}
 	}
-	
+
 	private void ExecuteAndClearAfterDispose()
 	{
 		lock (_afterDisposeActions)

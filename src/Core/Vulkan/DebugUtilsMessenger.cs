@@ -18,7 +18,8 @@ public unsafe class DebugUtilsMessenger : IDisposable
 	{
 		0x822806fa, // informs that debug extensions should not be used in prod
 		0x7cd0911d, // broken layer check https://github.com/KhronosGroup/Vulkan-ValidationLayers/issues/1340
-		0x441764b3 // informs that VK_SUBOPTIMAL_KHR was returned
+		0x441764b3, // informs that VK_SUBOPTIMAL_KHR was returned
+		0x5f379b89 // BestPractices-Error-Result
 	};
 
 	public DebugUtilsMessengerCreateInfoEXT CreateInfo;

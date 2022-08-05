@@ -6,8 +6,8 @@ using Core.Native.Shaderc;
 using Core.Vulkan;
 using Silk.NET.Core.Native;
 using Silk.NET.Vulkan;
-using static Core.Vulkan.Context;
 using static Core.Native.VMA.VulkanMemoryAllocator;
+using static Core.Vulkan.Context2;
 using Buffer = Silk.NET.Vulkan.Buffer;
 using Result = Silk.NET.Vulkan.Result;
 using ShaderModule = Core.Native.SpirvReflect.ShaderModule;
@@ -55,7 +55,7 @@ public static unsafe class VulkanUtils
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static T* AsPointer<T>(this ref T value) where T : unmanaged => (T*) Unsafe.AsPointer(ref value);
-	
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static T* AsPointer<T>(this T[] value) where T : unmanaged => (T*) Unsafe.AsPointer(ref value[0]);
 
@@ -351,12 +351,12 @@ public static unsafe class VulkanUtils
 				throw new Exception($"Unsupported layout transition from {oldLayout} to {newLayout}");
 		}
 
-		var commandBuffer = CommandBuffers.BeginSingleTimeCommands(GraphicsCommandPool);
+		// var commandBuffer = CommandBuffers.BeginSingleTimeCommands(GraphicsCommandPool);
 
-		Context2.Vk.CmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0,
-			null, 0, null, 1, barrier);
+		// Context2.Vk.CmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0,
+		// null, 0, null, 1, barrier);
 
-		CommandBuffers.EndSingleTimeCommands(ref commandBuffer, GraphicsCommandPool, Context2.GraphicsQueue);
+		// CommandBuffers.EndSingleTimeCommands(ref commandBuffer, GraphicsCommandPool, GraphicsQueue);
 	}
 
 	public static bool HasStencilComponent(Format format) => format is Format.D32SfloatS8Uint or Format.D24UnormS8Uint or Format.D16UnormS8Uint;
@@ -416,7 +416,7 @@ public static unsafe class VulkanUtils
 			Size = size
 		};
 
-		uint[] indices = Context2.QueueFamilies.Select(f => f.Index).Distinct().ToArray();
+		uint[] indices = QueueFamilies.Select(f => f.Index).Distinct().ToArray();
 		if (indices.Length == 1)
 		{
 			createInfo.SharingMode = SharingMode.Exclusive;
@@ -475,16 +475,17 @@ public static unsafe class VulkanUtils
 	// TODO: Better abstraction to copying buffers: should use different and proper queues and command pools
 	public static void CopyBuffer(VulkanBuffer src, VulkanBuffer dst, ulong size)
 	{
-		var commandBuffer = CommandBuffers.BeginSingleTimeCommands(GraphicsCommandPool); // TODO: add DefaultCommandPools
-
-		var copy = new BufferCopy {Size = size};
-
-		Context2.Vk.CmdCopyBuffer(commandBuffer, src.Buffer, dst.Buffer, 1, copy);
-
-		CommandBuffers.EndSingleTimeCommands(ref commandBuffer, GraphicsCommandPool, Context2.GraphicsQueue);
+		// var commandBuffer = CommandBuffers.BeginSingleTimeCommands(GraphicsCommandPool); // TODO: add DefaultCommandPools
+		//
+		// var copy = new BufferCopy {Size = size};
+		//
+		// Context2.Vk.CmdCopyBuffer(commandBuffer, src.Buffer, dst.Buffer, 1, copy);
+		//
+		// CommandBuffers.EndSingleTimeCommands(ref commandBuffer, GraphicsCommandPool, GraphicsQueue);
 	}
 
-	public static VulkanPipeline CreateComputePipeline(VulkanShader shader, DescriptorSetLayout[] layouts, PushConstantRange[]? pushConstantRanges = null, PipelineCache pipelineCache = default)
+	public static VulkanPipeline CreateComputePipeline(VulkanShader shader, DescriptorSetLayout[] layouts, PushConstantRange[]? pushConstantRanges = null,
+		PipelineCache pipelineCache = default)
 	{
 		pushConstantRanges ??= Array.Empty<PushConstantRange>();
 
@@ -527,24 +528,24 @@ public static unsafe class VulkanUtils
 	{
 		// TODO: transfer command pool
 		// TODO: synchronize buffer between 2 queues if required
-		var cb = CommandBuffers.BeginSingleTimeCommands(GraphicsCommandPool);
-
-		var imageCopy = new BufferImageCopy
-		{
-			ImageSubresource = new ImageSubresourceLayers
-			{
-				AspectMask = ImageAspectFlags.ColorBit,
-				MipLevel = 0,
-				BaseArrayLayer = 0,
-				LayerCount = 1
-			},
-			ImageOffset = new Offset3D(0, 0, 0),
-			ImageExtent = new Extent3D(image.Width, image.Height, 1)
-		};
-
-		Context2.Vk.CmdCopyBufferToImage(cb, buffer, image.Image, ImageLayout.TransferDstOptimal, 1, &imageCopy);
-
-		CommandBuffers.EndSingleTimeCommands(ref cb, GraphicsCommandPool, Context2.GraphicsQueue);
+		// var cb = CommandBuffers.BeginSingleTimeCommands(GraphicsCommandPool);
+		//
+		// var imageCopy = new BufferImageCopy
+		// {
+		// 	ImageSubresource = new ImageSubresourceLayers
+		// 	{
+		// 		AspectMask = ImageAspectFlags.ColorBit,
+		// 		MipLevel = 0,
+		// 		BaseArrayLayer = 0,
+		// 		LayerCount = 1
+		// 	},
+		// 	ImageOffset = new Offset3D(0, 0, 0),
+		// 	ImageExtent = new Extent3D(image.Width, image.Height, 1)
+		// };
+		//
+		// Context2.Vk.CmdCopyBufferToImage(cb, buffer, image.Image, ImageLayout.TransferDstOptimal, 1, &imageCopy);
+		//
+		// CommandBuffers.EndSingleTimeCommands(ref cb, GraphicsCommandPool, GraphicsQueue);
 	}
 
 	public static void GenerateMipmaps(VulkanImage image)
@@ -554,7 +555,7 @@ public static unsafe class VulkanUtils
 		if ((properties.OptimalTilingFeatures & FormatFeatureFlags.SampledImageFilterLinearBit) == 0)
 			throw new Exception($"Texture image format `{image.Format}` does not support linear blitting.");
 
-		var cb = CommandBuffers.BeginSingleTimeCommands(GraphicsCommandPool);
+		// var cb = CommandBuffers.BeginSingleTimeCommands(GraphicsCommandPool);
 
 		var barrier = new ImageMemoryBarrier
 		{
@@ -579,8 +580,8 @@ public static unsafe class VulkanUtils
 			barrier.SrcAccessMask = AccessFlags.TransferWriteBit;
 			barrier.DstAccessMask = AccessFlags.TransferReadBit;
 
-			Context2.Vk.CmdPipelineBarrier(cb, PipelineStageFlags.TransferBit, PipelineStageFlags.TransferBit, 0, null, null, 1,
-				&barrier);
+			// Context2.Vk.CmdPipelineBarrier(cb, PipelineStageFlags.TransferBit, PipelineStageFlags.TransferBit, 0, null, null, 1,
+			// 	&barrier);
 
 			var blit = new ImageBlit
 			{
@@ -608,15 +609,15 @@ public static unsafe class VulkanUtils
 				}
 			};
 
-			Context2.Vk.CmdBlitImage(cb, image.Image, ImageLayout.TransferSrcOptimal, image.Image, ImageLayout.TransferDstOptimal, 1, &blit, Filter.Linear);
-
-			barrier.OldLayout = ImageLayout.TransferSrcOptimal;
-			barrier.NewLayout = ImageLayout.ShaderReadOnlyOptimal;
-			barrier.SrcAccessMask = AccessFlags.TransferWriteBit;
-			barrier.DstAccessMask = AccessFlags.ShaderReadBit;
-
-			Context2.Vk.CmdPipelineBarrier(cb, PipelineStageFlags.TransferBit, PipelineStageFlags.FragmentShaderBit, 0, null, null, 1,
-				&barrier);
+			// Context2.Vk.CmdBlitImage(cb, image.Image, ImageLayout.TransferSrcOptimal, image.Image, ImageLayout.TransferDstOptimal, 1, &blit, Filter.Linear);
+			//
+			// barrier.OldLayout = ImageLayout.TransferSrcOptimal;
+			// barrier.NewLayout = ImageLayout.ShaderReadOnlyOptimal;
+			// barrier.SrcAccessMask = AccessFlags.TransferWriteBit;
+			// barrier.DstAccessMask = AccessFlags.ShaderReadBit;
+			//
+			// Context2.Vk.CmdPipelineBarrier(cb, PipelineStageFlags.TransferBit, PipelineStageFlags.FragmentShaderBit, 0, null, null, 1,
+			// 	&barrier);
 		}
 
 		barrier.OldLayout = ImageLayout.TransferDstOptimal;
@@ -625,10 +626,10 @@ public static unsafe class VulkanUtils
 		barrier.DstAccessMask = AccessFlags.ShaderReadBit;
 		barrier.SubresourceRange.BaseMipLevel = image.MipLevels - 1;
 
-		Context2.Vk.CmdPipelineBarrier(cb, PipelineStageFlags.TransferBit, PipelineStageFlags.FragmentShaderBit, 0, null, null, 1,
-			&barrier);
-
-		CommandBuffers.EndSingleTimeCommands(ref cb, GraphicsCommandPool, Context2.GraphicsQueue);
+		// Context2.Vk.CmdPipelineBarrier(cb, PipelineStageFlags.TransferBit, PipelineStageFlags.FragmentShaderBit, 0, null, null, 1,
+		// 	&barrier);
+		//
+		// CommandBuffers.EndSingleTimeCommands(ref cb, GraphicsCommandPool, GraphicsQueue);
 	}
 
 	public static VulkanImage CreateTextureFromBytes(byte[] bytes, ulong bytesCount, uint width, uint height, int channels, bool generateMipmaps)

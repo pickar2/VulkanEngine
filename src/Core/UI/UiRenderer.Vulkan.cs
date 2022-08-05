@@ -382,9 +382,7 @@ public static unsafe partial class UiRenderer
 			"Failed to create ui data descriptor set layout.");
 		DisposalQueue.EnqueueInGlobal(() => Context2.Vk.DestroyDescriptorSetLayout(Context2.Device, _texturesLayout, null));
 
-		var componentFlags = stackalloc DescriptorBindingFlags[1];
-		componentFlags[0] = DescriptorBindingFlags.UpdateAfterBindBit;
-
+		var componentFlags = stackalloc DescriptorBindingFlags[] {DescriptorBindingFlags.UpdateAfterBindBit};
 		var componentFlagsInfo = new DescriptorSetLayoutBindingFlagsCreateInfoEXT
 		{
 			SType = StructureType.DescriptorSetLayoutBindingFlagsCreateInfoExt,

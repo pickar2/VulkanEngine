@@ -42,7 +42,7 @@ public class UiComponentFactory : AbstractVulkanDataFactory<UiComponent>
 {
 	public static readonly UiComponentFactory Instance = new();
 
-	private UiComponentFactory(int dataSize = 60) : base(dataSize) { }
+	public UiComponentFactory(int dataSize = 60) : base(dataSize) { }
 
 	public static UiComponent CreateComponent() => Instance.Create();
 }

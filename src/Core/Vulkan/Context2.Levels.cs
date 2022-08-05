@@ -43,26 +43,30 @@ public static partial class Context2
 		{VulkanLevel.Swapchain, () => CreateLevelSwapchain()},
 	};
 
-	public static void ApplyStateChanges()
+	public static bool IsStateChanged(out VulkanLevel highestLevel)
 	{
-		var highestLevel = VulkanLevel.None;
+		bool hasChanges = false;
+		highestLevel = VulkanLevel.None;
 		foreach ((string? _, var option) in State.Options)
 		{
 			if (highestLevel <= option.Level || !option.IsChanged()) continue;
+			hasChanges = true;
 			highestLevel = option.Level;
 		}
 
-		RecreateLevels(highestLevel);
+		return hasChanges;
 	}
+
+	public static void ApplyStateChanges(VulkanLevel level) => RecreateLevels(level);
 
 	public static void RecreateLevels(VulkanLevel level)
 	{
 		if (level >= VulkanLevel.None) return;
-		
+
 		for (var vulkanLevel = VulkanLevel.None - 1; vulkanLevel >= level; vulkanLevel--) DisposeLevelActions[vulkanLevel].Invoke();
-		
+
 		foreach ((string? _, var option) in State.Options) option.ApplyChange();
-		
+
 		for (var vulkanLevel = level; vulkanLevel < VulkanLevel.None; vulkanLevel++) CreateLevelActions[vulkanLevel].Invoke();
 	}
 }

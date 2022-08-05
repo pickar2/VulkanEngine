@@ -108,22 +108,19 @@ public static unsafe class FrameGraph
 			};
 		}
 
-		GeneralRenderer.Root.PrintTree("", true);
-		
+		// GeneralRenderer.Root.PrintTree("", true);
+
 		foreach ((string? _, var image) in attachments) image.Dispose();
 	}
 
-	public static void BeforeSwapchainDispose()
-	{
-		
-	}
+	public static void BeforeSwapchainDispose() { }
 
 	public static List<Format> GetDepthFormats()
 	{
 		// get all formats, exclude astc blocks
 		var candidates = Enum.GetValues<Format>().Where(f => (int) f > 1000288029 || (int) f < 1000288000).ToArray();
 		var list = new List<Format>();
-		
+
 		foreach (var candidate in candidates)
 		{
 			Context2.Vk.GetPhysicalDeviceFormatProperties2(Context2.PhysicalDevice, candidate, out var props);
@@ -224,7 +221,7 @@ public static unsafe class FrameGraph
 			barrier.DstAccessMask = AccessFlags2.DepthStencilAttachmentReadBit | AccessFlags2.DepthStencilAttachmentWriteBit;
 			barrier.DstStageMask = PipelineStageFlags2.EarlyFragmentTestsBit;
 		}
-		
+
 		var dependencyInfo = new DependencyInfo
 		{
 			SType = StructureType.DependencyInfo,
@@ -232,15 +229,15 @@ public static unsafe class FrameGraph
 			PImageMemoryBarriers = &barrier,
 			DependencyFlags = DependencyFlags.ByRegionBit
 		};
-		
+
 		var commandBuffer = CommandBuffers.BeginSingleTimeCommands(ImageTransitionCommandPool);
-		
+
 		Context2.KhrSynchronization2.CmdPipelineBarrier2(commandBuffer, dependencyInfo);
-		
+
 		CommandBuffers.EndSingleTimeCommands(ref commandBuffer, ImageTransitionCommandPool, Context2.GraphicsQueue);
-		
+
 		vulkanImage.CurrentLayout = ImageLayout.AttachmentOptimal;
-		
+
 		return vulkanImage;
 	}
 
@@ -279,10 +276,7 @@ public static unsafe class FrameGraph
 			// };
 			Context2.Vk.CmdBeginRenderPass(cmd, renderPass.BeginInfos[imageIndex], SubpassContents.SecondaryCommandBuffers);
 
-			foreach (var (subpassName, subpass) in renderPass.Subpasses)
-			{
-				
-			}
+			foreach (var (subpassName, subpass) in renderPass.Subpasses) { }
 
 			Context2.Vk.CmdEndRenderPass(cmd);
 		}
@@ -318,10 +312,7 @@ public unsafe class RenderPassNode
 	public RenderPassBeginInfo[] BeginInfos = Array.Empty<RenderPassBeginInfo>();
 	public Framebuffer[] Framebuffers = Array.Empty<Framebuffer>();
 
-	private void CreateFramebuffers()
-	{
-		
-	}
+	private void CreateFramebuffers() { }
 
 	public void Compile()
 	{
@@ -347,7 +338,7 @@ public unsafe class RenderPassNode
 
 		clearValues[1] = new ClearValue();
 		clearValues[1].DepthStencil.Depth = 1;
-		
+
 		BeginInfos = new RenderPassBeginInfo[SwapchainHelper.ImageCountInt];
 		for (var i = 0; i < BeginInfos.Length; i++)
 		{
@@ -369,10 +360,7 @@ public class SubpassNode
 	public readonly HashSet<NamespacedName> UsedAttachments = new();
 }
 
-public class SubpassDependencyNode
-{
-	
-}
+public class SubpassDependencyNode { }
 
 public class VulkanImage2
 {
@@ -384,7 +372,8 @@ public class VulkanImage2
 	public uint MipLevels { get; init; }
 	public ImageAspectFlags AspectFlags { get; init; }
 
-	public VulkanImage2(Image image, nint allocation, ImageView imageView, Format format, uint mipLevels = 1, ImageLayout currentLayout = ImageLayout.Undefined, ImageAspectFlags aspectFlags = ImageAspectFlags.ColorBit)
+	public VulkanImage2(Image image, nint allocation, ImageView imageView, Format format, uint mipLevels = 1, ImageLayout currentLayout = ImageLayout.Undefined,
+		ImageAspectFlags aspectFlags = ImageAspectFlags.ColorBit)
 	{
 		Image = image;
 		Allocation = allocation;

@@ -41,12 +41,12 @@ public static class GeneralRenderer
 	{
 		var sceneWithNoDependencies = new VulkanSceneChain("SceneWithNoDependencies");
 		Root.AddChild(sceneWithNoDependencies);
-		
+
 		var sceneWithSceneDependency = new VulkanSceneChain("SceneWithSceneDependency");
 		var sceneDependency = new VulkanSceneChain("SceneDependency0");
 		sceneWithSceneDependency.AddChild(sceneDependency);
 		Root.AddChild(sceneWithSceneDependency);
-		
+
 		var sceneWithUiDependency = new VulkanSceneChain("SceneWithUiDependency");
 		var uiDependency = new UiRootChain("UiDependency0");
 		sceneWithUiDependency.AddChild(uiDependency);
@@ -66,7 +66,7 @@ public static class GeneralRenderer
 		complexUi.AddChild(uiDep3);
 		complexUi.AddChild(sceneDep3);
 		Root.AddChild(complexUi);
-		
+
 		// var cmd = CommandBuffers.CreateCommandBuffer(CommandBufferLevel.Primary, _commandPool!.Value);
 
 		Root.GetCommandBuffer(0);
@@ -89,17 +89,18 @@ public unsafe class UiRootChain : RenderChain
 
 	public UiRootChain(string name) : base(name)
 	{
-		_onDeviceCreate = () => {
+		_onDeviceCreate = () =>
+		{
 			CreateSemaphore();
 			ExecuteOnce.InDevice.BeforeDispose(() => DisposeSemaphore());
 		};
-		
+
 		ExecuteOnce.InDevice.BeforeDispose(() => DisposeRenderPass());
 
 		Context2.DeviceEvents.AfterCreate += _onDeviceCreate;
 	}
 
-	public override RenderPass GetRenderPass()
+	public RenderPass GetRenderPass()
 	{
 		if (!_renderPass.HasValue || _attachmentSize != RootPanel.Size) CreateRenderPass();
 
@@ -157,9 +158,9 @@ public unsafe class UiRootChain : RenderChain
 		var size = _attachmentSize.Cast<float, uint>();
 		App.Logger.Info.Message($"{size}");
 		_attachment = FrameGraph.CreateAttachment(Format.R8G8B8A8Unorm, ImageAspectFlags.ColorBit, size, ImageUsageFlags.TransferSrcBit);
-		
+
 		_commandPool = CreateCommandPool(Context2.GraphicsQueue);
-		
+
 		var attachmentDescription = new AttachmentDescription2
 		{
 			SType = StructureType.AttachmentDescription2,
@@ -200,7 +201,7 @@ public unsafe class UiRootChain : RenderChain
 			DstAccessMask = AccessFlags.ColorAttachmentWriteBit,
 			DependencyFlags = DependencyFlags.ByRegionBit
 		};
-		
+
 		var renderPassInfo2 = new RenderPassCreateInfo2
 		{
 			SType = StructureType.RenderPassCreateInfo2,
@@ -248,20 +249,20 @@ public unsafe class UiRootChain : RenderChain
 			Context2.Vk.DestroyFramebuffer(Context2.Device, _framebuffer.Value, null);
 			_framebuffer = null;
 		}
-		
+
 		if (_renderPass.HasValue)
 		{
 			Context2.Vk.DestroyRenderPass(Context2.Device, _renderPass.Value, null);
 			_renderPass = null;
 		}
-		
+
 		if (_commandPool.HasValue)
 		{
 			Context2.Vk.DestroyCommandPool(Context2.Device, _commandPool.Value, null);
 			_commandPool = null;
 		}
 	}
-	
+
 
 	public void CreateSemaphore()
 	{
@@ -295,7 +296,6 @@ public class VulkanSceneChain : RenderChain
 {
 	public VulkanSceneChain(string name) : base(name) { }
 
-	public override RenderPass GetRenderPass() => throw new NotImplementedException();
 	public override CommandBuffer GetCommandBuffer(int imageIndex) => throw new NotImplementedException();
 
 	public override void Dispose() => throw new NotImplementedException();
@@ -320,8 +320,6 @@ public abstract unsafe class RenderChain : IDisposable
 		child.Parent = this;
 	}
 
-	public abstract RenderPass GetRenderPass();
-
 	public abstract CommandBuffer GetCommandBuffer(int imageIndex);
 
 	protected Delegate[]? GetEventInvocationList() => OnCommandBufferWrite?.GetInvocationList();
@@ -333,9 +331,9 @@ public static class RendererChainableExtensions
 {
 	public static void PrintTree(this RenderChain tree, String indent, bool last)
 	{
-	    Console.WriteLine($"{indent}{(last ? "└─" : "├─")} ({tree.GetType().Name}) {tree.Name}");
-	    indent += last ? "   " : "|  ";
+		Console.WriteLine($"{indent}{(last ? "└─" : "├─")} ({tree.GetType().Name}) {tree.Name}");
+		indent += last ? "   " : "|  ";
 
-	    for (int i = 0; i < tree.Children.Count; i++) tree.Children[i].PrintTree(indent, i == tree.Children.Count - 1);
+		for (int i = 0; i < tree.Children.Count; i++) tree.Children[i].PrintTree(indent, i == tree.Children.Count - 1);
 	}
 }

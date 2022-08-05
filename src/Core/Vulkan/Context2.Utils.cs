@@ -37,28 +37,34 @@ public static unsafe partial class Context2
 	public static void BindDescriptorSets(this ref CommandBuffer cb, PipelineBindPoint bindPoint, PipelineLayout layout, uint firstSet,
 		uint setCount, DescriptorSet* sets, uint dynamicOffsetCount = 0, uint* dynamicOffsets = null) =>
 		Vk.CmdBindDescriptorSets(cb, bindPoint, layout, firstSet, setCount, sets, dynamicOffsetCount, dynamicOffsets);
-	
+
 	public static void BindDescriptorSets(this ref CommandBuffer cb, PipelineBindPoint bindPoint, PipelineLayout layout, uint firstSet,
 		uint setCount, ref DescriptorSet sets, uint dynamicOffsetCount = 0, uint* dynamicOffsets = null) =>
 		Vk.CmdBindDescriptorSets(cb, bindPoint, layout, firstSet, setCount, sets, dynamicOffsetCount, dynamicOffsets);
-	
+
 	public static void BindGraphicsDescriptorSets(this ref CommandBuffer cb, PipelineLayout layout, uint firstSet,
 		uint setCount, DescriptorSet* sets, uint dynamicOffsetCount = 0, uint* dynamicOffsets = null) =>
 		Vk.CmdBindDescriptorSets(cb, PipelineBindPoint.Graphics, layout, firstSet, setCount, sets, dynamicOffsetCount, dynamicOffsets);
-	
+
 	public static void BindGraphicsDescriptorSets(this ref CommandBuffer cb, PipelineLayout layout, uint firstSet,
 		uint setCount, ref DescriptorSet sets, uint dynamicOffsetCount = 0, uint* dynamicOffsets = null) =>
 		Vk.CmdBindDescriptorSets(cb, PipelineBindPoint.Graphics, layout, firstSet, setCount, sets, dynamicOffsetCount, dynamicOffsets);
-	
+
 	public static void BindComputeDescriptorSets(this ref CommandBuffer cb, PipelineLayout layout, uint firstSet,
 		uint setCount, DescriptorSet* sets, uint dynamicOffsetCount = 0, uint* dynamicOffsets = null) =>
 		Vk.CmdBindDescriptorSets(cb, PipelineBindPoint.Compute, layout, firstSet, setCount, sets, dynamicOffsetCount, dynamicOffsets);
-	
+
 	public static void BindComputeDescriptorSets(this ref CommandBuffer cb, PipelineLayout layout, uint firstSet,
 		uint setCount, ref DescriptorSet sets, uint dynamicOffsetCount = 0, uint* dynamicOffsets = null) =>
 		Vk.CmdBindDescriptorSets(cb, PipelineBindPoint.Compute, layout, firstSet, setCount, sets, dynamicOffsetCount, dynamicOffsets);
-	
+
 	public static Result VmaMapMemory(IntPtr allocation, IntPtr[] data) => (Result) vmaMapMemory(VmaHandle, allocation, data);
 
 	public static void VmaUnmapMemory(IntPtr allocation) => vmaUnmapMemory(VmaHandle, allocation);
+
+	public static void Dispose(this ref DescriptorSetLayout layout) => Vk.DestroyDescriptorSetLayout(Device, layout, null);
+
+	public static void Dispose(this ref PipelineLayout layout) => Vk.DestroyPipelineLayout(Device, layout, null);
+
+	public static void Dispose(this ref DescriptorPool pool) => Vk.DestroyDescriptorPool(Device, pool, null);
 }

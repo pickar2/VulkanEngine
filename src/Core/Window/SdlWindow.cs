@@ -98,7 +98,8 @@ public class SdlWindow : IDisposable
 
 		const int maxNumEvents = 4;
 		var events = new SDL_Event[maxNumEvents];
-		for (IsRunning = true; IsRunning;)
+		IsRunning = true;
+		while (IsRunning)
 		{
 			SDL_PumpEvents();
 			var result = SDL_PeepEvents(events,
@@ -107,8 +108,9 @@ public class SdlWindow : IDisposable
 				SDL_EventType.SDL_FIRSTEVENT,
 				SDL_EventType.SDL_LASTEVENT);
 
-			for (int index = 0; index < result; index++)
-				HandleEvent(events[index]);
+			for (int index = 0; index < result; index++) HandleEvent(events[index]);
+
+			if (Context2.IsStateChanged(out var level)) Context2.ApplyStateChanges(level);
 			handle.WaitOne(1);
 		}
 	}
@@ -165,6 +167,7 @@ public class SdlWindow : IDisposable
 					SDL_RaiseWindow(WindowHandle);
 					_firstTimeFocus = false;
 				}
+
 				break;
 		}
 	}
