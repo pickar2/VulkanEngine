@@ -7,7 +7,7 @@ using Core.Vulkan;
 using Silk.NET.Core.Native;
 using Silk.NET.Vulkan;
 using static Core.Native.VMA.VulkanMemoryAllocator;
-using static Core.Vulkan.Context2;
+using static Core.Vulkan.Context;
 using Buffer = Silk.NET.Vulkan.Buffer;
 using Result = Silk.NET.Vulkan.Result;
 using ShaderModule = Core.Native.SpirvReflect.ShaderModule;
@@ -207,7 +207,7 @@ public static unsafe class VulkanUtils
 			QueueFamilyIndex = vulkanQueue.Family.Index
 		};
 
-		Check(Context2.Vk.CreateCommandPool(Context2.Device, poolInfo, null, out var pool), "Failed to create command pool");
+		Check(Context.Vk.CreateCommandPool(Context.Device, poolInfo, null, out var pool), "Failed to create command pool");
 
 		return pool;
 	}
@@ -230,7 +230,7 @@ public static unsafe class VulkanUtils
 			}
 		};
 
-		Check(Context2.Vk.CreateImageView(Context2.Device, createInfo, null, out var imageView), "Failed to create texture image view");
+		Check(Context.Vk.CreateImageView(Context.Device, createInfo, null, out var imageView), "Failed to create texture image view");
 
 		return imageView;
 	}
@@ -239,7 +239,7 @@ public static unsafe class VulkanUtils
 	{
 		foreach (var format in formatCandidates)
 		{
-			Context2.Vk.GetPhysicalDeviceFormatProperties(Context2.PhysicalDevice, format, out var properties);
+			Context.Vk.GetPhysicalDeviceFormatProperties(Context.PhysicalDevice, format, out var properties);
 
 			if ((tiling == ImageTiling.Linear && (properties.LinearTilingFeatures & features) == features) ||
 			    (tiling == ImageTiling.Optimal && (properties.OptimalTilingFeatures & features) == features))
@@ -365,7 +365,7 @@ public static unsafe class VulkanUtils
 	{
 		var createInfo = new FenceCreateInfo {SType = StructureType.FenceCreateInfo, Flags = signaled ? FenceCreateFlags.SignaledBit : 0};
 
-		Check(Context2.Vk.CreateFence(Context2.Device, createInfo, null, out var fence), "Failed to create fence");
+		Check(Context.Vk.CreateFence(Context.Device, createInfo, null, out var fence), "Failed to create fence");
 
 		return fence;
 	}
@@ -382,7 +382,7 @@ public static unsafe class VulkanUtils
 			CodeSize = shader.CodeLength
 		};
 
-		Check(Context2.Vk.CreateShaderModule(Context2.Device, createInfo, null, out var vulkanShaderModule),
+		Check(Context.Vk.CreateShaderModule(Context.Device, createInfo, null, out var vulkanShaderModule),
 			$"Failed to create shader module {path}");
 		shader.Dispose();
 
@@ -506,7 +506,7 @@ public static unsafe class VulkanUtils
 		};
 		if (pushConstantRanges.Length > 0) layoutCreateInfo.PPushConstantRanges = pushConstantRanges[0].AsPointer();
 
-		Context2.Vk.CreatePipelineLayout(Context2.Device, &layoutCreateInfo, null, out var layout);
+		Context.Vk.CreatePipelineLayout(Context.Device, &layoutCreateInfo, null, out var layout);
 
 		var createInfo = new ComputePipelineCreateInfo
 		{
@@ -515,7 +515,7 @@ public static unsafe class VulkanUtils
 			Layout = layout
 		};
 
-		Context2.Vk.CreateComputePipelines(Context2.Device, pipelineCache, 1, &createInfo, null, out var pipeline);
+		Context.Vk.CreateComputePipelines(Context.Device, pipelineCache, 1, &createInfo, null, out var pipeline);
 
 		return new VulkanPipeline
 		{
@@ -551,7 +551,7 @@ public static unsafe class VulkanUtils
 	public static void GenerateMipmaps(VulkanImage image)
 	{
 		// TODO: make cache of format properties to reduce amount of calls to GPU
-		Context2.Vk.GetPhysicalDeviceFormatProperties(Context.PhysicalDevice, image.Format, out var properties);
+		Context.Vk.GetPhysicalDeviceFormatProperties(Context.PhysicalDevice, image.Format, out var properties);
 		if ((properties.OptimalTilingFeatures & FormatFeatureFlags.SampledImageFilterLinearBit) == 0)
 			throw new Exception($"Texture image format `{image.Format}` does not support linear blitting.");
 
@@ -682,7 +682,7 @@ public static unsafe class VulkanUtils
 			MipLodBias = 0
 		};
 
-		Check(Context2.Vk.CreateSampler(Context2.Device, &createInfo, null, out var sampler), "Failed to create image sampler.");
+		Check(Context.Vk.CreateSampler(Context.Device, &createInfo, null, out var sampler), "Failed to create image sampler.");
 
 		return sampler;
 	}
@@ -694,7 +694,7 @@ public static unsafe class VulkanUtils
 			SType = StructureType.SemaphoreCreateInfo
 		};
 
-		Check(Context2.Vk.CreateSemaphore(Context2.Device, semaphoreCreateInfo, null, out var semaphore), $"Failed to create semaphore.");
+		Check(Context.Vk.CreateSemaphore(Context.Device, semaphoreCreateInfo, null, out var semaphore), $"Failed to create semaphore.");
 
 		return semaphore;
 	}

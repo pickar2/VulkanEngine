@@ -45,7 +45,7 @@ public class ReCreator
 		CreateAction = createAction;
 		DisposeAction = disposeAction;
 
-		var events = Context2.GetLevelEvents(Level);
+		var events = Context.GetLevelEvents(Level);
 		events.AfterCreate += CreateAction;
 		events.BeforeDispose += DisposeAction;
 	}
@@ -53,7 +53,7 @@ public class ReCreator
 	public void Dispose(bool disposeObject = false)
 	{
 		if (disposeObject) DisposeAction();
-		var events = Context2.GetLevelEvents(Level);
+		var events = Context.GetLevelEvents(Level);
 		events.AfterCreate -= CreateAction;
 		events.BeforeDispose -= DisposeAction;
 	}
@@ -82,14 +82,14 @@ public class OnAccessValueReCreator<T> where T : struct
 			_value = null;
 		};
 
-		var events = Context2.GetLevelEvents(Level);
+		var events = Context.GetLevelEvents(Level);
 		events.BeforeDispose += DisposeAction;
 	}
 
 	public void Dispose(bool disposeObject = false)
 	{
 		if (disposeObject) DisposeAction();
-		var events = Context2.GetLevelEvents(Level);
+		var events = Context.GetLevelEvents(Level);
 		events.BeforeDispose -= DisposeAction;
 	}
 
@@ -119,14 +119,14 @@ public class OnAccessClassReCreator<T> where T : class
 			_value = null;
 		};
 
-		var events = Context2.GetLevelEvents(Level);
+		var events = Context.GetLevelEvents(Level);
 		events.BeforeDispose += DisposeAction;
 	}
 
 	public void Dispose(bool disposeObject = false)
 	{
 		if (disposeObject) DisposeAction();
-		var events = Context2.GetLevelEvents(Level);
+		var events = Context.GetLevelEvents(Level);
 		events.BeforeDispose -= DisposeAction;
 	}
 

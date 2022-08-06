@@ -11,14 +11,14 @@ public static class ExecuteOnce
 	public static readonly LevelExecutor InDevice = new(VulkanLevel.Device);
 	public static readonly LevelExecutor InSwapchain = new(VulkanLevel.Swapchain);
 
-	public static void AtFrameStart(int frameId, Action action) => Context2.ExecuteOnceAtFrameStart(frameId, action);
-	public static void AtFrameEnd(int frameId, Action action) => Context2.ExecuteOnceAtFrameEnd(frameId, action);
+	public static void AtFrameStart(int frameId, Action action) => Context.ExecuteOnceAtFrameStart(frameId, action);
+	public static void AtFrameEnd(int frameId, Action action) => Context.ExecuteOnceAtFrameEnd(frameId, action);
 
-	public static void AtCurrentFrameStart(Action action) => Context2.ExecuteOnceAtFrameStart(Context2.FrameId, action);
-	public static void AtCurrentFrameEnd(Action action) => Context2.ExecuteOnceAtFrameEnd(Context2.FrameId, action);
+	public static void AtCurrentFrameStart(Action action) => Context.ExecuteOnceAtFrameStart(Context.FrameId, action);
+	public static void AtCurrentFrameEnd(Action action) => Context.ExecuteOnceAtFrameEnd(Context.FrameId, action);
 
-	public static void AtNextFrameStart(Action action) => Context2.ExecuteOnceAtFrameStart(Context2.NextFrameId, action);
-	public static void AtNextFrameEnd(Action action) => Context2.ExecuteOnceAtFrameEnd(Context2.NextFrameId, action);
+	public static void AtNextFrameStart(Action action) => Context.ExecuteOnceAtFrameStart(Context.NextFrameId, action);
+	public static void AtNextFrameEnd(Action action) => Context.ExecuteOnceAtFrameEnd(Context.NextFrameId, action);
 }
 
 public class LevelExecutor
@@ -31,7 +31,7 @@ public class LevelExecutor
 	[SuppressMessage("ReSharper", "ConvertClosureToMethodGroup")]
 	public LevelExecutor(VulkanLevel level)
 	{
-		var events = Context2.GetLevelEvents(level);
+		var events = Context.GetLevelEvents(level);
 		events.BeforeCreate += () => ExecuteAndClearBeforeCreate();
 		events.AfterCreate += () => ExecuteAndClearAfterCreate();
 		events.BeforeDispose += () => ExecuteAndClearBeforeDispose();

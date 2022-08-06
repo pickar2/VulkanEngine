@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
+using Core.Native.Shaderc;
 using Core.Utils;
 using Core.Vulkan.Options;
 using Core.Window;
@@ -17,10 +18,11 @@ using Silk.NET.Vulkan.Extensions.EXT;
 using Silk.NET.Vulkan.Extensions.KHR;
 using static Core.Native.VMA.VulkanMemoryAllocator;
 using static Core.Utils.VulkanUtils;
+using Result = Silk.NET.Vulkan.Result;
 
 namespace Core.Vulkan;
 
-public static unsafe partial class Context2
+public static unsafe partial class Context
 {
 	public static readonly VulkanState State = new();
 
@@ -37,16 +39,29 @@ public static unsafe partial class Context2
 	#region LevelContext
 
 	public static readonly Vk DefaultContextVk = Vk.GetApi(); // For use when VkInstance is not yet present
+	public static Compiler Compiler = default!;
 
 	public static void CreateLevelContext()
 	{
 		ContextEvents.InvokeBeforeCreate();
+
+		var options = new ShadercOptions();
+		options.EnableDebugInfo();
+		options.Optimization = OptimizationLevel.Performance;
+		options.TargetSpirVVersion = new SpirVVersion(1, 5);
+		options.SetTargetEnvironment(TargetEnvironment.Vulkan, EnvironmentVersion.Vulkan_1_2);
+
+		Compiler = new Compiler(options);
+
 		ContextEvents.InvokeAfterCreate();
 	}
 
 	public static void DisposeLevelContext()
 	{
 		ContextEvents.InvokeBeforeDispose();
+		
+		Compiler.Dispose();
+		
 		ContextEvents.InvokeAfterDispose();
 	}
 
@@ -752,7 +767,7 @@ public static unsafe partial class Context2
 		PresentMode = ChoosePresentMode(SwapchainDetails.PresentModes);
 		SwapchainExtent = ChooseSurfaceExtent(SwapchainDetails.SurfaceCapabilities);
 
-		uint minImageCount = Math.Max(SwapchainDetails.SurfaceCapabilities.MinImageCount, MainRenderer.FrameOverlap);
+		uint minImageCount = (uint) Math.Max(SwapchainDetails.SurfaceCapabilities.MinImageCount, State.FrameOverlap);
 		if (SwapchainDetails.SurfaceCapabilities.MaxImageCount > 0 && minImageCount > SwapchainDetails.SurfaceCapabilities.MaxImageCount)
 			minImageCount = SwapchainDetails.SurfaceCapabilities.MaxImageCount;
 

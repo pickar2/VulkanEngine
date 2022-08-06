@@ -8,7 +8,7 @@ using Semaphore = Silk.NET.Vulkan.Semaphore;
 
 namespace Core.Vulkan;
 
-public static unsafe partial class Context2
+public static unsafe partial class Context
 {
 	private static readonly Stopwatch TotalTimeRenderingStopwatch = new();
 	private static readonly Stopwatch LagStopwatch = new();
@@ -128,9 +128,9 @@ public static unsafe partial class Context2
 		ExecuteAndClearAtFrameStart(FrameId);
 
 		// Thread.Sleep(1000);
-		App.Logger.Info.Message($"\r\nTotalTimeRendering: {TotalTimeRendering}, CurrentFrameTime: {CurrentFrameTime}, " +
-		                        $"NormalizedFrameTime: {NormalizedFrameTime}\r\n" +
-		                        $"Lag: {Lag}, FrameIndex: {FrameIndex}, FrameId: {FrameId}, SwapchainImageId: {SwapchainImageId}");
+		// App.Logger.Info.Message($"\r\nTotalTimeRendering: {TotalTimeRendering}, CurrentFrameTime: {CurrentFrameTime}, " +
+		//                         $"NormalizedFrameTime: {NormalizedFrameTime}\r\n" +
+		//                         $"Lag: {Lag}, FrameIndex: {FrameIndex}, FrameId: {FrameId}, SwapchainImageId: {SwapchainImageId}");
 
 		var waitSemaphores = new List<Semaphore> {currentFrame.PresentSemaphore};
 		GeneralRenderer.Root.StartRendering(frameInfo, waitSemaphores, out var signalSemaphores, currentFrame.Fence);

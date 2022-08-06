@@ -4,7 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Core.Vulkan;
 
-public static partial class Context2
+public static partial class Context
 {
 	public static readonly VulkanLevelEvents ContextEvents = new();
 	public static readonly VulkanLevelEvents InstanceEvents = new();

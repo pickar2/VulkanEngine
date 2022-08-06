@@ -29,7 +29,7 @@ public class VulkanQueue
 	{
 		lock (this)
 		{
-			Check(Context2.Vk.QueueSubmit(Queue, (uint) submitInfo.Length, submitInfo, fence), "Failed to submit to Queue.");
+			Check(Context.Vk.QueueSubmit(Queue, (uint) submitInfo.Length, submitInfo, fence), "Failed to submit to Queue.");
 		}
 	}
 
@@ -37,7 +37,7 @@ public class VulkanQueue
 	{
 		lock (this)
 		{
-			Check(Context2.Vk.QueueSubmit(Queue, 1, submitInfo, fence), "Failed to submit to Queue.");
+			Check(Context.Vk.QueueSubmit(Queue, 1, submitInfo, fence), "Failed to submit to Queue.");
 		}
 	}
 

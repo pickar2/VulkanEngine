@@ -9,15 +9,15 @@ public static class DisposalQueue
 {
 	private static readonly List<Action> GlobalDisposables = new();
 	private static readonly List<Action> SwapchainDisposables = new();
-	private static readonly List<Action>[] FrameDisposables = new List<Action>[MainRenderer.FrameOverlap];
+	private static readonly List<Action>[] FrameDisposables = new List<Action>[Context.State.FrameOverlap];
 
 	static DisposalQueue()
 	{
 		for (int i = 0; i < FrameDisposables.Length; i++) FrameDisposables[i] = new List<Action>();
 
-		Context.OnVulkanDispose += DisposeAll;
-		SwapchainHelper.OnCleanupSwapchain += DisposeSwapchain;
-		MainRenderer.AfterDrawFrame += DisposeFrame;
+		// Context.OnVulkanDispose += DisposeAll;
+		// SwapchainHelper.OnCleanupSwapchain += DisposeSwapchain;
+		// MainRenderer.AfterDrawFrame += DisposeFrame;
 	}
 
 	public static void EnqueueInGlobal(Action action)

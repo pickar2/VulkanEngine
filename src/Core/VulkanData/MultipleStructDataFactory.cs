@@ -20,7 +20,7 @@ public unsafe class MultipleStructDataFactory : SimpleRegistry<NoneEventManager<
 	public MultipleStructDataFactory(NamespacedName identifier, bool cpuToGpuMemory = false) : base(identifier)
 	{
 		// TODO: cache properties
-		Context2.Vk.GetPhysicalDeviceProperties(Context.PhysicalDevice, out var properties);
+		Context.Vk.GetPhysicalDeviceProperties(Context.PhysicalDevice, out var properties);
 		_minAlignment = (int) properties.Limits.MinStorageBufferOffsetAlignment;
 
 		CpuToGpuMemory = cpuToGpuMemory;
@@ -70,16 +70,16 @@ public unsafe class MultipleStructDataFactory : SimpleRegistry<NoneEventManager<
 			? VulkanUtils.CreateBuffer(newBufferSize, BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU)
 			: VulkanUtils.CreateBuffer(newBufferSize, BufferUsageFlags.TransferSrcBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_ONLY);
 
-		VulkanUtils.Check(Context2.VmaMapMemory(newDataBuffer.Allocation, _ptr), "Failed to map memory.");
+		VulkanUtils.Check(Context.VmaMapMemory(newDataBuffer.Allocation, _ptr), "Failed to map memory.");
 
 		var oldSpan = new Span<byte>(Pointer, (int) BufferSize);
 		var newSpan = new Span<byte>((void*) _ptr[0], (int) newBufferSize);
 		oldSpan.CopyTo(newSpan);
 		newSpan.Slice((int) BufferSize, (int) newBufferSize).Fill(default);
 
-		Context2.VmaUnmapMemory(DataBufferCpu.Allocation);
+		Context.VmaUnmapMemory(DataBufferCpu.Allocation);
 
-		DataBufferCpu.EnqueueFrameDispose(MainRenderer.GetLastFrameIndex());
+		// DataBufferCpu.EnqueueFrameDispose(MainRenderer.GetLastFrameIndex());
 		DataBufferCpu = newDataBuffer;
 		if (Context.IsIntegratedGpu || CpuToGpuMemory)
 		{
@@ -87,7 +87,7 @@ public unsafe class MultipleStructDataFactory : SimpleRegistry<NoneEventManager<
 		}
 		else
 		{
-			DataBufferGpu.EnqueueFrameDispose(MainRenderer.GetLastFrameIndex());
+			// DataBufferGpu.EnqueueFrameDispose(MainRenderer.GetLastFrameIndex());
 			DataBufferGpu = VulkanUtils.CreateBuffer(newBufferSize, BufferUsageFlags.StorageBufferBit | BufferUsageFlags.TransferDstBit,
 				VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
 			

@@ -36,7 +36,7 @@ public unsafe class DebugUtilsMessenger : IDisposable
 
 	public void Dispose()
 	{
-		Context2.ExtDebugUtils.DestroyDebugUtilsMessenger(Context2.Instance, DebugMessenger, null);
+		Context.ExtDebugUtils.DestroyDebugUtilsMessenger(Context.Instance, DebugMessenger, null);
 		GC.SuppressFinalize(this);
 	}
 
@@ -58,6 +58,6 @@ public unsafe class DebugUtilsMessenger : IDisposable
 		return Vk.False;
 	}
 
-	public void Init() => VulkanUtils.Check(Context2.ExtDebugUtils.CreateDebugUtilsMessenger(Context2.Instance, CreateInfo, null, DebugMessenger.AsPointer()),
+	public void Init() => VulkanUtils.Check(Context.ExtDebugUtils.CreateDebugUtilsMessenger(Context.Instance, CreateInfo, null, DebugMessenger.AsPointer()),
 		"Failed to create debug messenger");
 }

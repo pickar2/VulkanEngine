@@ -16,7 +16,7 @@ public unsafe class VulkanShader : IDisposable
 
 	public void Dispose()
 	{
-		Context2.Vk.DestroyShaderModule(Context2.Device, VulkanModule, null);
+		Context.Vk.DestroyShaderModule(Context.Device, VulkanModule, null);
 		ReflectModule?.Dispose();
 		GC.SuppressFinalize(this);
 	}

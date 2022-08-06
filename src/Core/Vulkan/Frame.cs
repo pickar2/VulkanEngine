@@ -26,9 +26,9 @@ public class Frame : IDisposable
 
 	public unsafe void Dispose()
 	{
-		Context2.Vk.DestroySemaphore(Context2.Device, PresentSemaphore, null);
-		Context2.Vk.DestroySemaphore(Context2.Device, RenderSemaphore, null);
-		Context2.Vk.DestroyFence(Context2.Device, Fence, null);
+		Context.Vk.DestroySemaphore(Context.Device, PresentSemaphore, null);
+		Context.Vk.DestroySemaphore(Context.Device, RenderSemaphore, null);
+		Context.Vk.DestroyFence(Context.Device, Fence, null);
 		GC.SuppressFinalize(this);
 	}
 }

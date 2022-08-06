@@ -45,7 +45,7 @@ public unsafe partial class UiRootRenderer
 			PNext = &componentFlagsInfo
 		};
 
-		Check(Context2.Vk.CreateDescriptorSetLayout(Context2.Device, &componentDataCreateInfo, null, out var layout),
+		Check(Context.Vk.CreateDescriptorSetLayout(Context.Device, &componentDataCreateInfo, null, out var layout),
 			"Failed to create ui root component data descriptor set layout.");
 
 		return layout;

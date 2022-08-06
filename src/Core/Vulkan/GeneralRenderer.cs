@@ -140,12 +140,12 @@ public unsafe class UiRootChain : RenderChain
 		DisposeRenderPass();
 
 		// _attachmentSize = RootPanel.Size;
-		_attachmentSize = Context2.State.WindowSize.Value.Cast<uint, float>();
+		_attachmentSize = Context.State.WindowSize.Value.Cast<uint, float>();
 		var size = _attachmentSize.Cast<float, uint>();
 		App.Logger.Info.Message($"{size}");
 		_attachment = FrameGraph.CreateAttachment(Format.R8G8B8A8Unorm, ImageAspectFlags.ColorBit, size, ImageUsageFlags.TransferSrcBit);
 
-		_commandPool = CreateCommandPool(Context2.GraphicsQueue);
+		_commandPool = CreateCommandPool(Context.GraphicsQueue);
 
 		var attachmentDescription = new AttachmentDescription2
 		{
@@ -199,7 +199,7 @@ public unsafe class UiRootChain : RenderChain
 			PDependencies = &subpassDependency
 		};
 
-		Check(Context2.Vk.CreateRenderPass2(Context2.Device, renderPassInfo2, null, out var renderPass),
+		Check(Context.Vk.CreateRenderPass2(Context.Device, renderPassInfo2, null, out var renderPass),
 			"Failed to create render pass");
 
 		_renderPass = renderPass;
@@ -218,7 +218,7 @@ public unsafe class UiRootChain : RenderChain
 			PAttachments = attachments
 		};
 
-		Context2.Vk.CreateFramebuffer(Context2.Device, &createInfo, null, out var framebuffer);
+		Context.Vk.CreateFramebuffer(Context.Device, &createInfo, null, out var framebuffer);
 		_framebuffer = framebuffer;
 	}
 
@@ -232,19 +232,19 @@ public unsafe class UiRootChain : RenderChain
 
 		if (_framebuffer.HasValue)
 		{
-			Context2.Vk.DestroyFramebuffer(Context2.Device, _framebuffer.Value, null);
+			Context.Vk.DestroyFramebuffer(Context.Device, _framebuffer.Value, null);
 			_framebuffer = null;
 		}
 
 		if (_renderPass.HasValue)
 		{
-			Context2.Vk.DestroyRenderPass(Context2.Device, _renderPass.Value, null);
+			Context.Vk.DestroyRenderPass(Context.Device, _renderPass.Value, null);
 			_renderPass = null;
 		}
 
 		if (_commandPool.HasValue)
 		{
-			Context2.Vk.DestroyCommandPool(Context2.Device, _commandPool.Value, null);
+			Context.Vk.DestroyCommandPool(Context.Device, _commandPool.Value, null);
 			_commandPool = null;
 		}
 	}
@@ -274,7 +274,7 @@ public unsafe class VulkanClearRenderer : RenderChain
 		_renderPass = ReCreate.OnAccessValueInDevice(() => CreateRenderPass(), renderPass => renderPass.Dispose());
 		_framebuffers = ReCreate.OnAccessClassInSwapchain(() =>
 		{
-			var arr = new Framebuffer[Context2.SwapchainImageCount];
+			var arr = new Framebuffer[Context.SwapchainImageCount];
 			for (var i = 0; i < arr.Length; i++) 
 				arr[i] = CreateFramebuffer(_renderPass, i);
 
@@ -285,7 +285,7 @@ public unsafe class VulkanClearRenderer : RenderChain
 				arr[index].Dispose();
 		});
 
-		_commandPool = ReCreate.OnAccessValueInDevice(() => CreateCommandPool(Context2.GraphicsQueue), commandPool => commandPool.Dispose());
+		_commandPool = ReCreate.OnAccessValueInDevice(() => CreateCommandPool(Context.GraphicsQueue), commandPool => commandPool.Dispose());
 
 		RenderCommandBuffers += frameInfo => CreateCommandBuffer(frameInfo);
 	}
@@ -295,7 +295,7 @@ public unsafe class VulkanClearRenderer : RenderChain
 		var attachmentDescription = new AttachmentDescription2
 		{
 			SType = StructureType.AttachmentDescription2,
-			Format = Context2.SwapchainSurfaceFormat.Format,
+			Format = Context.SwapchainSurfaceFormat.Format,
 			Samples = SampleCountFlags.Count1Bit,
 			LoadOp = AttachmentLoadOp.Clear,
 			StoreOp = AttachmentStoreOp.Store,
@@ -344,26 +344,26 @@ public unsafe class VulkanClearRenderer : RenderChain
 			PDependencies = &subpassDependency
 		};
 
-		Check(Context2.Vk.CreateRenderPass2(Context2.Device, renderPassInfo2, null, out var renderPass), "Failed to create render pass.");
+		Check(Context.Vk.CreateRenderPass2(Context.Device, renderPassInfo2, null, out var renderPass), "Failed to create render pass.");
 
 		return renderPass;
 	}
 
 	private static Framebuffer CreateFramebuffer(RenderPass renderPass, int index)
 	{
-		var attachments = stackalloc ImageView[] {Context2.SwapchainImages[index].ImageView};
+		var attachments = stackalloc ImageView[] {Context.SwapchainImages[index].ImageView};
 		var createInfo = new FramebufferCreateInfo
 		{
 			SType = StructureType.FramebufferCreateInfo,
 			RenderPass = renderPass,
-			Width = Context2.SwapchainExtent.Width,
-			Height = Context2.SwapchainExtent.Height,
+			Width = Context.SwapchainExtent.Width,
+			Height = Context.SwapchainExtent.Height,
 			Layers = 1,
 			AttachmentCount = 1,
 			PAttachments = attachments
 		};
 
-		Check(Context2.Vk.CreateFramebuffer(Context2.Device, &createInfo, null, out var framebuffer), "Failed to create framebuffer.");
+		Check(Context.Vk.CreateFramebuffer(Context.Device, &createInfo, null, out var framebuffer), "Failed to create framebuffer.");
 
 		return framebuffer;
 	}
@@ -374,7 +374,7 @@ public unsafe class VulkanClearRenderer : RenderChain
 
 		clearValues[0] = new ClearValue
 		{
-			Color = new ClearColorValue(0.66f, 0.66f, (float) (Math.Sin(Context2.FrameIndex / 20d) * 0.5 + 0.5), 1)
+			Color = new ClearColorValue(0.66f, 0.66f, (float) (Math.Sin(Context.FrameIndex / 20d) * 0.5 + 0.5), 1)
 		};
 
 		var cmd = CommandBuffers.CreateCommandBuffer(CommandBufferLevel.Primary, _commandPool);
@@ -385,7 +385,7 @@ public unsafe class VulkanClearRenderer : RenderChain
 		{
 			SType = StructureType.RenderPassBeginInfo,
 			RenderPass = _renderPass,
-			RenderArea = new Rect2D(default, Context2.SwapchainExtent),
+			RenderArea = new Rect2D(default, Context.SwapchainExtent),
 			Framebuffer = _framebuffers.Value[frameInfo.SwapchainImageId],
 			ClearValueCount = 1,
 			PClearValues = clearValues
@@ -498,7 +498,7 @@ public abstract unsafe class RenderChain : IDisposable
 			PCommandBuffers = pCommandBuffers
 		};
 
-		Context2.GraphicsQueue.Submit(submitInfo, queueFence);
+		Context.GraphicsQueue.Submit(submitInfo, queueFence);
 	}
 
 	public abstract void Dispose();

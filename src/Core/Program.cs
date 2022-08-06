@@ -34,10 +34,10 @@ internal static class Program
 		bool windowReady = false;
 		var windowThread = new Thread(() =>
 		{
-			Context2.State.Window.UpdateImmediately(new SdlWindow());
-			Context2.State.Window.Value.Init();
+			Context.State.Window.UpdateImmediately(new SdlWindow());
+			Context.State.Window.Value.Init();
 			windowReady = true;
-			Context2.State.Window.Value.MainLoop();
+			Context.State.Window.Value.MainLoop();
 		})
 		{
 			Name = "Window Thread"
@@ -47,11 +47,11 @@ internal static class Program
 
 		KeyboardInput.GlobalContext.AddKeyBind(new NamedFunc("exit_program", () =>
 		{
-			Context2.State.Window.Value.Close();
+			Context.State.Window.Value.Close();
 			return true;
 		}), SDL.SDL_Keycode.SDLK_ESCAPE);
 
-		Context2.Init();
+		Context.Init();
 		var test = new UiRootRenderer("");
 
 		int gpu = 0;
@@ -66,16 +66,16 @@ internal static class Program
 			// Context2.State.PresentMode.Value = Context2.State.PresentMode.Value == PresentModeKHR.PresentModeMailboxKhr
 			// 	? PresentModeKHR.PresentModeImmediateKhr
 			// 	: Context2.State.PresentMode.Value;
-			if (Context2.IsStateChanged(out var level)) Context2.ApplyStateChanges(level);
+			if (Context.IsStateChanged(out var level)) Context.ApplyStateChanges(level);
 			// App.Logger.Info.Message($"{test._componentDataSet.Value.Handle}");
 			// GC.Collect();
 		}
 
 		windowThread.Join();
 
-		Context2.Dispose();
+		Context.Dispose();
 
-		Context2.Window.Dispose();
+		Context.Window.Dispose();
 
 		SpinWait.SpinUntil(() => !App.Get<DevConsoleRegistry>().IsAlive);
 		App.Get<ConfigRegistry>().SaveStates();

@@ -81,7 +81,7 @@ public static unsafe partial class UiRenderer
 		// var sw = new Stopwatch();
 		// sw.Start();
 		//
-		InitExtremeTestScene();
+		// InitExtremeTestScene();
 		//
 		// sw.Stop();
 		// Console.Out.WriteLine($"Total: {sw.ElapsedMilliseconds}ms");
@@ -109,8 +109,6 @@ public static unsafe partial class UiRenderer
 
 		var cursor = UiComponentFactory.Instance.Create();
 		var cursorData = cursor.GetData();
-		cursorData->MaskStart = (0, 0);
-		cursorData->MaskEnd = (1920, 1080);
 		cursorData->BasePos = (0, 0);
 		cursorData->BaseZ = 30;
 		cursorData->Size = (50, 50);
@@ -121,8 +119,6 @@ public static unsafe partial class UiRenderer
 
 		var comp = UiComponentFactory.Instance.Create();
 		var compData = comp.GetData();
-		compData->MaskStart = (0, 0);
-		compData->MaskEnd = (1920, 1080);
 		compData->BasePos = (450, 100);
 		compData->BaseZ = 25;
 		compData->Size = (300, 300);
@@ -175,8 +171,6 @@ public static unsafe partial class UiRenderer
 				gradient.MarkForGPUUpdate();
 
 				var squareData = square.GetData();
-				squareData->MaskStart = (0, 0);
-				squareData->MaskEnd = (1920, 1080);
 
 				squareData->BasePos = (startX, startY);
 				squareData->BaseZ = 600;
@@ -193,44 +187,41 @@ public static unsafe partial class UiRenderer
 			}
 		}
 
-		MainRenderer.BeforeDrawFrame += (index1, index2) =>
-		{
-			var random = new Random();
-			if (index1 % 2 == 0)
-			{
-				for (int i = 0; i < 100; i++)
-				{
-					bool removed = false;
-					while (!removed)
-					{
-						int removeIndex = random.Next(0, Components.Count);
-						var data = Components[removeIndex].GetData();
-
-						if ((data->Flags & UiComponentFlags.Disabled) == 0)
-						{
-							data->Flags |= UiComponentFlags.Disabled;
-							data->Flags |= UiComponentFlags.Deleted;
-							// return material data if needed
-							Components[removeIndex].Dispose();
-							Components[removeIndex].FragMaterial.Dispose();
-							// Components[removeIndex].VertMaterial.Dispose();
-							removed = true;
-						}
-					}
-				}
-			}
-
-			for (int i = 0; i < 10; i++)
-			{
-				int randomIndex = random.Next(0, Components.Count);
-				var colorMaterialFactory = UiMaterialManager.GetFactory("core:color_material");
-				var colorMat = colorMaterialFactory.Create();
-				Components[randomIndex].FragMaterial = colorMat;
-				colorMat.GetMemPtr<ColorMaterialData>()->Color = Color.Blue.ToArgb();
-				colorMat.MarkForGPUUpdate();
-				Components[randomIndex].MarkForGPUUpdate();
-			}
-		};
+		// MainRenderer.BeforeDrawFrame += (index1, index2) =>
+		// {
+		// 	var random = new Random();
+		// 	if (index1 % 2 == 0)
+		// 	{
+		// 		for (int i = 0; i < 100; i++)
+		// 		{
+		// 			bool removed = false;
+		// 			while (!removed)
+		// 			{
+		// 				int removeIndex = random.Next(0, Components.Count);
+		// 				var data = Components[removeIndex].GetData();
+		//
+		// 				if ((data->Flags & UiComponentFlags.Disabled) == 0)
+		// 				{
+		// 					data->Flags |= UiComponentFlags.Disabled;
+		// 					data->Flags |= UiComponentFlags.Deleted;
+		// 					// return material data if needed
+		// 					Components[removeIndex].Dispose();
+		// 					Components[removeIndex].FragMaterial.Dispose();
+		// 					// Components[removeIndex].VertMaterial.Dispose();
+		// 					removed = true;
+		// 				}
+		// 			}
+		// 		}
+		// 	}
+		//
+		// 	int randomIndex = random.Next(0, Components.Count);
+		// 	var colorMaterialFactory = UiMaterialManager.GetFactory("core:color_material");
+		// 	var colorMat = colorMaterialFactory.Create();
+		// 	Components[randomIndex].FragMaterial = colorMat;
+		// 	colorMat.GetMemPtr<ColorMaterialData>()->Color = Color.Blue.ToArgb();
+		// 	colorMat.MarkForGPUUpdate();
+		// 	Components[randomIndex].MarkForGPUUpdate();
+		// };
 	}
 
 	private static void InitMaterialSystem()

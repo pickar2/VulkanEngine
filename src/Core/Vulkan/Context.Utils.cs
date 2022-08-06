@@ -4,7 +4,7 @@ using static Core.Native.VMA.VulkanMemoryAllocator;
 
 namespace Core.Vulkan;
 
-public static unsafe partial class Context2
+public static unsafe partial class Context
 {
 	public static Result Begin(this ref CommandBuffer cb, ref CommandBufferBeginInfo beginInfo) => Vk.BeginCommandBuffer(cb, beginInfo);
 

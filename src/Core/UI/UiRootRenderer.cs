@@ -37,7 +37,7 @@ public unsafe partial class UiRootRenderer : RenderChain
 		_componentDataPool = ReCreate.OnAccessValueInDevice(() => CreateDescriptorPool(), pool => pool.Dispose());
 		_componentDataSet = ReCreate.OnAccessValueInDevice(() => CreateDescriptorSet(_componentDataPool));
 
-		_indexBuffers = new OnAccessClassReCreator<VulkanBuffer>[Context2.State.FrameOverlap];
+		_indexBuffers = new OnAccessClassReCreator<VulkanBuffer>[Context.State.FrameOverlap];
 		for (int i = 0; i < _indexBuffers.Length; i++)
 			_indexBuffers[i] = ReCreate.OnAccessClassInDevice(() => CreateIndexBuffer(ComponentFactory.MaxComponents), buffer => buffer.Dispose());
 
@@ -72,7 +72,7 @@ public unsafe partial class UiRootRenderer : RenderChain
 			Flags = DescriptorPoolCreateFlags.UpdateAfterBindBitExt
 		};
 
-		Check(Context2.Vk.CreateDescriptorPool(Context2.Device, &componentDataCreateInfo, null, out var descriptorPool),
+		Check(Context.Vk.CreateDescriptorPool(Context.Device, &componentDataCreateInfo, null, out var descriptorPool),
 			"Failed to create ui data descriptor pool.");
 
 		return descriptorPool;
@@ -88,7 +88,7 @@ public unsafe partial class UiRootRenderer : RenderChain
 			PSetLayouts = ComponentDataLayout.AsPointer()
 		};
 
-		Check(Context2.Vk.AllocateDescriptorSets(Context2.Device, dataAllocInfo, out var descriptorSet),
+		Check(Context.Vk.AllocateDescriptorSets(Context.Device, dataAllocInfo, out var descriptorSet),
 			"Failed to allocate ui data descriptor sets.");
 
 		return descriptorSet;

@@ -20,9 +20,9 @@ public static unsafe class FrameGraph
 	[SuppressMessage("ReSharper", "ConvertClosureToMethodGroup")]
 	static FrameGraph()
 	{
-		Context2.DeviceEvents.BeforeDispose += () => Dispose();
-		Context2.SwapchainEvents.AfterCreate += () => AfterSwapchainCreation();
-		Context2.SwapchainEvents.BeforeDispose += () => BeforeSwapchainDispose();
+		Context.DeviceEvents.BeforeDispose += () => Dispose();
+		Context.SwapchainEvents.AfterCreate += () => AfterSwapchainCreation();
+		Context.SwapchainEvents.BeforeDispose += () => BeforeSwapchainDispose();
 	}
 
 	public static CommandPool ImageTransitionCommandPool;
@@ -32,16 +32,16 @@ public static unsafe class FrameGraph
 		var commandPoolCreateInfo = new CommandPoolCreateInfo
 		{
 			SType = StructureType.CommandPoolCreateInfo,
-			QueueFamilyIndex = Context2.GraphicsQueue.Family.Index,
+			QueueFamilyIndex = Context.GraphicsQueue.Family.Index,
 			Flags = CommandPoolCreateFlags.TransientBit
 		};
-		Check(Context2.Vk.CreateCommandPool(Context2.Device, commandPoolCreateInfo, null, out ImageTransitionCommandPool),
+		Check(Context.Vk.CreateCommandPool(Context.Device, commandPoolCreateInfo, null, out ImageTransitionCommandPool),
 			"Failed to create ImageTransitionCommandPool.");
 	}
 
 	public static void Dispose()
 	{
-		Context2.Vk.DestroyCommandPool(Context2.Device, ImageTransitionCommandPool, null);
+		Context.Vk.DestroyCommandPool(Context.Device, ImageTransitionCommandPool, null);
 	}
 
 	public static void AfterSwapchainCreation()
@@ -51,10 +51,10 @@ public static unsafe class FrameGraph
 
 		// var swapchainAttachment = new VulkanImage2(Context2.);
 		var attachments = new Dictionary<string, VulkanImage2>();
-		attachments["position"] = CreateAttachment(Format.R16G16B16A16Sfloat, ImageAspectFlags.ColorBit, Context2.State.WindowSize.Value);
-		attachments["normal"] = CreateAttachment(Format.R16G16B16A16Sfloat, ImageAspectFlags.ColorBit, Context2.State.WindowSize.Value);
-		attachments["albedo"] = CreateAttachment(Format.R8G8B8A8Unorm, ImageAspectFlags.ColorBit, Context2.State.WindowSize.Value);
-		attachments["depth"] = CreateAttachment(Format.D32Sfloat, ImageAspectFlags.DepthBit, Context2.State.WindowSize.Value);
+		attachments["position"] = CreateAttachment(Format.R16G16B16A16Sfloat, ImageAspectFlags.ColorBit, Context.State.WindowSize.Value);
+		attachments["normal"] = CreateAttachment(Format.R16G16B16A16Sfloat, ImageAspectFlags.ColorBit, Context.State.WindowSize.Value);
+		attachments["albedo"] = CreateAttachment(Format.R8G8B8A8Unorm, ImageAspectFlags.ColorBit, Context.State.WindowSize.Value);
+		attachments["depth"] = CreateAttachment(Format.D32Sfloat, ImageAspectFlags.DepthBit, Context.State.WindowSize.Value);
 
 		// var maskAttachment = CreateAttachment(Format.R8Uint, ImageAspectFlags.ColorBit, Context2.State.WindowSize.Value);
 
@@ -64,7 +64,7 @@ public static unsafe class FrameGraph
 		attachmentDescriptions[0] = new AttachmentDescription2
 		{
 			SType = StructureType.AttachmentDescription2,
-			Format = Context2.SwapchainSurfaceFormat.Format,
+			Format = Context.SwapchainSurfaceFormat.Format,
 			Samples = SampleCountFlags.Count1Bit,
 			LoadOp = AttachmentLoadOp.Clear,
 			StoreOp = AttachmentStoreOp.Store,
@@ -123,7 +123,7 @@ public static unsafe class FrameGraph
 
 		foreach (var candidate in candidates)
 		{
-			Context2.Vk.GetPhysicalDeviceFormatProperties2(Context2.PhysicalDevice, candidate, out var props);
+			Context.Vk.GetPhysicalDeviceFormatProperties2(Context.PhysicalDevice, candidate, out var props);
 			if ((props.FormatProperties.OptimalTilingFeatures & FormatFeatureFlags.DepthStencilAttachmentBit) != 0) list.Add(candidate);
 		}
 
@@ -167,7 +167,7 @@ public static unsafe class FrameGraph
 			usage = VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY
 		};
 
-		Check((Result) vmaCreateImage(Context2.VmaHandle, ref imageCreateInfo, ref allocationInfo, out var imageHandle, out var allocation, IntPtr.Zero),
+		Check((Result) vmaCreateImage(Context.VmaHandle, ref imageCreateInfo, ref allocationInfo, out var imageHandle, out var allocation, IntPtr.Zero),
 			"Failed to create attachment image.");
 
 		var image = new Image(imageHandle);
@@ -188,7 +188,7 @@ public static unsafe class FrameGraph
 			Format = format
 		};
 
-		Check(Context2.Vk.CreateImageView(Context2.Device, imageViewCreateInfo, null, out var imageView), "Failed to create attachment image view.");
+		Check(Context.Vk.CreateImageView(Context.Device, imageViewCreateInfo, null, out var imageView), "Failed to create attachment image view.");
 
 		var vulkanImage = new VulkanImage2(image, allocation, imageView, format, aspectFlags: aspectFlags);
 
@@ -232,9 +232,9 @@ public static unsafe class FrameGraph
 
 		var commandBuffer = CommandBuffers.BeginSingleTimeCommands(ImageTransitionCommandPool);
 
-		Context2.KhrSynchronization2.CmdPipelineBarrier2(commandBuffer, dependencyInfo);
+		Context.KhrSynchronization2.CmdPipelineBarrier2(commandBuffer, dependencyInfo);
 
-		CommandBuffers.EndSingleTimeCommands(ref commandBuffer, ImageTransitionCommandPool, Context2.GraphicsQueue);
+		CommandBuffers.EndSingleTimeCommands(ref commandBuffer, ImageTransitionCommandPool, Context.GraphicsQueue);
 
 		vulkanImage.CurrentLayout = ImageLayout.AttachmentOptimal;
 
@@ -245,61 +245,6 @@ public static unsafe class FrameGraph
 	{
 		subpassNode = null;
 		return RenderPasses.TryGetValue(renderPassName, out var renderPass) && renderPass.Subpasses.TryGetValue(subpassName, out subpassNode);
-	}
-
-	private static void RecordPrimaryCommandBuffers(int imageIndex)
-	{
-		var clearValues = stackalloc ClearValue[2];
-
-		clearValues[0] = new ClearValue
-		{
-			Color = new ClearColorValue(0.66f, 0.66f, 0.66f, 1)
-		};
-
-		clearValues[1] = new ClearValue();
-		clearValues[1].DepthStencil.Depth = 1;
-
-		var cmd = MainRenderer.PrimaryCommandBuffers[imageIndex];
-
-		Check(cmd.Begin(CommandBufferUsageFlags.OneTimeSubmitBit), "Failed to begin command buffer.");
-
-		foreach (var (renderPassName, renderPass) in RenderPasses)
-		{
-			// var renderPassBeginInfo = new RenderPassBeginInfo
-			// {
-			// 	SType = StructureType.RenderPassBeginInfo,
-			// 	RenderPass = SwapchainHelper.RenderPass,
-			// 	RenderArea = new Rect2D(default, SwapchainHelper.Extent),
-			// 	Framebuffer = SwapchainHelper.FrameBuffers[imageIndex],
-			// 	ClearValueCount = 2,
-			// 	PClearValues = clearValues
-			// };
-			Context2.Vk.CmdBeginRenderPass(cmd, renderPass.BeginInfos[imageIndex], SubpassContents.SecondaryCommandBuffers);
-
-			foreach (var (subpassName, subpass) in renderPass.Subpasses) { }
-
-			Context2.Vk.CmdEndRenderPass(cmd);
-		}
-
-		/*
-		Context2.Vk.CmdBeginRenderPass(cmd, renderPassBeginInfo, SubpassContents.SecondaryCommandBuffers);
-
-		var list = FillCommandBuffers?.GetInvocationList();
-		if (list is not null)
-		{
-			var arr = stackalloc CommandBuffer[list.Length];
-			for (int index = 0; index < list.Length; index++)
-			{
-				arr[index] = ((Func<int, CommandBuffer>) list[index]).Invoke(imageIndex);
-			}
-
-			Context2.Vk.CmdExecuteCommands(cmd, (uint) list.Length, arr);
-		}
-
-		Context2.Vk.CmdEndRenderPass(cmd);
-		*/
-
-		Check(cmd.End(), "Failed to end command buffer.");
 	}
 }
 
@@ -328,30 +273,6 @@ public unsafe class RenderPassNode
 		// };
 
 		// Check(Context2.Vk.CreateRenderPass(Context2.Device, renderPassInfo, null, out var renderPass), "Failed to create render pass");
-
-		var clearValues = stackalloc ClearValue[2];
-
-		clearValues[0] = new ClearValue
-		{
-			Color = new ClearColorValue(0.66f, 0.66f, 0.66f, 1)
-		};
-
-		clearValues[1] = new ClearValue();
-		clearValues[1].DepthStencil.Depth = 1;
-
-		BeginInfos = new RenderPassBeginInfo[SwapchainHelper.ImageCountInt];
-		for (var i = 0; i < BeginInfos.Length; i++)
-		{
-			BeginInfos[i] = new RenderPassBeginInfo
-			{
-				SType = StructureType.RenderPassBeginInfo,
-				RenderPass = RenderPass,
-				RenderArea = new Rect2D(default, SwapchainHelper.Extent),
-				Framebuffer = SwapchainHelper.FrameBuffers[i],
-				ClearValueCount = 2,
-				PClearValues = clearValues
-			};
-		}
 	}
 }
 
@@ -386,8 +307,8 @@ public class VulkanImage2
 
 	public unsafe void Dispose()
 	{
-		Context2.Vk.DestroyImageView(Context2.Device, ImageView, null);
-		vmaDestroyImage(Context2.VmaHandle, Image.Handle, Allocation);
+		Context.Vk.DestroyImageView(Context.Device, ImageView, null);
+		vmaDestroyImage(Context.VmaHandle, Image.Handle, Allocation);
 		GC.SuppressFinalize(this);
 	}
 }

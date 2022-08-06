@@ -22,8 +22,8 @@ public class SdlWindow : IDisposable
 	public bool IsRunning { get; private set; }
 	public bool IsMinimized => ((SDL_WindowFlags) SDL_GetWindowFlags(WindowHandle) & SDL_WindowFlags.SDL_WINDOW_MINIMIZED) > 0;
 
-	public uint WindowWidth => Context2.State.WindowSize.Value.X;
-	public uint WindowHeight => Context2.State.WindowSize.Value.Y;
+	public uint WindowWidth => Context.State.WindowSize.Value.X;
+	public uint WindowHeight => Context.State.WindowSize.Value.Y;
 
 	public void Init()
 	{
@@ -37,11 +37,11 @@ public class SdlWindow : IDisposable
 
 		var flags = SDL_WindowFlags.SDL_WINDOW_VULKAN | SDL_WindowFlags.SDL_WINDOW_RESIZABLE | SDL_WindowFlags.SDL_WINDOW_HIDDEN;
 
-		var size = Context2.State.WindowSize.Value;
+		var size = Context.State.WindowSize.Value;
 		int width = (int) size.X;
 		int height = (int) size.Y;
 
-		if (Context2.State.Fullscreen.Value)
+		if (Context.State.Fullscreen.Value)
 		{
 			flags |= SDL_WindowFlags.SDL_WINDOW_FULLSCREEN;
 			width = mode.w;
@@ -50,7 +50,7 @@ public class SdlWindow : IDisposable
 
 		WindowHandle = SDL_CreateWindow(Title, (mode.w - width) / 2, (mode.h - height) / 2, width, height, flags);
 
-		Context2.State.WindowSize.Value = new Vector2<uint>((uint) width, (uint) height);
+		Context.State.WindowSize.Value = new Vector2<uint>((uint) width, (uint) height);
 
 		SDL_AddEventWatch(WindowResizeEventFilter, IntPtr.Zero);
 		IsInitialized = true;
@@ -63,8 +63,8 @@ public class SdlWindow : IDisposable
 		var eventPtr = (SDL_Event*) e;
 		if (eventPtr->type == SDL_EventType.SDL_WINDOWEVENT && eventPtr->window.windowEvent == SDL_WindowEventID.SDL_WINDOWEVENT_RESIZED)
 		{
-			Context2.State.WindowSize.Value = new Vector2<uint>((uint) eventPtr->window.data1, (uint) eventPtr->window.data2);
-			if (Context2.State.WindowSize.IsChanged()) Context2.ApplyStateChanges(Context2.State.WindowSize.Level);
+			Context.State.WindowSize.Value = new Vector2<uint>((uint) eventPtr->window.data1, (uint) eventPtr->window.data2);
+			if (Context.State.WindowSize.IsChanged()) Context.ApplyStateChanges(Context.State.WindowSize.Level);
 		}
 
 		return 0;
@@ -113,7 +113,7 @@ public class SdlWindow : IDisposable
 
 			for (int index = 0; index < result; index++) HandleEvent(events[index]);
 
-			if (Context2.IsStateChanged(out var level)) Context2.ApplyStateChanges(level);
+			if (Context.IsStateChanged(out var level)) Context.ApplyStateChanges(level);
 			handle.WaitOne(1);
 		}
 	}
