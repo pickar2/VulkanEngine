@@ -115,7 +115,7 @@ public static unsafe partial class Context2
 		SwapchainImageId = (int) imageId;
 
 		if (result is Result.ErrorOutOfDateKhr) return;
-		if (result is not Result.Success) throw new Exception($"Failed to acquire next image: {result}.");
+		if (result is not (Result.Success or Result.SuboptimalKhr)) throw new Exception($"Failed to acquire next image: {result}.");
 
 		var frameInfo = new FrameInfo
 		{
@@ -149,7 +149,7 @@ public static unsafe partial class Context2
 		};
 
 		result = KhrSwapchain.QueuePresent(GraphicsQueue.Queue, &presentInfo);
-		if (result is not Result.Success and not Result.ErrorOutOfDateKhr and not Result.SuboptimalKhr)
+		if (result is not (Result.Success or Result.ErrorOutOfDateKhr or Result.SuboptimalKhr))
 			throw new Exception("Failed to present image.");
 
 		ExecuteAndClearAtFrameEnd(FrameId);
