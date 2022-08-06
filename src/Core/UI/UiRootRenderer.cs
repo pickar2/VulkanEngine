@@ -1,10 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
-using Core.Native.SpirvReflect;
-using Core.Utils;
 using Core.Vulkan;
-using Core.Vulkan.Options;
-using Silk.NET.Core.Native;
 using Silk.NET.Vulkan;
 using static Core.Native.VMA.VulkanMemoryAllocator;
 using static Core.Utils.VulkanUtils;
@@ -39,17 +35,17 @@ public unsafe partial class UiRootRenderer : RenderChain
 	public UiRootRenderer(string name) : base(name)
 	{
 		_componentDataPool = ReCreate.OnAccessValueInDevice(() => CreateDescriptorPool(), pool => pool.Dispose());
-		_componentDataSet = ReCreate.OnAccessValueInDevice(() => CreateDescriptorSet(_componentDataPool.Value));
+		_componentDataSet = ReCreate.OnAccessValueInDevice(() => CreateDescriptorSet(_componentDataPool));
 
-		_indexBuffers = new OnAccessClassReCreator<VulkanBuffer>[Context2.State.FrameOverlap.Value];
-		for (var i = 0; i < _indexBuffers.Length; i++)
+		_indexBuffers = new OnAccessClassReCreator<VulkanBuffer>[Context2.State.FrameOverlap];
+		for (int i = 0; i < _indexBuffers.Length; i++)
 			_indexBuffers[i] = ReCreate.OnAccessClassInDevice(() => CreateIndexBuffer(ComponentFactory.MaxComponents), buffer => buffer.Dispose());
 
 		_indirectBuffer = ReCreate.OnAccessClassInDevice(() => CreateIndirectBuffer(), buffer => buffer.Dispose());
 
-		OnCommandBufferWrite += (int imageIndex) =>
+		RenderCommandBuffers += (FrameInfo frameInfo) =>
 		{
-			FillIndirectBuffer(ComponentCount, _indirectBuffer.Value);
+			FillIndirectBuffer(ComponentCount, _indirectBuffer);
 			// perform copy
 			// start sorting
 			// update command buffers if required
@@ -119,9 +115,6 @@ public unsafe partial class UiRootRenderer : RenderChain
 				FirstInstance = 0
 			};
 		}, buffer, (ulong) sizeof(DrawIndexedIndirectCommand));
-
-	// TODO: use OnCommandBufferWrite event
-	public override CommandBuffer GetCommandBuffer(int imageIndex) => throw new System.NotImplementedException();
 
 	public override void Dispose()
 	{

@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Threading;
 using Core.Utils;
 using Silk.NET.Vulkan;
+using Semaphore = Silk.NET.Vulkan.Semaphore;
 
 namespace Core.Vulkan;
 
@@ -50,9 +51,9 @@ public static unsafe partial class Context2
 		var frameTimeQueue = new Queue<double>(frameTimeQueueSize);
 
 		_actionsAtFrameStart = new List<Action>[State.FrameOverlap.Value];
-		for (var i = 0; i < _actionsAtFrameStart.Length; i++) _actionsAtFrameStart[i] = new List<Action>();
+		for (int i = 0; i < _actionsAtFrameStart.Length; i++) _actionsAtFrameStart[i] = new List<Action>();
 		_actionsAtFrameEnd = new List<Action>[State.FrameOverlap.Value];
-		for (var i = 0; i < _actionsAtFrameEnd.Length; i++) _actionsAtFrameEnd[i] = new List<Action>();
+		for (int i = 0; i < _actionsAtFrameEnd.Length; i++) _actionsAtFrameEnd[i] = new List<Action>();
 
 		if (!Window.IsShown)
 		{
@@ -72,7 +73,7 @@ public static unsafe partial class Context2
 			LagStopwatch.Restart();
 			if (Lag < MsPerUpdate)
 			{
-				waitHandle.WaitOne((int) ((MsPerUpdate - Lag) > 1 ? Math.Floor(MsPerUpdate - Lag) : 0));
+				waitHandle.WaitOne((int) (MsPerUpdate - Lag > 1 ? Math.Floor(MsPerUpdate - Lag) : 0));
 				continue;
 			}
 
@@ -125,31 +126,16 @@ public static unsafe partial class Context2
 		OnFrameStart?.Invoke(frameInfo);
 		ExecuteAndClearAtFrameStart(FrameId);
 
-		// Thread.Sleep(5);
+		// Thread.Sleep(1000);
 		// App.Logger.Info.Message($"\r\nTotalTimeRendering: {TotalTimeRendering}, CurrentFrameTime: {CurrentFrameTime}, " +
 		//                         $"NormalizedFrameTime: {NormalizedFrameTime}\r\n" +
 		//                         $"Lag: {Lag}, FrameIndex: {FrameIndex}, FrameId: {FrameId}, SwapchainImageId: {SwapchainImageId}");
 
-		var waitStage = PipelineStageFlags.ColorAttachmentOutputBit;
-		var presentSemaphore = currentFrame.PresentSemaphore;
-		// for each render pass in render graph
-		// {
-		var renderSemaphore = currentFrame.RenderSemaphore;
+		var waitSemaphores = new List<Semaphore> {currentFrame.PresentSemaphore};
+		GeneralRenderer.Root.StartRendering(frameInfo, waitSemaphores, out var signalSemaphores, currentFrame.Fence);
 
-		var submitInfo = new SubmitInfo
-		{
-			SType = StructureType.SubmitInfo,
-			PWaitDstStageMask = &waitStage,
-			WaitSemaphoreCount = 1,
-			PWaitSemaphores = &presentSemaphore,
-			SignalSemaphoreCount = 1,
-			PSignalSemaphores = &renderSemaphore,
-			// PCommandBuffers = &cmd,
-			CommandBufferCount = 0
-		};
-
-		GraphicsQueue.Submit(ref submitInfo, ref currentFrame.Fence);
-		// }
+		var pRenderSemaphores = stackalloc Semaphore[signalSemaphores.Count];
+		for (int i = 0; i < signalSemaphores.Count; i++) pRenderSemaphores[i] = signalSemaphores[i];
 
 		var swapchain = Swapchain;
 		var presentInfo = new PresentInfoKHR
@@ -157,8 +143,8 @@ public static unsafe partial class Context2
 			SType = StructureType.PresentInfoKhr,
 			SwapchainCount = 1,
 			PSwapchains = &swapchain,
-			WaitSemaphoreCount = 1,
-			PWaitSemaphores = &renderSemaphore,
+			WaitSemaphoreCount = (uint) signalSemaphores.Count,
+			PWaitSemaphores = pRenderSemaphores,
 			PImageIndices = &imageId
 		};
 
@@ -168,7 +154,7 @@ public static unsafe partial class Context2
 
 		ExecuteAndClearAtFrameEnd(FrameId);
 		OnFrameEnd?.Invoke(frameInfo);
-		
+
 		FrameIndex++;
 		FrameTimeStopwatch.Stop();
 	}

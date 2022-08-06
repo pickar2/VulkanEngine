@@ -44,7 +44,7 @@ public static class CommandBuffers
 		};
 
 		var fence = VulkanUtils.CreateFence(false);
-		vulkanQueue.Submit(ref submitInfo, ref fence);
+		vulkanQueue.Submit(submitInfo, fence);
 		fence.Wait(ulong.MaxValue);
 
 		Context2.Vk.DestroyFence(Context2.Device, fence, null);
@@ -62,7 +62,7 @@ public static class CommandBuffers
 			CommandBufferCount = 1
 		};
 
-		vulkanQueue.Submit(ref submitInfo, ref fence);
+		vulkanQueue.Submit(submitInfo, fence);
 		fence.Wait(ulong.MaxValue);
 
 		Context2.Vk.FreeCommandBuffers(Context2.Device, commandPool, 1, commandBuffer);

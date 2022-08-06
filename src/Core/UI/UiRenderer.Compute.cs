@@ -434,7 +434,8 @@ public unsafe partial class UiRenderer
 		Context2.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Compute, _sortCountPipeline.PipelineLayout, 0, 1,
 			_componentDataSets[imageIndex].AsPointer(),
 			null);
-		Context2.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Compute, _sortCountPipeline.PipelineLayout, 1, 1, _sortCountersSet.AsPointer(), null);
+		Context2.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Compute, _sortCountPipeline.PipelineLayout, 1, 1, _sortCountersSet.AsPointer(),
+			null);
 		Context2.Vk.CmdDispatch(commandBuffer, (uint) Math.Ceiling((float) UiComponentFactory.Instance.MaxComponents / 32), 1, 1);
 
 		Context.KhrSynchronization2.CmdPipelineBarrier2(commandBuffer, &dependencyInfoStorage);
@@ -493,7 +494,7 @@ public unsafe partial class UiRenderer
 		};
 
 		_fence.Reset();
-		Context2.ComputeQueue.Submit(ref submitInfo, ref _fence);
+		Context2.ComputeQueue.Submit(submitInfo, _fence);
 		_fence.WaitInRenderer(imageIndex);
 	}
 }

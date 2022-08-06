@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using Core.Window;
 using Silk.NET.Vulkan;
@@ -75,7 +74,7 @@ public class VulkanState
 		},
 		new PhysicalDevice16BitStorageFeaturesKHR
 		{
-			StorageBuffer16BitAccess = true,
+			StorageBuffer16BitAccess = true
 			// StorageInputOutput16 = true
 		},
 		new PhysicalDeviceSeparateDepthStencilLayoutsFeatures
@@ -93,7 +92,7 @@ public class VulkanState
 		FillModeNonSolid = true,
 		ShaderFloat64 = false,
 		ShaderInt16 = true,
-		DrawIndirectFirstInstance = true,
+		DrawIndirectFirstInstance = true
 		// TextureCompressionEtc2 = true,
 		// TextureCompressionAstcLdr = true,
 		// DepthBounds = true,
@@ -181,6 +180,8 @@ public class VulkanOption<T> : VulkanOption
 	public override void ApplyChange() => _previousValue = NewValue;
 
 	public override string ToString() => $"_previousValue = {_previousValue}, NewValue = {NewValue}, IsChanged = {IsChanged()}";
+
+	public static implicit operator T(VulkanOption<T> input) => input.Value;
 }
 
 public abstract class VulkanOption

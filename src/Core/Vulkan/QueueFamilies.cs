@@ -25,15 +25,15 @@ public class VulkanQueue
 	public QueueFamily Family { get; init; } = default!;
 	public uint QueueIndex { get; init; }
 
-	public void Submit(ref SubmitInfo[] submitInfo, ref Fence fence)
-	{	
+	public void Submit(SubmitInfo[] submitInfo, Fence fence)
+	{
 		lock (this)
 		{
 			Check(Context2.Vk.QueueSubmit(Queue, (uint) submitInfo.Length, submitInfo, fence), "Failed to submit to Queue.");
 		}
 	}
 
-	public void Submit(ref SubmitInfo submitInfo, ref Fence fence)
+	public void Submit(SubmitInfo submitInfo, Fence fence)
 	{
 		lock (this)
 		{

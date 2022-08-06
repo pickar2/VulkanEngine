@@ -686,4 +686,16 @@ public static unsafe class VulkanUtils
 
 		return sampler;
 	}
+
+	public static Semaphore CreateSemaphore()
+	{
+		var semaphoreCreateInfo = new SemaphoreCreateInfo
+		{
+			SType = StructureType.SemaphoreCreateInfo
+		};
+
+		Check(Context2.Vk.CreateSemaphore(Context2.Device, semaphoreCreateInfo, null, out var semaphore), $"Failed to create semaphore.");
+
+		return semaphore;
+	}
 }

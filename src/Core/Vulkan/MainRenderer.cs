@@ -106,7 +106,7 @@ public static unsafe class MainRenderer
 			sw.Restart();
 			if (lag < MsPerUpdate)
 			{
-				handle.WaitOne((int) ((MsPerUpdate - lag) > 1 ? Math.Floor(MsPerUpdate - lag) : 0));
+				handle.WaitOne((int) (MsPerUpdate - lag > 1 ? Math.Floor(MsPerUpdate - lag) : 0));
 				continue;
 			}
 
@@ -225,7 +225,7 @@ public static unsafe class MainRenderer
 		//
 		// Context2.Vk.QueueSubmit2(Context2.GraphicsQueue.Queue, 1, &submitInfo2, currentFrame.Fence);
 
-		Context2.GraphicsQueue.Submit(ref submitInfo, ref currentFrame.Fence);
+		Context2.GraphicsQueue.Submit(submitInfo, currentFrame.Fence);
 
 		var swapchain = SwapchainHelper.Swapchain;
 		var presentInfo = new PresentInfoKHR

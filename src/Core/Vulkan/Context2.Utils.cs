@@ -67,4 +67,12 @@ public static unsafe partial class Context2
 	public static void Dispose(this ref PipelineLayout layout) => Vk.DestroyPipelineLayout(Device, layout, null);
 
 	public static void Dispose(this ref DescriptorPool pool) => Vk.DestroyDescriptorPool(Device, pool, null);
+
+	public static void Dispose(this ref Semaphore semaphore) => Vk.DestroySemaphore(Device, semaphore, null);
+
+	public static void Dispose(this ref RenderPass renderPass) => Vk.DestroyRenderPass(Device, renderPass, null);
+
+	public static void Dispose(this ref Framebuffer framebuffer) => Vk.DestroyFramebuffer(Device, framebuffer, null);
+
+	public static void Dispose(this ref CommandPool commandPool) => Vk.DestroyCommandPool(Device, commandPool, null);
 }

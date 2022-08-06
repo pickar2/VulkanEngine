@@ -17,6 +17,20 @@ public static class ReCreate
 
 	public static OnAccessClassReCreator<T> OnAccessClassInDevice<T>(Func<T> createFunc, Action<T>? disposeFunc = null) where T : class =>
 		new(VulkanLevel.Device, createFunc, disposeFunc);
+
+	public static ReCreator InSwapchain(Action createAction, Action disposeAction) => new(VulkanLevel.Swapchain, createAction, disposeAction);
+
+	public static ReCreator InSwapchainNow(Action createAction, Action disposeAction)
+	{
+		createAction();
+		return new ReCreator(VulkanLevel.Swapchain, createAction, disposeAction);
+	}
+
+	public static OnAccessValueReCreator<T> OnAccessValueInSwapchain<T>(Func<T> createFunc, Action<T>? disposeFunc = null) where T : struct =>
+		new(VulkanLevel.Swapchain, createFunc, disposeFunc);
+
+	public static OnAccessClassReCreator<T> OnAccessClassInSwapchain<T>(Func<T> createFunc, Action<T>? disposeFunc = null) where T : class =>
+		new(VulkanLevel.Swapchain, createFunc, disposeFunc);
 }
 
 public class ReCreator
@@ -65,7 +79,7 @@ public class OnAccessValueReCreator<T> where T : struct
 		DisposeAction = () =>
 		{
 			if (_value is not null) DisposeFunc?.Invoke(_value.Value);
-			_value = default;
+			_value = null;
 		};
 
 		var events = Context2.GetLevelEvents(Level);
@@ -78,6 +92,8 @@ public class OnAccessValueReCreator<T> where T : struct
 		var events = Context2.GetLevelEvents(Level);
 		events.BeforeDispose -= DisposeAction;
 	}
+
+	public static implicit operator T(OnAccessValueReCreator<T> input) => input.Value;
 }
 
 public class OnAccessClassReCreator<T> where T : class
@@ -113,4 +129,6 @@ public class OnAccessClassReCreator<T> where T : class
 		var events = Context2.GetLevelEvents(Level);
 		events.BeforeDispose -= DisposeAction;
 	}
+
+	public static implicit operator T(OnAccessClassReCreator<T> input) => input.Value;
 }
