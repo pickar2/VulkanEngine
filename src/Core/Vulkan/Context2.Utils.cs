@@ -22,9 +22,9 @@ public static unsafe partial class Context2
 
 	public static Result End(this ref CommandBuffer cb) => Vk.EndCommandBuffer(cb);
 
-	public static Result Wait(this ref Fence fence, ulong timeout = 1000000000) => Vk.WaitForFences(Device, 1, fence, true, timeout);
+	public static Result Wait(this Fence fence, ulong timeout = 1000000000) => Vk.WaitForFences(Device, 1, fence, true, timeout);
 
-	public static Result Reset(this ref Fence fence) => Vk.ResetFences(Device, 1, fence);
+	public static Result Reset(this Fence fence) => Vk.ResetFences(Device, 1, fence);
 
 	public static void BeginRenderPass(this ref CommandBuffer cb, in RenderPassBeginInfo beginInfo, SubpassContents subpassContents) =>
 		Vk.CmdBeginRenderPass(cb, beginInfo, subpassContents);
@@ -75,4 +75,6 @@ public static unsafe partial class Context2
 	public static void Dispose(this ref Framebuffer framebuffer) => Vk.DestroyFramebuffer(Device, framebuffer, null);
 
 	public static void Dispose(this ref CommandPool commandPool) => Vk.DestroyCommandPool(Device, commandPool, null);
+
+	public static void Dispose(this ref Fence fence) => Vk.DestroyFence(Device, fence, null);
 }

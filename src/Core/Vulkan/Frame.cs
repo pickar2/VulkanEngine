@@ -1,19 +1,27 @@
 ﻿using System;
+using Core.Utils;
 using Silk.NET.Vulkan;
 
 namespace Core.Vulkan;
 
 public class Frame : IDisposable
 {
-	public Fence Fence;
-	public Semaphore PresentSemaphore;
-	public Semaphore RenderSemaphore;
+	public readonly Fence Fence;
+	public readonly Semaphore PresentSemaphore;
+	public readonly Semaphore RenderSemaphore;
 
 	public Frame(Semaphore presentSemaphore, Semaphore renderSemaphore, Fence fence)
 	{
 		PresentSemaphore = presentSemaphore;
 		RenderSemaphore = renderSemaphore;
 		Fence = fence;
+	}
+	
+	public Frame()
+	{
+		PresentSemaphore = VulkanUtils.CreateSemaphore();
+		RenderSemaphore = VulkanUtils.CreateSemaphore();
+		Fence = VulkanUtils.CreateFence(true);
 	}
 
 	public unsafe void Dispose()

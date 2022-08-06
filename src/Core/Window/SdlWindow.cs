@@ -64,6 +64,7 @@ public class SdlWindow : IDisposable
 		if (eventPtr->type == SDL_EventType.SDL_WINDOWEVENT && eventPtr->window.windowEvent == SDL_WindowEventID.SDL_WINDOWEVENT_RESIZED)
 		{
 			Context2.State.WindowSize.Value = new Vector2<uint>((uint) eventPtr->window.data1, (uint) eventPtr->window.data2);
+			if (Context2.State.WindowSize.IsChanged()) Context2.ApplyStateChanges(Context2.State.WindowSize.Level);
 		}
 
 		return 0;

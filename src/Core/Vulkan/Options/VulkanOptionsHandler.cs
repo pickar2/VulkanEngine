@@ -11,7 +11,6 @@ public class VulkanState
 	public readonly VulkanOption<int> TestNone = new(0);
 	public readonly VulkanOption<int> TestInstance = new(0, VulkanLevel.Instance);
 	public readonly VulkanOption<int> TestDevice = new(0, VulkanLevel.Device);
-	public readonly VulkanOption<int> TestFrame = new(0, VulkanLevel.Frame);
 
 	public readonly VulkanOption<int> TestSwapchain = new(0, VulkanLevel.Swapchain);
 	// public readonly VulkanOption<int> TestRenderGraph = new(0, VulkanLevel.RenderGraph);
@@ -101,7 +100,7 @@ public class VulkanState
 
 	public readonly VulkanOption<int> SelectedGpuIndex = new(-1, VulkanLevel.Device);
 
-	public readonly VulkanOption<int> FrameOverlap = new(3, VulkanLevel.Frame);
+	public readonly VulkanOption<int> FrameOverlap = new(3, VulkanLevel.Swapchain);
 
 	public readonly VulkanOption<PresentModeKHR> PresentMode = new(PresentModeKHR.MailboxKhr, VulkanLevel.Swapchain);
 	public readonly VulkanOption<Vector2<uint>> WindowSize = new(new Vector2<uint>(1280, 720), VulkanLevel.Swapchain);
@@ -121,7 +120,6 @@ public class VulkanState
 		Options["TestNone"] = TestNone;
 		Options["TestInstance"] = TestInstance;
 		Options["TestDevice"] = TestDevice;
-		Options["TestFrame"] = TestFrame;
 		Options["TestSwapchain"] = TestSwapchain;
 		// Options["TestRenderGraph"] = TestRenderGraph;
 

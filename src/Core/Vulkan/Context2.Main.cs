@@ -732,54 +732,9 @@ public static unsafe partial class Context2
 
 	#endregion
 
-	#region LevelFrame
-
-	private static Frame[] _frames = Array.Empty<Frame>();
-
-	public static void CreateLevelFrame()
-	{
-		FrameEvents.InvokeBeforeCreate();
-
-		var semaphoreCreateInfo = new SemaphoreCreateInfo
-		{
-			SType = StructureType.SemaphoreCreateInfo
-		};
-
-		var fenceCreateInfo = new FenceCreateInfo
-		{
-			SType = StructureType.FenceCreateInfo,
-			Flags = FenceCreateFlags.SignaledBit
-		};
-
-		_frames = new Frame[State.FrameOverlap.Value];
-		for (int i = 0; i < State.FrameOverlap.Value; i++)
-		{
-			Check(Vk.CreateSemaphore(Device, semaphoreCreateInfo, null, out var presentSemaphore),
-				$"Failed to create synchronization objects for the frame {i}");
-			Check(Vk.CreateSemaphore(Device, semaphoreCreateInfo, null, out var renderSemaphore),
-				$"Failed to create synchronization objects for the frame {i}");
-			Check(Vk.CreateFence(Device, fenceCreateInfo, null, out var fence),
-				$"Failed to create synchronization objects for the frame {i}");
-
-			_frames[i] = new Frame(presentSemaphore, renderSemaphore, fence);
-		}
-
-		FrameEvents.InvokeAfterCreate();
-	}
-
-	public static void DisposeLevelFrame()
-	{
-		FrameEvents.InvokeBeforeDispose();
-
-		foreach (var frame in _frames) frame.Dispose();
-
-		FrameEvents.InvokeAfterDispose();
-	}
-
-	#endregion
-
 	#region LevelSwapchain
 
+	private static Frame[] _frames = Array.Empty<Frame>();
 	public static SurfaceFormatKHR SwapchainSurfaceFormat;
 	public static PresentModeKHR PresentMode;
 	public static Extent2D SwapchainExtent;
@@ -840,6 +795,9 @@ public static unsafe partial class Context2
 		SwapchainImages = new VulkanImage2[SwapchainImageCount];
 		for (int i = 0; i < SwapchainImageCount; i++)
 			SwapchainImages[i] = new VulkanImage2(images[i], IntPtr.Zero, imageViews[i], SwapchainSurfaceFormat.Format);
+		
+		_frames = new Frame[State.FrameOverlap.Value];
+		for (int i = 0; i < State.FrameOverlap.Value; i++) _frames[i] = new Frame();
 
 		SwapchainEvents.InvokeAfterCreate();
 
@@ -884,6 +842,8 @@ public static unsafe partial class Context2
 
 		Vk.QueueWaitIdle(GraphicsQueue.Queue);
 		SwapchainEvents.InvokeBeforeDispose();
+
+		foreach (var frame in _frames) frame.Dispose();
 
 		foreach (var image in SwapchainImages) Vk.DestroyImageView(Device, image.ImageView, null);
 

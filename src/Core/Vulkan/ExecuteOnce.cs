@@ -9,7 +9,6 @@ public static class ExecuteOnce
 	public static readonly LevelExecutor InContext = new(VulkanLevel.Context);
 	public static readonly LevelExecutor InInstance = new(VulkanLevel.Instance);
 	public static readonly LevelExecutor InDevice = new(VulkanLevel.Device);
-	public static readonly LevelExecutor InFrame = new(VulkanLevel.Frame);
 	public static readonly LevelExecutor InSwapchain = new(VulkanLevel.Swapchain);
 
 	public static void AtFrameStart(int frameId, Action action) => Context2.ExecuteOnceAtFrameStart(frameId, action);

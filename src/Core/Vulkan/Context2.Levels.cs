@@ -9,7 +9,6 @@ public static partial class Context2
 	public static readonly VulkanLevelEvents ContextEvents = new();
 	public static readonly VulkanLevelEvents InstanceEvents = new();
 	public static readonly VulkanLevelEvents DeviceEvents = new();
-	public static readonly VulkanLevelEvents FrameEvents = new();
 	public static readonly VulkanLevelEvents SwapchainEvents = new();
 
 	public static VulkanLevelEvents GetLevelEvents(VulkanLevel level) =>
@@ -18,7 +17,6 @@ public static partial class Context2
 			VulkanLevel.Context => ContextEvents,
 			VulkanLevel.Instance => InstanceEvents,
 			VulkanLevel.Device => DeviceEvents,
-			VulkanLevel.Frame => FrameEvents,
 			VulkanLevel.Swapchain => SwapchainEvents,
 			_ => throw new ArgumentOutOfRangeException(nameof(level), level, null)
 		};
@@ -29,7 +27,6 @@ public static partial class Context2
 		{VulkanLevel.Context, () => DisposeLevelContext()},
 		{VulkanLevel.Instance, () => DisposeLevelInstance()},
 		{VulkanLevel.Device, () => DisposeLevelDevice()},
-		{VulkanLevel.Frame, () => DisposeLevelFrame()},
 		{VulkanLevel.Swapchain, () => DisposeLevelSwapchain()},
 	};
 
@@ -39,7 +36,6 @@ public static partial class Context2
 		{VulkanLevel.Context, () => CreateLevelContext()},
 		{VulkanLevel.Instance, () => CreateLevelInstance()},
 		{VulkanLevel.Device, () => CreateLevelDevice()},
-		{VulkanLevel.Frame, () => CreateLevelFrame()},
 		{VulkanLevel.Swapchain, () => CreateLevelSwapchain()},
 	};
 
@@ -81,7 +77,6 @@ public enum VulkanLevel // For global options only, e.g toggle wireframe on EVER
 	Context, // Debug mode
 	Instance, // Instance extensions, change vulkan version
 	Device, // Device extensions, change GPU
-	Frame, // Frame overlap count
 	Swapchain, // Window size
 	None
 }
