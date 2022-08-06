@@ -88,8 +88,6 @@ public static unsafe partial class Context
 		if (IsDebug) RequiredLayers.UnionWith(State.ValidationLayers.Value);
 		CheckLayerSupport(RequiredLayers);
 
-		// if (!Window.IsInitialized) SpinWait.SpinUntil(() => Window.IsInitialized);
-
 		var requiredExtensions = new HashSet<string>(Window.GetRequiredInstanceExtensions());
 		requiredExtensions.UnionWith(State.InstanceExtensions.Value);
 
@@ -821,7 +819,7 @@ public static unsafe partial class Context
 	{
 		foreach (var format in availableFormats)
 		{
-			if (format.Format == Format.R8G8B8A8Srgb &&
+			if (format.Format == Format.B8G8R8A8Srgb &&
 			    format.ColorSpace == ColorSpaceKHR.SpaceSrgbNonlinearKhr)
 				return format;
 		}
@@ -849,7 +847,7 @@ public static unsafe partial class Context
 	public static void DisposeLevelSwapchain()
 	{
 		IsReady = false;
-		_renderThread.Join();
+		_renderThread?.Join();
 
 		Vk.QueueWaitIdle(GraphicsQueue.Queue);
 		SwapchainEvents.InvokeBeforeDispose();

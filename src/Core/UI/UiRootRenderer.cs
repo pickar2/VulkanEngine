@@ -34,14 +34,14 @@ public unsafe partial class UiRootRenderer : RenderChain
 
 	public UiRootRenderer(string name) : base(name)
 	{
-		_componentDataPool = ReCreate.OnAccessValueInDevice(() => CreateDescriptorPool(), pool => pool.Dispose());
-		_componentDataSet = ReCreate.OnAccessValueInDevice(() => CreateDescriptorSet(_componentDataPool));
+		_componentDataPool = ReCreate.InDevice.OnAccessValue(() => CreateDescriptorPool(), pool => pool.Dispose());
+		_componentDataSet = ReCreate.InDevice.OnAccessValue(() => CreateDescriptorSet(_componentDataPool));
 
 		_indexBuffers = new OnAccessClassReCreator<VulkanBuffer>[Context.State.FrameOverlap];
 		for (int i = 0; i < _indexBuffers.Length; i++)
-			_indexBuffers[i] = ReCreate.OnAccessClassInDevice(() => CreateIndexBuffer(ComponentFactory.MaxComponents), buffer => buffer.Dispose());
+			_indexBuffers[i] = ReCreate.InDevice.OnAccessClass(() => CreateIndexBuffer(ComponentFactory.MaxComponents), buffer => buffer.Dispose());
 
-		_indirectBuffer = ReCreate.OnAccessClassInDevice(() => CreateIndirectBuffer(), buffer => buffer.Dispose());
+		_indirectBuffer = ReCreate.InDevice.OnAccessClass(() => CreateIndirectBuffer(), buffer => buffer.Dispose());
 
 		RenderCommandBuffers += (FrameInfo frameInfo) =>
 		{

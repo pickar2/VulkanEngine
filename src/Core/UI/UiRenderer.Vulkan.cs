@@ -242,12 +242,12 @@ public static unsafe partial class UiRenderer
 		{
 			Context.Vk.CmdBindPipeline(cmd, PipelineBindPoint.Graphics, pipeline);
 
-			cmd.BindGraphicsDescriptorSets(_pipelineLayout, 0, 1, ref _texturesSet);
-			cmd.BindGraphicsDescriptorSets(_pipelineLayout, 1, 1, ref _globalDataSet);
-			cmd.BindGraphicsDescriptorSets(_pipelineLayout, 2, 1, ref _componentDataSets[imageIndex]);
+			cmd.BindGraphicsDescriptorSets(_pipelineLayout, 0, 1, _texturesSet);
+			cmd.BindGraphicsDescriptorSets(_pipelineLayout, 1, 1, _globalDataSet);
+			cmd.BindGraphicsDescriptorSets(_pipelineLayout, 2, 1, _componentDataSets[imageIndex]);
 
-			cmd.BindGraphicsDescriptorSets(_pipelineLayout, 3, 1, ref _vertexMaterialDataSet);
-			cmd.BindGraphicsDescriptorSets(_pipelineLayout, 4, 1, ref _fragmentMaterialDataSet);
+			cmd.BindGraphicsDescriptorSets(_pipelineLayout, 3, 1, _vertexMaterialDataSet);
+			cmd.BindGraphicsDescriptorSets(_pipelineLayout, 4, 1, _fragmentMaterialDataSet);
 
 			Context.Vk.CmdBindIndexBuffer(cmd, _indexBuffers[imageIndex].Buffer, 0, IndexType.Uint32);
 

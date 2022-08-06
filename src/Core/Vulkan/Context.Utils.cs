@@ -34,28 +34,28 @@ public static unsafe partial class Context
 	public static void ExecuteCommands(this ref CommandBuffer cb, uint bufferCount, CommandBuffer* buffers) =>
 		Vk.CmdExecuteCommands(cb, bufferCount, buffers);
 
-	public static void BindDescriptorSets(this ref CommandBuffer cb, PipelineBindPoint bindPoint, PipelineLayout layout, uint firstSet,
+	public static void BindDescriptorSets(this CommandBuffer cb, PipelineBindPoint bindPoint, PipelineLayout layout, uint firstSet,
 		uint setCount, DescriptorSet* sets, uint dynamicOffsetCount = 0, uint* dynamicOffsets = null) =>
 		Vk.CmdBindDescriptorSets(cb, bindPoint, layout, firstSet, setCount, sets, dynamicOffsetCount, dynamicOffsets);
 
-	public static void BindDescriptorSets(this ref CommandBuffer cb, PipelineBindPoint bindPoint, PipelineLayout layout, uint firstSet,
-		uint setCount, ref DescriptorSet sets, uint dynamicOffsetCount = 0, uint* dynamicOffsets = null) =>
+	public static void BindDescriptorSets(this CommandBuffer cb, PipelineBindPoint bindPoint, PipelineLayout layout, uint firstSet,
+		uint setCount, DescriptorSet sets, uint dynamicOffsetCount = 0, uint* dynamicOffsets = null) =>
 		Vk.CmdBindDescriptorSets(cb, bindPoint, layout, firstSet, setCount, sets, dynamicOffsetCount, dynamicOffsets);
 
-	public static void BindGraphicsDescriptorSets(this ref CommandBuffer cb, PipelineLayout layout, uint firstSet,
+	public static void BindGraphicsDescriptorSets(this CommandBuffer cb, PipelineLayout layout, uint firstSet,
 		uint setCount, DescriptorSet* sets, uint dynamicOffsetCount = 0, uint* dynamicOffsets = null) =>
 		Vk.CmdBindDescriptorSets(cb, PipelineBindPoint.Graphics, layout, firstSet, setCount, sets, dynamicOffsetCount, dynamicOffsets);
 
-	public static void BindGraphicsDescriptorSets(this ref CommandBuffer cb, PipelineLayout layout, uint firstSet,
-		uint setCount, ref DescriptorSet sets, uint dynamicOffsetCount = 0, uint* dynamicOffsets = null) =>
+	public static void BindGraphicsDescriptorSets(this CommandBuffer cb, PipelineLayout layout, uint firstSet,
+		uint setCount, DescriptorSet sets, uint dynamicOffsetCount = 0, uint* dynamicOffsets = null) =>
 		Vk.CmdBindDescriptorSets(cb, PipelineBindPoint.Graphics, layout, firstSet, setCount, sets, dynamicOffsetCount, dynamicOffsets);
 
-	public static void BindComputeDescriptorSets(this ref CommandBuffer cb, PipelineLayout layout, uint firstSet,
+	public static void BindComputeDescriptorSets(this CommandBuffer cb, PipelineLayout layout, uint firstSet,
 		uint setCount, DescriptorSet* sets, uint dynamicOffsetCount = 0, uint* dynamicOffsets = null) =>
 		Vk.CmdBindDescriptorSets(cb, PipelineBindPoint.Compute, layout, firstSet, setCount, sets, dynamicOffsetCount, dynamicOffsets);
 
-	public static void BindComputeDescriptorSets(this ref CommandBuffer cb, PipelineLayout layout, uint firstSet,
-		uint setCount, ref DescriptorSet sets, uint dynamicOffsetCount = 0, uint* dynamicOffsets = null) =>
+	public static void BindComputeDescriptorSets(this CommandBuffer cb, PipelineLayout layout, uint firstSet,
+		uint setCount, DescriptorSet sets, uint dynamicOffsetCount = 0, uint* dynamicOffsets = null) =>
 		Vk.CmdBindDescriptorSets(cb, PipelineBindPoint.Compute, layout, firstSet, setCount, sets, dynamicOffsetCount, dynamicOffsets);
 
 	public static Result VmaMapMemory(IntPtr allocation, IntPtr[] data) => (Result) vmaMapMemory(VmaHandle, allocation, data);
@@ -65,6 +65,8 @@ public static unsafe partial class Context
 	public static void Dispose(this ref DescriptorSetLayout layout) => Vk.DestroyDescriptorSetLayout(Device, layout, null);
 
 	public static void Dispose(this ref PipelineLayout layout) => Vk.DestroyPipelineLayout(Device, layout, null);
+
+	public static void Dispose(this ref Pipeline pipeline) => Vk.DestroyPipeline(Device, pipeline, null);
 
 	public static void Dispose(this ref DescriptorPool pool) => Vk.DestroyDescriptorPool(Device, pool, null);
 
@@ -77,4 +79,6 @@ public static unsafe partial class Context
 	public static void Dispose(this ref CommandPool commandPool) => Vk.DestroyCommandPool(Device, commandPool, null);
 
 	public static void Dispose(this ref Fence fence) => Vk.DestroyFence(Device, fence, null);
+
+	public static void Dispose(this ref Sampler sampler) => Vk.DestroySampler(Device, sampler, null);
 }

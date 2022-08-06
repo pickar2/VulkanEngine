@@ -17,7 +17,7 @@ public static unsafe partial class Context
 	private static List<Action>[] _actionsAtFrameStart = Array.Empty<List<Action>>();
 	private static List<Action>[] _actionsAtFrameEnd = Array.Empty<List<Action>>();
 
-	private static Thread _renderThread = new(() => RenderLoop()) {Name = "Render Thread"};
+	private static Thread? _renderThread;
 	private static double MsPerUpdate { get; set; } = 1000 / 60d;
 
 	public delegate Action<FrameInfo> FrameEvent(FrameInfo frameInfo);
@@ -47,7 +47,7 @@ public static unsafe partial class Context
 		TotalTimeRenderingStopwatch.Restart();
 		var waitHandle = new EventWaitHandle(false, EventResetMode.AutoReset);
 
-		const int frameTimeQueueSize = 30;
+		const int frameTimeQueueSize = 15;
 		var frameTimeQueue = new Queue<double>(frameTimeQueueSize);
 
 		_actionsAtFrameStart = new List<Action>[State.FrameOverlap.Value];

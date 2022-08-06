@@ -698,4 +698,31 @@ public static unsafe class VulkanUtils
 
 		return semaphore;
 	}
+	
+	public static PipelineLayout CreatePipelineLayout()
+	{
+		var layoutCreateInfo = new PipelineLayoutCreateInfo
+		{
+			SType = StructureType.PipelineLayoutCreateInfo,
+			SetLayoutCount = 0
+		};
+
+		Context.Vk.CreatePipelineLayout(Context.Device, &layoutCreateInfo, null, out var layout);
+
+		return layout;
+	}
+
+	public static PipelineLayout CreatePipelineLayout(params DescriptorSetLayout[] layouts)
+	{
+		var layoutCreateInfo = new PipelineLayoutCreateInfo
+		{
+			SType = StructureType.PipelineLayoutCreateInfo,
+			SetLayoutCount = (uint) layouts.Length,
+			PSetLayouts = layouts[0].AsPointer()
+		};
+
+		Context.Vk.CreatePipelineLayout(Context.Device, &layoutCreateInfo, null, out var layout);
+
+		return layout;
+	}
 }

@@ -4,33 +4,29 @@ namespace Core.Vulkan;
 
 public static class ReCreate
 {
-	public static ReCreator InDevice(Action createAction, Action disposeAction) => new(VulkanLevel.Device, createAction, disposeAction);
+	public static readonly ReCreateLevel InContext = new(VulkanLevel.Context);
+	public static readonly ReCreateLevel InInstance = new(VulkanLevel.Instance);
+	public static readonly ReCreateLevel InDevice = new(VulkanLevel.Device);
+	public static readonly ReCreateLevel InSwapchain = new(VulkanLevel.Swapchain);
+}
 
-	public static ReCreator InDeviceNow(Action createAction, Action disposeAction)
+public class ReCreateLevel
+{
+	private readonly VulkanLevel _level;
+
+	public ReCreateLevel(VulkanLevel level) => _level = level;
+
+	public ReCreator Now(Action createAction, Action disposeAction)
 	{
 		createAction();
-		return new ReCreator(VulkanLevel.Device, createAction, disposeAction);
+		return new ReCreator(_level, createAction, disposeAction);
 	}
 
-	public static OnAccessValueReCreator<T> OnAccessValueInDevice<T>(Func<T> createFunc, Action<T>? disposeFunc = null) where T : struct =>
-		new(VulkanLevel.Device, createFunc, disposeFunc);
+	public OnAccessValueReCreator<T> OnAccessValue<T>(Func<T> createFunc, Action<T>? disposeFunc = null) where T : struct =>
+		new(_level, createFunc, disposeFunc);
 
-	public static OnAccessClassReCreator<T> OnAccessClassInDevice<T>(Func<T> createFunc, Action<T>? disposeFunc = null) where T : class =>
-		new(VulkanLevel.Device, createFunc, disposeFunc);
-
-	public static ReCreator InSwapchain(Action createAction, Action disposeAction) => new(VulkanLevel.Swapchain, createAction, disposeAction);
-
-	public static ReCreator InSwapchainNow(Action createAction, Action disposeAction)
-	{
-		createAction();
-		return new ReCreator(VulkanLevel.Swapchain, createAction, disposeAction);
-	}
-
-	public static OnAccessValueReCreator<T> OnAccessValueInSwapchain<T>(Func<T> createFunc, Action<T>? disposeFunc = null) where T : struct =>
-		new(VulkanLevel.Swapchain, createFunc, disposeFunc);
-
-	public static OnAccessClassReCreator<T> OnAccessClassInSwapchain<T>(Func<T> createFunc, Action<T>? disposeFunc = null) where T : class =>
-		new(VulkanLevel.Swapchain, createFunc, disposeFunc);
+	public OnAccessClassReCreator<T> OnAccessClass<T>(Func<T> createFunc, Action<T>? disposeFunc = null) where T : class =>
+		new(_level, createFunc, disposeFunc);
 }
 
 public class ReCreator

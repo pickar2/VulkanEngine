@@ -14,8 +14,8 @@ public unsafe partial class UiRootRenderer
 
 	static UiRootRenderer()
 	{
-		ReCreate.InDeviceNow(() => ComponentDataLayout = CreateComponentDataDescriptorSetLayout(), () => ComponentDataLayout.Dispose());
-		ReCreate.InDeviceNow(() => PipelineLayout = CreateRenderPipelineLayout(), () => PipelineLayout.Dispose());
+		ReCreate.InDevice.Now(() => ComponentDataLayout = CreateComponentDataDescriptorSetLayout(), () => ComponentDataLayout.Dispose());
+		ReCreate.InDevice.Now(() => PipelineLayout = CreateRenderPipelineLayout(), () => PipelineLayout.Dispose());
 	}
 
 	private static DescriptorSetLayout CreateComponentDataDescriptorSetLayout()
@@ -51,8 +51,7 @@ public unsafe partial class UiRootRenderer
 		return layout;
 	}
 
-	private static PipelineLayout CreateRenderPipelineLayout()
-	{
+	private static PipelineLayout CreateRenderPipelineLayout() =>
 		// var setLayouts = stackalloc[]
 		// 	{default, default, ComponentDataLayout, default, default};
 		// 	// {_texturesLayout, _globalDataLayout, ComponentDataLayout, _vertMaterialDataLayout, _fragMaterialDataLayout};
@@ -65,7 +64,5 @@ public unsafe partial class UiRootRenderer
 		// };
 		//
 		// Context2.Vk.CreatePipelineLayout(Context2.Device, &layoutCreateInfo, null, out var layout);
-
-		return default;
-	}
+		default;
 }

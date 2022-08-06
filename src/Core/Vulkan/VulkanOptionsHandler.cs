@@ -59,7 +59,8 @@ public class VulkanState
 			RuntimeDescriptorArray = true,
 			DescriptorBindingVariableDescriptorCount = true,
 			ShaderStorageBufferArrayNonUniformIndexing = true,
-			DescriptorBindingStorageBufferUpdateAfterBind = true
+			DescriptorBindingStorageBufferUpdateAfterBind = true,
+			DescriptorBindingSampledImageUpdateAfterBind = true
 		},
 		new PhysicalDeviceShaderAtomicFloatFeaturesEXT
 		{

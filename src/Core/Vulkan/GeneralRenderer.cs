@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using Core.Utils;
+using Core.Vulkan.Renderers;
 using Silk.NET.Vulkan;
 using static Core.Utils.VulkanUtils;
 
@@ -32,10 +32,11 @@ namespace Core.Vulkan;
  */
 public static class GeneralRenderer
 {
-	public static readonly RenderChain Root = new VulkanClearRenderer("Root");
+	public static readonly RenderChain Root = new TestChildTextureRenderer("Root");
 
 	static GeneralRenderer()
 	{
+		Root.AddChild(new TestToTextureRenderer("TestTexture"));
 		// var sceneWithNoDependencies = new VulkanSceneChain("SceneWithNoDependencies");
 		// Root.AddChild(sceneWithNoDependencies);
 		//
@@ -70,153 +71,6 @@ public static class GeneralRenderer
 	}
 }
 
-public class VulkanSceneChain : RenderChain
-{
-	public VulkanSceneChain(string name) : base(name) { }
-
-	public override void Dispose() { }
-}
-
-public unsafe class VulkanClearRenderer : RenderChain
-{
-	private readonly OnAccessValueReCreator<RenderPass> _renderPass;
-	private readonly OnAccessClassReCreator<Framebuffer[]> _framebuffers;
-	private readonly OnAccessValueReCreator<CommandPool> _commandPool;
-
-	public VulkanClearRenderer(string name) : base(name)
-	{
-		_renderPass = ReCreate.OnAccessValueInDevice(() => CreateRenderPass(), renderPass => renderPass.Dispose());
-		_framebuffers = ReCreate.OnAccessClassInSwapchain(() =>
-		{
-			var arr = new Framebuffer[Context.SwapchainImageCount];
-			for (int i = 0; i < arr.Length; i++)
-				arr[i] = CreateFramebuffer(_renderPass, i);
-
-			return arr;
-		}, arr =>
-		{
-			for (int index = 0; index < arr.Length; index++)
-				arr[index].Dispose();
-		});
-
-		_commandPool = ReCreate.OnAccessValueInDevice(() => CreateCommandPool(Context.GraphicsQueue), commandPool => commandPool.Dispose());
-
-		RenderCommandBuffers += frameInfo => CreateCommandBuffer(frameInfo);
-	}
-
-	private static RenderPass CreateRenderPass()
-	{
-		var attachmentDescription = new AttachmentDescription2
-		{
-			SType = StructureType.AttachmentDescription2,
-			Format = Context.SwapchainSurfaceFormat.Format,
-			Samples = SampleCountFlags.Count1Bit,
-			LoadOp = AttachmentLoadOp.Clear,
-			StoreOp = AttachmentStoreOp.Store,
-			StencilLoadOp = AttachmentLoadOp.DontCare,
-			StencilStoreOp = AttachmentStoreOp.DontCare,
-			InitialLayout = ImageLayout.Undefined,
-			FinalLayout = ImageLayout.PresentSrcKhr
-		};
-
-		var attachmentReference = new AttachmentReference2
-		{
-			SType = StructureType.AttachmentReference2,
-			Attachment = 0,
-			AspectMask = ImageAspectFlags.ColorBit,
-			Layout = ImageLayout.ColorAttachmentOptimal
-		};
-
-		var subpassDescription = new SubpassDescription2
-		{
-			SType = StructureType.SubpassDescription2,
-			PipelineBindPoint = PipelineBindPoint.Graphics,
-			ColorAttachmentCount = 1,
-			PColorAttachments = &attachmentReference
-		};
-
-		var subpassDependency = new SubpassDependency2
-		{
-			SType = StructureType.SubpassDependency2,
-			SrcSubpass = Vk.SubpassExternal,
-			DstSubpass = 0,
-			SrcStageMask = PipelineStageFlags.ColorAttachmentOutputBit,
-			SrcAccessMask = 0,
-			DstStageMask = PipelineStageFlags.ColorAttachmentOutputBit,
-			DstAccessMask = AccessFlags.ColorAttachmentWriteBit,
-			DependencyFlags = DependencyFlags.ByRegionBit
-		};
-
-		var renderPassInfo2 = new RenderPassCreateInfo2
-		{
-			SType = StructureType.RenderPassCreateInfo2,
-			AttachmentCount = 1,
-			PAttachments = &attachmentDescription,
-			SubpassCount = 1,
-			PSubpasses = &subpassDescription,
-			DependencyCount = 1,
-			PDependencies = &subpassDependency
-		};
-
-		Check(Context.Vk.CreateRenderPass2(Context.Device, renderPassInfo2, null, out var renderPass), "Failed to create render pass.");
-
-		return renderPass;
-	}
-
-	private static Framebuffer CreateFramebuffer(RenderPass renderPass, int index)
-	{
-		var attachments = stackalloc ImageView[] {Context.SwapchainImages[index].ImageView};
-		var createInfo = new FramebufferCreateInfo
-		{
-			SType = StructureType.FramebufferCreateInfo,
-			RenderPass = renderPass,
-			Width = Context.SwapchainExtent.Width,
-			Height = Context.SwapchainExtent.Height,
-			Layers = 1,
-			AttachmentCount = 1,
-			PAttachments = attachments
-		};
-
-		Check(Context.Vk.CreateFramebuffer(Context.Device, &createInfo, null, out var framebuffer), "Failed to create framebuffer.");
-
-		return framebuffer;
-	}
-
-	private CommandBuffer CreateCommandBuffer(FrameInfo frameInfo)
-	{
-		var clearValues = stackalloc ClearValue[1];
-
-		clearValues[0] = new ClearValue
-		{
-			Color = new ClearColorValue(0.66f, 0.66f, (float) ((Math.Sin(Context.FrameIndex / 20d) * 0.5) + 0.5), 0)
-		};
-
-		var cmd = CommandBuffers.CreateCommandBuffer(CommandBufferLevel.Primary, _commandPool);
-
-		Check(cmd.Begin(CommandBufferUsageFlags.OneTimeSubmitBit), "Failed to begin command buffer.");
-
-		var renderPassBeginInfo = new RenderPassBeginInfo
-		{
-			SType = StructureType.RenderPassBeginInfo,
-			RenderPass = _renderPass,
-			RenderArea = new Rect2D(default, Context.SwapchainExtent),
-			Framebuffer = _framebuffers.Value[frameInfo.SwapchainImageId],
-			ClearValueCount = 1,
-			PClearValues = clearValues
-		};
-
-		cmd.BeginRenderPass(renderPassBeginInfo, SubpassContents.SecondaryCommandBuffers);
-
-		cmd.EndRenderPass();
-
-		Check(cmd.End(), "Failed to end command buffer.");
-
-		return cmd;
-	}
-
-	public override void Dispose() { }
-}
-
 public abstract unsafe class RenderChain : IDisposable
 {
 	public RenderChain? Parent;
@@ -227,13 +81,17 @@ public abstract unsafe class RenderChain : IDisposable
 	public event Func<FrameInfo, Semaphore>? RenderWaitSemaphores;
 	public event Func<FrameInfo, Semaphore>? RenderSignalSemaphores;
 
+	protected Delegate[]? RenderCommandBufferDelegates => RenderCommandBuffers?.GetInvocationList();
+	protected Delegate[]? RenderSignalSemaphoresDelegates => RenderSignalSemaphores?.GetInvocationList();
+	protected Delegate[]? RenderWaitSemaphoresDelegates => RenderWaitSemaphores?.GetInvocationList();
+
 	protected readonly OnAccessValueReCreator<Semaphore> RenderFinishedSemaphore;
 
 	protected RenderChain(string name)
 	{
 		Name = name;
 
-		RenderFinishedSemaphore = ReCreate.OnAccessValueInDevice(() => CreateSemaphore(), semaphore => semaphore.Dispose());
+		RenderFinishedSemaphore = ReCreate.InDevice.OnAccessValue(() => CreateSemaphore(), semaphore => semaphore.Dispose());
 		RenderSignalSemaphores += frameInfo => RenderFinishedSemaphore;
 	}
 
@@ -242,10 +100,6 @@ public abstract unsafe class RenderChain : IDisposable
 		Children.Add(child);
 		child.Parent = this;
 	}
-
-	protected Delegate[]? GetRenderCommandBufferDelegates() => RenderCommandBuffers?.GetInvocationList();
-	protected Delegate[]? GetRenderSignalSemaphoresDelegates() => RenderSignalSemaphores?.GetInvocationList();
-	protected Delegate[]? GetRenderWaitSemaphoresDelegates() => RenderWaitSemaphores?.GetInvocationList();
 
 	public void StartRendering(FrameInfo frameInfo, List<Semaphore>? waitSemaphores, out List<Semaphore> signalSemaphores, Fence queueFence = default)
 	{
@@ -274,7 +128,7 @@ public abstract unsafe class RenderChain : IDisposable
 				pCommandBuffers[i] = ((Func<FrameInfo, CommandBuffer>) commandBufferDelegates[i]).Invoke(frameInfo);
 		}
 
-		// get wait semaphores
+		// start rendering children and get wait semaphores
 		var childrenWaitSemaphores = new List<Semaphore>();
 		foreach (var child in Children)
 		{
@@ -285,6 +139,10 @@ public abstract unsafe class RenderChain : IDisposable
 		var waitSemaphoreDelegates = RenderWaitSemaphores?.GetInvocationList();
 
 		int waitSemaphoreCount = (waitSemaphores?.Count ?? 0) + childrenWaitSemaphores.Count + (waitSemaphoreDelegates?.Length ?? 0);
+
+		var pWaitDstStageMasks = stackalloc PipelineStageFlags[waitSemaphoreCount];
+		for (int i = 0; i < waitSemaphoreCount; i++) pWaitDstStageMasks[i] = PipelineStageFlags.BottomOfPipeBit; // TODO: real stage per semaphore
+
 		var pWaitSemaphores = stackalloc Semaphore[waitSemaphoreCount];
 		int index = 0;
 
@@ -299,12 +157,11 @@ public abstract unsafe class RenderChain : IDisposable
 				pWaitSemaphores[index++] = ((Func<FrameInfo, Semaphore>) @delegate).Invoke(frameInfo);
 
 		// submit
-		var waitStage = PipelineStageFlags.ColorAttachmentOutputBit;
 		var submitInfo = new SubmitInfo
 		{
 			SType = StructureType.SubmitInfo,
-			PWaitDstStageMask = &waitStage,
 			WaitSemaphoreCount = (uint) waitSemaphoreCount,
+			PWaitDstStageMask = pWaitDstStageMasks,
 			PWaitSemaphores = pWaitSemaphores,
 			SignalSemaphoreCount = (uint) signalSemaphores.Count,
 			PSignalSemaphores = pSignalSemaphores,
