@@ -1,16 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading;
 using Core.Native.Shaderc;
 using Core.Utils;
-using Core.Vulkan.Options;
 using Core.Window;
-using SDL2;
 using Silk.NET.Core;
 using Silk.NET.Core.Native;
 using Silk.NET.Vulkan;
@@ -59,9 +55,9 @@ public static unsafe partial class Context
 	public static void DisposeLevelContext()
 	{
 		ContextEvents.InvokeBeforeDispose();
-		
+
 		Compiler.Dispose();
-		
+
 		ContextEvents.InvokeAfterDispose();
 	}
 
@@ -323,7 +319,7 @@ public static unsafe partial class Context
 			int maxScore = scores[devices[0]];
 			PhysicalDevice = devices[0];
 			selectedGpuIndex = 0;
-			for (var i = 1; i < deviceCount; i++)
+			for (int i = 1; i < deviceCount; i++)
 			{
 				var current = devices[i];
 				if (maxScore >= scores[current]) continue;
@@ -785,7 +781,7 @@ public static unsafe partial class Context
 			CompositeAlpha = CompositeAlphaFlagsKHR.OpaqueBitKhr,
 			PresentMode = PresentMode,
 			Clipped = true,
-			ImageSharingMode = SharingMode.Exclusive,
+			ImageSharingMode = SharingMode.Exclusive
 		};
 		if (_oldSwapchainInfo.swapchain.Handle != default && _oldSwapchainInfo.device.Handle == Device.Handle)
 			createInfo.OldSwapchain = _oldSwapchainInfo.swapchain;
@@ -810,7 +806,7 @@ public static unsafe partial class Context
 		SwapchainImages = new VulkanImage2[SwapchainImageCount];
 		for (int i = 0; i < SwapchainImageCount; i++)
 			SwapchainImages[i] = new VulkanImage2(images[i], IntPtr.Zero, imageViews[i], SwapchainSurfaceFormat.Format);
-		
+
 		_frames = new Frame[State.FrameOverlap.Value];
 		for (int i = 0; i < State.FrameOverlap.Value; i++) _frames[i] = new Frame();
 

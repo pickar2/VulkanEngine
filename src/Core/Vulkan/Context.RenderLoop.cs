@@ -66,7 +66,7 @@ public static unsafe partial class Context
 
 		FrameIndex = 0;
 		IsRendering = true;
-		while (IsReady && IsRunning)
+		while (IsReady && IsRunning && IsRendering)
 		{
 			MsPerUpdate = 1000d / State.MaxFps.Value;
 			Lag += LagStopwatch.Ms();
@@ -150,7 +150,7 @@ public static unsafe partial class Context
 		};
 
 		result = KhrSwapchain.QueuePresent(GraphicsQueue.Queue, &presentInfo);
-		if (result is Result.ErrorOutOfDateKhr) IsReady = false;
+		if (result is Result.ErrorOutOfDateKhr) IsRendering = false;
 		if (result is not (Result.Success or Result.ErrorOutOfDateKhr or Result.SuboptimalKhr))
 			throw new Exception($"Failed to present image: {result}.");
 

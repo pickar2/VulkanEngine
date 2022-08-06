@@ -5,7 +5,6 @@ using Core.Registries.Entities;
 using Core.UI;
 using Core.Utils;
 using Core.Vulkan;
-using Core.Vulkan.Options;
 using Core.Window;
 using NullGuard;
 using SDL2;

@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using Core.UI.Controls.Panels;
 using Core.Utils;
 using Silk.NET.Vulkan;
-using SimpleMath.Vectors;
 using static Core.Utils.VulkanUtils;
 
 namespace Core.Vulkan;
@@ -72,190 +70,6 @@ public static class GeneralRenderer
 	}
 }
 
-public unsafe class UiRootChain : RenderChain
-{
-	private RenderPass? _renderPass;
-	private VulkanImage2? _attachment;
-	private Framebuffer? _framebuffer;
-	private CommandPool? _commandPool;
-	private Vector2<float> _attachmentSize;
-
-	public RootPanel RootPanel { get; set; } = new FullScreenRootPanel();
-
-	public event Func<FrameInfo, CommandBuffer>? SecondaryCommandBuffers;
-
-	public UiRootChain(string name) : base(name) => ExecuteOnce.InDevice.BeforeDispose(() => DisposeRenderPass());
-
-	public RenderPass GetRenderPass()
-	{
-		if (!_renderPass.HasValue || _attachmentSize != RootPanel.Size) CreateRenderPass();
-
-		return _renderPass!.Value;
-	}
-
-	public CommandBuffer GetCommandBuffer(int imageIndex)
-	{
-		var clearValues = stackalloc ClearValue[1];
-
-		clearValues[0] = new ClearValue
-		{
-			Color = new ClearColorValue(0.66f, 0.66f, 0.66f, 1)
-		};
-
-		var renderPass = GetRenderPass();
-		var cmd = CommandBuffers.CreateCommandBuffer(CommandBufferLevel.Primary, _commandPool!.Value);
-
-		Check(cmd.Begin(CommandBufferUsageFlags.OneTimeSubmitBit), "Failed to begin command buffer.");
-
-		var renderPassBeginInfo = new RenderPassBeginInfo
-		{
-			SType = StructureType.RenderPassBeginInfo,
-			RenderPass = renderPass,
-			RenderArea = new Rect2D(default, new Extent2D((uint) _attachmentSize.X, (uint) _attachmentSize.Y)),
-			Framebuffer = _framebuffer!.Value,
-			ClearValueCount = 1,
-			PClearValues = clearValues
-		};
-
-		cmd.BeginRenderPass(renderPassBeginInfo, SubpassContents.SecondaryCommandBuffers);
-
-		var list = SecondaryCommandBuffers?.GetInvocationList();
-		if (list is not null)
-		{
-			var arr = stackalloc CommandBuffer[list.Length];
-			for (int i = 0; i < list.Length; i++) arr[i] = ((Func<int, CommandBuffer>) list[i]).Invoke(imageIndex);
-
-			cmd.ExecuteCommands((uint) list.Length, arr);
-		}
-
-		cmd.EndRenderPass();
-
-		Check(cmd.End(), "Failed to end command buffer.");
-
-		return cmd;
-	}
-
-	private void CreateRenderPass()
-	{
-		DisposeRenderPass();
-
-		// _attachmentSize = RootPanel.Size;
-		_attachmentSize = Context.State.WindowSize.Value.Cast<uint, float>();
-		var size = _attachmentSize.Cast<float, uint>();
-		App.Logger.Info.Message($"{size}");
-		_attachment = FrameGraph.CreateAttachment(Format.R8G8B8A8Unorm, ImageAspectFlags.ColorBit, size, ImageUsageFlags.TransferSrcBit);
-
-		_commandPool = CreateCommandPool(Context.GraphicsQueue);
-
-		var attachmentDescription = new AttachmentDescription2
-		{
-			SType = StructureType.AttachmentDescription2,
-			Format = _attachment.Format,
-			Samples = SampleCountFlags.Count1Bit,
-			LoadOp = AttachmentLoadOp.Clear,
-			StoreOp = AttachmentStoreOp.Store,
-			StencilLoadOp = AttachmentLoadOp.DontCare,
-			StencilStoreOp = AttachmentStoreOp.DontCare,
-			InitialLayout = _attachment.CurrentLayout,
-			FinalLayout = ImageLayout.TransferSrcOptimal
-		};
-
-		var attachmentReference = new AttachmentReference2
-		{
-			SType = StructureType.AttachmentReference2,
-			Attachment = 0,
-			AspectMask = ImageAspectFlags.ColorBit,
-			Layout = _attachment.CurrentLayout
-		};
-
-		var subpassDescription = new SubpassDescription2
-		{
-			SType = StructureType.SubpassDescription2,
-			PipelineBindPoint = PipelineBindPoint.Graphics,
-			ColorAttachmentCount = 1,
-			PColorAttachments = &attachmentReference
-		};
-
-		var subpassDependency = new SubpassDependency2
-		{
-			SType = StructureType.SubpassDependency2,
-			SrcSubpass = Vk.SubpassExternal,
-			DstSubpass = 0,
-			SrcStageMask = PipelineStageFlags.ColorAttachmentOutputBit,
-			SrcAccessMask = 0,
-			DstStageMask = PipelineStageFlags.ColorAttachmentOutputBit,
-			DstAccessMask = AccessFlags.ColorAttachmentWriteBit,
-			DependencyFlags = DependencyFlags.ByRegionBit
-		};
-
-		var renderPassInfo2 = new RenderPassCreateInfo2
-		{
-			SType = StructureType.RenderPassCreateInfo2,
-			AttachmentCount = 1,
-			PAttachments = &attachmentDescription,
-			SubpassCount = 1,
-			PSubpasses = &subpassDescription,
-			DependencyCount = 1,
-			PDependencies = &subpassDependency
-		};
-
-		Check(Context.Vk.CreateRenderPass2(Context.Device, renderPassInfo2, null, out var renderPass),
-			"Failed to create render pass");
-
-		_renderPass = renderPass;
-
-		var attachments = stackalloc ImageView[1];
-		attachments[0] = _attachment.ImageView;
-
-		var createInfo = new FramebufferCreateInfo
-		{
-			SType = StructureType.FramebufferCreateInfo,
-			RenderPass = _renderPass.Value,
-			Width = (uint) _attachmentSize.X,
-			Height = (uint) _attachmentSize.Y,
-			Layers = 1,
-			AttachmentCount = 1,
-			PAttachments = attachments
-		};
-
-		Context.Vk.CreateFramebuffer(Context.Device, &createInfo, null, out var framebuffer);
-		_framebuffer = framebuffer;
-	}
-
-	private void DisposeRenderPass()
-	{
-		if (_attachment != null)
-		{
-			_attachment.Dispose();
-			_attachment = null;
-		}
-
-		if (_framebuffer.HasValue)
-		{
-			Context.Vk.DestroyFramebuffer(Context.Device, _framebuffer.Value, null);
-			_framebuffer = null;
-		}
-
-		if (_renderPass.HasValue)
-		{
-			Context.Vk.DestroyRenderPass(Context.Device, _renderPass.Value, null);
-			_renderPass = null;
-		}
-
-		if (_commandPool.HasValue)
-		{
-			Context.Vk.DestroyCommandPool(Context.Device, _commandPool.Value, null);
-			_commandPool = null;
-		}
-	}
-
-	public override void Dispose()
-	{
-		DisposeRenderPass();
-		GC.SuppressFinalize(this);
-	}
-}
-
 public class VulkanSceneChain : RenderChain
 {
 	public VulkanSceneChain(string name) : base(name) { }
@@ -275,7 +89,7 @@ public unsafe class VulkanClearRenderer : RenderChain
 		_framebuffers = ReCreate.OnAccessClassInSwapchain(() =>
 		{
 			var arr = new Framebuffer[Context.SwapchainImageCount];
-			for (var i = 0; i < arr.Length; i++) 
+			for (int i = 0; i < arr.Length; i++)
 				arr[i] = CreateFramebuffer(_renderPass, i);
 
 			return arr;
@@ -374,7 +188,7 @@ public unsafe class VulkanClearRenderer : RenderChain
 
 		clearValues[0] = new ClearValue
 		{
-			Color = new ClearColorValue(0.66f, 0.66f, (float) (Math.Sin(Context.FrameIndex / 20d) * 0.5 + 0.5), 1)
+			Color = new ClearColorValue(0.66f, 0.66f, (float) ((Math.Sin(Context.FrameIndex / 20d) * 0.5) + 0.5), 0)
 		};
 
 		var cmd = CommandBuffers.CreateCommandBuffer(CommandBufferLevel.Primary, _commandPool);

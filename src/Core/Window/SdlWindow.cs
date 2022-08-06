@@ -3,7 +3,6 @@ using System.Diagnostics;
 using System.Threading;
 using Core.Utils;
 using Core.Vulkan;
-using Core.Vulkan.Options;
 using Silk.NET.Vulkan;
 using SimpleMath.Vectors;
 using static SDL2.SDL;
@@ -64,7 +63,7 @@ public class SdlWindow : IDisposable
 		if (eventPtr->type == SDL_EventType.SDL_WINDOWEVENT && eventPtr->window.windowEvent == SDL_WindowEventID.SDL_WINDOWEVENT_RESIZED)
 		{
 			Context.State.WindowSize.Value = new Vector2<uint>((uint) eventPtr->window.data1, (uint) eventPtr->window.data2);
-			if (Context.State.WindowSize.IsChanged()) Context.ApplyStateChanges(Context.State.WindowSize.Level);
+			if (Context.State.WindowSize.IsChanged() && !Context.IsRendering) Context.ApplyStateChanges(Context.State.WindowSize.Level);
 		}
 
 		return 0;
@@ -79,12 +78,12 @@ public class SdlWindow : IDisposable
 
 	public string[] GetRequiredInstanceExtensions()
 	{
-		SDL_Vulkan_GetInstanceExtensions(WindowHandle, out var pCount, IntPtr.Zero);
+		SDL_Vulkan_GetInstanceExtensions(WindowHandle, out uint pCount, IntPtr.Zero);
 		var pNames = new IntPtr[pCount];
 		SDL_Vulkan_GetInstanceExtensions(WindowHandle, out pCount, pNames);
 
-		var strings = new string[pCount];
-		for (var i = 0; i < strings.Length; i++) strings[i] = UTF8_ToManaged(pNames[i], true);
+		string[] strings = new string[pCount];
+		for (int i = 0; i < strings.Length; i++) strings[i] = UTF8_ToManaged(pNames[i], true);
 
 		return strings;
 	}
@@ -93,7 +92,7 @@ public class SdlWindow : IDisposable
 	public void SetTitle(string title) => SDL_SetWindowTitle(WindowHandle, Title = title);
 	public void Hide() => SDL_HideWindow(WindowHandle);
 	public void Show() => SDL_ShowWindow(WindowHandle);
-	public bool IsShown => (((SDL_WindowFlags) SDL_GetWindowFlags(WindowHandle)) & SDL_WindowFlags.SDL_WINDOW_SHOWN) != 0;
+	public bool IsShown => ((SDL_WindowFlags) SDL_GetWindowFlags(WindowHandle) & SDL_WindowFlags.SDL_WINDOW_SHOWN) != 0;
 
 	public void MainLoop()
 	{
@@ -105,7 +104,7 @@ public class SdlWindow : IDisposable
 		while (IsRunning)
 		{
 			SDL_PumpEvents();
-			var result = SDL_PeepEvents(events,
+			int result = SDL_PeepEvents(events,
 				maxNumEvents,
 				SDL_eventaction.SDL_GETEVENT,
 				SDL_EventType.SDL_FIRSTEVENT,
@@ -177,7 +176,7 @@ public class SdlWindow : IDisposable
 
 	public SurfaceKHR GetVulkanSurface(Instance instance)
 	{
-		if (SDL_Vulkan_CreateSurface(WindowHandle, instance.Handle, out var surface) == SDL_bool.SDL_FALSE)
+		if (SDL_Vulkan_CreateSurface(WindowHandle, instance.Handle, out ulong surface) == SDL_bool.SDL_FALSE)
 			throw new Exception("Failed to create vulkan surface").AsExpectedException();
 
 		return new SurfaceKHR(surface);

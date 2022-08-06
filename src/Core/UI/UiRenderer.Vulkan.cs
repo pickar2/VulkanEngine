@@ -7,7 +7,6 @@ using Core.Registries.Entities;
 using Core.TemporaryMath;
 using Core.Utils;
 using Core.Vulkan;
-using Core.Vulkan.Options;
 using Core.VulkanData;
 using Silk.NET.Core.Native;
 using Silk.NET.Maths;
@@ -781,9 +780,9 @@ public static unsafe partial class UiRenderer
 		var multisampling = new PipelineMultisampleStateCreateInfo
 		{
 			SType = StructureType.PipelineMultisampleStateCreateInfo,
-			SampleShadingEnable = VulkanOptions.MsaaEnabled,
-			MinSampleShading = VulkanOptions.MsaaEnabled ? 1 : 0,
-			RasterizationSamples = VulkanOptions.MsaaSamples
+			// SampleShadingEnable = VulkanOptions.MsaaEnabled,
+			// MinSampleShading = VulkanOptions.MsaaEnabled ? 1 : 0,
+			// RasterizationSamples = VulkanOptions.MsaaSamples
 		};
 
 		var colorBlendAttachmentDepth = new PipelineColorBlendAttachmentState

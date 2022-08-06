@@ -4,7 +4,7 @@ using Core.Window;
 using Silk.NET.Vulkan;
 using SimpleMath.Vectors;
 
-namespace Core.Vulkan.Options;
+namespace Core.Vulkan;
 
 public class VulkanState
 {
@@ -13,7 +13,6 @@ public class VulkanState
 	public readonly VulkanOption<int> TestDevice = new(0, VulkanLevel.Device);
 
 	public readonly VulkanOption<int> TestSwapchain = new(0, VulkanLevel.Swapchain);
-	// public readonly VulkanOption<int> TestRenderGraph = new(0, VulkanLevel.RenderGraph);
 
 	public readonly VulkanOption<bool> DebugMode = new(true, VulkanLevel.Instance);
 
@@ -121,7 +120,6 @@ public class VulkanState
 		Options["TestInstance"] = TestInstance;
 		Options["TestDevice"] = TestDevice;
 		Options["TestSwapchain"] = TestSwapchain;
-		// Options["TestRenderGraph"] = TestRenderGraph;
 
 		Options["DebugMode"] = DebugMode;
 		Options["Window"] = Window;
