@@ -41,7 +41,7 @@ public unsafe class TestToTextureRenderer : RenderChain
 				arr[i] = FrameGraph.CreateAttachment(Format.R8G8B8A8Srgb, ImageAspectFlags.ColorBit, _size,
 					ImageUsageFlags.ColorAttachmentBit | ImageUsageFlags.SampledBit);
 
-				TextureManager.RegisterTexture($"Child Texture {i}", arr[i].ImageView);
+				TextureManager.RegisterTexture($"{Name} {i}", arr[i].ImageView);
 			}
 
 			return arr;
@@ -73,13 +73,13 @@ public unsafe class TestToTextureRenderer : RenderChain
 		_pipelineLayout = ReCreate.InDevice.OnAccessValue(() => CreatePipelineLayout(), layout => layout.Dispose());
 		_pipeline = ReCreate.InDevice.OnAccessValue(() => CreatePipeline(_pipelineLayout, _renderPass, _vertexShader, _fragmentShader, _size),
 			pipeline => pipeline.Dispose());
-		
+
 		var animationColor = new Animation
 		{
 			Curve = DefaultCurves.EaseInOutSine,
 			Type = AnimationType.RepeatAndReverse,
 			Duration = 1000,
-			Interpolator = new RGBInterpolator(Color.DarkMagenta, Color.Yellow, c => _color = c.ToArgb())
+			Interpolator = new RGBInterpolator(Color.FromArgb(UiManager.RandomColor()), Color.FromArgb(UiManager.RandomColor()), c => _color = c.ToArgb())
 		};
 		animationColor.Start();
 

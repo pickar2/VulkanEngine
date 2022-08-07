@@ -4,7 +4,7 @@ using Buffer = Silk.NET.Vulkan.Buffer;
 
 namespace Core.Vulkan.Utility;
 
-public class VulkanBuffer : IDisposable
+public readonly struct VulkanBuffer : IDisposable
 {
 	public readonly nint Allocation;
 	public readonly Buffer Buffer;
@@ -15,9 +15,5 @@ public class VulkanBuffer : IDisposable
 		Allocation = allocation;
 	}
 
-	public void Dispose()
-	{
-		VulkanMemoryAllocator.vmaDestroyBuffer(Context.VmaHandle, Buffer.Handle, Allocation);
-		GC.SuppressFinalize(this);
-	}
+	public void Dispose() => VulkanMemoryAllocator.vmaDestroyBuffer(Context.VmaHandle, Buffer.Handle, Allocation);
 }

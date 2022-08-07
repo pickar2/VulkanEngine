@@ -35,7 +35,11 @@ public static class GeneralRenderer
 {
 	public static readonly RenderChain Root = new TestChildTextureRenderer("Root");
 
-	static GeneralRenderer() => Root.AddChild(new TestToTextureRenderer("TestTexture"));
+	static GeneralRenderer()
+	{
+		Root.AddChild(new TestToTextureRenderer("ChildRenderer1"));
+		Root.AddChild(new TestToTextureRenderer("ChildRenderer2"));
+	}
 	// var sceneWithNoDependencies = new VulkanSceneChain("SceneWithNoDependencies");
 	// Root.AddChild(sceneWithNoDependencies);
 	//

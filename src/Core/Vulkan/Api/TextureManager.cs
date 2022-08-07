@@ -65,11 +65,11 @@ public static unsafe class TextureManager
 		var write = new WriteDescriptorSet
 		{
 			SType = StructureType.WriteDescriptorSet,
-			DescriptorCount = 1,
-			DstBinding = 0,
-			DstArrayElement = texture.Id,
 			DescriptorType = DescriptorType.CombinedImageSampler,
 			DstSet = DescriptorSet,
+			DstBinding = 0,
+			DstArrayElement = texture.Id,
+			DescriptorCount = 1,
 			PImageInfo = &imageInfo
 		};
 
@@ -96,11 +96,11 @@ public static unsafe class TextureManager
 		var write = new WriteDescriptorSet
 		{
 			SType = StructureType.WriteDescriptorSet,
-			DescriptorCount = (uint) imageInfo.Length,
-			DstBinding = 0,
-			DstArrayElement = 0,
 			DescriptorType = DescriptorType.CombinedImageSampler,
 			DstSet = DescriptorSet,
+			DstBinding = 0,
+			DstArrayElement = 0,
+			DescriptorCount = (uint) imageInfo.Length,
 			PImageInfo = imageInfo[0].AsPointer()
 		};
 

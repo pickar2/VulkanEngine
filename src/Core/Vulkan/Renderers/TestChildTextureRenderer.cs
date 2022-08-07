@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Runtime.InteropServices;
 using Core.Native.Shaderc;
 using Core.Native.SpirvReflect;
+using Core.Native.VMA;
 using Core.UI.Animations;
 using Core.Utils;
 using Core.Vulkan.Api;
@@ -23,6 +25,8 @@ public unsafe class TestChildTextureRenderer : RenderChain
 	private readonly OnAccessValueReCreator<PipelineLayout> _pipelineLayout;
 	private readonly OnAccessValueReCreator<Pipeline> _pipeline;
 
+	private readonly OnAccessValueReCreator<VulkanBuffer> _vertexBuffer;
+
 	public TestChildTextureRenderer(string name) : base(name)
 	{
 		_commandPool = ReCreate.InDevice.OnAccessValue(() => CreateCommandPool(Context.GraphicsQueue), commandPool => commandPool.Dispose());
@@ -41,7 +45,7 @@ public unsafe class TestChildTextureRenderer : RenderChain
 				arr[index].Dispose();
 		});
 
-		_vertexShader = ReCreate.InDevice.OnAccessClass(() => CreateShader("./assets/shaders/general/draw_triangle.vert", ShaderKind.VertexShader),
+		_vertexShader = ReCreate.InDevice.OnAccessClass(() => CreateShader("./assets/shaders/general/simple_draw.vert", ShaderKind.VertexShader),
 			shader => shader.Dispose());
 		_fragmentShader = ReCreate.InDevice.OnAccessClass(() => CreateShader("./assets/shaders/general/draw_texture.frag", ShaderKind.FragmentShader),
 			shader => shader.Dispose());
@@ -51,6 +55,26 @@ public unsafe class TestChildTextureRenderer : RenderChain
 			() => CreatePipeline(_pipelineLayout, _renderPass, _vertexShader, _fragmentShader, Context.State.WindowSize),
 			pipeline => pipeline.Dispose());
 
+		ulong bufferSize = (ulong) (sizeof(Vector3<float>) * 6);
+		_vertexBuffer = ReCreate.InDevice.OnAccessValue(() =>
+		{
+			var buffer = CreateBuffer(bufferSize, BufferUsageFlags.VertexBufferBit, VulkanMemoryAllocator.VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU);
+
+			MapDataToVulkanBuffer(span =>
+			{
+				var vectors = MemoryMarshal.Cast<byte, Vector3<float>>(span);
+				vectors[0] = new Vector3<float>(-1, 1, 0);
+				vectors[1] = new Vector3<float>(-0.5f, -1, 0);
+				vectors[2] = new Vector3<float>(0, 1, 0);
+
+				vectors[3] = new Vector3<float>(0, 1, 0);
+				vectors[4] = new Vector3<float>(0.5f, -1, 0);
+				vectors[5] = new Vector3<float>(1, 1, 0);
+			}, buffer, bufferSize);
+
+			return buffer;
+		}, buffer => buffer.Dispose());
+
 		RenderCommandBuffers += frameInfo => CreateCommandBuffer(frameInfo);
 	}
 
@@ -58,10 +82,10 @@ public unsafe class TestChildTextureRenderer : RenderChain
 	{
 		var clearValues = stackalloc ClearValue[1];
 
-		float color = DefaultCurves.EaseInOutSine.Interpolate((float) ((Math.Sin(Context.FrameIndex / 20d) * 0.5) + 0.5));
+		// float color = DefaultCurves.EaseInOutSine.Interpolate((float) ((Math.Sin(Context.FrameIndex / 20d) * 0.5) + 0.5));
 		clearValues[0] = new ClearValue
 		{
-			Color = new ClearColorValue(0, 0, color, 1)
+			Color = new ClearColorValue(0.66f, 0.66f, 0.66f, 1)
 		};
 
 		var cmd = CommandBuffers.CreateCommandBuffer(CommandBufferLevel.Primary, _commandPool);
@@ -80,9 +104,17 @@ public unsafe class TestChildTextureRenderer : RenderChain
 
 		cmd.BeginRenderPass(renderPassBeginInfo, SubpassContents.Inline);
 
+		var offsets = stackalloc ulong[1];
+
 		Context.Vk.CmdBindPipeline(cmd, PipelineBindPoint.Graphics, _pipeline);
 		cmd.BindGraphicsDescriptorSets(_pipelineLayout, 0, 1, TextureManager.DescriptorSet);
-		Context.Vk.CmdDraw(cmd, 3, 1, 0, TextureManager.GetTextureId($"Child Texture {frameInfo.SwapchainImageId}"));
+		Context.Vk.CmdBindVertexBuffers(cmd, 0, 1, _vertexBuffer.Value.Buffer, offsets);
+
+		uint id1 = TextureManager.GetTextureId($"ChildRenderer1 {frameInfo.SwapchainImageId}");
+		uint id2 = TextureManager.GetTextureId($"ChildRenderer2 {frameInfo.SwapchainImageId}");
+
+		Context.Vk.CmdDraw(cmd, 3, 1, 0, id1);
+		Context.Vk.CmdDraw(cmd, 3, 1, 3, id2);
 
 		cmd.EndRenderPass();
 

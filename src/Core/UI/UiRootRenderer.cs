@@ -18,8 +18,8 @@ public unsafe partial class UiRootRenderer : RenderChain
 
 	private VulkanPipeline _pipeline;
 
-	private readonly OnAccessClassReCreator<VulkanBuffer>[] _indexBuffers;
-	private readonly OnAccessClassReCreator<VulkanBuffer> _indirectBuffer;
+	private readonly OnAccessValueReCreator<VulkanBuffer>[] _indexBuffers;
+	private readonly OnAccessValueReCreator<VulkanBuffer> _indirectBuffer;
 
 	private CommandPool[] _renderCommandPools;
 	private CommandBuffer[] _renderCommandBuffers;
@@ -40,11 +40,11 @@ public unsafe partial class UiRootRenderer : RenderChain
 		_componentDataPool = ReCreate.InDevice.OnAccessValue(() => CreateDescriptorPool(), pool => pool.Dispose());
 		_componentDataSet = ReCreate.InDevice.OnAccessValue(() => CreateDescriptorSet(_componentDataPool));
 
-		_indexBuffers = new OnAccessClassReCreator<VulkanBuffer>[Context.State.FrameOverlap];
+		_indexBuffers = new OnAccessValueReCreator<VulkanBuffer>[Context.State.FrameOverlap];
 		for (int i = 0; i < _indexBuffers.Length; i++)
-			_indexBuffers[i] = ReCreate.InDevice.OnAccessClass(() => CreateIndexBuffer(ComponentFactory.MaxComponents), buffer => buffer.Dispose());
+			_indexBuffers[i] = ReCreate.InDevice.OnAccessValue(() => CreateIndexBuffer(ComponentFactory.MaxComponents), buffer => buffer.Dispose());
 
-		_indirectBuffer = ReCreate.InDevice.OnAccessClass(() => CreateIndirectBuffer(), buffer => buffer.Dispose());
+		_indirectBuffer = ReCreate.InDevice.OnAccessValue(() => CreateIndirectBuffer(), buffer => buffer.Dispose());
 
 		RenderCommandBuffers += (FrameInfo frameInfo) =>
 		{
