@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using Core.Registries.Entities;
@@ -10,6 +9,7 @@ using Core.UI.Materials.Fragment;
 using Core.UI.Materials.Vertex;
 using Core.Utils;
 using Core.Vulkan;
+using Core.Vulkan.Utility;
 using Core.VulkanData;
 using Core.Window;
 using Silk.NET.Maths;
@@ -50,7 +50,7 @@ public static unsafe partial class UiRenderer
 		_textures.Add(texture);
 
 		UiManager.Update();
-		
+
 		// var followCursorMaterial = UiMaterialManager.GetFactory("core:follow_cursor_material");
 		// var coolMaterial = UiMaterialManager.GetFactory("core:cool_material");
 		//

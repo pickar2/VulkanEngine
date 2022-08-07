@@ -65,4 +65,20 @@ public static unsafe class Debug
 		};
 		Context.ExtDebugUtils.CmdInsertDebugUtilsLabel(cmd, label);
 	}
+
+	public static void SetObjectName(ulong handle, ObjectType type, string name)
+	{
+		if (!Context.IsDebug) return;
+
+		var nameInfo = new DebugUtilsObjectNameInfoEXT
+		{
+			SType = StructureType.DebugUtilsObjectNameInfoExt,
+			PObjectName = StringManager.GetStringPtr<byte>(name),
+			ObjectHandle = handle,
+			ObjectType = type
+		};
+		Context.ExtDebugUtils.SetDebugUtilsObjectName(Context.Device, nameInfo);
+	}
+
+	public static void SetObjectName(nint handle, ObjectType type, string name) => SetObjectName((ulong) handle, type, name);
 }

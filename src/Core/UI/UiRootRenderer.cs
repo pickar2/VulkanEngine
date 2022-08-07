@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 using Core.Vulkan;
+using Core.Vulkan.Api;
+using Core.Vulkan.Renderers;
+using Core.Vulkan.Utility;
 using Silk.NET.Vulkan;
 using static Core.Native.VMA.VulkanMemoryAllocator;
-using static Core.Utils.VulkanUtils;
+using static Core.Vulkan.VulkanUtils;
 
 namespace Core.UI;
 

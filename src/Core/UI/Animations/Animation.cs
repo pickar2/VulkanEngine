@@ -11,7 +11,7 @@ public class Animation
 	public delegate ref T RefGetter<T>();
 
 	private readonly Stopwatch _stopwatch = new();
-	private readonly Action _updateDelegate;
+	public readonly Action _updateDelegate;
 	private long _startTime;
 	public float AnimationOffset;
 	public IAnimationCurve Curve = DefaultCurves.Linear;

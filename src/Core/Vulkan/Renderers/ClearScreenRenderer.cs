@@ -1,8 +1,10 @@
 ﻿using System;
 using Core.UI.Animations;
 using Core.Utils;
+using Core.Vulkan.Api;
+using Core.Vulkan.Utility;
 using Silk.NET.Vulkan;
-using static Core.Utils.VulkanUtils;
+using static Core.Vulkan.VulkanUtils;
 
 namespace Core.Vulkan.Renderers;
 

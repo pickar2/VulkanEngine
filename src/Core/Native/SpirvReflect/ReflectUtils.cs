@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
-using Core.Utils;
 using Core.Vulkan;
+using Core.Vulkan.Utility;
 using Silk.NET.Vulkan;
 
 namespace Core.Native.SpirvReflect;

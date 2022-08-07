@@ -1,8 +1,7 @@
 ﻿using System;
-using Core.Utils;
 using Silk.NET.Vulkan;
 
-namespace Core.Vulkan;
+namespace Core.Vulkan.Utility;
 
 public class Frame : IDisposable
 {
@@ -14,7 +13,7 @@ public class Frame : IDisposable
 		PresentSemaphore = presentSemaphore;
 		Fence = fence;
 	}
-	
+
 	public Frame()
 	{
 		PresentSemaphore = VulkanUtils.CreateSemaphore();

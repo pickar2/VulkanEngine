@@ -1,5 +1,5 @@
 ﻿using System;
-using Core.Utils;
+using Core.Vulkan;
 using static VulkanRenderer.SpirvReflect.Native;
 
 namespace Core.Native.SpirvReflect;

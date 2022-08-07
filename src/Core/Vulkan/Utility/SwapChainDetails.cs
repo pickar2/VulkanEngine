@@ -1,6 +1,6 @@
 ﻿using Silk.NET.Vulkan;
 
-namespace Core.Vulkan;
+namespace Core.Vulkan.Utility;
 
 public class SwapchainDetails
 {

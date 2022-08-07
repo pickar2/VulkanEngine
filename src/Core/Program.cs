@@ -49,6 +49,14 @@ internal static class Program
 
 		Context.Init();
 
+		int gpu = Context.SelectedDeviceIndex;
+		KeyboardInput.GlobalContext.AddKeyBind(new NamedFunc("change_gpu", () =>
+		{
+			gpu = (gpu + 1) % 2;
+			Context.State.SelectedGpuIndex.Value = gpu;
+			return true;
+		}), SDL.SDL_Keycode.SDLK_g);
+
 		windowThread.Join();
 
 		Context.Dispose();

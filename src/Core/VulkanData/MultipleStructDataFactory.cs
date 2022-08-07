@@ -5,6 +5,7 @@ using Core.Registries.Entities;
 using Core.Registries.EventManagerTypes;
 using Core.Utils;
 using Core.Vulkan;
+using Core.Vulkan.Utility;
 using Silk.NET.Vulkan;
 using static Core.Native.VMA.VulkanMemoryAllocator;
 
@@ -90,7 +91,7 @@ public unsafe class MultipleStructDataFactory : SimpleRegistry<NoneEventManager<
 			// DataBufferGpu.EnqueueFrameDispose(MainRenderer.GetLastFrameIndex());
 			DataBufferGpu = VulkanUtils.CreateBuffer(newBufferSize, BufferUsageFlags.StorageBufferBit | BufferUsageFlags.TransferDstBit,
 				VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
-			
+
 			VulkanUtils.CopyBuffer(DataBufferCpu, DataBufferGpu, BufferSize);
 		}
 

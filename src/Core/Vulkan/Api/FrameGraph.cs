@@ -7,9 +7,9 @@ using Core.Utils;
 using Silk.NET.Vulkan;
 using SimpleMath.Vectors;
 using static Core.Native.VMA.VulkanMemoryAllocator;
-using static Core.Utils.VulkanUtils;
+using static Core.Vulkan.VulkanUtils;
 
-namespace Core.Vulkan;
+namespace Core.Vulkan.Api;
 
 public static unsafe class FrameGraph
 {
@@ -38,10 +38,7 @@ public static unsafe class FrameGraph
 			"Failed to create ImageTransitionCommandPool.");
 	}
 
-	public static void Dispose()
-	{
-		Context.Vk.DestroyCommandPool(Context.Device, ImageTransitionCommandPool, null);
-	}
+	public static void Dispose() => Context.Vk.DestroyCommandPool(Context.Device, ImageTransitionCommandPool, null);
 
 	public static void AfterSwapchainCreation()
 	{
@@ -166,7 +163,7 @@ public static unsafe class FrameGraph
 			usage = VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY
 		};
 
-		Check((Result) vmaCreateImage(Context.VmaHandle, ref imageCreateInfo, ref allocationInfo, out var imageHandle, out var allocation, IntPtr.Zero),
+		Check((Result) vmaCreateImage(Context.VmaHandle, ref imageCreateInfo, ref allocationInfo, out ulong imageHandle, out var allocation, IntPtr.Zero),
 			"Failed to create attachment image.");
 
 		var image = new Image(imageHandle);

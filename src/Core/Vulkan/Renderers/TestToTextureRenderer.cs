@@ -1,11 +1,15 @@
 ﻿using System;
+using System.Drawing;
 using Core.Native.Shaderc;
 using Core.Native.SpirvReflect;
+using Core.UI;
 using Core.UI.Animations;
 using Core.Utils;
+using Core.Vulkan.Api;
+using Core.Vulkan.Utility;
 using Silk.NET.Vulkan;
 using SimpleMath.Vectors;
-using static Core.Utils.VulkanUtils;
+using static Core.Vulkan.VulkanUtils;
 
 namespace Core.Vulkan.Renderers;
 
@@ -24,6 +28,8 @@ public unsafe class TestToTextureRenderer : RenderChain
 
 	private readonly Vector2<uint> _size = new(1920, 1080);
 
+	private int _color;
+
 	public TestToTextureRenderer(string name) : base(name)
 	{
 		_commandPool = ReCreate.InDevice.OnAccessValue(() => CreateCommandPool(Context.GraphicsQueue), commandPool => commandPool.Dispose());
@@ -31,8 +37,12 @@ public unsafe class TestToTextureRenderer : RenderChain
 		{
 			var arr = new VulkanImage2[Context.SwapchainImageCount];
 			for (int i = 0; i < arr.Length; i++)
+			{
 				arr[i] = FrameGraph.CreateAttachment(Format.R8G8B8A8Srgb, ImageAspectFlags.ColorBit, _size,
 					ImageUsageFlags.ColorAttachmentBit | ImageUsageFlags.SampledBit);
+
+				TextureManager.RegisterTexture($"Child Texture {i}", arr[i].ImageView);
+			}
 
 			return arr;
 		}, arr =>
@@ -63,18 +73,28 @@ public unsafe class TestToTextureRenderer : RenderChain
 		_pipelineLayout = ReCreate.InDevice.OnAccessValue(() => CreatePipelineLayout(), layout => layout.Dispose());
 		_pipeline = ReCreate.InDevice.OnAccessValue(() => CreatePipeline(_pipelineLayout, _renderPass, _vertexShader, _fragmentShader, _size),
 			pipeline => pipeline.Dispose());
+		
+		var animationColor = new Animation
+		{
+			Curve = DefaultCurves.EaseInOutSine,
+			Type = AnimationType.RepeatAndReverse,
+			Duration = 1000,
+			Interpolator = new RGBInterpolator(Color.DarkMagenta, Color.Yellow, c => _color = c.ToArgb())
+		};
+		animationColor.Start();
 
 		RenderCommandBuffers += frameInfo => CreateCommandBuffer(frameInfo);
 	}
 
 	private CommandBuffer CreateCommandBuffer(FrameInfo frameInfo)
 	{
+		UiManager.Update();
 		var clearValues = stackalloc ClearValue[1];
 
-		float color = DefaultCurves.EaseInOutSine.Interpolate((float) ((Math.Cos(Context.FrameIndex / 20d) * 0.5) + 0.5));
+		float clearColor = DefaultCurves.EaseInOutSine.Interpolate((float) ((Math.Cos(Context.FrameIndex / 20d) * 0.5) + 0.5));
 		clearValues[0] = new ClearValue
 		{
-			Color = new ClearColorValue(color, 0, 0, 1)
+			Color = new ClearColorValue(clearColor, 0, 0, 1)
 		};
 
 		var cmd = CommandBuffers.CreateCommandBuffer(CommandBufferLevel.Primary, _commandPool);
@@ -94,7 +114,7 @@ public unsafe class TestToTextureRenderer : RenderChain
 		cmd.BeginRenderPass(renderPassBeginInfo, SubpassContents.Inline);
 
 		Context.Vk.CmdBindPipeline(cmd, PipelineBindPoint.Graphics, _pipeline);
-		Context.Vk.CmdDraw(cmd, 3, 1, 0, 0);
+		Context.Vk.CmdDraw(cmd, 3, 1, 0, (uint) _color);
 
 		cmd.EndRenderPass();
 

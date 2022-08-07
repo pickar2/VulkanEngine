@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using Core.Utils;
+using Core.Vulkan.Api;
+using Core.Vulkan.Renderers;
+using Core.Vulkan.Utility;
 using Silk.NET.Vulkan;
 using Semaphore = Silk.NET.Vulkan.Semaphore;
 

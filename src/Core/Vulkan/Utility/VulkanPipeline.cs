@@ -1,7 +1,7 @@
 ﻿using System;
 using Silk.NET.Vulkan;
 
-namespace Core.Vulkan;
+namespace Core.Vulkan.Utility;
 
 public unsafe class VulkanPipeline : IDisposable
 {

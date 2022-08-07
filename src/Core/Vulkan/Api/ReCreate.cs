@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Core.Vulkan;
+namespace Core.Vulkan.Api;
 
 public static class ReCreate
 {

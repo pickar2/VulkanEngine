@@ -3,8 +3,8 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Core.Native.Shaderc;
-using Core.Vulkan;
-using Silk.NET.Core.Native;
+using Core.Vulkan.Api;
+using Core.Vulkan.Utility;
 using Silk.NET.Vulkan;
 using static Core.Native.VMA.VulkanMemoryAllocator;
 using static Core.Vulkan.Context;
@@ -13,7 +13,7 @@ using Result = Silk.NET.Vulkan.Result;
 using ShaderModule = Core.Native.SpirvReflect.ShaderModule;
 using Vk = Silk.NET.Vulkan.Vk;
 
-namespace Core.Utils;
+namespace Core.Vulkan;
 
 public static unsafe class VulkanUtils
 {
@@ -494,7 +494,7 @@ public static unsafe class VulkanUtils
 			SType = StructureType.PipelineShaderStageCreateInfo,
 			Stage = ShaderStageFlags.ComputeBit,
 			Module = shader.VulkanModule,
-			PName = (byte*) SilkMarshal.StringToPtr("main")
+			PName = StringManager.GetStringPtr<byte>("main")
 		};
 
 		var layoutCreateInfo = new PipelineLayoutCreateInfo
@@ -698,7 +698,7 @@ public static unsafe class VulkanUtils
 
 		return semaphore;
 	}
-	
+
 	public static PipelineLayout CreatePipelineLayout()
 	{
 		var layoutCreateInfo = new PipelineLayoutCreateInfo

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
-namespace Core.Vulkan;
+namespace Core.Vulkan.Api;
 
 public static class ExecuteOnce
 {

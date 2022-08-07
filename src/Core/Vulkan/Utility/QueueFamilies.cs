@@ -1,7 +1,7 @@
 ﻿using Silk.NET.Vulkan;
-using static Core.Utils.VulkanUtils;
+using static Core.Vulkan.VulkanUtils;
 
-namespace Core.Vulkan;
+namespace Core.Vulkan.Utility;
 
 public class VulkanQueue
 {
@@ -32,6 +32,8 @@ public class VulkanQueue
 			Family = Family,
 			QueueIndex = QueueIndex
 		};
+
+	public static implicit operator Queue(VulkanQueue queue) => queue.Queue;
 }
 
 public class QueueFamily

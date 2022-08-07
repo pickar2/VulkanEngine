@@ -7,8 +7,9 @@ using Core.Registries.Entities;
 using Core.TemporaryMath;
 using Core.Utils;
 using Core.Vulkan;
+using Core.Vulkan.Api;
+using Core.Vulkan.Utility;
 using Core.VulkanData;
-using Silk.NET.Core.Native;
 using Silk.NET.Maths;
 using Silk.NET.Vulkan;
 using static Core.Native.VMA.VulkanMemoryAllocator;
@@ -725,14 +726,14 @@ public static unsafe partial class UiRenderer
 				SType = StructureType.PipelineShaderStageCreateInfo,
 				Stage = ShaderStageFlags.VertexBit,
 				Module = _vertexShader.VulkanModule,
-				PName = (byte*) SilkMarshal.StringToPtr("main")
+				PName = StringManager.GetStringPtr<byte>("main")
 			},
 			new()
 			{
 				SType = StructureType.PipelineShaderStageCreateInfo,
 				Stage = ShaderStageFlags.FragmentBit,
 				Module = _fragmentShader.VulkanModule,
-				PName = (byte*) SilkMarshal.StringToPtr("main")
+				PName = StringManager.GetStringPtr<byte>("main")
 			}
 		};
 
@@ -761,7 +762,7 @@ public static unsafe partial class UiRenderer
 			SType = StructureType.PipelineViewportStateCreateInfo,
 			ViewportCount = 1,
 			PViewports = &viewport,
-			ScissorCount = 1,
+			ScissorCount = 1
 			// PScissors = &scissor
 		};
 
@@ -779,7 +780,7 @@ public static unsafe partial class UiRenderer
 
 		var multisampling = new PipelineMultisampleStateCreateInfo
 		{
-			SType = StructureType.PipelineMultisampleStateCreateInfo,
+			SType = StructureType.PipelineMultisampleStateCreateInfo
 			// SampleShadingEnable = VulkanOptions.MsaaEnabled,
 			// MinSampleShading = VulkanOptions.MsaaEnabled ? 1 : 0,
 			// RasterizationSamples = VulkanOptions.MsaaSamples

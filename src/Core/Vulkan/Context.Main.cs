@@ -6,6 +6,8 @@ using System.Runtime.InteropServices;
 using System.Text;
 using Core.Native.Shaderc;
 using Core.Utils;
+using Core.Vulkan.Api;
+using Core.Vulkan.Utility;
 using Core.Window;
 using Silk.NET.Core;
 using Silk.NET.Core.Native;
@@ -13,7 +15,7 @@ using Silk.NET.Vulkan;
 using Silk.NET.Vulkan.Extensions.EXT;
 using Silk.NET.Vulkan.Extensions.KHR;
 using static Core.Native.VMA.VulkanMemoryAllocator;
-using static Core.Utils.VulkanUtils;
+using static Core.Vulkan.VulkanUtils;
 using Result = Silk.NET.Vulkan.Result;
 
 namespace Core.Vulkan;
@@ -34,7 +36,7 @@ public static unsafe partial class Context
 
 	#region LevelContext
 
-	public static readonly Vk DefaultContextVk = Vk.GetApi(); // For use when VkInstance is not yet present
+	public static readonly Vk Vk = Vk.GetApi(); // For use when VkInstance is not yet present
 	public static Compiler Compiler = default!;
 
 	public static void CreateLevelContext()
@@ -69,7 +71,6 @@ public static unsafe partial class Context
 	public static SdlWindow Window => State.Window.Value;
 	public static bool IsRunning => Window.IsRunning;
 
-	public static Vk Vk = default!;
 	public static KhrSurface KhrSurface = default!;
 	public static ExtDebugUtils ExtDebugUtils = default!;
 	public static DebugUtilsMessenger DebugUtilsMessenger = default!;
@@ -85,7 +86,7 @@ public static unsafe partial class Context
 		RequiredLayers.Clear();
 		RequiredLayers.UnionWith(State.ProgramLayers.Value);
 
-		if (IsDebug) RequiredLayers.UnionWith(State.ValidationLayers.Value);
+		if (IsDebug && State.UseValidation) RequiredLayers.UnionWith(State.ValidationLayers.Value);
 		CheckLayerSupport(RequiredLayers);
 
 		var requiredExtensions = new HashSet<string>(Window.GetRequiredInstanceExtensions());
@@ -97,7 +98,7 @@ public static unsafe partial class Context
 		{
 			DebugUtilsMessenger = new DebugUtilsMessenger();
 
-			requiredExtensions.Add("VK_EXT_validation_features");
+			if (State.UseValidation) requiredExtensions.Add("VK_EXT_validation_features");
 			requiredExtensions.Add("VK_EXT_debug_utils");
 
 			foreach (string layer in RequiredLayers)
@@ -114,11 +115,11 @@ public static unsafe partial class Context
 		var appInfo = new ApplicationInfo
 		{
 			SType = StructureType.ApplicationInfo,
-			PApplicationName = (byte*) Marshal.StringToHGlobalAnsi("App name"),
-			ApplicationVersion = Vk.MakeVersion(0, 1),
-			PEngineName = (byte*) Marshal.StringToHGlobalAnsi("Engine name"),
-			EngineVersion = Vk.MakeVersion(0, 1),
-			ApiVersion = Vk.Version12
+			PApplicationName = StringManager.GetStringPtr<byte>("App name"),
+			ApplicationVersion = Silk.NET.Vulkan.Vk.MakeVersion(0, 1),
+			PEngineName = StringManager.GetStringPtr<byte>("Mauve"),
+			EngineVersion = Silk.NET.Vulkan.Vk.MakeVersion(0, 1),
+			ApiVersion = Silk.NET.Vulkan.Vk.Version12
 		};
 
 		var createInfo = new InstanceCreateInfo
@@ -131,7 +132,7 @@ public static unsafe partial class Context
 			PpEnabledLayerNames = (byte**) SilkMarshal.StringArrayToPtr(RequiredLayers.ToArray())
 		};
 
-		if (IsDebug)
+		if (IsDebug && State.UseValidation)
 		{
 			var validationFeatures = stackalloc ValidationFeatureEnableEXT[]
 			{
@@ -151,7 +152,7 @@ public static unsafe partial class Context
 			createInfo.PNext = &validationFeaturesExt;
 		}
 
-		Vk = Vk.GetApi(createInfo, out Instance);
+		Check(Vk.CreateInstance(createInfo, null, out Instance), "Failed to create Instance.");
 
 		if (IsDebug)
 		{
@@ -172,9 +173,9 @@ public static unsafe partial class Context
 	private static void CheckLayerSupport(HashSet<string> requiredLayers)
 	{
 		uint count = 0;
-		DefaultContextVk.EnumerateInstanceLayerProperties(&count, null);
+		Vk.EnumerateInstanceLayerProperties(&count, null);
 		var availableLayers = stackalloc LayerProperties[(int) count];
-		DefaultContextVk.EnumerateInstanceLayerProperties(&count, availableLayers);
+		Vk.EnumerateInstanceLayerProperties(&count, availableLayers);
 
 		var availableLayersSet = new Span<LayerProperties>(availableLayers, (int) count).ToArray()
 			.Select(props => Marshal.PtrToStringAnsi((nint) props.LayerName))
@@ -186,15 +187,15 @@ public static unsafe partial class Context
 
 		if (difference.Count == 0) return;
 
-		throw new NotSupportedException($"Instance layers [{string.Join(", ", difference)}] are not available on that device.").AsExpectedException();
+		// throw new NotSupportedException($"Instance layers [{string.Join(", ", difference)}] are not available on that device.").AsExpectedException();
 	}
 
 	private static HashSet<string> GetInstanceExtensions(string layerName)
 	{
 		uint count = 0;
-		DefaultContextVk.EnumerateInstanceExtensionProperties(layerName, &count, null);
+		Vk.EnumerateInstanceExtensionProperties(layerName, &count, null);
 		var availableExtensions = stackalloc ExtensionProperties[(int) count];
-		DefaultContextVk.EnumerateInstanceExtensionProperties(layerName, &count, availableExtensions);
+		Vk.EnumerateInstanceExtensionProperties(layerName, &count, availableExtensions);
 
 		var set = new HashSet<string>((int) count);
 		for (int i = 0; i < count; i++)
@@ -238,6 +239,7 @@ public static unsafe partial class Context
 	public static KhrSwapchain KhrSwapchain = default!;
 	public static KhrSynchronization2 KhrSynchronization2 = default!;
 
+	public static int SelectedDeviceIndex;
 	public static Device Device;
 	public static PhysicalDevice PhysicalDevice;
 	public static SwapchainDetails SwapchainDetails = default!;
@@ -341,6 +343,7 @@ public static unsafe partial class Context
 		Vk.GetPhysicalDeviceProperties2(PhysicalDevice, out var properties);
 
 		App.Logger.Info.Message($"Picked {GetDeviceString(selectedGpuIndex, properties)} as GPU.");
+		SelectedDeviceIndex = selectedGpuIndex;
 
 		IsIntegratedGpu = properties.Properties.DeviceType == PhysicalDeviceType.IntegratedGpu;
 	}
@@ -689,17 +692,21 @@ public static unsafe partial class Context
 
 	private static void CreateDeviceQueues()
 	{
-		Vk.GetDeviceQueue(Device, GraphicsQueue.Family.Index, GraphicsQueue.QueueIndex, out var graphics);
-		GraphicsQueue = GraphicsQueue.WithQueue(graphics);
-
-		Vk.GetDeviceQueue(Device, ComputeQueue.Family.Index, ComputeQueue.QueueIndex, out var compute);
-		ComputeQueue = ComputeQueue.WithQueue(compute);
-
 		Vk.GetDeviceQueue(Device, TransferToDeviceQueue.Family.Index, TransferToDeviceQueue.QueueIndex, out var transferToDevice);
 		TransferToDeviceQueue = TransferToDeviceQueue.WithQueue(transferToDevice);
+		Debug.SetObjectName(transferToDevice.Handle, ObjectType.Queue, "Transfer to device queue");
 
 		Vk.GetDeviceQueue(Device, TransferToHostQueue.Family.Index, TransferToHostQueue.QueueIndex, out var transferToHost);
 		TransferToHostQueue = TransferToHostQueue.WithQueue(transferToHost);
+		Debug.SetObjectName(transferToHost.Handle, ObjectType.Queue, "Transfer to host queue");
+
+		Vk.GetDeviceQueue(Device, ComputeQueue.Family.Index, ComputeQueue.QueueIndex, out var compute);
+		ComputeQueue = ComputeQueue.WithQueue(compute);
+		Debug.SetObjectName(compute.Handle, ObjectType.Queue, "Compute queue");
+
+		Vk.GetDeviceQueue(Device, GraphicsQueue.Family.Index, GraphicsQueue.QueueIndex, out var graphics);
+		GraphicsQueue = GraphicsQueue.WithQueue(graphics);
+		Debug.SetObjectName(graphics.Handle, ObjectType.Queue, "Graphics queue");
 	}
 
 	private static void CreateVma()
@@ -712,7 +719,7 @@ public static unsafe partial class Context
 
 		var vmaAllocatorCreateInfo = new VmaAllocatorCreateInfo
 		{
-			vulkanApiVersion = Vk.Version12,
+			vulkanApiVersion = Silk.NET.Vulkan.Vk.Version12,
 			device = Device.Handle,
 			physicalDevice = PhysicalDevice.Handle,
 			instance = Instance.Handle,
@@ -803,7 +810,11 @@ public static unsafe partial class Context
 
 		SwapchainImages = new VulkanImage2[SwapchainImageCount];
 		for (int i = 0; i < SwapchainImageCount; i++)
+		{
 			SwapchainImages[i] = new VulkanImage2(images[i], IntPtr.Zero, imageViews[i], SwapchainSurfaceFormat.Format);
+			Debug.SetObjectName(images[i].Handle, ObjectType.Image, $"Swapchain Image {i}");
+			Debug.SetObjectName(imageViews[i].Handle, ObjectType.ImageView, $"Swapchain ImageView {i}");
+		}
 
 		_frames = new Frame[State.FrameOverlap.Value];
 		for (int i = 0; i < State.FrameOverlap.Value; i++) _frames[i] = new Frame();

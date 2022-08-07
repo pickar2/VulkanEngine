@@ -1,12 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using Core.Utils;
 using Silk.NET.Vulkan;
 using static Silk.NET.Vulkan.DebugUtilsMessageSeverityFlagsEXT;
 using static Silk.NET.Vulkan.DebugUtilsMessageTypeFlagsEXT;
 
-namespace Core.Vulkan;
+namespace Core.Vulkan.Utility;
 
 public unsafe class DebugUtilsMessenger : IDisposable
 {

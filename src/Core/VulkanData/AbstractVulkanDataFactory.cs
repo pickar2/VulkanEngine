@@ -1,6 +1,7 @@
 ﻿using System;
-using Core.Utils;
 using Core.Vulkan;
+using Core.Vulkan.Api;
+using Core.Vulkan.Utility;
 using Silk.NET.Vulkan;
 using static Core.Native.VMA.VulkanMemoryAllocator;
 
@@ -169,7 +170,7 @@ public abstract unsafe class AbstractVulkanDataFactory<TDataHolder> : IVulkanDat
 			_copyRegionSizeLog2++;
 		}
 
-		var copyRegionsSize = (int) Math.Ceiling((double) newMaxComponents / _copyRegionSize);
+		int copyRegionsSize = (int) Math.Ceiling((double) newMaxComponents / _copyRegionSize);
 		_copyRegions = new bool[copyRegionsSize];
 
 		BufferSize = (ulong) Math.Max(4, newMaxComponents * ComponentSize);

@@ -15,6 +15,7 @@ public class VulkanState
 	public readonly VulkanOption<int> TestSwapchain = new(0, VulkanLevel.Swapchain);
 
 	public readonly VulkanOption<bool> DebugMode = new(true, VulkanLevel.Instance);
+	public readonly VulkanOption<bool> UseValidation = new(true, VulkanLevel.Instance);
 
 	public readonly VulkanOption<SdlWindow> Window = new(default!, VulkanLevel.Instance);
 
@@ -25,12 +26,12 @@ public class VulkanState
 
 	public readonly VulkanOption<string[]> ValidationLayers = new(new string[]
 	{
-		"VK_LAYER_KHRONOS_validation" // TODO: add precompiled layers for debugging in environments which don't have vulkan sdk
+		"VK_LAYER_KHRONOS_validation" // TODO: add precompiled layer for debugging in environments which don't have vulkan sdk
 	}, VulkanLevel.Instance);
 
 	public readonly VulkanOption<string[]> ProgramLayers = new(new string[]
 	{
-		"VK_LAYER_KHRONOS_synchronization2"
+		// "VK_LAYER_KHRONOS_synchronization2"  // TODO: add precompiled layer for vulkan < 1.2
 		// steam overlay, epic overlay, etc. 
 	}, VulkanLevel.Instance);
 
@@ -55,9 +56,10 @@ public class VulkanState
 		},
 		new PhysicalDeviceDescriptorIndexingFeaturesEXT
 		{
-			ShaderSampledImageArrayNonUniformIndexing = true,
 			RuntimeDescriptorArray = true,
 			DescriptorBindingVariableDescriptorCount = true,
+			DescriptorBindingPartiallyBound = true,
+			ShaderSampledImageArrayNonUniformIndexing = true,
 			ShaderStorageBufferArrayNonUniformIndexing = true,
 			DescriptorBindingStorageBufferUpdateAfterBind = true,
 			DescriptorBindingSampledImageUpdateAfterBind = true
@@ -122,10 +124,11 @@ public class VulkanState
 		Options["TestDevice"] = TestDevice;
 		Options["TestSwapchain"] = TestSwapchain;
 
-		Options["DebugMode"] = DebugMode;
 		Options["Window"] = Window;
-		Options["InstanceExtensions"] = InstanceExtensions;
+		Options["DebugMode"] = DebugMode;
+		Options["UseValidation"] = UseValidation;
 		Options["ValidationLayers"] = ValidationLayers;
+		Options["InstanceExtensions"] = InstanceExtensions;
 		Options["ProgramLayers"] = ProgramLayers;
 		Options["DeviceExtensions"] = DeviceExtensions;
 		Options["SelectedGpu"] = SelectedGpuIndex;

@@ -1,8 +1,8 @@
 ﻿using System;
-using Silk.NET.Core.Native;
+using Core.Vulkan.Api;
 using Silk.NET.Vulkan;
 
-namespace Core.Vulkan;
+namespace Core.Vulkan.Utility;
 
 public unsafe class VulkanShader : IDisposable
 {
@@ -15,13 +15,13 @@ public unsafe class VulkanShader : IDisposable
 	public ShaderModule VulkanModule { get; }
 	public Native.SpirvReflect.ShaderModule ReflectModule { get; }
 
-	public PipelineShaderStageCreateInfo ShaderCreateInfo(ShaderStageFlags flags, string entryName = "main") =>
+	public PipelineShaderStageCreateInfo ShaderCreateInfo(ShaderStageFlags flags, string entryPointName = "main") =>
 		new()
 		{
 			SType = StructureType.PipelineShaderStageCreateInfo,
 			Stage = flags,
 			Module = VulkanModule,
-			PName = (byte*) SilkMarshal.StringToPtr(entryName)
+			PName = StringManager.GetStringPtr<byte>(entryPointName)
 		};
 
 	public void Dispose()

@@ -3,9 +3,11 @@ using Core.Native.Shaderc;
 using Core.Native.SpirvReflect;
 using Core.UI.Animations;
 using Core.Utils;
+using Core.Vulkan.Api;
+using Core.Vulkan.Utility;
 using Silk.NET.Vulkan;
 using SimpleMath.Vectors;
-using static Core.Utils.VulkanUtils;
+using static Core.Vulkan.VulkanUtils;
 
 namespace Core.Vulkan.Renderers;
 
@@ -14,13 +16,6 @@ public unsafe class TestChildTextureRenderer : RenderChain
 	private readonly OnAccessValueReCreator<RenderPass> _renderPass;
 	private readonly OnAccessClassReCreator<Framebuffer[]> _framebuffers;
 	private readonly OnAccessValueReCreator<CommandPool> _commandPool;
-
-	private const uint MaxTextureCount = 1024;
-	private const uint CurrentTextureCount = 1;
-	private readonly OnAccessValueReCreator<DescriptorSetLayout> _descriptorSetLayout;
-	private readonly OnAccessValueReCreator<DescriptorPool> _descriptorPool;
-	private readonly OnAccessValueReCreator<DescriptorSet> _descriptorSet;
-	private readonly OnAccessValueReCreator<Sampler> _sampler;
 
 	private readonly OnAccessClassReCreator<VulkanShader> _vertexShader;
 	private readonly OnAccessClassReCreator<VulkanShader> _fragmentShader;
@@ -46,19 +41,14 @@ public unsafe class TestChildTextureRenderer : RenderChain
 				arr[index].Dispose();
 		});
 
-		_sampler = ReCreate.InDevice.OnAccessValue(() => CreateImageSampler(16), sampler => sampler.Dispose());
-
-		_descriptorSetLayout = ReCreate.InDevice.OnAccessValue(() => CreateDescriptorSetLayout(), layout => layout.Dispose());
-		_descriptorPool = ReCreate.InDevice.OnAccessValue(() => CreateDescriptorPool(), pool => pool.Dispose());
-		_descriptorSet = ReCreate.InDevice.OnAccessValue((() => CreateDescriptorSet(_descriptorSetLayout, _descriptorPool)));
-
 		_vertexShader = ReCreate.InDevice.OnAccessClass(() => CreateShader("./assets/shaders/general/draw_triangle.vert", ShaderKind.VertexShader),
 			shader => shader.Dispose());
 		_fragmentShader = ReCreate.InDevice.OnAccessClass(() => CreateShader("./assets/shaders/general/draw_texture.frag", ShaderKind.FragmentShader),
 			shader => shader.Dispose());
 
-		_pipelineLayout = ReCreate.InDevice.OnAccessValue(() => CreatePipelineLayout(_descriptorSetLayout), layout => layout.Dispose());
-		_pipeline = ReCreate.InDevice.OnAccessValue(() => CreatePipeline(_pipelineLayout, _renderPass, _vertexShader, _fragmentShader, Context.State.WindowSize),
+		_pipelineLayout = ReCreate.InDevice.OnAccessValue(() => CreatePipelineLayout(TextureManager.DescriptorSetLayout), layout => layout.Dispose());
+		_pipeline = ReCreate.InDevice.OnAccessValue(
+			() => CreatePipeline(_pipelineLayout, _renderPass, _vertexShader, _fragmentShader, Context.State.WindowSize),
 			pipeline => pipeline.Dispose());
 
 		RenderCommandBuffers += frameInfo => CreateCommandBuffer(frameInfo);
@@ -66,30 +56,6 @@ public unsafe class TestChildTextureRenderer : RenderChain
 
 	private CommandBuffer CreateCommandBuffer(FrameInfo frameInfo)
 	{
-		var imageInfo = new DescriptorImageInfo[CurrentTextureCount];
-
-		for (int i = 0; i < CurrentTextureCount; i++)
-		{
-			imageInfo[i] = new DescriptorImageInfo
-			{
-				ImageLayout = ImageLayout.ShaderReadOnlyOptimal,
-				Sampler = _sampler,
-				ImageView = ((TestToTextureRenderer) Children[0]).Attachments.Value[frameInfo.SwapchainImageId].ImageView
-			};
-		}
-
-		var write = new WriteDescriptorSet
-		{
-			SType = StructureType.WriteDescriptorSet,
-			DescriptorCount = (uint) imageInfo.Length,
-			DstBinding = 0,
-			DescriptorType = DescriptorType.CombinedImageSampler,
-			DstSet = _descriptorSet,
-			PImageInfo = imageInfo[0].AsPointer()
-		};
-
-		Context.Vk.UpdateDescriptorSets(Context.Device, 1, write, 0, null);
-		
 		var clearValues = stackalloc ClearValue[1];
 
 		float color = DefaultCurves.EaseInOutSine.Interpolate((float) ((Math.Sin(Context.FrameIndex / 20d) * 0.5) + 0.5));
@@ -115,97 +81,14 @@ public unsafe class TestChildTextureRenderer : RenderChain
 		cmd.BeginRenderPass(renderPassBeginInfo, SubpassContents.Inline);
 
 		Context.Vk.CmdBindPipeline(cmd, PipelineBindPoint.Graphics, _pipeline);
-		cmd.BindGraphicsDescriptorSets(_pipelineLayout, 0, 1, _descriptorSet);
-		Context.Vk.CmdDraw(cmd, 3, 1, 0, 0);
+		cmd.BindGraphicsDescriptorSets(_pipelineLayout, 0, 1, TextureManager.DescriptorSet);
+		Context.Vk.CmdDraw(cmd, 3, 1, 0, TextureManager.GetTextureId($"Child Texture {frameInfo.SwapchainImageId}"));
 
 		cmd.EndRenderPass();
 
 		Check(cmd.End(), "Failed to end command buffer.");
 
 		return cmd;
-	}
-
-	private static DescriptorSetLayout CreateDescriptorSetLayout()
-	{
-		var textureFlags = stackalloc DescriptorBindingFlags[1];
-		textureFlags[0] = DescriptorBindingFlags.VariableDescriptorCountBit | DescriptorBindingFlags.UpdateAfterBindBit;
-
-		var textureFlagsCreateInfo = new DescriptorSetLayoutBindingFlagsCreateInfoEXT
-		{
-			SType = StructureType.DescriptorSetLayoutBindingFlagsCreateInfoExt,
-			BindingCount = CurrentTextureCount,
-			PBindingFlags = textureFlags
-		};
-
-		var texturesBindings = new DescriptorSetLayoutBinding
-		{
-			Binding = 0,
-			DescriptorCount = MaxTextureCount,
-			DescriptorType = DescriptorType.CombinedImageSampler,
-			StageFlags = ShaderStageFlags.FragmentBit
-		};
-
-		var texturesCreateInfo = new DescriptorSetLayoutCreateInfo
-		{
-			SType = StructureType.DescriptorSetLayoutCreateInfo,
-			BindingCount = 1,
-			PBindings = texturesBindings.AsPointer(),
-			PNext = textureFlagsCreateInfo.AsPointer(),
-			Flags = DescriptorSetLayoutCreateFlags.UpdateAfterBindPoolBitExt
-		};
-
-		Check(Context.Vk.CreateDescriptorSetLayout(Context.Device, &texturesCreateInfo, null, out var layout),
-			"Failed to create descriptor set layout.");
-
-		return layout;
-	}
-
-	private static DescriptorPool CreateDescriptorPool()
-	{
-		var texturesPoolSizes = new DescriptorPoolSize
-		{
-			DescriptorCount = Context.SwapchainImageCount * MaxTextureCount,
-			Type = DescriptorType.CombinedImageSampler
-		};
-
-		var texturesCreateInfo = new DescriptorPoolCreateInfo
-		{
-			SType = StructureType.DescriptorPoolCreateInfo,
-			MaxSets = Context.SwapchainImageCount,
-			PoolSizeCount = 1,
-			PPoolSizes = texturesPoolSizes.AsPointer(),
-			Flags = DescriptorPoolCreateFlags.UpdateAfterBindBitExt
-		};
-
-		Check(Context.Vk.CreateDescriptorPool(Context.Device, &texturesCreateInfo, null, out var pool),
-			"Failed to create descriptor pool.");
-
-		return pool;
-	}
-
-	private static DescriptorSet CreateDescriptorSet(DescriptorSetLayout layout, DescriptorPool descriptorPool)
-	{
-		const uint textureCount = 1;
-		uint* counts = stackalloc uint[] {textureCount};
-		var variableCount = new DescriptorSetVariableDescriptorCountAllocateInfo
-		{
-			SType = StructureType.DescriptorSetVariableDescriptorCountAllocateInfo,
-			DescriptorSetCount = 1,
-			PDescriptorCounts = counts
-		};
-
-		var texturesAllocInfo = new DescriptorSetAllocateInfo
-		{
-			SType = StructureType.DescriptorSetAllocateInfo,
-			DescriptorPool = descriptorPool,
-			DescriptorSetCount = 1,
-			PSetLayouts = layout.AsPointer(),
-			PNext = variableCount.AsPointer()
-		};
-
-		Check(Context.Vk.AllocateDescriptorSets(Context.Device, &texturesAllocInfo, out var set), "Failed to allocate descriptor set.");
-
-		return set;
 	}
 
 	private static RenderPass CreateRenderPass()

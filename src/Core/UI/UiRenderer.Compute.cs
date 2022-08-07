@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using Core.Native.Shaderc;
 using Core.Utils;
 using Core.Vulkan;
+using Core.Vulkan.Utility;
 using Silk.NET.Vulkan;
 using static Core.Native.VMA.VulkanMemoryAllocator;
 

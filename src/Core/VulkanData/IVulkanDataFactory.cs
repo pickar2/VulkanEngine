@@ -1,4 +1,4 @@
-﻿using Core.Vulkan;
+﻿using Core.Vulkan.Utility;
 using Silk.NET.Vulkan;
 
 namespace Core.VulkanData;
