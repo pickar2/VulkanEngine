@@ -394,25 +394,32 @@ public static unsafe class VulkanUtils
 
 	public static VulkanShader CreateShader(string path, ShaderKind shaderKind, string entryPoint = "main")
 	{
-		if (!File.Exists(path)) throw new Exception($"Shader file `{path}` does not exist.").AsExpectedException();
+		string lookUpPath = path;
+		if (State.AllowShaderWatchers && State.WatchShadersFromSrc)
+		{
+			lookUpPath = Path.GetFullPath($"../../../../{path}");
+			if (!File.Exists(lookUpPath)) lookUpPath = path;
+		}
+
+		if (!File.Exists(lookUpPath)) throw new Exception($"Shader file `{lookUpPath}` does not exist.").AsExpectedException();
 
 		string source;
-		using (var stream = GetReadStream(path))
+		using (var stream = GetReadStream(lookUpPath))
 		using (var reader = new StreamReader(stream))
 		{
 			source = reader.ReadToEnd();
 		}
 
-		var result = Context.Compiler.Compile(source, path, shaderKind, entryPoint);
+		var result = Context.Compiler.Compile(source, lookUpPath, shaderKind, entryPoint);
 
 		if (result.ErrorCount > 0 || result.WarningCount > 0)
 		{
-			App.Logger.Warn.Message($"Shader `{path}` compilation finished with {result.WarningCount} warnings and {result.ErrorCount} errors:");
+			App.Logger.Warn.Message($"Shader `{lookUpPath}` compilation finished with {result.WarningCount} warnings and {result.ErrorCount} errors:");
 			if (result.ErrorCount > 0 && result.Status == Status.Success) App.Logger.Error.Message($"{result.ErrorMessage}");
 		}
 
 		if (result.Status != Status.Success)
-			throw new Exception($"Shader `{path}` was not compiled: {result.Status}\r\n{result.ErrorMessage}").AsExpectedException();
+			throw new Exception($"Shader `{lookUpPath}` was not compiled: {result.Status}\r\n{result.ErrorMessage}").AsExpectedException();
 
 		var spirvShaderModule = new ShaderModule(result.CodePointer, result.CodeLength);
 		var createInfo = new ShaderModuleCreateInfo
@@ -423,7 +430,7 @@ public static unsafe class VulkanUtils
 		};
 
 		Check(Context.Vk.CreateShaderModule(Context.Device, createInfo, null, out var vulkanShaderModule),
-			$"Failed to create shader module {path}");
+			$"Failed to create shader module {lookUpPath}");
 		result.Dispose();
 
 		return new VulkanShader(path, entryPoint, shaderKind, vulkanShaderModule, spirvShaderModule);

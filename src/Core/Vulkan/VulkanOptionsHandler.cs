@@ -16,6 +16,8 @@ public class VulkanState
 
 	public readonly VulkanOption<bool> DebugMode = new(true, VulkanLevel.Instance);
 	public readonly VulkanOption<bool> UseValidation = new(true, VulkanLevel.Instance);
+	public readonly VulkanOption<bool> AllowShaderWatchers = new(true);
+	public readonly VulkanOption<bool> WatchShadersFromSrc = new(true);
 
 	public readonly VulkanOption<SdlWindow> Window = new(default!, VulkanLevel.Instance);
 
@@ -125,13 +127,19 @@ public class VulkanState
 		Options["TestSwapchain"] = TestSwapchain;
 
 		Options["Window"] = Window;
+
 		Options["DebugMode"] = DebugMode;
 		Options["UseValidation"] = UseValidation;
 		Options["ValidationLayers"] = ValidationLayers;
+		Options["AllowShaderWatchers"] = AllowShaderWatchers;
+		Options["WatchShadersFromSrc"] = WatchShadersFromSrc;
+		
 		Options["InstanceExtensions"] = InstanceExtensions;
 		Options["ProgramLayers"] = ProgramLayers;
 		Options["DeviceExtensions"] = DeviceExtensions;
+
 		Options["SelectedGpu"] = SelectedGpuIndex;
+
 		Options["FrameOverlap"] = FrameOverlap;
 		Options["PresentMode"] = PresentMode;
 		Options["WindowSize"] = WindowSize;

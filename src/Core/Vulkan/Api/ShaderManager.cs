@@ -42,6 +42,7 @@ public static class ShaderManager
 
 	public static void AddWatcherCallback(string path, string name, Action callback)
 	{
+		if (!Context.State.AllowShaderWatchers) return;
 		if (!Path.Exists(path)) throw new Exception($"Shader file `{path}` does not exist.").AsExpectedException();
 
 		if (!Watchers.TryGetValue(path, out var watcher)) watcher = Watchers[path] = CreateWatcher(path);
@@ -56,10 +57,17 @@ public static class ShaderManager
 		watcher.RemoveCallback(name);
 	}
 
-	public static WatcherCallbacksHandler CreateWatcher(string path)
+	private static WatcherCallbacksHandler CreateWatcher(string path)
 	{
-		var watcher = new FileSystemWatcher(Path.GetDirectoryName(path)!);
-		watcher.Filter = Path.GetFileName(path);
+		string lookUpPath = path;
+		if (Context.State.WatchShadersFromSrc)
+		{
+			lookUpPath = Path.GetFullPath($"../../../../{path}");
+			if (!File.Exists(lookUpPath)) lookUpPath = path;
+		}
+
+		var watcher = new FileSystemWatcher(Path.GetDirectoryName(lookUpPath)!);
+		watcher.Filter = Path.GetFileName(lookUpPath);
 		watcher.NotifyFilter = NotifyFilters.LastWrite;
 		watcher.EnableRaisingEvents = true;
 
@@ -102,6 +110,8 @@ public class WatcherCallbacksHandler
 		_watcher = watcher;
 		watcher.Changed += (sender, args) =>
 		{
+			if (!Context.State.AllowShaderWatchers) return;
+
 			if (!ShaderManager.TryGetShader(path, out var shader)) return;
 
 			ExecuteOnce.InSwapchain.AfterDispose(() => shader.Dispose());
