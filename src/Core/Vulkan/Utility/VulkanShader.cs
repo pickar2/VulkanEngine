@@ -22,13 +22,14 @@ public unsafe class VulkanShader : IDisposable
 		ReflectModule = reflectModule;
 	}
 
-	public PipelineShaderStageCreateInfo ShaderCreateInfo(ShaderStageFlags flags = 0) =>
+	public PipelineShaderStageCreateInfo ShaderCreateInfo(SpecializationInfo* specializationInfo = null) =>
 		new()
 		{
 			SType = StructureType.PipelineShaderStageCreateInfo,
-			Stage = ShaderKind.ToStageFlags() | flags,
+			Stage = ShaderKind.ToStageFlags(),
 			Module = VulkanModule,
-			PName = StringManager.GetStringPtr<byte>(EntryPoint)
+			PName = StringManager.GetStringPtr<byte>(EntryPoint),
+			PSpecializationInfo = specializationInfo
 		};
 
 	public static implicit operator ShaderModule(VulkanShader shader) => shader.VulkanModule;

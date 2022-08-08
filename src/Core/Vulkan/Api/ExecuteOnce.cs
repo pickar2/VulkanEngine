@@ -19,6 +19,10 @@ public static class ExecuteOnce
 
 	public static void AtNextFrameStart(Action action) => Context.ExecuteOnceAtFrameStart(Context.NextFrameId, action);
 	public static void AtNextFrameEnd(Action action) => Context.ExecuteOnceAtFrameEnd(Context.NextFrameId, action);
+
+	// TODO:
+	public static void AtSameSwapchainImageFrameStart(Action action) => throw new NotImplementedException();
+	public static void AtSameSwapchainImageFrameEnd(Action action) => throw new NotImplementedException();
 }
 
 public class LevelExecutor

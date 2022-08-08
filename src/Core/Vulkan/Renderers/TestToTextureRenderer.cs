@@ -26,6 +26,7 @@ public unsafe class TestToTextureRenderer : RenderChain
 	private readonly Vector2<uint> _size = new(1920, 1080);
 
 	private int _color;
+	private static int _index = 0;
 
 	public TestToTextureRenderer(string name) : base(name)
 	{
@@ -69,8 +70,8 @@ public unsafe class TestToTextureRenderer : RenderChain
 		ShaderManager.AddWatcherCallback("./assets/shaders/general/fill_green.frag", $"{Name}_fill_green", () =>
 		{
 			var old = _pipeline.Value;
-			ExecuteOnce.InSwapchain.AfterDispose(() => old.Dispose());
 			_pipeline.Value = _pipeline.CreateFunc();
+			ExecuteOnce.InSwapchain.AfterDispose(() => old.Dispose());
 		});
 
 		Context.DeviceEvents.AfterCreate += () =>
@@ -78,8 +79,8 @@ public unsafe class TestToTextureRenderer : RenderChain
 			ShaderManager.AddWatcherCallback("./assets/shaders/general/fill_green.frag", $"{Name}_fill_green", () =>
 			{
 				var old = _pipeline.Value;
-				ExecuteOnce.InSwapchain.AfterDispose(() => old.Dispose());
 				_pipeline.Value = _pipeline.CreateFunc();
+				ExecuteOnce.InSwapchain.AfterDispose(() => old.Dispose());
 			});
 		};
 
@@ -87,12 +88,13 @@ public unsafe class TestToTextureRenderer : RenderChain
 		{
 			Curve = DefaultCurves.EaseInOutSine,
 			Type = AnimationType.RepeatAndReverse,
-			Duration = 1000,
+			Duration = 200 * (_index == 0 ? 7 : 5),
 			Interpolator = new RGBInterpolator(Color.FromArgb(UiManager.RandomColor()), Color.FromArgb(UiManager.RandomColor()), c => _color = c.ToArgb())
 		};
 		animationColor.Start();
 
 		RenderCommandBuffers += frameInfo => CreateCommandBuffer(frameInfo);
+		_index++;
 	}
 
 	private CommandBuffer CreateCommandBuffer(FrameInfo frameInfo)
@@ -215,103 +217,12 @@ public unsafe class TestToTextureRenderer : RenderChain
 		var vertexShader = ShaderManager.GetOrCreate("./assets/shaders/general/full_screen_triangle.vert", ShaderKind.VertexShader);
 		var fragmentShader = ShaderManager.GetOrCreate("./assets/shaders/general/fill_green.frag", ShaderKind.FragmentShader);
 
-		var shaderStages = new[]
-		{
-			vertexShader.ShaderCreateInfo(ShaderStageFlags.VertexBit),
-			fragmentShader.ShaderCreateInfo(ShaderStageFlags.FragmentBit)
-		};
-
-		var vertexInfo = ReflectUtils.VertexInputStateFromShader(vertexShader);
-
-		var inputAssembly = new PipelineInputAssemblyStateCreateInfo
-		{
-			SType = StructureType.PipelineInputAssemblyStateCreateInfo,
-			Topology = PrimitiveTopology.TriangleList
-		};
-
-		var viewport = new Viewport
-		{
-			X = 0,
-			Y = 0,
-			Width = size.X,
-			Height = size.Y,
-			MinDepth = 0,
-			MaxDepth = 1
-		};
-		var scissor = new Rect2D(new Offset2D(0, 0), new Extent2D(size.X, size.Y));
-		var viewportState = new PipelineViewportStateCreateInfo
-		{
-			SType = StructureType.PipelineViewportStateCreateInfo,
-			ViewportCount = 1,
-			PViewports = &viewport,
-			ScissorCount = 1,
-			PScissors = &scissor
-		};
-
-		var rasterizer = new PipelineRasterizationStateCreateInfo
-		{
-			SType = StructureType.PipelineRasterizationStateCreateInfo,
-			PolygonMode = PolygonMode.Fill,
-			LineWidth = 1,
-			CullMode = CullModeFlags.None,
-			FrontFace = FrontFace.CounterClockwise
-		};
-
-		var multisampling = new PipelineMultisampleStateCreateInfo
-		{
-			SType = StructureType.PipelineMultisampleStateCreateInfo,
-			SampleShadingEnable = false,
-			MinSampleShading = 0,
-			RasterizationSamples = SampleCountFlags.Count1Bit
-		};
-
-		var colorBlendAttachment = new PipelineColorBlendAttachmentState
-		{
-			BlendEnable = true,
-			SrcColorBlendFactor = BlendFactor.SrcAlpha,
-			DstColorBlendFactor = BlendFactor.OneMinusSrcAlpha,
-			ColorBlendOp = BlendOp.Add,
-			SrcAlphaBlendFactor = BlendFactor.One,
-			DstAlphaBlendFactor = BlendFactor.Zero,
-			AlphaBlendOp = BlendOp.Add,
-			ColorWriteMask = ColorComponentFlags.RBit | ColorComponentFlags.GBit | ColorComponentFlags.BBit |
-			                 ColorComponentFlags.ABit
-		};
-
-		var colorBlending = new PipelineColorBlendStateCreateInfo
-		{
-			SType = StructureType.PipelineColorBlendStateCreateInfo,
-			AttachmentCount = 1,
-			PAttachments = &colorBlendAttachment
-		};
-
-		var depthStencilColor = new PipelineDepthStencilStateCreateInfo
-		{
-			SType = StructureType.PipelineDepthStencilStateCreateInfo
-		};
-
-		var createInfos = stackalloc GraphicsPipelineCreateInfo[1];
-
-		createInfos[0] = new GraphicsPipelineCreateInfo
-		{
-			SType = StructureType.GraphicsPipelineCreateInfo,
-			Layout = pipelineLayout,
-			PVertexInputState = &vertexInfo,
-			PViewportState = &viewportState,
-			PRasterizationState = &rasterizer,
-			PMultisampleState = &multisampling,
-			PColorBlendState = &colorBlending,
-			PInputAssemblyState = &inputAssembly,
-			StageCount = 2,
-			PStages = shaderStages[0].AsPointer(),
-			RenderPass = renderPass,
-			PDepthStencilState = &depthStencilColor
-		};
-
-		Check(Context.Vk.CreateGraphicsPipelines(Context.Device, default, 1, createInfos,
-			null, out var pipeline), "Failed to create pipeline.");
-
-		return pipeline;
+		return PipelineManager.GraphicsBuilder()
+			.WithShader(vertexShader)
+			.WithShader(fragmentShader)
+			.SetViewportAndScissorFromSize(size)
+			.AddColorBlendAttachmentOneMinusSrcAlpha()
+			.Build(pipelineLayout, renderPass);
 	}
 
 	public override void Dispose() { }

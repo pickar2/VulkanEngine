@@ -81,4 +81,6 @@ public static unsafe partial class Context
 	public static void Dispose(this ref Fence fence) => Vk.DestroyFence(Device, fence, null);
 
 	public static void Dispose(this ref Sampler sampler) => Vk.DestroySampler(Device, sampler, null);
+
+	public static void Dispose(this ref PipelineCache cache) => Vk.DestroyPipelineCache(Device, cache, null);
 }

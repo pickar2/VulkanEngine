@@ -196,103 +196,12 @@ public unsafe class TestChildTextureRenderer : RenderChain
 		var vertexShader = ShaderManager.GetOrCreate("./assets/shaders/general/simple_draw.vert", ShaderKind.VertexShader);
 		var fragmentShader = ShaderManager.GetOrCreate("./assets/shaders/general/draw_texture.frag", ShaderKind.FragmentShader);
 
-		var shaderStages = new[]
-		{
-			vertexShader.ShaderCreateInfo(ShaderStageFlags.VertexBit),
-			fragmentShader.ShaderCreateInfo(ShaderStageFlags.FragmentBit)
-		};
-
-		var vertexInfo = ReflectUtils.VertexInputStateFromShader(vertexShader);
-
-		var inputAssembly = new PipelineInputAssemblyStateCreateInfo
-		{
-			SType = StructureType.PipelineInputAssemblyStateCreateInfo,
-			Topology = PrimitiveTopology.TriangleList
-		};
-
-		var viewport = new Viewport
-		{
-			X = 0,
-			Y = 0,
-			Width = size.X,
-			Height = size.Y,
-			MinDepth = 0,
-			MaxDepth = 1
-		};
-		var scissor = new Rect2D(new Offset2D(0, 0), new Extent2D(size.X, size.Y));
-		var viewportState = new PipelineViewportStateCreateInfo
-		{
-			SType = StructureType.PipelineViewportStateCreateInfo,
-			ViewportCount = 1,
-			PViewports = &viewport,
-			ScissorCount = 1,
-			PScissors = &scissor
-		};
-
-		var rasterizer = new PipelineRasterizationStateCreateInfo
-		{
-			SType = StructureType.PipelineRasterizationStateCreateInfo,
-			PolygonMode = PolygonMode.Fill,
-			LineWidth = 1,
-			CullMode = CullModeFlags.None,
-			FrontFace = FrontFace.CounterClockwise
-		};
-
-		var multisampling = new PipelineMultisampleStateCreateInfo
-		{
-			SType = StructureType.PipelineMultisampleStateCreateInfo,
-			SampleShadingEnable = false,
-			MinSampleShading = 0,
-			RasterizationSamples = SampleCountFlags.Count1Bit
-		};
-
-		var colorBlendAttachment = new PipelineColorBlendAttachmentState
-		{
-			BlendEnable = true,
-			SrcColorBlendFactor = BlendFactor.SrcAlpha,
-			DstColorBlendFactor = BlendFactor.OneMinusSrcAlpha,
-			ColorBlendOp = BlendOp.Add,
-			SrcAlphaBlendFactor = BlendFactor.One,
-			DstAlphaBlendFactor = BlendFactor.Zero,
-			AlphaBlendOp = BlendOp.Add,
-			ColorWriteMask = ColorComponentFlags.RBit | ColorComponentFlags.GBit | ColorComponentFlags.BBit |
-			                 ColorComponentFlags.ABit
-		};
-
-		var colorBlending = new PipelineColorBlendStateCreateInfo
-		{
-			SType = StructureType.PipelineColorBlendStateCreateInfo,
-			AttachmentCount = 1,
-			PAttachments = &colorBlendAttachment
-		};
-
-		var depthStencilColor = new PipelineDepthStencilStateCreateInfo
-		{
-			SType = StructureType.PipelineDepthStencilStateCreateInfo
-		};
-
-		var createInfos = stackalloc GraphicsPipelineCreateInfo[1];
-
-		createInfos[0] = new GraphicsPipelineCreateInfo
-		{
-			SType = StructureType.GraphicsPipelineCreateInfo,
-			Layout = pipelineLayout,
-			PVertexInputState = &vertexInfo,
-			PViewportState = &viewportState,
-			PRasterizationState = &rasterizer,
-			PMultisampleState = &multisampling,
-			PColorBlendState = &colorBlending,
-			PInputAssemblyState = &inputAssembly,
-			StageCount = 2,
-			PStages = shaderStages[0].AsPointer(),
-			RenderPass = renderPass,
-			PDepthStencilState = &depthStencilColor
-		};
-
-		Check(Context.Vk.CreateGraphicsPipelines(Context.Device, default, 1, createInfos,
-			null, out var pipeline), "Failed to create pipeline.");
-
-		return pipeline;
+		return PipelineManager.GraphicsBuilder()
+			.WithShader(vertexShader)
+			.WithShader(fragmentShader)
+			.SetViewportAndScissorFromSize(size)
+			.AddColorBlendAttachmentOneMinusSrcAlpha()
+			.Build(pipelineLayout, renderPass);
 	}
 
 	public override void Dispose() { }
