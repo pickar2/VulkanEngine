@@ -7,9 +7,7 @@ using Core.UI.Animations;
 using Core.UI.Controls;
 using Core.UI.Controls.Panels;
 using Core.UI.Transforms;
-using Core.Vulkan;
 using Core.Window;
-using SDL2;
 using SimpleMath.Vectors;
 using Rectangle = Core.UI.Controls.Rectangle;
 
@@ -68,7 +66,7 @@ public static partial class UiManager
 	{
 		var box = new Rectangle
 		{
-			Color = RandomColor() & (127 << 24),
+			Color = RandomColorInt() & (127 << 24),
 			Size = (150, 150),
 			OffsetZ = 200,
 			MarginLT = (350, 150)
@@ -87,7 +85,7 @@ public static partial class UiManager
 
 			var smallBox = new Rectangle
 			{
-				Color = RandomColor(),
+				Color = RandomColorInt(),
 				Size = (30, 30),
 				OffsetZ = 1
 			};
@@ -103,7 +101,7 @@ public static partial class UiManager
 
 	private static readonly Random Random = new(1234);
 
-	public static int RandomColor(bool randomTransparency = false)
+	public static int RandomColorInt(bool randomTransparency = false)
 	{
 		int color = (randomTransparency ? Random.Next(256) : 255) << 24;
 
@@ -112,6 +110,17 @@ public static partial class UiManager
 		color |= Random.Next(256);
 
 		return color;
+	}
+
+	public static Color RandomColor(bool randomTransparency = false)
+	{
+		int color = (randomTransparency ? Random.Next(256) : 255) << 24;
+	
+		color |= Random.Next(256) << 16;
+		color |= Random.Next(256) << 8;
+		color |= Random.Next(256);
+	
+		return Color.FromArgb(color);
 	}
 
 	private static void LabelTest(UiControl parent)
@@ -139,22 +148,22 @@ public static partial class UiManager
 		stackPanel.MarginLT = new Vector2<float>(150, 150);
 		stackPanel.OffsetZ = 5;
 
-		var box1 = new Rectangle {Color = RandomColor(), OffsetZ = 1};
+		var box1 = new Rectangle {Color = RandomColorInt(), OffsetZ = 1};
 		box1.Size.X = 30;
 		box1.MarginLT = new Vector2<float>(30, 30);
 		stackPanel.AddChild(box1);
 
-		var box2 = new Rectangle {Color = RandomColor(), OffsetZ = 1};
+		var box2 = new Rectangle {Color = RandomColorInt(), OffsetZ = 1};
 		box2.Size.X = 60;
 		box2.MarginLT = new Vector2<float>(30, -30);
 		stackPanel.AddChild(box2);
 
-		var box3 = new Rectangle {Color = RandomColor(), OffsetZ = 1};
+		var box3 = new Rectangle {Color = RandomColorInt(), OffsetZ = 1};
 		box3.Size.X = 10;
 		box3.MarginRB.X = 20;
 		stackPanel.AddChild(box3);
 
-		var box4 = new Rectangle {Color = RandomColor(), OffsetZ = 1};
+		var box4 = new Rectangle {Color = RandomColorInt(), OffsetZ = 1};
 		box4.Size.X = 10;
 		stackPanel.AddChild(box4);
 
@@ -211,23 +220,23 @@ public static partial class UiManager
 			Overflow = Overflow.Shown
 		};
 
-		var top = new Rectangle {Color = RandomColor()};
+		var top = new Rectangle {Color = RandomColorInt()};
 		top.Size.Y = 30;
-		var top2 = new Rectangle {Color = RandomColor()};
+		var top2 = new Rectangle {Color = RandomColorInt()};
 		top2.Size.Y = 45;
 
-		var left = new Rectangle {Color = RandomColor()};
+		var left = new Rectangle {Color = RandomColorInt()};
 		left.Size.X = 60;
 
-		var bottom = new Rectangle {Color = RandomColor()};
+		var bottom = new Rectangle {Color = RandomColorInt()};
 		bottom.Size.Y = 60;
-		var bottom2 = new Rectangle {Color = RandomColor()};
+		var bottom2 = new Rectangle {Color = RandomColorInt()};
 		bottom2.Size.Y = 15;
 
-		var right = new Rectangle {Color = RandomColor()};
+		var right = new Rectangle {Color = RandomColorInt()};
 		right.Size.X = 30;
 
-		var fill = new Rectangle {Color = RandomColor()};
+		var fill = new Rectangle {Color = RandomColorInt()};
 
 		dockPanel.AddChild(top, Dock.Top);
 		dockPanel.AddChild(top2, Dock.Top);
@@ -262,7 +271,7 @@ public static partial class UiManager
 		};
 
 		box.FragMaterial = UiMaterialManager.GetFactory("core:color_material").Create();
-		*box.FragMaterial.GetMemPtr<int>() = RandomColor();
+		*box.FragMaterial.GetMemPtr<int>() = RandomColorInt();
 		box.FragMaterial.MarkForGPUUpdate();
 
 		box.VertMaterial = UiMaterialManager.GetFactory("core:transform_material").Create();
@@ -283,7 +292,7 @@ public static partial class UiManager
 		};
 
 		box2.FragMaterial = UiMaterialManager.GetFactory("core:color_material").Create();
-		*box2.FragMaterial.GetMemPtr<int>() = RandomColor();
+		*box2.FragMaterial.GetMemPtr<int>() = RandomColorInt();
 		box2.FragMaterial.MarkForGPUUpdate();
 
 		box2.VertMaterial = UiMaterialManager.GetFactory("core:transform_material").Create();
@@ -297,7 +306,7 @@ public static partial class UiManager
 	{
 		var button = new Rectangle
 		{
-			Color = RandomColor(),
+			Color = RandomColorInt(),
 			Size = (100, 50),
 			MarginLT = (700, 350),
 			OffsetZ = 10
@@ -316,7 +325,7 @@ public static partial class UiManager
 
 		var box1 = new Rectangle
 		{
-			Color = RandomColor(),
+			Color = RandomColorInt(),
 			Size = (75, 75),
 			MarginLT = (900, 150),
 			OffsetZ = 10
@@ -325,7 +334,7 @@ public static partial class UiManager
 
 		var box2 = new Rectangle
 		{
-			Color = RandomColor(),
+			Color = RandomColorInt(),
 			Size = (75, 75),
 			MarginLT = (900, 300),
 			OffsetZ = 10

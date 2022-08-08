@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using Core.Vulkan.Api;
 using Core.Vulkan.Utility;
 using Silk.NET.Vulkan;
-using static Core.Vulkan.VulkanUtils;
 
 namespace Core.Vulkan.Renderers;
 

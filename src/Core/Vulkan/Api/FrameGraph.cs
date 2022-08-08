@@ -7,7 +7,6 @@ using Core.Utils;
 using Silk.NET.Vulkan;
 using SimpleMath.Vectors;
 using static Core.Native.VMA.VulkanMemoryAllocator;
-using static Core.Vulkan.VulkanUtils;
 
 namespace Core.Vulkan.Api;
 

@@ -1,5 +1,6 @@
 ﻿using System;
 using Core.Native.Shaderc;
+using Core.Native.SpirvReflect;
 using Core.Vulkan.Api;
 using Silk.NET.Vulkan;
 
@@ -11,9 +12,9 @@ public unsafe class VulkanShader : IDisposable
 	public readonly string EntryPoint;
 	public readonly ShaderKind ShaderKind;
 	public readonly ShaderModule VulkanModule;
-	public readonly Native.SpirvReflect.ShaderModule ReflectModule;
+	public readonly ReflectShaderModule ReflectModule;
 
-	public VulkanShader(string path, string entryPoint, ShaderKind shaderKind, ShaderModule vulkanModule, Native.SpirvReflect.ShaderModule reflectModule)
+	public VulkanShader(string path, string entryPoint, ShaderKind shaderKind, ShaderModule vulkanModule, ReflectShaderModule reflectModule)
 	{
 		Path = path;
 		EntryPoint = entryPoint;

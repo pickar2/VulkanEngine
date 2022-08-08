@@ -6,7 +6,6 @@ using Core.Vulkan.Renderers;
 using Core.Vulkan.Utility;
 using Silk.NET.Vulkan;
 using static Core.Native.VMA.VulkanMemoryAllocator;
-using static Core.Vulkan.VulkanUtils;
 
 namespace Core.UI;
 

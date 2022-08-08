@@ -6,7 +6,6 @@ using Core.Vulkan.Api;
 using Core.Vulkan.Utility;
 using Silk.NET.Vulkan;
 using SimpleMath.Vectors;
-using static Core.Vulkan.VulkanUtils;
 
 namespace Core.Vulkan.Renderers;
 

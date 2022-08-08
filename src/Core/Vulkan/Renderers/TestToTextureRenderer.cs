@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Drawing;
 using Core.Native.Shaderc;
-using Core.Native.SpirvReflect;
 using Core.UI;
 using Core.UI.Animations;
 using Core.Utils;
@@ -9,7 +8,6 @@ using Core.Vulkan.Api;
 using Core.Vulkan.Utility;
 using Silk.NET.Vulkan;
 using SimpleMath.Vectors;
-using static Core.Vulkan.VulkanUtils;
 
 namespace Core.Vulkan.Renderers;
 
@@ -25,7 +23,7 @@ public unsafe class TestToTextureRenderer : RenderChain
 
 	private readonly Vector2<uint> _size = new(1920, 1080);
 
-	private int _color;
+	private Color _color;
 	private static int _index = 0;
 
 	public TestToTextureRenderer(string name) : base(name)
@@ -89,7 +87,7 @@ public unsafe class TestToTextureRenderer : RenderChain
 			Curve = DefaultCurves.EaseInOutSine,
 			Type = AnimationType.RepeatAndReverse,
 			Duration = 200 * (_index == 0 ? 7 : 5),
-			Interpolator = new RGBInterpolator(Color.FromArgb(UiManager.RandomColor()), Color.FromArgb(UiManager.RandomColor()), c => _color = c.ToArgb())
+			Interpolator = new RGBInterpolator(UiManager.RandomColor(), UiManager.RandomColor(), c => _color = c)
 		};
 		animationColor.Start();
 
@@ -125,7 +123,7 @@ public unsafe class TestToTextureRenderer : RenderChain
 		cmd.BeginRenderPass(renderPassBeginInfo, SubpassContents.Inline);
 
 		Context.Vk.CmdBindPipeline(cmd, PipelineBindPoint.Graphics, _pipeline);
-		Context.Vk.CmdDraw(cmd, 3, 1, 0, (uint) _color);
+		Context.Vk.CmdDraw(cmd, 3, 1, 0, (uint) _color.ToArgb());
 
 		cmd.EndRenderPass();
 

@@ -1,7 +1,6 @@
 ﻿using Core.Vulkan;
 using Core.Vulkan.Api;
 using Silk.NET.Vulkan;
-using static Core.Vulkan.VulkanUtils;
 
 namespace Core.UI;
 

@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using Core.Vulkan.Renderers;
 using Silk.NET.Vulkan;
-using static Core.Vulkan.VulkanUtils;
 
 namespace Core.Vulkan.Api;
 

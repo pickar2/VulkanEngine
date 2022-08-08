@@ -9,3 +9,5 @@ global using Core.Logs;
 global using Core.Mods;
 global using Core.Registries.Collections;
 global using Core.Serializer;
+global using static Core.Vulkan.VulkanUtils;
+global using static Core.Vulkan.PointerUtils;

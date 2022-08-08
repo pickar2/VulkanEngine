@@ -2,9 +2,9 @@
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Core.Native.Shaderc;
+using Core.Native.SpirvReflect;
 using Core.Vulkan.Api;
 using Core.Vulkan.Utility;
 using Silk.NET.Vulkan;
@@ -12,7 +12,6 @@ using static Core.Native.VMA.VulkanMemoryAllocator;
 using static Core.Vulkan.Context;
 using Buffer = Silk.NET.Vulkan.Buffer;
 using Result = Silk.NET.Vulkan.Result;
-using ShaderModule = Core.Native.SpirvReflect.ShaderModule;
 using Vk = Silk.NET.Vulkan.Vk;
 
 namespace Core.Vulkan;
@@ -34,30 +33,6 @@ public static unsafe class VulkanUtils
 	{
 		if ((Result) result != expectedResult) throw new Exception($"{errorString} (Code: {result}, {(Result) result})");
 	}
-
-	public static T[] ToArray<T>(T* ptr, int length) where T : unmanaged
-	{
-		var array = new T[length];
-		for (int i = 0; i < length; i++)
-			array[i] = ptr[i];
-
-		return array;
-	}
-
-	public static T[] ToArray<T>(T** ptr, int length) where T : unmanaged
-	{
-		var array = new T[length];
-		for (int i = 0; i < length; i++)
-			array[i] = ptr[i][0];
-
-		return array;
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static T* AsPointer<T>(this ref T value) where T : unmanaged => (T*) Unsafe.AsPointer(ref value);
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static T* AsPointer<T>(this T[] value) where T : unmanaged => (T*) Unsafe.AsPointer(ref value[0]);
 
 	public static int SizeOfFormat(this Format format)
 	{
@@ -413,7 +388,7 @@ public static unsafe class VulkanUtils
 		if (result.Status != Status.Success)
 			throw new Exception($"Shader `{lookUpPath}` was not compiled: {result.Status}\r\n{result.ErrorMessage}").AsExpectedException();
 
-		var spirvShaderModule = new ShaderModule(result.CodePointer, result.CodeLength);
+		var spirvShaderModule = new ReflectShaderModule(result.CodePointer, result.CodeLength);
 		var createInfo = new ShaderModuleCreateInfo
 		{
 			SType = StructureType.ShaderModuleCreateInfo,
