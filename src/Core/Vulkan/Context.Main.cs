@@ -17,6 +17,8 @@ using Silk.NET.Vulkan.Extensions.KHR;
 using static Core.Native.VMA.VulkanMemoryAllocator;
 using Result = Silk.NET.Vulkan.Result;
 
+#pragma warning disable CS0612
+
 namespace Core.Vulkan;
 
 public static unsafe partial class Context
@@ -115,10 +117,10 @@ public static unsafe partial class Context
 		{
 			SType = StructureType.ApplicationInfo,
 			PApplicationName = StringManager.GetStringPtr<byte>("App name"),
-			ApplicationVersion = Silk.NET.Vulkan.Vk.MakeVersion(0, 1),
+			ApplicationVersion = Vk.MakeVersion(0, 1),
 			PEngineName = StringManager.GetStringPtr<byte>("Mauve"),
-			EngineVersion = Silk.NET.Vulkan.Vk.MakeVersion(0, 1),
-			ApiVersion = Silk.NET.Vulkan.Vk.Version12
+			EngineVersion = Vk.MakeVersion(0, 1),
+			ApiVersion = Vk.Version12
 		};
 
 		var createInfo = new InstanceCreateInfo
@@ -718,7 +720,7 @@ public static unsafe partial class Context
 
 		var vmaAllocatorCreateInfo = new VmaAllocatorCreateInfo
 		{
-			vulkanApiVersion = Silk.NET.Vulkan.Vk.Version12,
+			vulkanApiVersion = Vk.Version12,
 			device = Device.Handle,
 			physicalDevice = PhysicalDevice.Handle,
 			instance = Instance.Handle,

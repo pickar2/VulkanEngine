@@ -195,7 +195,7 @@ public unsafe class TestChildTextureRenderer : RenderChain
 			.SetViewportAndScissorFromSize(size)
 			.AddColorBlendAttachmentOneMinusSrcAlpha()
 			.With(pipelineLayout, renderPass)
-			.AutoPipeline();
+			.AutoPipeline($"RenderChildren");
 
 	public override void Dispose() { }
 }

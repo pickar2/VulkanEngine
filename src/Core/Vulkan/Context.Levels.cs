@@ -27,7 +27,7 @@ public static partial class Context
 		{VulkanLevel.Context, () => DisposeLevelContext()},
 		{VulkanLevel.Instance, () => DisposeLevelInstance()},
 		{VulkanLevel.Device, () => DisposeLevelDevice()},
-		{VulkanLevel.Swapchain, () => DisposeLevelSwapchain()},
+		{VulkanLevel.Swapchain, () => DisposeLevelSwapchain()}
 	};
 
 	[SuppressMessage("ReSharper", "ConvertClosureToMethodGroup")]
@@ -36,7 +36,7 @@ public static partial class Context
 		{VulkanLevel.Context, () => CreateLevelContext()},
 		{VulkanLevel.Instance, () => CreateLevelInstance()},
 		{VulkanLevel.Device, () => CreateLevelDevice()},
-		{VulkanLevel.Swapchain, () => CreateLevelSwapchain()},
+		{VulkanLevel.Swapchain, () => CreateLevelSwapchain()}
 	};
 
 	public static bool IsStateChanged(out VulkanLevel highestLevel)
@@ -88,8 +88,15 @@ public class VulkanLevelEvents
 	public event Action? BeforeDispose;
 	public event Action? AfterDispose;
 
-	public void InvokeBeforeCreate() => BeforeCreate?.Invoke();
-	public void InvokeAfterCreate() => AfterCreate?.Invoke();
-	public void InvokeBeforeDispose() => BeforeDispose?.Invoke();
-	public void InvokeAfterDispose() => AfterDispose?.Invoke();
+	[Obsolete]
+	internal void InvokeBeforeCreate() => BeforeCreate?.Invoke();
+
+	[Obsolete]
+	internal void InvokeAfterCreate() => AfterCreate?.Invoke();
+
+	[Obsolete]
+	internal void InvokeBeforeDispose() => BeforeDispose?.Invoke();
+
+	[Obsolete]
+	internal void InvokeAfterDispose() => AfterDispose?.Invoke();
 }

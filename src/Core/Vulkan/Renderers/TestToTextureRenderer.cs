@@ -200,7 +200,7 @@ public unsafe class TestToTextureRenderer : RenderChain
 			.SetViewportAndScissorFromSize(size)
 			.AddColorBlendAttachmentOneMinusSrcAlpha()
 			.With(pipelineLayout, renderPass)
-			.AutoPipeline();
+			.AutoPipeline($"RenderToTexture{_index}");
 
 	public override void Dispose() { }
 }

@@ -12,6 +12,7 @@ namespace Core.Vulkan.Api;
 public static unsafe class PipelineManager
 {
 	public static readonly OnAccessValueReCreator<PipelineCache> PipelineCache;
+	public static readonly Dictionary<string, AutoPipeline> AutoPipelines = new();
 
 	static PipelineManager() => PipelineCache = ReCreate.InDevice.OnAccessValue(() => CreatePipelineCache(), cache => cache.Dispose());
 
@@ -33,7 +34,7 @@ public static unsafe class PipelineManager
 
 public class AutoPipeline
 {
-	private readonly GraphicsPipelineBuilder _builder;
+	public readonly GraphicsPipelineBuilder Builder;
 	public bool IsChanged { get; set; }
 	private Pipeline _pipeline;
 
@@ -41,37 +42,39 @@ public class AutoPipeline
 	{
 		get
 		{
-			if (_pipeline.Handle != default && !IsChanged && !_builder.IsChanged) return _pipeline;
+			if (_pipeline.Handle != default && !IsChanged && !Builder.IsChanged) return _pipeline;
 			IsChanged = false;
 			var old = _pipeline;
 			if (old.Handle != default) ExecuteOnce.InSwapchain.AfterDispose(() => old.Dispose());
 
-			_pipeline = _builder.Build();
+			_pipeline = Builder.Build();
 			return _pipeline;
 		}
 	}
 
-	public AutoPipeline(GraphicsPipelineBuilder builder)
+	public AutoPipeline(string name, GraphicsPipelineBuilder builder)
 	{
-		_builder = builder;
+		Builder = builder;
 		Context.DeviceEvents.BeforeDispose += () => Dispose();
 
 		if (!Context.State.AllowShaderWatchers) return;
-		foreach ((var shaderKind, string? path) in _builder.Shaders)
+		foreach ((var shaderKind, string? path) in Builder.Shaders)
 		{
-			ShaderManager.AddWatcherCallback(path, $"{shaderKind}.{_builder.GetHashCode()}", () =>
+			ShaderManager.AddWatcherCallback(path, $"{shaderKind}.{Builder.GetHashCode()}", () =>
 			{
 				IsChanged = true;
 			});
 
 			Context.DeviceEvents.AfterCreate += () =>
 			{
-				ShaderManager.AddWatcherCallback(path, $"{shaderKind}.{_builder.GetHashCode()}", () =>
+				ShaderManager.AddWatcherCallback(path, $"{shaderKind}.{Builder.GetHashCode()}", () =>
 				{
 					IsChanged = true;
 				});
 			};
 		}
+
+		PipelineManager.AutoPipelines.Add(name, this);
 	}
 
 	public void Dispose()
@@ -116,7 +119,7 @@ public unsafe class GraphicsPipelineBuilder
 
 	public GraphicsPipelineBuilder() => ResetToDefault();
 
-	public AutoPipeline AutoPipeline() => new(this);
+	public AutoPipeline AutoPipeline(string name) => new(name, this);
 
 	public Pipeline Build()
 	{

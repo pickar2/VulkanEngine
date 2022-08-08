@@ -3,9 +3,11 @@ using System.Diagnostics;
 using System.Text;
 using System.Threading;
 using Core.Vulkan;
+using Core.Vulkan.Api;
 using Core.Window;
 using NullGuard;
 using SDL2;
+using Silk.NET.Vulkan;
 
 [assembly: NullGuard(ValidationFlags.All)]
 
@@ -56,6 +58,16 @@ internal static class Program
 			Context.State.SelectedGpuIndex.Value = gpu;
 			return true;
 		}), SDL.SDL_Keycode.SDLK_g);
+
+		bool wireframe = false;
+		KeyboardInput.GlobalContext.AddKeyBind(new NamedFunc("toggle_wireframe", () =>
+		{
+			wireframe = !wireframe;
+			var mode = wireframe ? PolygonMode.Line : PolygonMode.Fill;
+			foreach ((string? _, var autoPipeline) in PipelineManager.AutoPipelines)
+				autoPipeline.Builder.RasterizationState(span => span[0].PolygonMode = mode);
+			return true;
+		}), SDL.SDL_Keycode.SDLK_p);
 
 		windowThread.Join();
 
