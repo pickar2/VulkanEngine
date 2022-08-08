@@ -1,6 +1,5 @@
 ﻿using System.Runtime.InteropServices;
 using Core.Native.Shaderc;
-using Core.Native.SpirvReflect;
 using Core.Native.VMA;
 using Core.Utils;
 using Core.Vulkan.Api;
@@ -199,6 +198,7 @@ public unsafe class TestChildTextureRenderer : RenderChain
 		return PipelineManager.GraphicsBuilder()
 			.WithShader(vertexShader)
 			.WithShader(fragmentShader)
+			// .RasterizationState(span => span[0].PolygonMode = PolygonMode.Line)
 			.SetViewportAndScissorFromSize(size)
 			.AddColorBlendAttachmentOneMinusSrcAlpha()
 			.Build(pipelineLayout, renderPass);

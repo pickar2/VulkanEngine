@@ -19,8 +19,6 @@ namespace Core.Vulkan;
 
 public static unsafe class VulkanUtils
 {
-	public delegate void SpanAction<T>(Span<T> span);
-
 	// TODO: Recreate Obsolete types with ExpectedException in Core. As Check -> ExpectedException.EnsureThat
 	public static void Check(Result result, string errorString, Result expectedResult = Result.Success)
 	{
@@ -60,12 +58,6 @@ public static unsafe class VulkanUtils
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static T* AsPointer<T>(this T[] value) where T : unmanaged => (T*) Unsafe.AsPointer(ref value[0]);
-
-	public static void WriteToSpan<T>(this ref T value, Span<byte> span, int index) where T : struct
-	{
-		var valueSpan = MemoryMarshal.Cast<byte, T>(span[index..]);
-		valueSpan[0] = value;
-	}
 
 	public static int SizeOfFormat(this Format format)
 	{

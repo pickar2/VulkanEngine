@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using Core.Native.Shaderc;
 using Core.Native.SpirvReflect;
@@ -120,9 +119,9 @@ public unsafe class GraphicsPipelineBuilder
 		return this;
 	}
 
-	public GraphicsPipelineBuilder DynamicState(Func<PipelineDynamicStateCreateInfo, PipelineDynamicStateCreateInfo> updater)
+	public GraphicsPipelineBuilder DynamicState(SpanAction<PipelineDynamicStateCreateInfo> updater)
 	{
-		_dynamicState = updater.Invoke(_dynamicState);
+		updater.Invoke(ref _dynamicState);
 		return this;
 	}
 
@@ -132,9 +131,9 @@ public unsafe class GraphicsPipelineBuilder
 		return this;
 	}
 
-	public GraphicsPipelineBuilder ColorBlendState(Func<PipelineColorBlendStateCreateInfo, PipelineColorBlendStateCreateInfo> updater)
+	public GraphicsPipelineBuilder ColorBlendState(SpanAction<PipelineColorBlendStateCreateInfo> updater)
 	{
-		_colorBlendState = updater.Invoke(_colorBlendState);
+		updater.Invoke(ref _colorBlendState);
 		return this;
 	}
 
@@ -179,9 +178,9 @@ public unsafe class GraphicsPipelineBuilder
 		return this;
 	}
 
-	public GraphicsPipelineBuilder DepthStencilState(Func<PipelineDepthStencilStateCreateInfo, PipelineDepthStencilStateCreateInfo> updater)
+	public GraphicsPipelineBuilder DepthStencilState(SpanAction<PipelineDepthStencilStateCreateInfo> updater)
 	{
-		_depthStencilState = updater.Invoke(_depthStencilState);
+		updater.Invoke(ref _depthStencilState);
 		return this;
 	}
 
@@ -191,9 +190,9 @@ public unsafe class GraphicsPipelineBuilder
 		return this;
 	}
 
-	public GraphicsPipelineBuilder MultisampleState(Func<PipelineMultisampleStateCreateInfo, PipelineMultisampleStateCreateInfo> updater)
+	public GraphicsPipelineBuilder MultisampleState(SpanAction<PipelineMultisampleStateCreateInfo> updater)
 	{
-		_multisampleState = updater.Invoke(_multisampleState);
+		updater.Invoke(ref _multisampleState);
 		return this;
 	}
 
@@ -203,9 +202,9 @@ public unsafe class GraphicsPipelineBuilder
 		return this;
 	}
 
-	public GraphicsPipelineBuilder RasterizationState(Func<PipelineRasterizationStateCreateInfo, PipelineRasterizationStateCreateInfo> updater)
+	public GraphicsPipelineBuilder RasterizationState(SpanAction<PipelineRasterizationStateCreateInfo> updater)
 	{
-		_rasterizationState = updater.Invoke(_rasterizationState);
+		updater.Invoke(ref _rasterizationState);
 		return this;
 	}
 
@@ -215,9 +214,9 @@ public unsafe class GraphicsPipelineBuilder
 		return this;
 	}
 
-	public GraphicsPipelineBuilder Viewport(Func<Viewport, Viewport> updater)
+	public GraphicsPipelineBuilder Viewport(SpanAction<Viewport> updater)
 	{
-		_viewport = updater.Invoke(_viewport);
+		updater.Invoke(ref _viewport);
 		return this;
 	}
 
@@ -227,9 +226,9 @@ public unsafe class GraphicsPipelineBuilder
 		return this;
 	}
 
-	public GraphicsPipelineBuilder Scissor(Func<Rect2D, Rect2D> updater)
+	public GraphicsPipelineBuilder Scissor(SpanAction<Rect2D> updater)
 	{
-		_scissor = updater.Invoke(_scissor);
+		updater.Invoke(ref _scissor);
 		return this;
 	}
 
@@ -239,9 +238,9 @@ public unsafe class GraphicsPipelineBuilder
 		return this;
 	}
 
-	public GraphicsPipelineBuilder ViewportState(Func<PipelineViewportStateCreateInfo, PipelineViewportStateCreateInfo> updater)
+	public GraphicsPipelineBuilder ViewportState(SpanAction<PipelineViewportStateCreateInfo> updater)
 	{
-		_viewportState = updater.Invoke(_viewportState);
+		updater.Invoke(ref _viewportState);
 		return this;
 	}
 
@@ -259,9 +258,9 @@ public unsafe class GraphicsPipelineBuilder
 		return this;
 	}
 
-	public GraphicsPipelineBuilder PipelineCreateFlags(Func<PipelineCreateFlags, PipelineCreateFlags> updater)
+	public GraphicsPipelineBuilder PipelineCreateFlags(SpanAction<PipelineCreateFlags> updater)
 	{
-		_pipelineCreateFlags = updater.Invoke(_pipelineCreateFlags);
+		updater.Invoke(ref _pipelineCreateFlags);
 		return this;
 	}
 
