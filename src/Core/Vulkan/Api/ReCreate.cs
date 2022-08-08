@@ -58,7 +58,12 @@ public class ReCreator
 public class OnAccessValueReCreator<T> where T : struct
 {
 	private T? _value;
-	public T Value => _value ??= CreateFunc();
+
+	public T Value
+	{
+		get => _value ??= CreateFunc();
+		set => _value = value;
+	}
 
 	public readonly VulkanLevel Level;
 	public readonly Func<T> CreateFunc;
@@ -95,7 +100,12 @@ public class OnAccessValueReCreator<T> where T : struct
 public class OnAccessClassReCreator<T> where T : class
 {
 	private T? _value;
-	public T Value => _value ??= CreateFunc();
+
+	public T Value
+	{
+		get => _value ??= CreateFunc();
+		set => _value = value;
+	}
 
 	public readonly VulkanLevel Level;
 	public readonly Func<T> CreateFunc;

@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -370,40 +372,81 @@ public static unsafe class VulkanUtils
 		return fence;
 	}
 
-	public static VulkanShader CreateShader(string path, ShaderKind shaderKind)
+	private static FileStream GetReadStream(string path, int timeoutTicks = 1000000)
 	{
-		var shader = CompileShader(path, shaderKind);
-		var spirvShaderModule = new ShaderModule(shader.CodePointer, shader.CodeLength);
+		var time = Stopwatch.StartNew();
+		while (time.ElapsedTicks < timeoutTicks)
+		{
+			try
+			{
+				return new FileStream(path, FileMode.Open, FileAccess.Read);
+			}
+			catch (IOException e)
+			{
+				// access error
+				if (e.HResult != -2147024864)
+					throw;
+			}
+		}
 
+		throw new TimeoutException($"Failed to get a read handle to {path} within {timeoutTicks / 10000f}ms.");
+	}
+
+	public static VulkanShader CreateShader(string path, ShaderKind shaderKind, string entryPoint = "main")
+	{
+		if (!File.Exists(path)) throw new Exception($"Shader file `{path}` does not exist.").AsExpectedException();
+
+		string source;
+		using (var stream = GetReadStream(path))
+		using (var reader = new StreamReader(stream))
+		{
+			source = reader.ReadToEnd();
+		}
+
+		var result = Context.Compiler.Compile(source, path, shaderKind, entryPoint);
+
+		if (result.ErrorCount > 0 || result.WarningCount > 0)
+		{
+			App.Logger.Warn.Message($"Shader `{path}` compilation finished with {result.WarningCount} warnings and {result.ErrorCount} errors:");
+			if (result.ErrorCount > 0 && result.Status == Status.Success) App.Logger.Error.Message($"{result.ErrorMessage}");
+		}
+
+		if (result.Status != Status.Success)
+			throw new Exception($"Shader `{path}` was not compiled: {result.Status}\r\n{result.ErrorMessage}").AsExpectedException();
+
+		var spirvShaderModule = new ShaderModule(result.CodePointer, result.CodeLength);
 		var createInfo = new ShaderModuleCreateInfo
 		{
 			SType = StructureType.ShaderModuleCreateInfo,
-			PCode = (uint*) shader.CodePointer,
-			CodeSize = shader.CodeLength
+			PCode = (uint*) result.CodePointer,
+			CodeSize = result.CodeLength
 		};
 
 		Check(Context.Vk.CreateShaderModule(Context.Device, createInfo, null, out var vulkanShaderModule),
 			$"Failed to create shader module {path}");
-		shader.Dispose();
+		result.Dispose();
 
-		return new VulkanShader(vulkanShaderModule, spirvShaderModule);
+		return new VulkanShader(path, entryPoint, shaderKind, vulkanShaderModule, spirvShaderModule);
 	}
 
-	public static Native.Shaderc.Result CompileShader(string path, ShaderKind shaderKind)
-	{
-		var result = Context.Compiler.Compile(path, shaderKind);
-
-		if (result.ErrorCount > 0 || result.WarningCount > 0)
+	public static ShaderStageFlags ToStageFlags(this ShaderKind shaderKind) =>
+		shaderKind switch
 		{
-			Console.WriteLine(
-				$"Shader '{path}' compilation finished with {result.WarningCount} warnings and {result.ErrorCount} errors: ");
-			if (result.ErrorCount > 0) Console.WriteLine(result.ErrorMessage);
-		}
-
-		if (result.Status != Status.Success) throw new Exception($"Shader '{path}' was not compiled: {result.Status}\r\n{result.ErrorMessage}");
-
-		return result;
-	}
+			ShaderKind.VertexShader => ShaderStageFlags.VertexBit,
+			ShaderKind.FragmentShader => ShaderStageFlags.FragmentBit,
+			ShaderKind.ComputeShader => ShaderStageFlags.ComputeBit,
+			ShaderKind.GeometryShader => ShaderStageFlags.GeometryBit,
+			ShaderKind.TessControlShader => ShaderStageFlags.TessellationControlBit,
+			ShaderKind.TessEvaluationShader => ShaderStageFlags.TessellationEvaluationBit,
+			ShaderKind.RaygenShader => ShaderStageFlags.RaygenBitKhr,
+			ShaderKind.AnyhitShader => ShaderStageFlags.AnyHitBitKhr,
+			ShaderKind.ClosesthitShader => ShaderStageFlags.ClosestHitBitKhr,
+			ShaderKind.MissShader => ShaderStageFlags.MissBitKhr,
+			ShaderKind.IntersectionShader => ShaderStageFlags.IntersectionBitKhr,
+			ShaderKind.TaskShader => ShaderStageFlags.TaskBitNV,
+			ShaderKind.MeshShader => ShaderStageFlags.MeshBitNV,
+			_ => 0
+		};
 
 	public static VulkanBuffer CreateBuffer(ulong size, BufferUsageFlags usage, VmaMemoryUsage memoryUsage)
 	{

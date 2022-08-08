@@ -20,9 +20,6 @@ public unsafe class TestToTextureRenderer : RenderChain
 	private readonly OnAccessValueReCreator<CommandPool> _commandPool;
 	public readonly OnAccessClassReCreator<VulkanImage2[]> Attachments;
 
-	private readonly OnAccessClassReCreator<VulkanShader> _vertexShader;
-	private readonly OnAccessClassReCreator<VulkanShader> _fragmentShader;
-
 	private readonly OnAccessValueReCreator<PipelineLayout> _pipelineLayout;
 	private readonly OnAccessValueReCreator<Pipeline> _pipeline;
 
@@ -65,14 +62,26 @@ public unsafe class TestToTextureRenderer : RenderChain
 				arr[index].Dispose();
 		});
 
-		_vertexShader = ReCreate.InDevice.OnAccessClass(() => CreateShader("./assets/shaders/general/full_screen_triangle.vert", ShaderKind.VertexShader),
-			shader => shader.Dispose());
-		_fragmentShader = ReCreate.InDevice.OnAccessClass(() => CreateShader("./assets/shaders/general/fill_green.frag", ShaderKind.FragmentShader),
-			shader => shader.Dispose());
-
 		_pipelineLayout = ReCreate.InDevice.OnAccessValue(() => CreatePipelineLayout(), layout => layout.Dispose());
-		_pipeline = ReCreate.InDevice.OnAccessValue(() => CreatePipeline(_pipelineLayout, _renderPass, _vertexShader, _fragmentShader, _size),
+		_pipeline = ReCreate.InDevice.OnAccessValue(() => CreatePipeline(_pipelineLayout, _renderPass, _size),
 			pipeline => pipeline.Dispose());
+
+		ShaderManager.AddWatcherCallback("./assets/shaders/general/fill_green.frag", $"{Name}_fill_green", () =>
+		{
+			var old = _pipeline.Value;
+			ExecuteOnce.InSwapchain.AfterDispose(() => old.Dispose());
+			_pipeline.Value = _pipeline.CreateFunc();
+		});
+
+		Context.DeviceEvents.AfterCreate += () =>
+		{
+			ShaderManager.AddWatcherCallback("./assets/shaders/general/fill_green.frag", $"{Name}_fill_green", () =>
+			{
+				var old = _pipeline.Value;
+				ExecuteOnce.InSwapchain.AfterDispose(() => old.Dispose());
+				_pipeline.Value = _pipeline.CreateFunc();
+			});
+		};
 
 		var animationColor = new Animation
 		{
@@ -201,9 +210,11 @@ public unsafe class TestToTextureRenderer : RenderChain
 		return framebuffer;
 	}
 
-	private static Pipeline CreatePipeline(PipelineLayout pipelineLayout, RenderPass renderPass, VulkanShader vertexShader, VulkanShader fragmentShader,
-		Vector2<uint> size)
+	private static Pipeline CreatePipeline(PipelineLayout pipelineLayout, RenderPass renderPass, Vector2<uint> size)
 	{
+		var vertexShader = ShaderManager.GetOrCreate("./assets/shaders/general/full_screen_triangle.vert", ShaderKind.VertexShader);
+		var fragmentShader = ShaderManager.GetOrCreate("./assets/shaders/general/fill_green.frag", ShaderKind.FragmentShader);
+
 		var shaderStages = new[]
 		{
 			vertexShader.ShaderCreateInfo(ShaderStageFlags.VertexBit),
