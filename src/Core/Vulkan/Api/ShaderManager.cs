@@ -92,7 +92,7 @@ public static class ShaderManager
 		return CachedShaders.Remove(path, out shader);
 	}
 
-	public static unsafe void DisposeShader(string path)
+	public static void DisposeShader(string path)
 	{
 		if (!RemoveShaderFromCache(path, out var shader)) return;
 		shader.Dispose();

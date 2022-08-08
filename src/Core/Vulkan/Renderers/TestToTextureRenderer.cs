@@ -19,7 +19,7 @@ public unsafe class TestToTextureRenderer : RenderChain
 	public readonly OnAccessClassReCreator<VulkanImage2[]> Attachments;
 
 	private readonly OnAccessValueReCreator<PipelineLayout> _pipelineLayout;
-	private readonly OnAccessValueReCreator<Pipeline> _pipeline;
+	private readonly AutoPipeline _pipeline;
 
 	private readonly Vector2<uint> _size = new(1920, 1080);
 
@@ -62,25 +62,7 @@ public unsafe class TestToTextureRenderer : RenderChain
 		});
 
 		_pipelineLayout = ReCreate.InDevice.OnAccessValue(() => CreatePipelineLayout(), layout => layout.Dispose());
-		_pipeline = ReCreate.InDevice.OnAccessValue(() => CreatePipeline(_pipelineLayout, _renderPass, _size),
-			pipeline => pipeline.Dispose());
-
-		ShaderManager.AddWatcherCallback("./assets/shaders/general/fill_green.frag", $"{Name}_fill_green", () =>
-		{
-			var old = _pipeline.Value;
-			_pipeline.Value = _pipeline.CreateFunc();
-			ExecuteOnce.InSwapchain.AfterDispose(() => old.Dispose());
-		});
-
-		Context.DeviceEvents.AfterCreate += () =>
-		{
-			ShaderManager.AddWatcherCallback("./assets/shaders/general/fill_green.frag", $"{Name}_fill_green", () =>
-			{
-				var old = _pipeline.Value;
-				_pipeline.Value = _pipeline.CreateFunc();
-				ExecuteOnce.InSwapchain.AfterDispose(() => old.Dispose());
-			});
-		};
+		_pipeline = CreatePipeline(_pipelineLayout, _renderPass, _size);
 
 		var animationColor = new Animation
 		{
@@ -210,18 +192,15 @@ public unsafe class TestToTextureRenderer : RenderChain
 		return framebuffer;
 	}
 
-	private static Pipeline CreatePipeline(PipelineLayout pipelineLayout, RenderPass renderPass, Vector2<uint> size)
-	{
-		var vertexShader = ShaderManager.GetOrCreate("./assets/shaders/general/full_screen_triangle.vert", ShaderKind.VertexShader);
-		var fragmentShader = ShaderManager.GetOrCreate("./assets/shaders/general/fill_green.frag", ShaderKind.FragmentShader);
-
-		return PipelineManager.GraphicsBuilder()
-			.WithShader(vertexShader)
-			.WithShader(fragmentShader)
+	private static AutoPipeline CreatePipeline(OnAccessValueReCreator<PipelineLayout> pipelineLayout, OnAccessValueReCreator<RenderPass> renderPass,
+		Vector2<uint> size) =>
+		PipelineManager.GraphicsBuilder()
+			.WithShader("./assets/shaders/general/full_screen_triangle.vert", ShaderKind.VertexShader)
+			.WithShader("./assets/shaders/general/fill_green.frag", ShaderKind.FragmentShader)
 			.SetViewportAndScissorFromSize(size)
 			.AddColorBlendAttachmentOneMinusSrcAlpha()
-			.Build(pipelineLayout, renderPass);
-	}
+			.With(pipelineLayout, renderPass)
+			.AutoPipeline();
 
 	public override void Dispose() { }
 }

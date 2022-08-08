@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Core.Native.Shaderc;
 using Core.Native.SpirvReflect;
@@ -30,11 +31,65 @@ public static unsafe class PipelineManager
 	public static GraphicsPipelineBuilder GraphicsBuilder() => new();
 }
 
+public class AutoPipeline
+{
+	private readonly GraphicsPipelineBuilder _builder;
+	public bool IsChanged { get; set; }
+	private Pipeline _pipeline;
+
+	public Pipeline Pipeline
+	{
+		get
+		{
+			if (_pipeline.Handle != default && !IsChanged && !_builder.IsChanged) return _pipeline;
+			IsChanged = false;
+			var old = _pipeline;
+			if (old.Handle != default) ExecuteOnce.InSwapchain.AfterDispose(() => old.Dispose());
+
+			_pipeline = _builder.Build();
+			return _pipeline;
+		}
+	}
+
+	public AutoPipeline(GraphicsPipelineBuilder builder)
+	{
+		_builder = builder;
+		Context.DeviceEvents.BeforeDispose += () => Dispose();
+
+		if (!Context.State.AllowShaderWatchers) return;
+		foreach ((var shaderKind, string? path) in _builder.Shaders)
+		{
+			ShaderManager.AddWatcherCallback(path, $"{shaderKind}.{_builder.GetHashCode()}", () =>
+			{
+				IsChanged = true;
+			});
+
+			Context.DeviceEvents.AfterCreate += () =>
+			{
+				ShaderManager.AddWatcherCallback(path, $"{shaderKind}.{_builder.GetHashCode()}", () =>
+				{
+					IsChanged = true;
+				});
+			};
+		}
+	}
+
+	public void Dispose()
+	{
+		if (_pipeline.Handle != default) _pipeline.Dispose();
+		_pipeline.Handle = default;
+	}
+
+	public static implicit operator Pipeline(AutoPipeline autoPipeline) => autoPipeline.Pipeline;
+}
+
 public unsafe class GraphicsPipelineBuilder
 {
+	public bool IsChanged { get; private set; }
+
 	private PipelineCreateFlags _pipelineCreateFlags;
 
-	private readonly Dictionary<ShaderKind, VulkanShader> _shaders = new();
+	public readonly Dictionary<ShaderKind, string> Shaders = new();
 
 	private PipelineInputAssemblyStateCreateInfo _inputAssemblyState;
 
@@ -53,20 +108,108 @@ public unsafe class GraphicsPipelineBuilder
 
 	private PipelineDynamicStateCreateInfo _dynamicState;
 
+	private OnAccessValueReCreator<PipelineLayout> _pipelineLayout;
+	private OnAccessValueReCreator<RenderPass> _renderPass;
+	private uint _subpass;
+	private Pipeline _basePipeline;
+	private int _basePipelineIndex;
+
 	public GraphicsPipelineBuilder() => ResetToDefault();
+
+	public AutoPipeline AutoPipeline() => new(this);
+
+	public Pipeline Build()
+	{
+		IsChanged = false;
+
+		var shaderStagesArr = Shaders.Select(pair => ShaderManager.GetOrCreate(pair.Value, pair.Key).ShaderCreateInfo()).ToArray();
+
+		PipelineVertexInputStateCreateInfo vertexInputState = default;
+		if (Shaders.TryGetValue(ShaderKind.VertexShader, out string? vertexShader))
+		{
+			vertexInputState = ReflectUtils.VertexInputStateFromShader(ShaderManager.GetOrCreate(vertexShader, ShaderKind.VertexShader));
+		}
+
+		_viewportState = new PipelineViewportStateCreateInfo
+		{
+			SType = StructureType.PipelineViewportStateCreateInfo,
+			ViewportCount = 1,
+			PViewports = _viewport.AsPointer(),
+			ScissorCount = 1,
+			PScissors = _scissor.AsPointer()
+		};
+
+		var colorBlendAttachmentStatesArr = _colorBlendAttachmentStates.ToArray();
+		_colorBlendState.AttachmentCount = (uint) colorBlendAttachmentStatesArr.Length;
+		_colorBlendState.PAttachments = colorBlendAttachmentStatesArr[0].AsPointer();
+
+		var createInfo = new GraphicsPipelineCreateInfo
+		{
+			SType = StructureType.GraphicsPipelineCreateInfo,
+			Flags = _pipelineCreateFlags,
+			StageCount = (uint) shaderStagesArr.Length,
+			PStages = shaderStagesArr[0].AsPointer(),
+			PVertexInputState = &vertexInputState,
+			PInputAssemblyState = _inputAssemblyState.AsPointer(),
+			PTessellationState = default,
+			PViewportState = _viewportState.AsPointer(),
+			PRasterizationState = _rasterizationState.AsPointer(),
+			PMultisampleState = _multisampleState.AsPointer(),
+			PDepthStencilState = _depthStencilState.AsPointer(),
+			PColorBlendState = _colorBlendState.AsPointer(),
+			PDynamicState = _dynamicState.AsPointer(),
+			Layout = _pipelineLayout,
+			RenderPass = _renderPass,
+			Subpass = _subpass,
+			BasePipelineHandle = _basePipeline,
+			BasePipelineIndex = _basePipelineIndex
+		};
+
+		Context.Vk.CreateGraphicsPipelines(Context.Device, PipelineManager.PipelineCache, 1, createInfo, null, out var pipeline);
+
+		return pipeline;
+	}
+
+	public GraphicsPipelineBuilder With(OnAccessValueReCreator<PipelineLayout> pipelineLayout, OnAccessValueReCreator<RenderPass> renderPass, uint subpass = 0,
+		Pipeline basePipeline = default,
+		int basePipelineIndex = -1)
+	{
+		IsChanged = true;
+
+		_pipelineLayout = pipelineLayout;
+		_renderPass = renderPass;
+		_subpass = subpass;
+		_basePipeline = basePipeline;
+		_basePipelineIndex = basePipelineIndex;
+
+		return this;
+	}
 
 	public GraphicsPipelineBuilder WithShader(VulkanShader shader)
 	{
-		_shaders[shader.ShaderKind] = shader;
+		IsChanged = true;
+
+		Shaders[shader.ShaderKind] = shader.Path;
+
+		return this;
+	}
+
+	public GraphicsPipelineBuilder WithShader(string path, ShaderKind shaderKind)
+	{
+		IsChanged = true;
+
+		Shaders[shaderKind] = path;
 
 		return this;
 	}
 
 	public GraphicsPipelineBuilder ResetToDefault()
 	{
+		IsChanged = true;
+
 		_pipelineCreateFlags = 0;
 
-		_shaders.Clear();
+		Shaders.Clear();
 
 		_inputAssemblyState = new PipelineInputAssemblyStateCreateInfo
 		{
@@ -115,36 +258,53 @@ public unsafe class GraphicsPipelineBuilder
 
 	public GraphicsPipelineBuilder SetDynamicState(PipelineDynamicStateCreateInfo dynamicState)
 	{
+		IsChanged = true;
+
 		_dynamicState = dynamicState;
+
 		return this;
 	}
 
 	public GraphicsPipelineBuilder DynamicState(SpanAction<PipelineDynamicStateCreateInfo> updater)
 	{
+		IsChanged = true;
+
 		updater.Invoke(ref _dynamicState);
+
 		return this;
 	}
 
 	public GraphicsPipelineBuilder SetColorBlendState(PipelineColorBlendStateCreateInfo colorBlendState)
 	{
+		IsChanged = true;
+
 		_colorBlendState = colorBlendState;
+
 		return this;
 	}
 
 	public GraphicsPipelineBuilder ColorBlendState(SpanAction<PipelineColorBlendStateCreateInfo> updater)
 	{
+		IsChanged = true;
+
 		updater.Invoke(ref _colorBlendState);
+
 		return this;
 	}
 
 	public GraphicsPipelineBuilder AddColorBlendAttachment(PipelineColorBlendAttachmentState attachmentState)
 	{
+		IsChanged = true;
+
 		_colorBlendAttachmentStates.Add(attachmentState);
+
 		return this;
 	}
 
 	public GraphicsPipelineBuilder AddColorBlendAttachmentOneMinusSrcAlpha()
 	{
+		IsChanged = true;
+
 		var attachmentState = new PipelineColorBlendAttachmentState
 		{
 			BlendEnable = true,
@@ -158,94 +318,136 @@ public unsafe class GraphicsPipelineBuilder
 		};
 
 		_colorBlendAttachmentStates.Add(attachmentState);
+
 		return this;
 	}
 
 	public GraphicsPipelineBuilder AddColorBlendAttachmentBlendDisabled()
 	{
+		IsChanged = true;
+
 		var attachmentState = new PipelineColorBlendAttachmentState
 		{
 			BlendEnable = false
 		};
 
 		_colorBlendAttachmentStates.Add(attachmentState);
+
 		return this;
 	}
 
 	public GraphicsPipelineBuilder SetDepthStencilState(PipelineDepthStencilStateCreateInfo depthStencilState)
 	{
+		IsChanged = true;
+
 		_depthStencilState = depthStencilState;
+
 		return this;
 	}
 
 	public GraphicsPipelineBuilder DepthStencilState(SpanAction<PipelineDepthStencilStateCreateInfo> updater)
 	{
+		IsChanged = true;
+
 		updater.Invoke(ref _depthStencilState);
+
 		return this;
 	}
 
 	public GraphicsPipelineBuilder SetMultisampleState(PipelineMultisampleStateCreateInfo multisampleState)
 	{
+		IsChanged = true;
+
 		_multisampleState = multisampleState;
+
 		return this;
 	}
 
 	public GraphicsPipelineBuilder MultisampleState(SpanAction<PipelineMultisampleStateCreateInfo> updater)
 	{
+		IsChanged = true;
+
 		updater.Invoke(ref _multisampleState);
+
 		return this;
 	}
 
 	public GraphicsPipelineBuilder SetRasterizationState(PipelineRasterizationStateCreateInfo rasterizationState)
 	{
+		IsChanged = true;
+
 		_rasterizationState = rasterizationState;
+
 		return this;
 	}
 
 	public GraphicsPipelineBuilder RasterizationState(SpanAction<PipelineRasterizationStateCreateInfo> updater)
 	{
+		IsChanged = true;
+
 		updater.Invoke(ref _rasterizationState);
+
 		return this;
 	}
 
 	public GraphicsPipelineBuilder SetViewport(Viewport viewport)
 	{
+		IsChanged = true;
+
 		_viewport = viewport;
+
 		return this;
 	}
 
 	public GraphicsPipelineBuilder Viewport(SpanAction<Viewport> updater)
 	{
+		IsChanged = true;
+
 		updater.Invoke(ref _viewport);
+
 		return this;
 	}
 
 	public GraphicsPipelineBuilder SetScissor(Rect2D scissor)
 	{
+		IsChanged = true;
+
 		_scissor = scissor;
+
 		return this;
 	}
 
 	public GraphicsPipelineBuilder Scissor(SpanAction<Rect2D> updater)
 	{
+		IsChanged = true;
+
 		updater.Invoke(ref _scissor);
+
 		return this;
 	}
 
 	public GraphicsPipelineBuilder SetViewportState(PipelineViewportStateCreateInfo viewportState)
 	{
+		IsChanged = true;
+
 		_viewportState = viewportState;
+
 		return this;
 	}
 
 	public GraphicsPipelineBuilder ViewportState(SpanAction<PipelineViewportStateCreateInfo> updater)
 	{
+		IsChanged = true;
+
 		updater.Invoke(ref _viewportState);
+
 		return this;
 	}
 
 	public GraphicsPipelineBuilder SetViewportAndScissorFromSize(Vector2<uint> size)
 	{
+		IsChanged = true;
+
 		_viewport = new Viewport
 		{
 			X = 0, Y = 0,
@@ -260,63 +462,22 @@ public unsafe class GraphicsPipelineBuilder
 
 	public GraphicsPipelineBuilder PipelineCreateFlags(SpanAction<PipelineCreateFlags> updater)
 	{
+		IsChanged = true;
+
 		updater.Invoke(ref _pipelineCreateFlags);
+
 		return this;
 	}
 
 	public GraphicsPipelineBuilder SetPipelineCreateFlags(PipelineCreateFlags flags)
 	{
+		IsChanged = true;
+
 		_pipelineCreateFlags = flags;
+
 		return this;
 	}
 
-	public Pipeline Build(PipelineLayout pipelineLayout, RenderPass renderPass, uint subpass = 0, Pipeline basePipeline = default, int basePipelineIndex = -1)
-	{
-		var shaderStagesArr = _shaders.Select(pair => pair.Value.ShaderCreateInfo()).ToArray();
-
-		PipelineVertexInputStateCreateInfo vertexInputState = default;
-		if (_shaders.TryGetValue(ShaderKind.VertexShader, out var vertexShader))
-		{
-			vertexInputState = ReflectUtils.VertexInputStateFromShader(vertexShader);
-		}
-
-		_viewportState = new PipelineViewportStateCreateInfo
-		{
-			SType = StructureType.PipelineViewportStateCreateInfo,
-			ViewportCount = 1,
-			PViewports = _viewport.AsPointer(),
-			ScissorCount = 1,
-			PScissors = _scissor.AsPointer()
-		};
-
-		var colorBlendAttachmentStatesArr = _colorBlendAttachmentStates.ToArray();
-		_colorBlendState.AttachmentCount = (uint) colorBlendAttachmentStatesArr.Length;
-		_colorBlendState.PAttachments = colorBlendAttachmentStatesArr[0].AsPointer();
-
-		var createInfo = new GraphicsPipelineCreateInfo
-		{
-			SType = StructureType.GraphicsPipelineCreateInfo,
-			Flags = _pipelineCreateFlags,
-			StageCount = (uint) shaderStagesArr.Length,
-			PStages = shaderStagesArr[0].AsPointer(),
-			PVertexInputState = &vertexInputState,
-			PInputAssemblyState = _inputAssemblyState.AsPointer(),
-			PTessellationState = default,
-			PViewportState = _viewportState.AsPointer(),
-			PRasterizationState = _rasterizationState.AsPointer(),
-			PMultisampleState = _multisampleState.AsPointer(),
-			PDepthStencilState = _depthStencilState.AsPointer(),
-			PColorBlendState = _colorBlendState.AsPointer(),
-			PDynamicState = _dynamicState.AsPointer(),
-			Layout = pipelineLayout,
-			RenderPass = renderPass,
-			Subpass = subpass,
-			BasePipelineHandle = basePipeline,
-			BasePipelineIndex = basePipelineIndex
-		};
-
-		Context.Vk.CreateGraphicsPipelines(Context.Device, PipelineManager.PipelineCache, 1, createInfo, null, out var pipeline);
-
-		return pipeline;
-	}
+	public override int GetHashCode() =>
+		HashCode.Combine(string.GetHashCode(string.Concat(Shaders.Values)), _renderPass.Value.Handle, _pipelineLayout.Value.Handle, _subpass);
 }

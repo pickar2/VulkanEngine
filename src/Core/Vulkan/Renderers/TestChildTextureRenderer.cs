@@ -16,7 +16,7 @@ public unsafe class TestChildTextureRenderer : RenderChain
 	private readonly OnAccessValueReCreator<CommandPool> _commandPool;
 
 	private readonly OnAccessValueReCreator<PipelineLayout> _pipelineLayout;
-	private readonly OnAccessValueReCreator<Pipeline> _pipeline;
+	private readonly AutoPipeline _pipeline;
 
 	private readonly OnAccessValueReCreator<VulkanBuffer> _vertexBuffer;
 
@@ -39,9 +39,7 @@ public unsafe class TestChildTextureRenderer : RenderChain
 		});
 
 		_pipelineLayout = ReCreate.InDevice.OnAccessValue(() => CreatePipelineLayout(TextureManager.DescriptorSetLayout), layout => layout.Dispose());
-		_pipeline = ReCreate.InDevice.OnAccessValue(
-			() => CreatePipeline(_pipelineLayout, _renderPass, Context.State.WindowSize),
-			pipeline => pipeline.Dispose());
+		_pipeline = CreatePipeline(_pipelineLayout, _renderPass, Context.State.WindowSize);
 
 		ulong bufferSize = (ulong) (sizeof(Vector3<float>) * 6);
 		_vertexBuffer = ReCreate.InDevice.OnAccessValue(() =>
@@ -189,19 +187,15 @@ public unsafe class TestChildTextureRenderer : RenderChain
 		return framebuffer;
 	}
 
-	private static Pipeline CreatePipeline(PipelineLayout pipelineLayout, RenderPass renderPass, Vector2<uint> size)
-	{
-		var vertexShader = ShaderManager.GetOrCreate("./assets/shaders/general/simple_draw.vert", ShaderKind.VertexShader);
-		var fragmentShader = ShaderManager.GetOrCreate("./assets/shaders/general/draw_texture.frag", ShaderKind.FragmentShader);
-
-		return PipelineManager.GraphicsBuilder()
-			.WithShader(vertexShader)
-			.WithShader(fragmentShader)
-			// .RasterizationState(span => span[0].PolygonMode = PolygonMode.Line)
+	private static AutoPipeline CreatePipeline(OnAccessValueReCreator<PipelineLayout> pipelineLayout, OnAccessValueReCreator<RenderPass> renderPass,
+		Vector2<uint> size) =>
+		PipelineManager.GraphicsBuilder()
+			.WithShader("./assets/shaders/general/simple_draw.vert", ShaderKind.VertexShader)
+			.WithShader("./assets/shaders/general/draw_texture.frag", ShaderKind.FragmentShader)
 			.SetViewportAndScissorFromSize(size)
 			.AddColorBlendAttachmentOneMinusSrcAlpha()
-			.Build(pipelineLayout, renderPass);
-	}
+			.With(pipelineLayout, renderPass)
+			.AutoPipeline();
 
 	public override void Dispose() { }
 }
