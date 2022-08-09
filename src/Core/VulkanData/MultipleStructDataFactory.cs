@@ -28,17 +28,17 @@ public unsafe class MultipleStructDataFactory : SimpleRegistry<NoneEventManager<
 
 		if (Context.IsIntegratedGpu || CpuToGpuMemory)
 		{
-			DataBufferCpu = VulkanUtils.CreateBuffer(BufferSize, BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU);
+			DataBufferCpu = CreateBuffer(BufferSize, BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU);
 			DataBufferGpu = DataBufferCpu;
 		}
 		else
 		{
-			DataBufferCpu = VulkanUtils.CreateBuffer(BufferSize, BufferUsageFlags.TransferSrcBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_ONLY);
-			DataBufferGpu = VulkanUtils.CreateBuffer(BufferSize, BufferUsageFlags.StorageBufferBit | BufferUsageFlags.TransferDstBit,
+			DataBufferCpu = CreateBuffer(BufferSize, BufferUsageFlags.TransferSrcBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_ONLY);
+			DataBufferGpu = CreateBuffer(BufferSize, BufferUsageFlags.StorageBufferBit | BufferUsageFlags.TransferDstBit,
 				VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
 		}
 
-		VulkanUtils.Check(vmaMapMemory(Context.VmaHandle, DataBufferCpu.Allocation, _ptr), "Failed to map memory.");
+		Check(vmaMapMemory(Context.VmaHandle, DataBufferCpu.Allocation, _ptr), "Failed to map memory.");
 		Pointer = (byte*) _ptr[0];
 		var span = new Span<byte>((void*) _ptr[0], (int) BufferSize);
 		span.Fill(default);
@@ -68,10 +68,10 @@ public unsafe class MultipleStructDataFactory : SimpleRegistry<NoneEventManager<
 		ulong newBufferSize = BufferSize * 2;
 
 		var newDataBuffer = Context.IsIntegratedGpu || CpuToGpuMemory
-			? VulkanUtils.CreateBuffer(newBufferSize, BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU)
-			: VulkanUtils.CreateBuffer(newBufferSize, BufferUsageFlags.TransferSrcBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_ONLY);
+			? CreateBuffer(newBufferSize, BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU)
+			: CreateBuffer(newBufferSize, BufferUsageFlags.TransferSrcBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_ONLY);
 
-		VulkanUtils.Check(Context.VmaMapMemory(newDataBuffer.Allocation, _ptr), "Failed to map memory.");
+		Check(Context.VmaMapMemory(newDataBuffer.Allocation, _ptr), "Failed to map memory.");
 
 		var oldSpan = new Span<byte>(Pointer, (int) BufferSize);
 		var newSpan = new Span<byte>((void*) _ptr[0], (int) newBufferSize);
@@ -89,10 +89,10 @@ public unsafe class MultipleStructDataFactory : SimpleRegistry<NoneEventManager<
 		else
 		{
 			// DataBufferGpu.EnqueueFrameDispose(MainRenderer.GetLastFrameIndex());
-			DataBufferGpu = VulkanUtils.CreateBuffer(newBufferSize, BufferUsageFlags.StorageBufferBit | BufferUsageFlags.TransferDstBit,
+			DataBufferGpu = CreateBuffer(newBufferSize, BufferUsageFlags.StorageBufferBit | BufferUsageFlags.TransferDstBit,
 				VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
 
-			VulkanUtils.CopyBuffer(DataBufferCpu, DataBufferGpu, BufferSize);
+			CopyBuffer(DataBufferCpu, DataBufferGpu, BufferSize);
 		}
 
 		BufferSize = newBufferSize;

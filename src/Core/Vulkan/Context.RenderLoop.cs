@@ -110,7 +110,7 @@ public static unsafe partial class Context
 		FrameId = FrameIndex % State.FrameOverlap.Value;
 
 		var currentFrame = _frames[FrameId];
-		VulkanUtils.Check(currentFrame.Fence.Wait(), "Failed to finish frame.");
+		Check(currentFrame.Fence.Wait(), "Failed to finish frame.");
 		currentFrame.Fence.Reset();
 
 		uint imageId;

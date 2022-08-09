@@ -16,8 +16,8 @@ public class Frame : IDisposable
 
 	public Frame()
 	{
-		PresentSemaphore = VulkanUtils.CreateSemaphore();
-		Fence = VulkanUtils.CreateFence(true);
+		PresentSemaphore = CreateSemaphore();
+		Fence = CreateFence(true);
 	}
 
 	public unsafe void Dispose()

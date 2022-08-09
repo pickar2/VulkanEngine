@@ -23,7 +23,7 @@ public static unsafe class FrameGraph
 		Context.SwapchainEvents.BeforeDispose += () => BeforeSwapchainDispose();
 	}
 
-	public static CommandPool ImageTransitionCommandPool;
+	private static CommandPool _imageTransitionCommandPool;
 
 	public static void Init()
 	{
@@ -33,11 +33,11 @@ public static unsafe class FrameGraph
 			QueueFamilyIndex = Context.GraphicsQueue.Family.Index,
 			Flags = CommandPoolCreateFlags.TransientBit
 		};
-		Check(Context.Vk.CreateCommandPool(Context.Device, commandPoolCreateInfo, null, out ImageTransitionCommandPool),
+		Check(Context.Vk.CreateCommandPool(Context.Device, commandPoolCreateInfo, null, out _imageTransitionCommandPool),
 			"Failed to create ImageTransitionCommandPool.");
 	}
 
-	public static void Dispose() => Context.Vk.DestroyCommandPool(Context.Device, ImageTransitionCommandPool, null);
+	public static void Dispose() => Context.Vk.DestroyCommandPool(Context.Device, _imageTransitionCommandPool, null);
 
 	public static void AfterSwapchainCreation()
 	{
@@ -225,11 +225,11 @@ public static unsafe class FrameGraph
 			DependencyFlags = DependencyFlags.ByRegionBit
 		};
 
-		var commandBuffer = CommandBuffers.BeginSingleTimeCommands(ImageTransitionCommandPool);
+		var commandBuffer = CommandBuffers.BeginSingleTimeCommands(_imageTransitionCommandPool);
 
 		Context.KhrSynchronization2.CmdPipelineBarrier2(commandBuffer, dependencyInfo);
 
-		CommandBuffers.EndSingleTimeCommands(ref commandBuffer, ImageTransitionCommandPool, Context.GraphicsQueue);
+		CommandBuffers.EndSingleTimeCommands(ref commandBuffer, _imageTransitionCommandPool, Context.GraphicsQueue);
 
 		vulkanImage.CurrentLayout = ImageLayout.AttachmentOptimal;
 

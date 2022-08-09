@@ -49,30 +49,30 @@ public unsafe partial class UiRenderer
 
 	private static void InitCompute()
 	{
-		_copyCommandPool = VulkanUtils.CreateCommandPool(Context.TransferToHostQueue, 0);
+		_copyCommandPool = CreateCommandPool(Context.TransferToHostQueue, 0);
 		DisposalQueue.EnqueueInGlobal(() => Context.Vk.DestroyCommandPool(Context.Device, _copyCommandPool, null));
 
-		_fence = VulkanUtils.CreateFence(true);
+		_fence = CreateFence(true);
 		DisposalQueue.EnqueueInGlobal(() => Context.Vk.DestroyFence(Context.Device, _fence, null));
 
 		_sortCommandPools = new CommandPool[Context.SwapchainImageCount];
 		for (int i = 0; i < _sortCommandPools.Length; i++)
 		{
-			var pool = VulkanUtils.CreateCommandPool(Context.ComputeQueue, 0);
+			var pool = CreateCommandPool(Context.ComputeQueue, 0);
 			_sortCommandPools[i] = pool;
 			DisposalQueue.EnqueueInGlobal(() => Context.Vk.DestroyCommandPool(Context.Device, pool, null));
 		}
 
-		_sortClearPass = VulkanUtils.CreateShader("./assets/shaders/ui/compute/sort_clear_pass.comp", ShaderKind.ComputeShader);
+		_sortClearPass = CreateShader("./assets/shaders/ui/compute/sort_clear_pass.comp", ShaderKind.ComputeShader);
 		_sortClearPass.EnqueueGlobalDispose();
 
-		_sortCountPass = VulkanUtils.CreateShader("./assets/shaders/ui/compute/sort_count_pass.comp", ShaderKind.ComputeShader);
+		_sortCountPass = CreateShader("./assets/shaders/ui/compute/sort_count_pass.comp", ShaderKind.ComputeShader);
 		_sortCountPass.EnqueueGlobalDispose();
 
-		_sortOffsetsPass = VulkanUtils.CreateShader("./assets/shaders/ui/compute/sort_offsets_pass.comp", ShaderKind.ComputeShader);
+		_sortOffsetsPass = CreateShader("./assets/shaders/ui/compute/sort_offsets_pass.comp", ShaderKind.ComputeShader);
 		_sortOffsetsPass.EnqueueGlobalDispose();
 
-		_sortMainPass = VulkanUtils.CreateShader("./assets/shaders/ui/compute/sort_main_pass.comp", ShaderKind.ComputeShader);
+		_sortMainPass = CreateShader("./assets/shaders/ui/compute/sort_main_pass.comp", ShaderKind.ComputeShader);
 		_sortMainPass.EnqueueGlobalDispose();
 
 		CreateSortBuffers();
@@ -89,19 +89,19 @@ public unsafe partial class UiRenderer
 
 	private static void CreateSortBuffers()
 	{
-		_counters1Buffer = VulkanUtils.CreateBuffer(ZCount * 4, BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
+		_counters1Buffer = CreateBuffer(ZCount * 4, BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
 		_counters1Buffer.EnqueueGlobalDispose();
 
-		_counters2Buffer = VulkanUtils.CreateBuffer(ZCount * 4, BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
+		_counters2Buffer = CreateBuffer(ZCount * 4, BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
 		_counters2Buffer.EnqueueGlobalDispose();
 
-		_offsetsBuffer = VulkanUtils.CreateBuffer(ZCount * 4, BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
+		_offsetsBuffer = CreateBuffer(ZCount * 4, BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
 		_offsetsBuffer.EnqueueGlobalDispose();
 
-		_countBufferCpu = VulkanUtils.CreateBuffer(CountDataSize, BufferUsageFlags.TransferSrcBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU);
+		_countBufferCpu = CreateBuffer(CountDataSize, BufferUsageFlags.TransferSrcBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU);
 		_countBufferCpu.EnqueueGlobalDispose();
 
-		_countBuffer = VulkanUtils.CreateBuffer(CountDataSize, BufferUsageFlags.UniformBufferBit | BufferUsageFlags.TransferDstBit,
+		_countBuffer = CreateBuffer(CountDataSize, BufferUsageFlags.UniformBufferBit | BufferUsageFlags.TransferDstBit,
 			VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
 		_countBuffer.EnqueueGlobalDispose();
 	}
@@ -147,7 +147,7 @@ public unsafe partial class UiRenderer
 			PBindings = countersLayoutBindings[0].AsPointer()
 		};
 
-		VulkanUtils.Check(Context.Vk.CreateDescriptorSetLayout(Context.Device, &countersLayoutCreateInfo, null, out _sortCountersLayout),
+		Check(Context.Vk.CreateDescriptorSetLayout(Context.Device, &countersLayoutCreateInfo, null, out _sortCountersLayout),
 			"Failed to create ui sort counters descriptor set layout.");
 
 		DisposalQueue.EnqueueInGlobal(() => Context.Vk.DestroyDescriptorSetLayout(Context.Device, _sortCountersLayout, null));
@@ -167,7 +167,7 @@ public unsafe partial class UiRenderer
 			PBindings = &indicesLayoutBindings
 		};
 
-		VulkanUtils.Check(Context.Vk.CreateDescriptorSetLayout(Context.Device, &indicesLayoutCreateInfo, null, out _sortIndicesLayout),
+		Check(Context.Vk.CreateDescriptorSetLayout(Context.Device, &indicesLayoutCreateInfo, null, out _sortIndicesLayout),
 			"Failed to create ui sort indices descriptor set layout.");
 		DisposalQueue.EnqueueInGlobal(() => Context.Vk.DestroyDescriptorSetLayout(Context.Device, _sortIndicesLayout, null));
 	}
@@ -197,7 +197,7 @@ public unsafe partial class UiRenderer
 			Flags = DescriptorPoolCreateFlags.FreeDescriptorSetBit
 		};
 
-		VulkanUtils.Check(Context.Vk.CreateDescriptorPool(Context.Device, &countersCreateInfo, null, out _sortCountersPool),
+		Check(Context.Vk.CreateDescriptorPool(Context.Device, &countersCreateInfo, null, out _sortCountersPool),
 			"Failed to create ui counters descriptor pool.");
 		DisposalQueue.EnqueueInGlobal(() => Context.Vk.DestroyDescriptorPool(Context.Device, _sortCountersPool, null));
 
@@ -216,7 +216,7 @@ public unsafe partial class UiRenderer
 			Flags = DescriptorPoolCreateFlags.FreeDescriptorSetBit
 		};
 
-		VulkanUtils.Check(Context.Vk.CreateDescriptorPool(Context.Device, &indicesCreateInfo, null, out _sortIndicesPool),
+		Check(Context.Vk.CreateDescriptorPool(Context.Device, &indicesCreateInfo, null, out _sortIndicesPool),
 			"Failed to create ui indices descriptor pool.");
 		DisposalQueue.EnqueueInGlobal(() => Context.Vk.DestroyDescriptorPool(Context.Device, _sortIndicesPool, null));
 	}
@@ -231,7 +231,7 @@ public unsafe partial class UiRenderer
 			PSetLayouts = _sortCountersLayout.AsPointer()
 		};
 
-		VulkanUtils.Check(Context.Vk.AllocateDescriptorSets(Context.Device, &countersAllocInfo, out _sortCountersSet),
+		Check(Context.Vk.AllocateDescriptorSets(Context.Device, &countersAllocInfo, out _sortCountersSet),
 			"Failed to allocate ui sort counters descriptor sets.");
 		UpdateCountersDescriptorSet();
 
@@ -247,7 +247,7 @@ public unsafe partial class UiRenderer
 		};
 
 		_sortIndicesSets = new DescriptorSet[Context.SwapchainImageCount];
-		VulkanUtils.Check(Context.Vk.AllocateDescriptorSets(Context.Device, &indicesAllocInfo, out _sortIndicesSets[0]),
+		Check(Context.Vk.AllocateDescriptorSets(Context.Device, &indicesAllocInfo, out _sortIndicesSets[0]),
 			"Failed to allocate ui sort indices descriptor sets.");
 		UpdateIndicesDescriptorSet();
 	}
@@ -355,16 +355,16 @@ public unsafe partial class UiRenderer
 
 	private static void CreateSortPipelines()
 	{
-		_sortClearPipeline = VulkanUtils.CreateComputePipeline(_sortClearPass, new[] {_sortCountersLayout}, null, _pipelineCache);
+		_sortClearPipeline = CreateComputePipeline(_sortClearPass, new[] {_sortCountersLayout}, null, _pipelineCache);
 		_sortClearPipeline.EnqueueGlobalDispose();
 
-		_sortCountPipeline = VulkanUtils.CreateComputePipeline(_sortCountPass, new[] {_componentDataLayout, _sortCountersLayout}, null, _pipelineCache);
+		_sortCountPipeline = CreateComputePipeline(_sortCountPass, new[] {_componentDataLayout, _sortCountersLayout}, null, _pipelineCache);
 		_sortCountPipeline.EnqueueGlobalDispose();
 
-		_sortOffsetsPipeline = VulkanUtils.CreateComputePipeline(_sortOffsetsPass, new[] {_sortCountersLayout}, null, _pipelineCache);
+		_sortOffsetsPipeline = CreateComputePipeline(_sortOffsetsPass, new[] {_sortCountersLayout}, null, _pipelineCache);
 		_sortOffsetsPipeline.EnqueueGlobalDispose();
 
-		_sortMainPipeline = VulkanUtils.CreateComputePipeline(_sortMainPass, new[] {_componentDataLayout, _sortCountersLayout, _sortIndicesLayout}, null,
+		_sortMainPipeline = CreateComputePipeline(_sortMainPass, new[] {_componentDataLayout, _sortCountersLayout, _sortIndicesLayout}, null,
 			_pipelineCache);
 		_sortMainPipeline.EnqueueGlobalDispose();
 	}
@@ -380,7 +380,7 @@ public unsafe partial class UiRenderer
 			Level = CommandBufferLevel.Primary
 		};
 
-		VulkanUtils.Check(Context.Vk.AllocateCommandBuffers(Context.Device, allocInfo, out var commandBuffer), "Failed to allocate ui command buffer.");
+		Check(Context.Vk.AllocateCommandBuffers(Context.Device, allocInfo, out var commandBuffer), "Failed to allocate ui command buffer.");
 
 		var memoryBarrier = new MemoryBarrier2
 		{
@@ -478,7 +478,7 @@ public unsafe partial class UiRenderer
 			CommandBuffers.EndSingleTimeCommands(ref copyBuffer, _copyCommandPool, Context.TransferToHostQueue);
 		}
 
-		VulkanUtils.MapDataToVulkanBuffer(span =>
+		MapDataToVulkanBuffer(span =>
 		{
 			var intSpan = MemoryMarshal.Cast<byte, int>(span);
 			intSpan[0] = UiComponentFactory.Instance.ComponentCount;

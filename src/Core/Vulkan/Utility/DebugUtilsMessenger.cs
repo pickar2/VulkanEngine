@@ -57,6 +57,6 @@ public unsafe class DebugUtilsMessenger : IDisposable
 		return Vk.False;
 	}
 
-	public void Init() => VulkanUtils.Check(Context.ExtDebugUtils.CreateDebugUtilsMessenger(Context.Instance, CreateInfo, null, DebugMessenger.AsPointer()),
+	public void Init() => Check(Context.ExtDebugUtils.CreateDebugUtilsMessenger(Context.Instance, CreateInfo, null, DebugMessenger.AsPointer()),
 		"Failed to create debug messenger");
 }
