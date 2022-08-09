@@ -51,6 +51,7 @@ public static class KeyboardInput
 		var keySym = keyboardEvent.keysym;
 		keySym.unicode = 0;
 		keySym.scancode = 0;
+		keySym.mod &= ~SDL_Keymod.KMOD_CAPS;
 
 		do
 		{
@@ -143,12 +144,7 @@ public class InputContext {
 
 	public void AddKeyBind(NamedFunc namedFunc, params SDL_Keycode[] keyCodeArr)
 	{
-		foreach (var keyCode in keyCodeArr)
-		{
-			var keySym = KeyboardInput.KeySym(keyCode).Build();
-			if (!KeyBinds.ContainsKey(keySym)) KeyBinds[keySym] = new HashSet<NamedFunc>();
-			KeyBinds[keySym].Add(namedFunc);
-		}
+		foreach (var keyCode in keyCodeArr) AddKeyBind(namedFunc, keyCode);
 	}
 
 	public bool RemoveKeyBind(NamespacedName name)
