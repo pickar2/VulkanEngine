@@ -18,6 +18,7 @@ public static unsafe class TextureManager
 	public static readonly OnAccessValueReCreator<Sampler> Sampler;
 
 	/*
+	 * TODO: 
 	 * When MaxTextureCount changes DescriptorSetLayout needs to be rebuilt => Pipelines using this layout needs to be rebuilt
 	 * When CurrentTextureCount changes DescriptorSet needs to be rebuilt => CommandBuffers using this set need to be re recorded
 	 * When PhysicalDeviceDescriptorIndexingFeaturesEXT.DescriptorBindingPartiallyBound is not available => copy error texture to every available descriptor

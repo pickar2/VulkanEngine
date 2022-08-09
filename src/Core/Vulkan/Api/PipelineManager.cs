@@ -34,6 +34,7 @@ public static unsafe class PipelineManager
 
 public class AutoPipeline
 {
+	public readonly string Name;
 	public readonly GraphicsPipelineBuilder Builder;
 	public bool IsChanged { get; set; }
 	private Pipeline _pipeline;
@@ -48,12 +49,15 @@ public class AutoPipeline
 			if (old.Handle != default) ExecuteOnce.InSwapchain.AfterDispose(() => old.Dispose());
 
 			_pipeline = Builder.Build();
+
+			Debug.SetObjectName(_pipeline.Handle, ObjectType.Pipeline, $"Pipeline {Name}");
 			return _pipeline;
 		}
 	}
 
 	public AutoPipeline(string name, GraphicsPipelineBuilder builder)
 	{
+		Name = name;
 		Builder = builder;
 		Context.DeviceEvents.BeforeDispose += () => Dispose();
 

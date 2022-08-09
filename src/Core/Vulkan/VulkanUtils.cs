@@ -11,6 +11,7 @@ using Silk.NET.Vulkan;
 using static Core.Native.VMA.VulkanMemoryAllocator;
 using static Core.Vulkan.Context;
 using Buffer = Silk.NET.Vulkan.Buffer;
+using Debug = Core.Vulkan.Api.Debug;
 using Result = Silk.NET.Vulkan.Result;
 using Vk = Silk.NET.Vulkan.Vk;
 
@@ -399,6 +400,8 @@ public static unsafe class VulkanUtils
 		Check(Context.Vk.CreateShaderModule(Context.Device, createInfo, null, out var vulkanShaderModule),
 			$"Failed to create shader module {lookUpPath}");
 		result.Dispose();
+
+		Debug.SetObjectName(vulkanShaderModule.Handle, ObjectType.ShaderModule, $"Shader {path}");
 
 		return new VulkanShader(path, entryPoint, shaderKind, vulkanShaderModule, spirvShaderModule);
 	}

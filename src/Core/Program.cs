@@ -64,8 +64,8 @@ internal static class Program
 		{
 			wireframe = !wireframe;
 			var mode = wireframe ? PolygonMode.Line : PolygonMode.Fill;
-			foreach ((string? _, var autoPipeline) in PipelineManager.AutoPipelines)
-				autoPipeline.Builder.RasterizationState(span => span[0].PolygonMode = mode);
+			if (PipelineManager.AutoPipelines.TryGetValue("RenderChildren", out var pipeline))
+				pipeline.Builder.RasterizationState(span => span[0].PolygonMode = mode);
 			return true;
 		}), SDL.SDL_Keycode.SDLK_p);
 
