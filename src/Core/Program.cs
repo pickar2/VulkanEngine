@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using Core.Vulkan;
@@ -8,6 +9,7 @@ using Core.Window;
 using NullGuard;
 using SDL2;
 using Silk.NET.Vulkan;
+using Spectre.Console;
 
 [assembly: NullGuard(ValidationFlags.All)]
 
@@ -42,6 +44,12 @@ internal static class Program
 		};
 		windowThread.Start();
 		SpinWait.SpinUntil(() => windowReady);
+
+		var cmdArgs = Environment.GetCommandLineArgs().ToHashSet();
+		if (cmdArgs.Contains("-debug")) Context.State.DebugMode.UpdateImmediately(true);
+		if (cmdArgs.Contains("-validation")) Context.State.UseValidation.UpdateImmediately(true);
+		if (cmdArgs.Contains("-watchShaders")) Context.State.AllowShaderWatchers.UpdateImmediately(true);
+		if (cmdArgs.Contains("-watchShadersSrc")) Context.State.WatchShadersFromSrc.UpdateImmediately(true);
 
 		KeyboardInput.GlobalContext.AddKeyBind(new NamedFunc("exit_program", () =>
 		{

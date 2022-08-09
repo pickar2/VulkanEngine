@@ -14,10 +14,10 @@ public class VulkanState
 
 	public readonly VulkanOption<int> TestSwapchain = new(0, VulkanLevel.Swapchain);
 
-	public readonly VulkanOption<bool> DebugMode = new(true, VulkanLevel.Instance);
-	public readonly VulkanOption<bool> UseValidation = new(true, VulkanLevel.Instance);
-	public readonly VulkanOption<bool> AllowShaderWatchers = new(true);
-	public readonly VulkanOption<bool> WatchShadersFromSrc = new(true);
+	public readonly VulkanOption<bool> DebugMode = new(false, VulkanLevel.Instance);
+	public readonly VulkanOption<bool> UseValidation = new(false, VulkanLevel.Instance);
+	public readonly VulkanOption<bool> AllowShaderWatchers = new(false, VulkanLevel.Device);
+	public readonly VulkanOption<bool> WatchShadersFromSrc = new(false, VulkanLevel.Device);
 
 	public readonly VulkanOption<SdlWindow> Window = new(default!, VulkanLevel.Instance);
 
