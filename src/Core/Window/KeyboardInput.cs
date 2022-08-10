@@ -51,7 +51,7 @@ public static class KeyboardInput
 		var keySym = keyboardEvent.keysym;
 		keySym.unicode = 0;
 		keySym.scancode = 0;
-		keySym.mod &= ~SDL_Keymod.KMOD_CAPS;
+		keySym.mod &= ~(SDL_Keymod.KMOD_CAPS | SDL_Keymod.KMOD_NUM | SDL_Keymod.KMOD_SCROLL);
 
 		do
 		{
