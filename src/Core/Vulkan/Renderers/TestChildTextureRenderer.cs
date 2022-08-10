@@ -169,7 +169,7 @@ public unsafe class TestChildTextureRenderer : RenderChain
 	private static AutoPipeline CreatePipeline(OnAccessValueReCreator<PipelineLayout> pipelineLayout, OnAccessValueReCreator<RenderPass> renderPass,
 		Vector2<uint> size) =>
 		PipelineManager.GraphicsBuilder()
-			.WithShader("@testVirtual.vert", ShaderKind.VertexShader)
+			.WithShader("./assets/shaders/general/simple_draw.vert", ShaderKind.VertexShader)
 			.WithShader("./assets/shaders/general/draw_texture.frag", ShaderKind.FragmentShader)
 			.SetViewportAndScissorFromSize(size)
 			.AddColorBlendAttachmentOneMinusSrcAlpha()

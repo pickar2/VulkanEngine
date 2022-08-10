@@ -78,41 +78,7 @@ internal static class Program
 			if (PipelineManager.AutoPipelines.TryGetValue("RenderChildren", out var pipeline))
 				pipeline.Builder.RasterizationState(span => span[0].PolygonMode = mode);
 			return true;
-		}), SDL.SDL_Keycode.SDLK_p);
-
-		float offset = 0;
-
-		void UpdateShader()
-		{
-			ShaderManager.SetVirtualShader("@testVirtual.vert", @$"
-#version 450
-layout(location = 0) in vec3 inPosition;
-
-layout(location = 0) out int textureId;
-
-void main() {{
-    vec3 offset = vec3({offset}, 0, 0);
-    gl_Position = vec4(inPosition + offset, 1.0f);
-    textureId = gl_InstanceIndex;
-}}");
-		}
-
-		KeyboardInput.GlobalContext.AddKeyBind(new NamedFunc("change_offset_left", () =>
-		{
-			offset -= 0.1f;
-			UpdateShader();
-
-			return true;
-		}), SDL.SDL_Keycode.SDLK_LEFT);
-
-		KeyboardInput.GlobalContext.AddKeyBind(new NamedFunc("change_offset_right", () =>
-		{
-			offset += 0.1f;
-			UpdateShader();
-
-			return true;
-		}), SDL.SDL_Keycode.SDLK_RIGHT);
-
+		}), SDL.SDL_Keycode.SDLK_p);;
 
 		windowThread.Join();
 
