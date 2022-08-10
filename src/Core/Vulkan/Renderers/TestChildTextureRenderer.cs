@@ -133,18 +133,6 @@ public unsafe class TestChildTextureRenderer : RenderChain
 			PColorAttachments = &attachmentReference
 		};
 
-		// var subpassDependency = new SubpassDependency2
-		// {
-		// 	SType = StructureType.SubpassDependency2,
-		// 	SrcSubpass = Vk.SubpassExternal,
-		// 	DstSubpass = 0,
-		// 	SrcStageMask = PipelineStageFlags.ColorAttachmentOutputBit,
-		// 	SrcAccessMask = 0,
-		// 	DstStageMask = PipelineStageFlags.ColorAttachmentOutputBit,
-		// 	DstAccessMask = AccessFlags.ColorAttachmentWriteBit,
-		// 	DependencyFlags = DependencyFlags.ByRegionBit
-		// };
-
 		var renderPassInfo2 = new RenderPassCreateInfo2
 		{
 			SType = StructureType.RenderPassCreateInfo2,
@@ -152,8 +140,6 @@ public unsafe class TestChildTextureRenderer : RenderChain
 			PAttachments = &attachmentDescription,
 			SubpassCount = 1,
 			PSubpasses = &subpassDescription
-			// DependencyCount = 0,
-			// PDependencies = &subpassDependency
 		};
 
 		Check(Context.Vk.CreateRenderPass2(Context.Device, renderPassInfo2, null, out var renderPass), "Failed to create render pass.");
