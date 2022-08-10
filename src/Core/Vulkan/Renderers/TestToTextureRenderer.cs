@@ -104,8 +104,8 @@ public unsafe class TestToTextureRenderer : RenderChain
 
 		cmd.BeginRenderPass(renderPassBeginInfo, SubpassContents.Inline);
 
-		Context.Vk.CmdBindPipeline(cmd, PipelineBindPoint.Graphics, _pipeline);
-		Context.Vk.CmdDraw(cmd, 3, 1, 0, (uint) _color.ToArgb());
+		cmd.BindGraphicsPipeline(_pipeline);
+		cmd.Draw(3, 1, 0, (uint) _color.ToArgb());
 
 		cmd.EndRenderPass();
 

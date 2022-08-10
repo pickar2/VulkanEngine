@@ -1,7 +1,5 @@
-﻿using System.Runtime.InteropServices;
-using Core.Native.Shaderc;
+﻿using Core.Native.Shaderc;
 using Core.Native.VMA;
-using Core.Utils;
 using Core.Vulkan.Api;
 using Core.Vulkan.Utility;
 using Silk.NET.Vulkan;
@@ -87,17 +85,15 @@ public unsafe class TestChildTextureRenderer : RenderChain
 
 		cmd.BeginRenderPass(renderPassBeginInfo, SubpassContents.Inline);
 
-		ulong* offsets = stackalloc ulong[1];
-
-		Context.Vk.CmdBindPipeline(cmd, PipelineBindPoint.Graphics, _pipeline);
+		cmd.BindGraphicsPipeline(_pipeline);
 		cmd.BindGraphicsDescriptorSets(_pipelineLayout, 0, 1, TextureManager.DescriptorSet);
-		Context.Vk.CmdBindVertexBuffers(cmd, 0, 1, _vertexBuffer.Value.Buffer, offsets);
+		cmd.BindVertexBuffer(0,_vertexBuffer.Value.Buffer);
 
 		uint id1 = TextureManager.GetTextureId($"ChildRenderer1 0");
 		uint id2 = TextureManager.GetTextureId($"ChildRenderer2 0");
 
-		Context.Vk.CmdDraw(cmd, 3, 1, 0, id1);
-		Context.Vk.CmdDraw(cmd, 3, 1, 3, id2);
+		cmd.Draw(3, 1, 0, id1);
+		cmd.Draw(3, 1, 3, id2);
 
 		cmd.EndRenderPass();
 
@@ -137,17 +133,17 @@ public unsafe class TestChildTextureRenderer : RenderChain
 			PColorAttachments = &attachmentReference
 		};
 
-		var subpassDependency = new SubpassDependency2
-		{
-			SType = StructureType.SubpassDependency2,
-			SrcSubpass = Vk.SubpassExternal,
-			DstSubpass = 0,
-			SrcStageMask = PipelineStageFlags.ColorAttachmentOutputBit,
-			SrcAccessMask = 0,
-			DstStageMask = PipelineStageFlags.ColorAttachmentOutputBit,
-			DstAccessMask = AccessFlags.ColorAttachmentWriteBit,
-			DependencyFlags = DependencyFlags.ByRegionBit
-		};
+		// var subpassDependency = new SubpassDependency2
+		// {
+		// 	SType = StructureType.SubpassDependency2,
+		// 	SrcSubpass = Vk.SubpassExternal,
+		// 	DstSubpass = 0,
+		// 	SrcStageMask = PipelineStageFlags.ColorAttachmentOutputBit,
+		// 	SrcAccessMask = 0,
+		// 	DstStageMask = PipelineStageFlags.ColorAttachmentOutputBit,
+		// 	DstAccessMask = AccessFlags.ColorAttachmentWriteBit,
+		// 	DependencyFlags = DependencyFlags.ByRegionBit
+		// };
 
 		var renderPassInfo2 = new RenderPassCreateInfo2
 		{
@@ -155,7 +151,7 @@ public unsafe class TestChildTextureRenderer : RenderChain
 			AttachmentCount = 1,
 			PAttachments = &attachmentDescription,
 			SubpassCount = 1,
-			PSubpasses = &subpassDescription,
+			PSubpasses = &subpassDescription
 			// DependencyCount = 0,
 			// PDependencies = &subpassDependency
 		};

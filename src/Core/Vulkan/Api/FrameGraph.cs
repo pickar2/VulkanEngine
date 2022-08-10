@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Core.Registries.Entities;
-using Core.Utils;
 using Silk.NET.Vulkan;
 using SimpleMath.Vectors;
 using static Core.Native.VMA.VulkanMemoryAllocator;
@@ -18,12 +17,12 @@ public static unsafe class FrameGraph
 	[SuppressMessage("ReSharper", "ConvertClosureToMethodGroup")]
 	static FrameGraph()
 	{
-		Context.DeviceEvents.BeforeDispose += () => Dispose();
+		// Context.DeviceEvents.BeforeDispose += () => Dispose();
 		Context.SwapchainEvents.AfterCreate += () => AfterSwapchainCreation();
 		Context.SwapchainEvents.BeforeDispose += () => BeforeSwapchainDispose();
 	}
 
-	private static CommandPool _imageTransitionCommandPool;
+	// private static CommandPool _imageTransitionCommandPool;
 
 	public static void Init()
 	{
@@ -33,11 +32,11 @@ public static unsafe class FrameGraph
 			QueueFamilyIndex = Context.GraphicsQueue.Family.Index,
 			Flags = CommandPoolCreateFlags.TransientBit
 		};
-		Check(Context.Vk.CreateCommandPool(Context.Device, commandPoolCreateInfo, null, out _imageTransitionCommandPool),
-			"Failed to create ImageTransitionCommandPool.");
+		// Check(Context.Vk.CreateCommandPool(Context.Device, commandPoolCreateInfo, null, out _imageTransitionCommandPool),
+		// 	"Failed to create ImageTransitionCommandPool.");
 	}
 
-	public static void Dispose() => Context.Vk.DestroyCommandPool(Context.Device, _imageTransitionCommandPool, null);
+	// public static void Dispose() => Context.Vk.DestroyCommandPool(Context.Device, _imageTransitionCommandPool, null);
 
 	public static void AfterSwapchainCreation()
 	{
@@ -225,11 +224,10 @@ public static unsafe class FrameGraph
 			DependencyFlags = DependencyFlags.ByRegionBit
 		};
 
-		var commandBuffer = CommandBuffers.BeginSingleTimeCommands(_imageTransitionCommandPool);
-
-		Context.KhrSynchronization2.CmdPipelineBarrier2(commandBuffer, dependencyInfo);
-
-		CommandBuffers.EndSingleTimeCommands(ref commandBuffer, _imageTransitionCommandPool, Context.GraphicsQueue);
+		// TODO: waiting on every image is bad, should at least add bulk methods of attachment creation.
+		var cmd = CommandBuffers.OneTimeGraphics();
+		cmd.Cmd.PipelineBarrier2(dependencyInfo);
+		cmd.SubmitAndWait();
 
 		vulkanImage.CurrentLayout = ImageLayout.AttachmentOptimal;
 

@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using Core.Vulkan.Api;
 using Silk.NET.Vulkan;
 using static Core.Native.VMA.VulkanMemoryAllocator;
@@ -41,13 +38,13 @@ public unsafe class VulkanBuffer : IDisposable
 
 	public nint Map()
 	{
-		if (_ptr[0] == 0) Check(vmaMapMemory(Context.VmaAllocator, Allocation, _ptr), "Failed to map buffer memory.");
+		if (_ptr[0] == 0) Check(ContextUtils.VmaMapMemory(Allocation, _ptr), "Failed to map buffer memory.");
 		return _ptr[0];
 	}
 
 	public void UnMap()
 	{
-		if (_ptr[0] != 0) vmaUnmapMemory(Context.VmaAllocator, Allocation);
+		if (_ptr[0] != 0) ContextUtils.VmaUnmapMemory(Allocation);
 		_ptr[0] = 0;
 	}
 
@@ -103,7 +100,7 @@ public unsafe class VulkanBuffer : IDisposable
 
 		var span = new Span<byte>((void*) Map(), (int) BufferSize);
 		var otherSpan = new Span<byte>((void*) other.Map(), (int) other.BufferSize);
-		
+
 		foreach (var region in regions)
 		{
 			span = span.Slice((int) region.SrcOffset, (int) region.Size);
@@ -117,18 +114,18 @@ public unsafe class VulkanBuffer : IDisposable
 	{
 		if (regions.Length == 0) return;
 
-		var cmd = CommandBuffers.BeginSingleTimeCommands(CommandBuffers.OneTimeTransferToDevicePool);
-		Context.Vk.CmdCopyBuffer(cmd, Buffer, other.Buffer, regions);
-		CommandBuffers.EndSingleTimeCommands(ref cmd, CommandBuffers.OneTimeTransferToDevicePool, Context.TransferToDeviceQueue);
+		var cmd = CommandBuffers.OneTimeTransferToDevice();
+		cmd.Cmd.CopyBuffer(Buffer, other.Buffer, regions);
+		cmd.SubmitAndWait();
 	}
 
 	public void CopyMemoryDirectToHost(VulkanBuffer other, BufferCopy[] regions)
 	{
 		if (regions.Length == 0) return;
 
-		var cmd = CommandBuffers.BeginSingleTimeCommands(CommandBuffers.OneTimeTransferToHostPool);
-		Context.Vk.CmdCopyBuffer(cmd, Buffer, other.Buffer, regions);
-		CommandBuffers.EndSingleTimeCommands(ref cmd, CommandBuffers.OneTimeTransferToHostPool, Context.TransferToHostQueue);
+		var cmd = CommandBuffers.OneTimeTransferToHost();
+		cmd.Cmd.CopyBuffer(Buffer, other.Buffer, regions);
+		cmd.SubmitAndWait();
 	}
 
 	public void Dispose()
