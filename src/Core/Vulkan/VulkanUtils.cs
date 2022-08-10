@@ -363,18 +363,28 @@ public static unsafe class VulkanUtils
 	public static VulkanShader CreateShader(string path, ShaderKind shaderKind, string entryPoint = "main")
 	{
 		string lookUpPath = path;
-		if (State.AllowShaderWatchers && State.WatchShadersFromSrc)
-		{
-			lookUpPath = Path.GetFullPath($"../../../../{path}");
-			if (!File.Exists(lookUpPath)) lookUpPath = path;
-		}
-
-		if (!File.Exists(lookUpPath)) throw new Exception($"Shader file `{lookUpPath}` does not exist.").AsExpectedException();
-
 		string source;
-		using (var stream = GetReadStream(lookUpPath))
-		using (var reader = new StreamReader(stream))
+		if (path.StartsWith("@"))
 		{
+			if (Context.ShadercOptions.TryGetVirtualShader(path, out var code))
+			{
+				source = code;
+			}
+			else
+				throw new Exception($"Virtual shader file `{path}` does not exist.").AsExpectedException();
+		}
+		else
+		{
+			if (State.AllowShaderWatchers && State.WatchShadersFromSrc)
+			{
+				lookUpPath = Path.GetFullPath($"../../../../{path}");
+				if (!File.Exists(lookUpPath)) lookUpPath = path;
+			}
+
+			if (!File.Exists(lookUpPath)) throw new Exception($"Shader file `{lookUpPath}` does not exist.").AsExpectedException();
+
+			using var stream = GetReadStream(lookUpPath);
+			using var reader = new StreamReader(stream);
 			source = reader.ReadToEnd();
 		}
 

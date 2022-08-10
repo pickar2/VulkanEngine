@@ -64,14 +64,14 @@ public class AutoPipeline
 		if (!Context.State.AllowShaderWatchers) return;
 		foreach ((var shaderKind, string? path) in Builder.Shaders)
 		{
-			ShaderManager.AddWatcherCallback(path, $"{shaderKind}.{Builder.GetHashCode()}", () =>
+			ShaderWatchers.AddWatcherCallback(path, $"{shaderKind}.{Builder.GetHashCode()}", () =>
 			{
 				IsChanged = true;
 			});
 
 			Context.DeviceEvents.AfterCreate += () =>
 			{
-				ShaderManager.AddWatcherCallback(path, $"{shaderKind}.{Builder.GetHashCode()}", () =>
+				ShaderWatchers.AddWatcherCallback(path, $"{shaderKind}.{Builder.GetHashCode()}", () =>
 				{
 					IsChanged = true;
 				});

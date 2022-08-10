@@ -275,18 +275,15 @@ public class ShadercOptions : IDisposable, ICloneable
 	/// <param name="incType">As in c, relative include or global</param>
 	/// <param name="incFile">the resolved name of the include, empty if resolution failed</param>
 	/// <param name="incContent">if resolution succeeded, contain the source code in plain text of the include</param>
-	protected virtual bool TryFindInclude(string sourcePath, string includePath, IncludeType incType,
-		out string incFile, out string incContent)
+	protected virtual bool TryFindInclude(string sourcePath, string includePath, IncludeType incType, out string incFile, out string incContent)
 	{
 		if (incType == IncludeType.Relative)
 		{
 			incFile = Path.Combine(Path.GetDirectoryName(sourcePath).ThrowIfNullable(), includePath);
 			if (File.Exists(incFile))
 			{
-				using (var sr = new StreamReader(incFile))
-				{
-					incContent = sr.ReadToEnd();
-				}
+				using var sr = new StreamReader(incFile);
+				incContent = sr.ReadToEnd();
 
 				return true;
 			}
@@ -298,10 +295,8 @@ public class ShadercOptions : IDisposable, ICloneable
 				incFile = Path.Combine(incDir, includePath);
 				if (File.Exists(incFile))
 				{
-					using (var sr = new StreamReader(incFile))
-					{
-						incContent = sr.ReadToEnd();
-					}
+					using var sr = new StreamReader(incFile);
+					incContent = sr.ReadToEnd();
 
 					return true;
 				}

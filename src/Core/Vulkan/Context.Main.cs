@@ -7,6 +7,7 @@ using System.Text;
 using Core.Native.Shaderc;
 using Core.Utils;
 using Core.Vulkan.Api;
+using Core.Vulkan.Native;
 using Core.Vulkan.Utility;
 using Core.Window;
 using Silk.NET.Core;
@@ -38,19 +39,31 @@ public static unsafe partial class Context
 	#region LevelContext
 
 	public static readonly Vk Vk = Vk.GetApi(); // For use when VkInstance is not yet present
+	public static ShadercOptionsCustom ShadercOptions = default!;
 	public static Compiler Compiler = default!;
 
 	public static void CreateLevelContext()
 	{
 		ContextEvents.InvokeBeforeCreate();
 
-		var options = new ShadercOptions();
-		options.EnableDebugInfo();
-		options.Optimization = OptimizationLevel.Performance;
-		options.TargetSpirVVersion = new SpirVVersion(1, 5);
-		options.SetTargetEnvironment(TargetEnvironment.Vulkan, EnvironmentVersion.Vulkan_1_2);
+		ShadercOptions = new ShadercOptionsCustom();
+		ShadercOptions.EnableDebugInfo();
+		ShadercOptions.Optimization = OptimizationLevel.Performance;
+		ShadercOptions.TargetSpirVVersion = new SpirVVersion(1, 5);
+		ShadercOptions.SetTargetEnvironment(TargetEnvironment.Vulkan, EnvironmentVersion.Vulkan_1_2);
 
-		Compiler = new Compiler(options);
+		Compiler = new Compiler(ShadercOptions);
+
+		ShadercOptions.SetVirtualShader("@testVirtual.vert", @"#version 450
+layout(location = 0) in vec3 inPosition;
+
+layout(location = 0) out int textureId;
+
+void main() {
+    vec3 offset = vec3(0, 0, 0);
+    gl_Position = vec4(inPosition + offset, 1.0f);
+    textureId = gl_InstanceIndex;
+}");
 
 		ContextEvents.InvokeAfterCreate();
 	}
