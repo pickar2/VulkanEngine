@@ -162,7 +162,7 @@ public static unsafe class FrameGraph
 			usage = VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY
 		};
 
-		Check((Result) vmaCreateImage(Context.VmaHandle, ref imageCreateInfo, ref allocationInfo, out ulong imageHandle, out var allocation, IntPtr.Zero),
+		Check((Result) vmaCreateImage(Context.VmaAllocator, ref imageCreateInfo, ref allocationInfo, out ulong imageHandle, out var allocation, IntPtr.Zero),
 			"Failed to create attachment image.");
 
 		var image = new Image(imageHandle);
@@ -303,7 +303,7 @@ public class VulkanImage2
 	public unsafe void Dispose()
 	{
 		Context.Vk.DestroyImageView(Context.Device, ImageView, null);
-		vmaDestroyImage(Context.VmaHandle, Image.Handle, Allocation);
+		vmaDestroyImage(Context.VmaAllocator, Image.Handle, Allocation);
 		GC.SuppressFinalize(this);
 	}
 }

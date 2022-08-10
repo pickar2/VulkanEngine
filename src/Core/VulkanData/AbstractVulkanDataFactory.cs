@@ -32,23 +32,23 @@ public abstract unsafe class AbstractVulkanDataFactory<TDataHolder> : IVulkanDat
 
 		if (Context.IsIntegratedGpu)
 		{
-			DataBufferCpu = CreateBuffer(BufferSize, BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU);
+			DataBufferCpu = new VulkanBuffer(BufferSize, BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU);
 			DataBufferGpu = DataBufferCpu;
 		}
 		else
 		{
-			DataBufferCpu = CreateBuffer(BufferSize, BufferUsageFlags.TransferSrcBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_ONLY);
-			DataBufferGpu = CreateBuffer(BufferSize, BufferUsageFlags.StorageBufferBit | BufferUsageFlags.TransferDstBit,
+			DataBufferCpu = new VulkanBuffer(BufferSize, BufferUsageFlags.TransferSrcBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_ONLY);
+			DataBufferGpu = new VulkanBuffer(BufferSize, BufferUsageFlags.StorageBufferBit | BufferUsageFlags.TransferDstBit,
 				VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
 		}
 
-		Check(vmaMapMemory(Context.VmaHandle, DataBufferCpu.Allocation, _ptr), "Failed to map memory.");
+		Check(vmaMapMemory(Context.VmaAllocator, DataBufferCpu.Allocation, _ptr), "Failed to map memory.");
 		_materialData = (byte*) _ptr[0];
 		new Span<byte>(_materialData, (int) BufferSize).Fill(default);
 
 		ExecuteOnce.InDevice.BeforeDispose(() =>
 		{
-			vmaUnmapMemory(Context.VmaHandle, DataBufferCpu.Allocation);
+			vmaUnmapMemory(Context.VmaAllocator, DataBufferCpu.Allocation);
 			DataBufferCpu.Dispose();
 			if (!Context.IsIntegratedGpu)
 				DataBufferGpu.Dispose();
@@ -177,17 +177,17 @@ public abstract unsafe class AbstractVulkanDataFactory<TDataHolder> : IVulkanDat
 		_copyRegionByteSize = Math.Min((ulong) (_copyRegionSize * ComponentSize), BufferSize);
 
 		var newDataBuffer = Context.IsIntegratedGpu
-			? CreateBuffer(BufferSize, BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU)
-			: CreateBuffer(BufferSize, BufferUsageFlags.TransferSrcBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_ONLY);
+			? new VulkanBuffer(BufferSize, BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU)
+			: new VulkanBuffer(BufferSize, BufferUsageFlags.TransferSrcBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_ONLY);
 
-		Check(vmaMapMemory(Context.VmaHandle, newDataBuffer.Allocation, _ptr), "Failed to map memory.");
+		Check(vmaMapMemory(Context.VmaAllocator, newDataBuffer.Allocation, _ptr), "Failed to map memory.");
 
 		var oldSpan = new Span<byte>(_materialData, MaxComponents * ComponentSize);
 		var newSpan = new Span<byte>((void*) _ptr[0], (int) BufferSize);
 		oldSpan.CopyTo(newSpan);
 		newSpan.Slice(MaxComponents * ComponentSize, MaxComponents * ComponentSize).Fill(default);
 
-		vmaUnmapMemory(Context.VmaHandle, DataBufferCpu.Allocation);
+		vmaUnmapMemory(Context.VmaAllocator, DataBufferCpu.Allocation);
 
 		// DataBufferCpu.EnqueueFrameDispose(MainRenderer.GetLastFrameIndex());
 		DataBufferCpu = newDataBuffer;
@@ -198,10 +198,10 @@ public abstract unsafe class AbstractVulkanDataFactory<TDataHolder> : IVulkanDat
 		else
 		{
 			// DataBufferGpu.EnqueueFrameDispose(MainRenderer.GetLastFrameIndex());
-			DataBufferGpu = CreateBuffer(BufferSize, BufferUsageFlags.StorageBufferBit | BufferUsageFlags.TransferDstBit,
+			DataBufferGpu = new VulkanBuffer(BufferSize, BufferUsageFlags.StorageBufferBit | BufferUsageFlags.TransferDstBit,
 				VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
 
-			CopyBuffer(DataBufferCpu, DataBufferGpu, (ulong) (MaxComponents * ComponentSize));
+			DataBufferCpu.CopyTo(DataBufferGpu, (ulong) (MaxComponents * ComponentSize));
 		}
 
 		MaxComponents = newMaxComponents;

@@ -1,11 +1,30 @@
-﻿using Core.Vulkan;
-using Core.Vulkan.Utility;
+﻿using Core.Vulkan.Utility;
 using Silk.NET.Vulkan;
 
-namespace Core.Utils;
+namespace Core.Vulkan.Api;
 
 public static class CommandBuffers
 {
+	public static readonly OnAccessValueReCreator<CommandPool> OneTimeGraphicsPool;
+	public static readonly OnAccessValueReCreator<CommandPool> OneTimeComputePool;
+	public static readonly OnAccessValueReCreator<CommandPool> OneTimeTransferToDevicePool;
+	public static readonly OnAccessValueReCreator<CommandPool> OneTimeTransferToHostPool;
+	
+	static CommandBuffers()
+	{
+		OneTimeGraphicsPool = ReCreate.InDevice.OnAccessValue(() => CreateCommandPool(Context.GraphicsQueue, CommandPoolCreateFlags.TransientBit),
+			pool => pool.Dispose());
+		
+		OneTimeComputePool = ReCreate.InDevice.OnAccessValue(() => CreateCommandPool(Context.ComputeQueue, CommandPoolCreateFlags.TransientBit),
+			pool => pool.Dispose());
+		
+		OneTimeTransferToDevicePool = ReCreate.InDevice.OnAccessValue(() => CreateCommandPool(Context.TransferToDeviceQueue, CommandPoolCreateFlags.TransientBit),
+			pool => pool.Dispose());
+		
+		OneTimeTransferToHostPool = ReCreate.InDevice.OnAccessValue(() => CreateCommandPool(Context.TransferToHostQueue, CommandPoolCreateFlags.TransientBit),
+			pool => pool.Dispose());
+	}
+	
 	public static CommandBuffer CreateCommandBuffer(CommandBufferLevel level, CommandPool commandPool) => CreateCommandBuffers(level, commandPool, 1)[0];
 
 	public static CommandBuffer[] CreateCommandBuffers(CommandBufferLevel level, CommandPool commandPool, int count)
@@ -69,3 +88,13 @@ public static class CommandBuffers
 		Context.Vk.FreeCommandBuffers(Context.Device, commandPool, 1, commandBuffer);
 	}
 }
+
+// public class OneTimeCommand
+// {
+// 	private readonly CommandPool _pool;
+// 	private readonly CommandBuffer _cb;
+// 	public CommandBuffer CommandBuffer => _cb;
+// 	public bool Used { get; private set; }
+//
+// 	public void Dispose() => Context.Vk.FreeCommandBuffers(Context.Device, _pool, 1, _cb);
+// }

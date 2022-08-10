@@ -17,8 +17,8 @@ public unsafe partial class UiRootRenderer : RenderChain
 
 	private VulkanPipeline _pipeline;
 
-	private readonly OnAccessValueReCreator<VulkanBuffer>[] _indexBuffers;
-	private readonly OnAccessValueReCreator<VulkanBuffer> _indirectBuffer;
+	private readonly OnAccessClassReCreator<VulkanBuffer>[] _indexBuffers;
+	private readonly OnAccessClassReCreator<VulkanBuffer> _indirectBuffer;
 
 	private CommandPool[] _renderCommandPools;
 	private CommandBuffer[] _renderCommandBuffers;
@@ -39,11 +39,11 @@ public unsafe partial class UiRootRenderer : RenderChain
 		_componentDataPool = ReCreate.InDevice.OnAccessValue(() => CreateDescriptorPool(), pool => pool.Dispose());
 		_componentDataSet = ReCreate.InDevice.OnAccessValue(() => CreateDescriptorSet(_componentDataPool));
 
-		_indexBuffers = new OnAccessValueReCreator<VulkanBuffer>[Context.State.FrameOverlap];
+		_indexBuffers = new OnAccessClassReCreator<VulkanBuffer>[Context.State.FrameOverlap];
 		for (int i = 0; i < _indexBuffers.Length; i++)
-			_indexBuffers[i] = ReCreate.InDevice.OnAccessValue(() => CreateIndexBuffer(ComponentFactory.MaxComponents), buffer => buffer.Dispose());
+			_indexBuffers[i] = ReCreate.InDevice.OnAccessClass(() => CreateIndexBuffer(ComponentFactory.MaxComponents), buffer => buffer.Dispose());
 
-		_indirectBuffer = ReCreate.InDevice.OnAccessValue(() => CreateIndirectBuffer(), buffer => buffer.Dispose());
+		_indirectBuffer = ReCreate.InDevice.OnAccessClass(() => CreateIndirectBuffer(), buffer => buffer.Dispose());
 
 		RenderCommandBuffers += (FrameInfo frameInfo) =>
 		{
@@ -97,26 +97,24 @@ public unsafe partial class UiRootRenderer : RenderChain
 	}
 
 	private static VulkanBuffer CreateIndexBuffer(int maxComponents) =>
-		CreateBuffer((ulong) (6 * 4 * maxComponents), BufferUsageFlags.IndexBufferBit | BufferUsageFlags.StorageBufferBit,
+		new((ulong) (6 * 4 * maxComponents), BufferUsageFlags.IndexBufferBit | BufferUsageFlags.StorageBufferBit,
 			VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
 
-	private static VulkanBuffer CreateIndirectBuffer() => CreateBuffer((ulong) sizeof(DrawIndexedIndirectCommand), BufferUsageFlags.IndirectBufferBit,
+	private static VulkanBuffer CreateIndirectBuffer() => new((ulong) sizeof(DrawIndexedIndirectCommand), BufferUsageFlags.IndirectBufferBit,
 		VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU);
 
-	private static void FillIndirectBuffer(int componentCount, VulkanBuffer buffer) =>
-		MapDataToVulkanBuffer(span =>
+	private static void FillIndirectBuffer(int componentCount, VulkanBuffer buffer)
+	{
+		var commandSpan = buffer.GetHostSpan<DrawIndexedIndirectCommand>();
+		commandSpan[0] = new DrawIndexedIndirectCommand
 		{
-			var commandSpan = MemoryMarshal.Cast<byte, DrawIndexedIndirectCommand>(span);
-
-			commandSpan[0] = new DrawIndexedIndirectCommand
-			{
-				IndexCount = (uint) (6 * componentCount),
-				InstanceCount = 1,
-				FirstIndex = 0,
-				VertexOffset = 0,
-				FirstInstance = 0
-			};
-		}, buffer, (ulong) sizeof(DrawIndexedIndirectCommand));
+			IndexCount = (uint) (6 * componentCount),
+			InstanceCount = 1,
+			FirstIndex = 0,
+			VertexOffset = 0,
+			FirstInstance = 0
+		};
+	}
 
 	public override void Dispose()
 	{

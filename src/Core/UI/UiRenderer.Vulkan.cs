@@ -164,7 +164,7 @@ public static unsafe partial class UiRenderer
 
 		// foreach (var indexBuffer in _indexBuffers) indexBuffer.EnqueueFrameDispose(MainRenderer.GetLastFrameIndex());
 		for (int i = 0; i < _indexBuffers.Length; i++)
-			_indexBuffers[i] = CreateBuffer((ulong) (6 * 4 * UiComponentFactory.Instance.MaxComponents),
+			_indexBuffers[i] = new VulkanBuffer((ulong) (6 * 4 * UiComponentFactory.Instance.MaxComponents),
 				BufferUsageFlags.IndexBufferBit | BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
 
 		UpdateComponentDataDescriptorSets();
@@ -543,29 +543,27 @@ public static unsafe partial class UiRenderer
 		DisposalQueue.EnqueueInGlobal(() => Context.Vk.DestroyDescriptorPool(Context.Device, _materialDataPool, null));
 	}
 
-	private static void FillIndirectBuffer() =>
-		MapDataToVulkanBuffer(span =>
+	private static void FillIndirectBuffer()
+	{
+		var commandSpan = _indirectBuffer.GetHostSpan<DrawIndexedIndirectCommand>();
+		commandSpan[0] = new DrawIndexedIndirectCommand
 		{
-			var commandSpan = MemoryMarshal.Cast<byte, DrawIndexedIndirectCommand>(span);
-
-			commandSpan[0] = new DrawIndexedIndirectCommand
-			{
-				IndexCount = (uint) (6 * UiComponentFactory.Instance.ComponentCount),
-				InstanceCount = 1,
-				FirstIndex = 0,
-				VertexOffset = 0,
-				FirstInstance = 0
-			};
-		}, _indirectBuffer, (ulong) sizeof(DrawIndexedIndirectCommand));
+			IndexCount = (uint) (6 * UiComponentFactory.Instance.ComponentCount),
+			InstanceCount = 1,
+			FirstIndex = 0,
+			VertexOffset = 0,
+			FirstInstance = 0
+		};
+	}
 
 	private static void CreateBuffers()
 	{
 		_indexBuffers = new VulkanBuffer[Context.SwapchainImageCount];
 		for (int i = 0; i < Context.SwapchainImageCount; i++)
-			_indexBuffers[i] = CreateBuffer((ulong) (6 * 4 * UiComponentFactory.Instance.MaxComponents),
+			_indexBuffers[i] = new VulkanBuffer((ulong) (6 * 4 * UiComponentFactory.Instance.MaxComponents),
 				BufferUsageFlags.IndexBufferBit | BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
 
-		_indirectBuffer = CreateBuffer((ulong) sizeof(DrawIndexedIndirectCommand), BufferUsageFlags.IndirectBufferBit,
+		_indirectBuffer = new VulkanBuffer((ulong) sizeof(DrawIndexedIndirectCommand), BufferUsageFlags.IndirectBufferBit,
 			VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU);
 		_indirectBuffer.EnqueueGlobalDispose();
 		FillIndirectBuffer();

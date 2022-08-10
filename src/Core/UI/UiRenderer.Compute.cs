@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using Core.Native.Shaderc;
 using Core.Utils;
 using Core.Vulkan;
+using Core.Vulkan.Api;
 using Core.Vulkan.Utility;
 using Silk.NET.Vulkan;
 using static Core.Native.VMA.VulkanMemoryAllocator;
@@ -89,19 +90,19 @@ public unsafe partial class UiRenderer
 
 	private static void CreateSortBuffers()
 	{
-		_counters1Buffer = CreateBuffer(ZCount * 4, BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
+		_counters1Buffer = new VulkanBuffer(ZCount * 4, BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
 		_counters1Buffer.EnqueueGlobalDispose();
 
-		_counters2Buffer = CreateBuffer(ZCount * 4, BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
+		_counters2Buffer = new VulkanBuffer(ZCount * 4, BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
 		_counters2Buffer.EnqueueGlobalDispose();
 
-		_offsetsBuffer = CreateBuffer(ZCount * 4, BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
+		_offsetsBuffer = new VulkanBuffer(ZCount * 4, BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
 		_offsetsBuffer.EnqueueGlobalDispose();
 
-		_countBufferCpu = CreateBuffer(CountDataSize, BufferUsageFlags.TransferSrcBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU);
+		_countBufferCpu = new VulkanBuffer(CountDataSize, BufferUsageFlags.TransferSrcBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU);
 		_countBufferCpu.EnqueueGlobalDispose();
 
-		_countBuffer = CreateBuffer(CountDataSize, BufferUsageFlags.UniformBufferBit | BufferUsageFlags.TransferDstBit,
+		_countBuffer = new VulkanBuffer(CountDataSize, BufferUsageFlags.UniformBufferBit | BufferUsageFlags.TransferDstBit,
 			VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
 		_countBuffer.EnqueueGlobalDispose();
 	}
@@ -478,14 +479,11 @@ public unsafe partial class UiRenderer
 			CommandBuffers.EndSingleTimeCommands(ref copyBuffer, _copyCommandPool, Context.TransferToHostQueue);
 		}
 
-		MapDataToVulkanBuffer(span =>
-		{
-			var intSpan = MemoryMarshal.Cast<byte, int>(span);
-			intSpan[0] = UiComponentFactory.Instance.ComponentCount;
-			intSpan[1] = ZCount;
-			// intSpan[2] = (int) SwapchainHelper.Extent.Width;
-			// intSpan[3] = (int) SwapchainHelper.Extent.Height;
-		}, _countBufferCpu, CountDataSize);
+		var intSpan = _countBufferCpu.GetHostSpan<int>();
+		intSpan[0] = UiComponentFactory.Instance.ComponentCount;
+		intSpan[1] = ZCount;
+		// intSpan[2] = (int) SwapchainHelper.Extent.Width;
+		// intSpan[3] = (int) SwapchainHelper.Extent.Height;
 
 		var submitInfo = new SubmitInfo
 		{

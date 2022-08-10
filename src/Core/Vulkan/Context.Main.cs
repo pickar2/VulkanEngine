@@ -249,7 +249,7 @@ public static unsafe partial class Context
 	public static VulkanQueue ComputeQueue = default!;
 	public static VulkanQueue TransferToHostQueue = default!;
 	public static VulkanQueue TransferToDeviceQueue = default!;
-	public static nint VmaHandle;
+	public static nint VmaAllocator;
 	public static bool IsIntegratedGpu;
 
 	public static void CreateLevelDevice()
@@ -728,7 +728,7 @@ public static unsafe partial class Context
 		};
 
 		Check((Result) vmaCreateAllocator(ref vmaAllocatorCreateInfo, out nint handle), "Failed to create VMA allocator.");
-		VmaHandle = handle;
+		VmaAllocator = handle;
 	}
 
 	public static void DisposeLevelDevice()
@@ -741,7 +741,7 @@ public static unsafe partial class Context
 
 		KhrSwapchain.Dispose();
 		KhrSynchronization2.Dispose();
-		vmaDestroyAllocator(VmaHandle);
+		vmaDestroyAllocator(VmaAllocator);
 		Vk.DestroyDevice(Device, null);
 
 		DeviceEvents.InvokeAfterDispose();

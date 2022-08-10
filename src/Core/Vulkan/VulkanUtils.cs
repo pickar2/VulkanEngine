@@ -240,7 +240,7 @@ public static unsafe class VulkanUtils
 
 		var allocationCreateInfo = new VmaAllocationCreateInfo {usage = memoryUsage};
 
-		Check((Result) vmaCreateImage(VmaHandle, ref createInfo, ref allocationCreateInfo, out ulong imageHandle, out var allocation, IntPtr.Zero),
+		Check((Result) vmaCreateImage(VmaAllocator, ref createInfo, ref allocationCreateInfo, out ulong imageHandle, out var allocation, IntPtr.Zero),
 			"Failed to create image");
 
 		return new VulkanImage
@@ -425,7 +425,7 @@ public static unsafe class VulkanUtils
 			_ => 0
 		};
 
-	public static VulkanBuffer CreateBuffer(ulong size, BufferUsageFlags usage, VmaMemoryUsage memoryUsage)
+	public static void VmaCreateBuffer(ulong size, BufferUsageFlags usage, VmaMemoryUsage memoryUsage, out Buffer buffer, out nint allocation)
 	{
 		size.ThrowIfEquals(0u); // Cannot create buffer with size = 0
 
@@ -450,21 +450,10 @@ public static unsafe class VulkanUtils
 
 		var vmaCreateInfo = new VmaAllocationCreateInfo {usage = memoryUsage};
 
-		Check((Result) vmaCreateBuffer(VmaHandle, (nint) createInfo.AsPointer(), ref vmaCreateInfo,
-			out ulong buffer, out var allocation, IntPtr.Zero), "Failed to create buffer");
+		Check((Result) vmaCreateBuffer(VmaAllocator, (nint) createInfo.AsPointer(), ref vmaCreateInfo,
+			out ulong handle, out allocation, IntPtr.Zero), "Failed to create buffer");
 
-		return new VulkanBuffer(new Buffer(buffer), allocation);
-	}
-
-	public static void MapDataToVulkanBuffer(SpanAction<byte> action, VulkanBuffer vulkanBuffer, ulong bufferSize)
-	{
-		var data = new IntPtr[1];
-		Check(vmaMapMemory(VmaHandle, vulkanBuffer.Allocation, data), "Failed to map buffer memory");
-
-		var span = new Span<byte>(data[0].ToPointer(), (int) bufferSize);
-		action.Invoke(span);
-
-		vmaUnmapMemory(VmaHandle, vulkanBuffer.Allocation);
+		buffer = new Buffer(handle);
 	}
 
 	public static VulkanBuffer PutDataIntoGPUOnlyBuffer(SpanAction<byte> action, ulong bufferSize, BufferUsageFlags bufferUsage)
@@ -473,35 +462,23 @@ public static unsafe class VulkanUtils
 
 		if (IsIntegratedGpu)
 		{
-			buffer = CreateBuffer(bufferSize, bufferUsage, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU);
-			MapDataToVulkanBuffer(action, buffer, bufferSize);
+			buffer = new VulkanBuffer(bufferSize, bufferUsage, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU);
+			action.Invoke(buffer.GetHostSpan());
 		}
 		else
 		{
-			var stagingBuffer = CreateBuffer(bufferSize, BufferUsageFlags.TransferSrcBit,
+			var stagingBuffer = new VulkanBuffer(bufferSize, BufferUsageFlags.TransferSrcBit,
 				VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_ONLY);
-			MapDataToVulkanBuffer(action, stagingBuffer, bufferSize);
+			action.Invoke(stagingBuffer.GetHostSpan());
 
-			buffer = CreateBuffer(bufferSize, BufferUsageFlags.TransferDstBit | bufferUsage,
+			buffer = new VulkanBuffer(bufferSize, BufferUsageFlags.TransferDstBit | bufferUsage,
 				VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
-			CopyBuffer(stagingBuffer, buffer, bufferSize);
 
+			stagingBuffer.CopyTo(buffer);
 			stagingBuffer.Dispose();
 		}
 
 		return buffer;
-	}
-
-	// TODO: Better abstraction to copying buffers: should use different and proper queues and command pools
-	public static void CopyBuffer(VulkanBuffer src, VulkanBuffer dst, ulong size)
-	{
-		// var commandBuffer = CommandBuffers.BeginSingleTimeCommands(GraphicsCommandPool); // TODO: add DefaultCommandPools
-		//
-		// var copy = new BufferCopy {Size = size};
-		//
-		// Context2.Vk.CmdCopyBuffer(commandBuffer, src.Buffer, dst.Buffer, 1, copy);
-		//
-		// CommandBuffers.EndSingleTimeCommands(ref commandBuffer, GraphicsCommandPool, GraphicsQueue);
 	}
 
 	public static VulkanPipeline CreateComputePipeline(VulkanShader shader, DescriptorSetLayout[] layouts, PushConstantRange[]? pushConstantRanges = null,
@@ -656,12 +633,12 @@ public static unsafe class VulkanUtils
 	{
 		var format = channels == 4 ? Format.R8G8B8A8Srgb : Format.R8G8B8Srgb; // TODO: R8G8B8Srgb is not valid format ???
 
-		var stagingBuffer = CreateBuffer(bytesCount, BufferUsageFlags.TransferSrcBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_ONLY);
+		var stagingBuffer = new VulkanBuffer(bytesCount, BufferUsageFlags.TransferSrcBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_ONLY);
 
 		var ptr = new IntPtr[1];
-		Check(vmaMapMemory(VmaHandle, stagingBuffer.Allocation, ptr), "Failed to map memory.");
+		Check(vmaMapMemory(VmaAllocator, stagingBuffer.Allocation, ptr), "Failed to map memory.");
 		Marshal.Copy(bytes, 0, ptr[0], (int) bytesCount);
-		vmaUnmapMemory(VmaHandle, stagingBuffer.Allocation);
+		vmaUnmapMemory(VmaAllocator, stagingBuffer.Allocation);
 
 		uint mipLevels = generateMipmaps ? (uint) Math.ILogB(Math.Max(width, height)) + 1 : 1;
 		var image = CreateImage(width, height, mipLevels, SampleCountFlags.Count1Bit, format, ImageTiling.Optimal,

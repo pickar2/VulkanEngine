@@ -58,9 +58,9 @@ public static unsafe partial class Context
 		uint setCount, DescriptorSet sets, uint dynamicOffsetCount = 0, uint* dynamicOffsets = null) =>
 		Vk.CmdBindDescriptorSets(cb, PipelineBindPoint.Compute, layout, firstSet, setCount, sets, dynamicOffsetCount, dynamicOffsets);
 
-	public static Result VmaMapMemory(IntPtr allocation, IntPtr[] data) => (Result) vmaMapMemory(VmaHandle, allocation, data);
+	public static Result VmaMapMemory(IntPtr allocation, IntPtr[] data) => (Result) vmaMapMemory(VmaAllocator, allocation, data);
 
-	public static void VmaUnmapMemory(IntPtr allocation) => vmaUnmapMemory(VmaHandle, allocation);
+	public static void VmaUnmapMemory(IntPtr allocation) => vmaUnmapMemory(VmaAllocator, allocation);
 
 	public static void Dispose(this ref DescriptorSetLayout layout) => Vk.DestroyDescriptorSetLayout(Device, layout, null);
 

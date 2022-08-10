@@ -18,7 +18,7 @@ public unsafe class TestChildTextureRenderer : RenderChain
 	private readonly OnAccessValueReCreator<PipelineLayout> _pipelineLayout;
 	private readonly AutoPipeline _pipeline;
 
-	private readonly OnAccessValueReCreator<VulkanBuffer> _vertexBuffer;
+	private readonly OnAccessClassReCreator<VulkanBuffer> _vertexBuffer;
 
 	public TestChildTextureRenderer(string name) : base(name)
 	{
@@ -42,21 +42,18 @@ public unsafe class TestChildTextureRenderer : RenderChain
 		_pipeline = CreatePipeline(_pipelineLayout, _renderPass, Context.State.WindowSize);
 
 		ulong bufferSize = (ulong) (sizeof(Vector3<float>) * 6);
-		_vertexBuffer = ReCreate.InDevice.OnAccessValue(() =>
+		_vertexBuffer = ReCreate.InDevice.OnAccessClass(() =>
 		{
-			var buffer = CreateBuffer(bufferSize, BufferUsageFlags.VertexBufferBit, VulkanMemoryAllocator.VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU);
+			var buffer = new VulkanBuffer(bufferSize, BufferUsageFlags.VertexBufferBit, VulkanMemoryAllocator.VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU);
+			var vectors = buffer.GetHostSpan<Vector3<float>>();
 
-			MapDataToVulkanBuffer(span =>
-			{
-				var vectors = MemoryMarshal.Cast<byte, Vector3<float>>(span);
-				vectors[0] = new Vector3<float>(-1, 1, 0);
-				vectors[1] = new Vector3<float>(-0.5f, -1, 0);
-				vectors[2] = new Vector3<float>(0, 1, 0);
+			vectors[0] = new Vector3<float>(-1, 1, 0);
+			vectors[1] = new Vector3<float>(-0.5f, -1, 0);
+			vectors[2] = new Vector3<float>(0, 1, 0);
 
-				vectors[3] = new Vector3<float>(0, 1, 0);
-				vectors[4] = new Vector3<float>(0.5f, -1, 0);
-				vectors[5] = new Vector3<float>(1, 1, 0);
-			}, buffer, bufferSize);
+			vectors[3] = new Vector3<float>(0, 1, 0);
+			vectors[4] = new Vector3<float>(0.5f, -1, 0);
+			vectors[5] = new Vector3<float>(1, 1, 0);
 
 			return buffer;
 		}, buffer => buffer.Dispose());
@@ -96,8 +93,8 @@ public unsafe class TestChildTextureRenderer : RenderChain
 		cmd.BindGraphicsDescriptorSets(_pipelineLayout, 0, 1, TextureManager.DescriptorSet);
 		Context.Vk.CmdBindVertexBuffers(cmd, 0, 1, _vertexBuffer.Value.Buffer, offsets);
 
-		uint id1 = TextureManager.GetTextureId($"ChildRenderer1 {frameInfo.SwapchainImageId}");
-		uint id2 = TextureManager.GetTextureId($"ChildRenderer2 {frameInfo.SwapchainImageId}");
+		uint id1 = TextureManager.GetTextureId($"ChildRenderer1 0");
+		uint id2 = TextureManager.GetTextureId($"ChildRenderer2 0");
 
 		Context.Vk.CmdDraw(cmd, 3, 1, 0, id1);
 		Context.Vk.CmdDraw(cmd, 3, 1, 3, id2);
@@ -159,8 +156,8 @@ public unsafe class TestChildTextureRenderer : RenderChain
 			PAttachments = &attachmentDescription,
 			SubpassCount = 1,
 			PSubpasses = &subpassDescription,
-			DependencyCount = 1,
-			PDependencies = &subpassDependency
+			// DependencyCount = 0,
+			// PDependencies = &subpassDependency
 		};
 
 		Check(Context.Vk.CreateRenderPass2(Context.Device, renderPassInfo2, null, out var renderPass), "Failed to create render pass.");

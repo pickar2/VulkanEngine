@@ -28,24 +28,24 @@ public unsafe class MultipleStructDataFactory : SimpleRegistry<NoneEventManager<
 
 		if (Context.IsIntegratedGpu || CpuToGpuMemory)
 		{
-			DataBufferCpu = CreateBuffer(BufferSize, BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU);
+			DataBufferCpu = new VulkanBuffer(BufferSize, BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU);
 			DataBufferGpu = DataBufferCpu;
 		}
 		else
 		{
-			DataBufferCpu = CreateBuffer(BufferSize, BufferUsageFlags.TransferSrcBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_ONLY);
-			DataBufferGpu = CreateBuffer(BufferSize, BufferUsageFlags.StorageBufferBit | BufferUsageFlags.TransferDstBit,
+			DataBufferCpu = new VulkanBuffer(BufferSize, BufferUsageFlags.TransferSrcBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_ONLY);
+			DataBufferGpu = new VulkanBuffer(BufferSize, BufferUsageFlags.StorageBufferBit | BufferUsageFlags.TransferDstBit,
 				VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
 		}
 
-		Check(vmaMapMemory(Context.VmaHandle, DataBufferCpu.Allocation, _ptr), "Failed to map memory.");
+		Check(vmaMapMemory(Context.VmaAllocator, DataBufferCpu.Allocation, _ptr), "Failed to map memory.");
 		Pointer = (byte*) _ptr[0];
 		var span = new Span<byte>((void*) _ptr[0], (int) BufferSize);
 		span.Fill(default);
 
 		DisposalQueue.EnqueueInGlobal(() =>
 		{
-			vmaUnmapMemory(Context.VmaHandle, DataBufferCpu.Allocation);
+			vmaUnmapMemory(Context.VmaAllocator, DataBufferCpu.Allocation);
 			DataBufferCpu.Dispose();
 			if (!(Context.IsIntegratedGpu || CpuToGpuMemory))
 				DataBufferGpu.Dispose();
@@ -68,8 +68,8 @@ public unsafe class MultipleStructDataFactory : SimpleRegistry<NoneEventManager<
 		ulong newBufferSize = BufferSize * 2;
 
 		var newDataBuffer = Context.IsIntegratedGpu || CpuToGpuMemory
-			? CreateBuffer(newBufferSize, BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU)
-			: CreateBuffer(newBufferSize, BufferUsageFlags.TransferSrcBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_ONLY);
+			? new VulkanBuffer(newBufferSize, BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU)
+			: new VulkanBuffer(newBufferSize, BufferUsageFlags.TransferSrcBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_ONLY);
 
 		Check(Context.VmaMapMemory(newDataBuffer.Allocation, _ptr), "Failed to map memory.");
 
@@ -89,10 +89,10 @@ public unsafe class MultipleStructDataFactory : SimpleRegistry<NoneEventManager<
 		else
 		{
 			// DataBufferGpu.EnqueueFrameDispose(MainRenderer.GetLastFrameIndex());
-			DataBufferGpu = CreateBuffer(newBufferSize, BufferUsageFlags.StorageBufferBit | BufferUsageFlags.TransferDstBit,
+			DataBufferGpu = new VulkanBuffer(newBufferSize, BufferUsageFlags.StorageBufferBit | BufferUsageFlags.TransferDstBit,
 				VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
 
-			CopyBuffer(DataBufferCpu, DataBufferGpu, BufferSize);
+			DataBufferCpu.CopyTo(DataBufferGpu, BufferSize);
 		}
 
 		BufferSize = newBufferSize;

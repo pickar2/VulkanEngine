@@ -97,7 +97,7 @@ public unsafe class TestToTextureRenderer : RenderChain
 			SType = StructureType.RenderPassBeginInfo,
 			RenderPass = _renderPass,
 			RenderArea = new Rect2D(default, new Extent2D(_size.X, _size.Y)),
-			Framebuffer = _framebuffers.Value[frameInfo.SwapchainImageId],
+			Framebuffer = _framebuffers.Value[0],
 			ClearValueCount = 1,
 			PClearValues = clearValues
 		};
@@ -145,17 +145,17 @@ public unsafe class TestToTextureRenderer : RenderChain
 			PColorAttachments = &attachmentReference
 		};
 
-		var subpassDependency = new SubpassDependency2
-		{
-			SType = StructureType.SubpassDependency2,
-			SrcSubpass = Vk.SubpassExternal,
-			DstSubpass = 0,
-			SrcStageMask = PipelineStageFlags.ColorAttachmentOutputBit,
-			SrcAccessMask = 0,
-			DstStageMask = PipelineStageFlags.ColorAttachmentOutputBit,
-			DstAccessMask = AccessFlags.ColorAttachmentWriteBit,
-			DependencyFlags = DependencyFlags.ByRegionBit
-		};
+		// var subpassDependency = new SubpassDependency2
+		// {
+		// 	SType = StructureType.SubpassDependency2,
+		// 	SrcSubpass = Vk.SubpassExternal,
+		// 	DstSubpass = 0,
+		// 	SrcStageMask = PipelineStageFlags.ColorAttachmentOutputBit,
+		// 	SrcAccessMask = 0,
+		// 	DstStageMask = PipelineStageFlags.ColorAttachmentOutputBit,
+		// 	DstAccessMask = AccessFlags.ColorAttachmentWriteBit,
+		// 	DependencyFlags = DependencyFlags.ByRegionBit
+		// };
 
 		var renderPassInfo2 = new RenderPassCreateInfo2
 		{
@@ -164,8 +164,8 @@ public unsafe class TestToTextureRenderer : RenderChain
 			PAttachments = &attachmentDescription,
 			SubpassCount = 1,
 			PSubpasses = &subpassDescription,
-			DependencyCount = 1,
-			PDependencies = &subpassDependency
+			// DependencyCount = 1,
+			// PDependencies = &subpassDependency
 		};
 
 		Check(Context.Vk.CreateRenderPass2(Context.Device, renderPassInfo2, null, out var renderPass), "Failed to create render pass.");
