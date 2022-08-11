@@ -45,7 +45,7 @@ public static unsafe class TextureManager
 		RegisteredTextures[name] = texture;
 		UpdateTextureBinding(texture);
 
-		App.Logger.Info.Message($"Registered texture `{name}`.");
+		// App.Logger.Info.Message($"Registered texture `{name}`.");
 
 		return texture;
 	}
