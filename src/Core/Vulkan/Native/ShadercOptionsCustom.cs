@@ -33,7 +33,7 @@ public class ShadercOptionsCustom : ShadercOptions
 	{
 		if (includePath.StartsWith("@"))
 		{
-			App.Logger.Info.Message($"Tried to include virtual shader file `{includePath}`, type={incType}");
+			// App.Logger.Info.Message($"Tried to include virtual shader file `{includePath}`, type={incType}");
 			if (_cache.TryGetValue(includePath, out var shader))
 			{
 				incFile = includePath;
@@ -45,12 +45,12 @@ public class ShadercOptionsCustom : ShadercOptions
 			incContent = "";
 			return false;
 		}
-		App.Logger.Info.Message($"Tried to include shader file `{includePath}`, type={incType}");
+		// App.Logger.Info.Message($"Tried to include shader file `{includePath}`, type={incType}");
 
 		if (incType == IncludeType.Relative)
 		{
 			incFile = Path.Combine(Path.GetDirectoryName(sourcePath).ThrowIfNullable(), includePath);
-			App.Logger.Info.Message($"Combined shader path: `{incFile}`.");
+			// App.Logger.Info.Message($"Combined shader path: `{incFile}`.");
 			if (File.Exists(incFile))
 			{
 				var time = File.GetLastWriteTime(incFile);
@@ -62,6 +62,7 @@ public class ShadercOptionsCustom : ShadercOptions
 						return true;
 					}
 				}
+
 				using var sr = new StreamReader(incFile);
 				incContent = sr.ReadToEnd();
 

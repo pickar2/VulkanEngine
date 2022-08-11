@@ -87,6 +87,12 @@ public class OnAccessValueReCreator<T> where T : struct
 		events.BeforeDispose += DisposeAction;
 	}
 
+	public void ReCreate()
+	{
+		DisposeAction();
+		_value = CreateFunc();
+	}
+
 	public void Dispose(bool disposeObject = false)
 	{
 		if (disposeObject) DisposeAction();
@@ -127,6 +133,12 @@ public class OnAccessClassReCreator<T> where T : class
 
 		var events = Context.GetLevelEvents(Level);
 		events.BeforeDispose += DisposeAction;
+	}
+
+	public void ReCreate()
+	{
+		DisposeAction();
+		_value = CreateFunc();
 	}
 
 	public void Dispose(bool disposeObject = false)

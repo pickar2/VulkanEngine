@@ -15,7 +15,7 @@ layout(location = 4) in vec4 floatData1;
 
 layout(location = 0) out vec4 outColor;
 
-layout(set = 0, binding = 0) uniform sampler2D textures[];
+layout(set = TEXTURE_SET, binding = 0) uniform sampler2D textures[];
 
 readonly layout(std430, set = ELEMENT_DATA_SET, binding = 0) buffer dataArray {
     UiElementData data[];
@@ -25,7 +25,7 @@ readonly layout(std430, set = ELEMENT_DATA_SET, binding = 0) buffer dataArray {
 
 #include "Generated/global_data_includes.glsl"
 
-#include "@fragment_includes.glsl"
+#include "@Mat1_fragment_includes.glsl"
 
 void main() {
     UiElementData d = data[componentIndex];

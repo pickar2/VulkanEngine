@@ -30,7 +30,7 @@ public static unsafe class TextureManager
 
 		DescriptorSetLayout = ReCreate.InDevice.OnAccessValue(() => CreateDescriptorSetLayout(), layout => layout.Dispose());
 		DescriptorPool = ReCreate.InDevice.OnAccessValue(() => CreateDescriptorPool(), pool => pool.Dispose());
-		DescriptorSet = ReCreate.InDevice.OnAccessValue(() => CreateDescriptorSet(DescriptorSetLayout, DescriptorPool));
+		DescriptorSet = ReCreate.InDevice.OnAccessValue(() => AllocateVariableDescriptorSet(DescriptorSetLayout, DescriptorPool, CurrentSetSize));
 
 		// FullSetUpdate();
 		Context.DeviceEvents.AfterCreate += () => TextureCount = 0;
@@ -166,30 +166,6 @@ public static unsafe class TextureManager
 			"Failed to create descriptor pool.");
 
 		return pool;
-	}
-
-	private static DescriptorSet CreateDescriptorSet(DescriptorSetLayout layout, DescriptorPool descriptorPool)
-	{
-		uint* counts = stackalloc uint[] {CurrentSetSize};
-		var variableCount = new DescriptorSetVariableDescriptorCountAllocateInfo
-		{
-			SType = StructureType.DescriptorSetVariableDescriptorCountAllocateInfo,
-			DescriptorSetCount = 1,
-			PDescriptorCounts = counts
-		};
-
-		var texturesAllocInfo = new DescriptorSetAllocateInfo
-		{
-			SType = StructureType.DescriptorSetAllocateInfo,
-			DescriptorPool = descriptorPool,
-			DescriptorSetCount = 1,
-			PSetLayouts = &layout,
-			PNext = &variableCount
-		};
-
-		Check(Context.Vk.AllocateDescriptorSets(Context.Device, &texturesAllocInfo, out var set), "Failed to allocate descriptor set.");
-
-		return set;
 	}
 }
 

@@ -1,7 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
+using Core.TemporaryMath;
+using Core.UI;
+using Core.UI.Materials.Fragment;
+using Core.UI.Materials.Vertex;
 using Core.Vulkan.Api;
 using Core.Vulkan.Utility;
+using Silk.NET.Maths;
 using Silk.NET.Vulkan;
 
 namespace Core.Vulkan.Renderers;
@@ -34,10 +40,162 @@ public static class GeneralRenderer
 {
 	public static readonly RenderChain Root = new TestChildTextureRenderer("Root");
 
-	static GeneralRenderer()
+	static unsafe GeneralRenderer()
 	{
-		Root.AddChild(new TestToTextureRenderer("ChildRenderer1"));
-		Root.AddChild(new TestToTextureRenderer("ChildRenderer2"));
+		var componentManager = new UiComponentManager("Comp1");
+		var materialManager = new UiMaterialManager2("Mat1");
+		var globalDataManager = new UiGlobalDataManager("global");
+
+		materialManager.RegisterMaterialFile("Assets/Shaders/Ui2/Materials/Vertex/default_vertex_material.glsl");
+		materialManager.RegisterMaterialFile("Assets/Shaders/Ui2/Materials/Vertex/transform_material.glsl");
+		materialManager.RegisterMaterialFile("Assets/Shaders/Ui2/Materials/Vertex/coordinates_material.glsl");
+		materialManager.RegisterMaterialFile("Assets/Shaders/Ui2/Materials/Vertex/texture_uv_material.glsl");
+		materialManager.RegisterMaterialFile("Assets/Shaders/Ui2/Materials/Vertex/follow_cursor_material.glsl");
+		materialManager.RegisterMaterialFile("Assets/Shaders/Ui2/Materials/Vertex/line_material.glsl");
+		materialManager.RegisterMaterialFile("Assets/Shaders/Ui2/Materials/Vertex/pixel_coordinates_material.glsl");
+
+		materialManager.RegisterMaterialFile("Assets/Shaders/Ui2/Materials/Fragment/color_material.glsl");
+		materialManager.RegisterMaterialFile("Assets/Shaders/Ui2/Materials/Fragment/texture_material.glsl");
+		materialManager.RegisterMaterialFile("Assets/Shaders/Ui2/Materials/Fragment/colored_texture_material.glsl");
+		materialManager.RegisterMaterialFile("Assets/Shaders/Ui2/Materials/Fragment/cool_material.glsl");
+		materialManager.RegisterMaterialFile("Assets/Shaders/Ui2/Materials/Fragment/big_gradient_material.glsl");
+		materialManager.RegisterMaterialFile("Assets/Shaders/Ui2/Materials/Fragment/font_material.glsl");
+		materialManager.RegisterMaterialFile("Assets/Shaders/Ui2/Materials/Fragment/dynamic_border_material.glsl");
+		materialManager.RegisterMaterialFile("Assets/Shaders/Ui2/Materials/Fragment/bezier_gradient_material.glsl");
+		materialManager.RegisterMaterialFile("Assets/Shaders/Ui2/Materials/Fragment/dots_background_material.glsl");
+
+		materialManager.UpdateShaders();
+
+		Root = new UiRootRenderer("Root1", componentManager, materialManager, globalDataManager);
+
+		// var defaultVertexMaterial = materialManager.GetFactory("default_vertex_material");
+		// var colorFragmentMaterial = materialManager.GetFactory("color_material");
+		// var coolFragmentMaterial = materialManager.GetFactory("cool_material");
+		//
+		// var component1 = componentManager.Factory.Create();
+		// var component1Data = component1.GetData();
+		// component1Data->BasePos = (200, 300);
+		// component1Data->BaseZ = 10;
+		// component1Data->Size = (400, 400);
+		// component1Data->MaskStart = (0, 0);
+		// component1Data->MaskEnd = (1920, 1080);
+		//
+		// var vMat1 = defaultVertexMaterial.Create();
+		// vMat1.MarkForGPUUpdate();
+		// component1.VertMaterial = vMat1;
+		//
+		// var fMat1 = coolFragmentMaterial.Create();
+		// fMat1.GetMemPtr<int>()[0] = Color.Black.ToArgb();
+		// fMat1.GetMemPtr<int>()[1] = Color.Red.ToArgb();
+		// fMat1.MarkForGPUUpdate();
+		// component1.FragMaterial = fMat1;
+		//
+		// component1.MarkForGPUUpdate();
+		var colorMaterial = materialManager.GetFactory("color_material");
+		var vertexMaterial = materialManager.GetFactory("default_vertex_material");
+		var transformMaterial = materialManager.GetFactory("transform_material");
+		var coolMaterial = materialManager.GetFactory("cool_material");
+		var bigGradientMaterial = materialManager.GetFactory("big_gradient_material");
+		var coordinatesMaterial = materialManager.GetFactory("coordinates_material");
+		var followCursorMaterial = materialManager.GetFactory("follow_cursor_material");
+
+		var cursorVertMat = followCursorMaterial.Create();
+		cursorVertMat.MarkForGPUUpdate();
+
+		var cursorFragMat = coolMaterial.Create();
+		var cursorFragData = cursorFragMat.GetMemPtr<CoolMaterialData>();
+		cursorFragData->Color1 = Color.Blue.ToArgb();
+		cursorFragData->Color2 = Color.DarkViolet.ToArgb();
+		cursorFragMat.MarkForGPUUpdate();
+
+		var cursor = componentManager.Factory.Create();
+		var cursorData = cursor.GetData();
+		cursorData->BasePos = (0, 0);
+		cursorData->BaseZ = 30;
+		cursorData->Size = (50, 50);
+		cursorData->MaskStart = (0, 0);
+		cursorData->MaskEnd = (2000, 2000);
+
+		cursor.VertMaterial = cursorVertMat;
+		cursor.FragMaterial = cursorFragMat;
+		cursor.MarkForGPUUpdate();
+
+		var comp = componentManager.Factory.Create();
+		var compData = comp.GetData();
+		compData->BasePos = (450, 100);
+		compData->BaseZ = 25;
+		compData->Size = (300, 300);
+		compData->MaskStart = (0, 0);
+		compData->MaskEnd = (2000, 2000);
+
+		var cool = coolMaterial.Create();
+		comp.FragMaterial = cool;
+
+		var coolData = cool.GetMemPtr<CoolMaterialData>();
+		coolData->Color1 = Color.Black.ToArgb();
+		coolData->Color2 = Color.DarkRed.ToArgb();
+		cool.MarkForGPUUpdate();
+
+		var transform = transformMaterial.Create();
+		comp.VertMaterial = transform;
+
+		var transformData = transform.GetMemPtr<TransformMaterialData>();
+		transformData->Transform = Matrix4X4<float>.Identity.RotationZ(0.08f);
+		transform.MarkForGPUUpdate();
+
+		// Components.Add(comp);
+		comp.MarkForGPUUpdate();
+
+		const short count = 1000;
+		const short spacing = 0;
+		const short size = 1;
+
+		const short startX = 550;
+		const short startY = 55;
+
+		var defaultVertexMaterial = vertexMaterial.Create();
+		defaultVertexMaterial.MarkForGPUUpdate();
+
+		for (int i = 0; i < count; i++)
+		{
+			for (int j = 0; j < count; j++)
+			{
+				var square = componentManager.Factory.Create();
+
+				var gradient = bigGradientMaterial.Create();
+				var data = gradient.GetMemPtr<BigGradientMaterialData>();
+
+				data->Color1 = Color.Blue.ToArgb();
+				data->Color2 = Color.Yellow.ToArgb();
+
+				// data->StartX = startX;
+				// data->StartY = 0;
+
+				data->EndX = (size + spacing) * count;
+				data->EndY = (size + spacing) * count;
+				gradient.MarkForGPUUpdate();
+
+				var squareData = square.GetData();
+
+				squareData->BasePos = (startX, startY);
+				squareData->BaseZ = 600;
+
+				squareData->LocalPos = ((size + spacing) * i, (size + spacing) * j);
+
+				squareData->Size = (size, size);
+				squareData->MaskStart = (0, 0);
+				squareData->MaskEnd = (2000, 2000);
+
+				square.VertMaterial = defaultVertexMaterial;
+				square.FragMaterial = gradient;
+				square.MarkForGPUUpdate();
+
+				// Components.Add(square);
+			}
+		}
+
+		// Root.AddChild(new TestToTextureRenderer("ChildRenderer1"));
+		// Root.AddChild(new TestToTextureRenderer("ChildRenderer2"));
 	}
 	// var sceneWithNoDependencies = new VulkanSceneChain("SceneWithNoDependencies");
 	// Root.AddChild(sceneWithNoDependencies);
@@ -136,8 +294,20 @@ public abstract unsafe class RenderChain : IDisposable
 		}
 
 		var waitSemaphoreDelegates = RenderWaitSemaphores?.GetInvocationList();
+		var waitSemaphoresFromDelegates = new Semaphore[waitSemaphoreDelegates?.Length ?? 0];
+		int waitSemaphoresFromDelegatesCount = 0;
 
-		int waitSemaphoreCount = (waitSemaphores?.Count ?? 0) + childrenWaitSemaphores.Count + (waitSemaphoreDelegates?.Length ?? 0);
+		if (waitSemaphoreDelegates is not null)
+		{
+			foreach (var @delegate in waitSemaphoreDelegates)
+			{
+				var semaphore = ((Func<FrameInfo, Semaphore>) @delegate).Invoke(frameInfo);
+				if (semaphore.Handle == default) continue;
+				waitSemaphoresFromDelegates[waitSemaphoresFromDelegatesCount++] = semaphore;
+			}
+		}
+
+		int waitSemaphoreCount = (waitSemaphores?.Count ?? 0) + childrenWaitSemaphores.Count + waitSemaphoresFromDelegatesCount;
 
 		var pWaitDstStageMasks = stackalloc PipelineStageFlags[waitSemaphoreCount];
 		for (int i = 0; i < waitSemaphoreCount; i++) pWaitDstStageMasks[i] = PipelineStageFlags.BottomOfPipeBit; // TODO: real stage per semaphore
@@ -151,9 +321,7 @@ public abstract unsafe class RenderChain : IDisposable
 
 		foreach (var semaphore in childrenWaitSemaphores) pWaitSemaphores[index++] = semaphore;
 
-		if (waitSemaphoreDelegates is not null)
-			foreach (var @delegate in waitSemaphoreDelegates)
-				pWaitSemaphores[index++] = ((Func<FrameInfo, Semaphore>) @delegate).Invoke(frameInfo);
+		for (int i = 0; i < waitSemaphoresFromDelegatesCount; i++) pWaitSemaphores[index++] = waitSemaphoresFromDelegates[i];
 
 		// submit
 		var submitInfo = new SubmitInfo

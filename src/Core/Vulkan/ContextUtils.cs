@@ -1,5 +1,4 @@
 ﻿using System;
-using Core.Vulkan.Api;
 using Silk.NET.Vulkan;
 using static Core.Native.VMA.VulkanMemoryAllocator;
 using Buffer = Silk.NET.Vulkan.Buffer;
@@ -83,13 +82,13 @@ public static unsafe class ContextUtils
 
 	public static void BindVertexBuffers(this CommandBuffer cb, uint firstBinding, uint bindingCount, Buffer* buffers, ulong* offsets) =>
 		Context.Vk.CmdBindVertexBuffers(cb, firstBinding, bindingCount, buffers, offsets);
-	
+
 	public static void BindVertexBuffers(this CommandBuffer cb, uint firstBinding, uint bindingCount, Buffer* buffers) =>
 		Context.Vk.CmdBindVertexBuffers(cb, firstBinding, bindingCount, buffers, stackalloc ulong[(int) bindingCount]);
-	
+
 	public static void BindVertexBuffer(this CommandBuffer cb, uint firstBinding, Buffer buffer, ulong* offsets) =>
 		Context.Vk.CmdBindVertexBuffers(cb, firstBinding, 1, buffer, offsets);
-	
+
 	public static void BindVertexBuffer(this CommandBuffer cb, uint firstBinding, Buffer buffer) =>
 		Context.Vk.CmdBindVertexBuffers(cb, firstBinding, buffer.AsSpan(), stackalloc ulong[1]);
 
@@ -100,7 +99,7 @@ public static unsafe class ContextUtils
 
 	#region Vma
 
-	public static Result VmaMapMemory(IntPtr allocation, IntPtr[] data) => (Result) vmaMapMemory(Context.VmaAllocator, allocation, data);
+	public static void VmaMapMemory(IntPtr allocation, IntPtr[] data) => Check(vmaMapMemory(Context.VmaAllocator, allocation, data), "Failed to map memory.");
 
 	public static void VmaUnmapMemory(IntPtr allocation) => vmaUnmapMemory(Context.VmaAllocator, allocation);
 

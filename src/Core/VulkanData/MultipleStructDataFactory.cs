@@ -3,11 +3,12 @@ using Core.Registries.API;
 using Core.Registries.CoreTypes;
 using Core.Registries.Entities;
 using Core.Registries.EventManagerTypes;
-using Core.Utils;
 using Core.Vulkan;
+using Core.Vulkan.Api;
 using Core.Vulkan.Utility;
 using Silk.NET.Vulkan;
 using static Core.Native.VMA.VulkanMemoryAllocator;
+using static Core.Vulkan.ContextUtils;
 
 namespace Core.VulkanData;
 
@@ -38,16 +39,16 @@ public unsafe class MultipleStructDataFactory : SimpleRegistry<NoneEventManager<
 				VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
 		}
 
-		Check(vmaMapMemory(Context.VmaAllocator, DataBufferCpu.Allocation, _ptr), "Failed to map memory.");
+		VmaMapMemory(DataBufferCpu.Allocation, _ptr);
 		Pointer = (byte*) _ptr[0];
 		var span = new Span<byte>((void*) _ptr[0], (int) BufferSize);
 		span.Fill(default);
 
-		DisposalQueue.EnqueueInGlobal(() =>
+		ExecuteOnce.InDevice.BeforeDispose(() =>
 		{
-			vmaUnmapMemory(Context.VmaAllocator, DataBufferCpu.Allocation);
+			VmaUnmapMemory(DataBufferCpu.Allocation);
 			DataBufferCpu.Dispose();
-			if (!(Context.IsIntegratedGpu || CpuToGpuMemory))
+			if (DataBufferCpu.Buffer.Handle != DataBufferGpu.Buffer.Handle)
 				DataBufferGpu.Dispose();
 		});
 	}
@@ -71,16 +72,16 @@ public unsafe class MultipleStructDataFactory : SimpleRegistry<NoneEventManager<
 			? new VulkanBuffer(newBufferSize, BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU)
 			: new VulkanBuffer(newBufferSize, BufferUsageFlags.TransferSrcBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_ONLY);
 
-		Check(ContextUtils.VmaMapMemory(newDataBuffer.Allocation, _ptr), "Failed to map memory.");
+		VmaMapMemory(newDataBuffer.Allocation, _ptr);
 
 		var oldSpan = new Span<byte>(Pointer, (int) BufferSize);
 		var newSpan = new Span<byte>((void*) _ptr[0], (int) newBufferSize);
 		oldSpan.CopyTo(newSpan);
 		newSpan.Slice((int) BufferSize, (int) newBufferSize).Fill(default);
 
-		ContextUtils.VmaUnmapMemory(DataBufferCpu.Allocation);
+		VmaUnmapMemory(DataBufferCpu.Allocation);
 
-		// DataBufferCpu.EnqueueFrameDispose(MainRenderer.GetLastFrameIndex());
+		ExecuteOnce.AtNextFrameEnd(() => DataBufferCpu.Dispose());
 		DataBufferCpu = newDataBuffer;
 		if (Context.IsIntegratedGpu || CpuToGpuMemory)
 		{
@@ -88,7 +89,7 @@ public unsafe class MultipleStructDataFactory : SimpleRegistry<NoneEventManager<
 		}
 		else
 		{
-			// DataBufferGpu.EnqueueFrameDispose(MainRenderer.GetLastFrameIndex());
+			ExecuteOnce.AtNextFrameEnd(() => DataBufferGpu.Dispose());
 			DataBufferGpu = new VulkanBuffer(newBufferSize, BufferUsageFlags.StorageBufferBit | BufferUsageFlags.TransferDstBit,
 				VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
 

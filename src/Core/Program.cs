@@ -78,7 +78,7 @@ internal static class Program
 			if (PipelineManager.AutoPipelines.TryGetValue("RenderChildren", out var pipeline))
 				pipeline.Builder.RasterizationState(span => span[0].PolygonMode = mode);
 			return true;
-		}), SDL.SDL_Keycode.SDLK_p);;
+		}), SDL.SDL_Keycode.SDLK_p);
 
 		windowThread.Join();
 

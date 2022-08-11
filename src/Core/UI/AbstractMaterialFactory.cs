@@ -7,14 +7,17 @@ namespace Core.UI;
 
 public class MaterialDataFactory : AbstractVulkanDataFactory<MaterialDataHolder>, IEntry
 {
-	public MaterialDataFactory(int dataSize, ShaderStageFlags stageFlags, NamespacedName identifier) : base(dataSize)
-	{
-		StageFlag = stageFlags;
-		Identifier = identifier;
-	}
+	public string Name { get; }
+	public ShaderStageFlags StageFlag { get; }
 
 	public short Index { get; set; }
-	public ShaderStageFlags StageFlag { get; }
+
+	public MaterialDataFactory(int dataSize, ShaderStageFlags stageFlags, string name, short index) : base(dataSize)
+	{
+		StageFlag = stageFlags;
+		Name = name;
+		Index = index;
+	}
 
 	public NamespacedName Identifier { get; init; }
 }

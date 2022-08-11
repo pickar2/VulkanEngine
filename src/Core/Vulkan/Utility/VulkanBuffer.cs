@@ -38,7 +38,7 @@ public unsafe class VulkanBuffer : IDisposable
 
 	public nint Map()
 	{
-		if (_ptr[0] == 0) Check(ContextUtils.VmaMapMemory(Allocation, _ptr), "Failed to map buffer memory.");
+		if (_ptr[0] == 0) ContextUtils.VmaMapMemory(Allocation, _ptr);
 		return _ptr[0];
 	}
 
@@ -134,4 +134,6 @@ public unsafe class VulkanBuffer : IDisposable
 		vmaDestroyBuffer(Context.VmaAllocator, Buffer.Handle, Allocation);
 		GC.SuppressFinalize(this);
 	}
+
+	public static implicit operator Buffer(VulkanBuffer vulkanBuffer) => vulkanBuffer.Buffer;
 }

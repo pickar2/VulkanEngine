@@ -115,11 +115,11 @@ public static partial class UiManager
 	public static Color RandomColor(bool randomTransparency = false)
 	{
 		int color = (randomTransparency ? Random.Next(256) : 255) << 24;
-	
+
 		color |= Random.Next(256) << 16;
 		color |= Random.Next(256) << 8;
 		color |= Random.Next(256);
-	
+
 		return Color.FromArgb(color);
 	}
 
@@ -402,6 +402,7 @@ public static partial class UiManager
 					hoverAnimation.ReverseDirection();
 					break;
 			}
+
 			hoverAnimation.Start();
 		});
 

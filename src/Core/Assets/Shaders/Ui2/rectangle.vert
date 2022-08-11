@@ -27,7 +27,7 @@ mat4 modelMatrix = mat4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
 mat4 globalMatrix = mat4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
 float zIndex = 0;
 
-#include "@vertex_includes.glsl"
+#include "@Mat1_vertex_includes.glsl"
 
 void main() {
     intData = ivec4(0);

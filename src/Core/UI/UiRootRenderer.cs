@@ -1,10 +1,11 @@
 ﻿using System;
-using System.Runtime.InteropServices;
+using Core.Native.Shaderc;
 using Core.Vulkan;
 using Core.Vulkan.Api;
 using Core.Vulkan.Renderers;
 using Core.Vulkan.Utility;
 using Silk.NET.Vulkan;
+using SimpleMath.Vectors;
 using static Core.Native.VMA.VulkanMemoryAllocator;
 
 namespace Core.UI;
@@ -12,93 +13,194 @@ namespace Core.UI;
 public unsafe partial class UiRootRenderer : RenderChain
 {
 	// Render
-	private readonly OnAccessValueReCreator<DescriptorPool> _componentDataPool;
-	public readonly OnAccessValueReCreator<DescriptorSet> _componentDataSet;
+	private readonly OnAccessValueReCreator<RenderPass> _renderPass;
+	private readonly OnAccessClassReCreator<Framebuffer[]> _framebuffers;
+	private readonly OnAccessValueReCreator<CommandPool> _commandPool;
 
-	private VulkanPipeline _pipeline;
+	private readonly OnAccessValueReCreator<PipelineLayout> _pipelineLayout;
+	private readonly AutoPipeline _pipeline;
 
-	private readonly OnAccessClassReCreator<VulkanBuffer>[] _indexBuffers;
 	private readonly OnAccessClassReCreator<VulkanBuffer> _indirectBuffer;
 
-	private CommandPool[] _renderCommandPools;
-	private CommandBuffer[] _renderCommandBuffers;
-
-	private RenderPass _renderPass;
-	private Framebuffer _framebuffer;
-	private VulkanImage2 _attachment;
-
 	// Compute
-	private CommandPool[] _sortCommandPools;
-	private CommandBuffer[] _sortCommandBuffers;
+	// private CommandPool[] _sortCommandPools;
+	// private CommandBuffer[] _sortCommandBuffers;
 
-	public readonly UiComponentFactory ComponentFactory = new();
-	public int ComponentCount => ComponentFactory.ComponentCount;
+	public UiComponentManager ComponentManager;
+	public UiMaterialManager2 MaterialManager;
+	public UiGlobalDataManager GlobalDataManager;
 
-	public UiRootRenderer(string name) : base(name)
+	public UiRootRenderer(string name, UiComponentManager componentManager, UiMaterialManager2 materialManager,
+		UiGlobalDataManager globalDataManager) : base(name)
 	{
-		_componentDataPool = ReCreate.InDevice.OnAccessValue(() => CreateDescriptorPool(), pool => pool.Dispose());
-		_componentDataSet = ReCreate.InDevice.OnAccessValue(() => CreateDescriptorSet(_componentDataPool));
+		ComponentManager = componentManager;
+		MaterialManager = materialManager;
+		GlobalDataManager = globalDataManager;
 
-		_indexBuffers = new OnAccessClassReCreator<VulkanBuffer>[Context.State.FrameOverlap];
-		for (int i = 0; i < _indexBuffers.Length; i++)
-			_indexBuffers[i] = ReCreate.InDevice.OnAccessClass(() => CreateIndexBuffer(ComponentFactory.MaxComponents), buffer => buffer.Dispose());
+		_commandPool = ReCreate.InDevice.OnAccessValue(() => CreateCommandPool(Context.GraphicsQueue), commandPool => commandPool.Dispose());
+
+		_renderPass = ReCreate.InDevice.OnAccessValue(() => CreateRenderPass(), renderPass => renderPass.Dispose());
+		_framebuffers = ReCreate.InSwapchain.OnAccessClass(() =>
+		{
+			var arr = new Framebuffer[Context.SwapchainImageCount];
+			for (int i = 0; i < arr.Length; i++)
+				arr[i] = CreateFramebuffer(_renderPass, Context.SwapchainImages[i].ImageView, Context.State.WindowSize);
+
+			return arr;
+		}, arr =>
+		{
+			for (int index = 0; index < arr.Length; index++)
+				arr[index].Dispose();
+		});
+
+		_pipelineLayout =
+			ReCreate.InDevice.OnAccessValue(
+				() => CreatePipelineLayout(TextureManager.DescriptorSetLayout, GlobalDataManager.DescriptorSetLayout, ComponentManager.DescriptorSetLayout,
+					MaterialManager.VertexDescriptorSetLayout, MaterialManager.FragmentDescriptorSetLayout), layout => layout.Dispose());
+		_pipeline = CreatePipeline(_pipelineLayout, _renderPass, Context.State.WindowSize);
 
 		_indirectBuffer = ReCreate.InDevice.OnAccessClass(() => CreateIndirectBuffer(), buffer => buffer.Dispose());
 
 		RenderCommandBuffers += (FrameInfo frameInfo) =>
 		{
-			FillIndirectBuffer(ComponentCount, _indirectBuffer);
-			// perform copy
-			// start sorting
-			// update command buffers if required
-			// return command buffer
-			// TODO: how to pass sorting complete semaphore?
-			return default;
+			ComponentManager.AfterUpdate();
+			MaterialManager.AfterUpdate();
+			GlobalDataManager.AfterUpdate();
+			FillIndirectBuffer(ComponentManager.Factory.ComponentCount, _indirectBuffer);
+			return CreateCommandBuffer(frameInfo);
+		};
+
+		RenderWaitSemaphores += (FrameInfo frameInfo) =>
+		{
+			if (!ComponentManager.RequireWait) return default;
+
+			var semaphore = ComponentManager.WaitSemaphore;
+			ExecuteOnce.AtCurrentFrameStart(() => semaphore.Dispose());
+			return semaphore;
+		};
+		RenderWaitSemaphores += (FrameInfo frameInfo) =>
+		{
+			if (!MaterialManager.RequireWait) return default;
+
+			var semaphore = MaterialManager.WaitSemaphore;
+			ExecuteOnce.AtCurrentFrameStart(() => semaphore.Dispose());
+			return semaphore;
 		};
 	}
 
-	private static DescriptorPool CreateDescriptorPool()
+	private CommandBuffer CreateCommandBuffer(FrameInfo frameInfo)
 	{
-		var componentDataPoolSizes = new DescriptorPoolSize
+		var clearValues = stackalloc ClearValue[] {new(new ClearColorValue(0.66f, 0.66f, 0.66f, 1))};
+
+		var cmd = CommandBuffers.CreateCommandBuffer(CommandBufferLevel.Primary, _commandPool);
+
+		Check(cmd.Begin(CommandBufferUsageFlags.OneTimeSubmitBit), "Failed to begin command buffer.");
+
+		var renderPassBeginInfo = new RenderPassBeginInfo
 		{
-			DescriptorCount = 1,
-			Type = DescriptorType.StorageBuffer
+			SType = StructureType.RenderPassBeginInfo,
+			RenderPass = _renderPass,
+			RenderArea = new Rect2D(default, Context.SwapchainExtent),
+			Framebuffer = _framebuffers.Value[frameInfo.SwapchainImageId],
+			ClearValueCount = 1,
+			PClearValues = clearValues
 		};
 
-		var componentDataCreateInfo = new DescriptorPoolCreateInfo
-		{
-			SType = StructureType.DescriptorPoolCreateInfo,
-			MaxSets = 1,
-			PoolSizeCount = 1,
-			PPoolSizes = &componentDataPoolSizes,
-			Flags = DescriptorPoolCreateFlags.UpdateAfterBindBitExt
-		};
+		cmd.BeginRenderPass(renderPassBeginInfo, SubpassContents.Inline);
 
-		Check(Context.Vk.CreateDescriptorPool(Context.Device, &componentDataCreateInfo, null, out var descriptorPool),
-			"Failed to create ui data descriptor pool.");
+		cmd.BindGraphicsPipeline(_pipeline);
 
-		return descriptorPool;
+		cmd.BindGraphicsDescriptorSets(_pipelineLayout, 0, 1, TextureManager.DescriptorSet);
+		cmd.BindGraphicsDescriptorSets(_pipelineLayout, 1, 1, GlobalDataManager.DescriptorSet);
+		cmd.BindGraphicsDescriptorSets(_pipelineLayout, 2, 1, ComponentManager.DescriptorSet);
+
+		cmd.BindGraphicsDescriptorSets(_pipelineLayout, 3, 1, MaterialManager.VertexDescriptorSet);
+		cmd.BindGraphicsDescriptorSets(_pipelineLayout, 4, 1, MaterialManager.FragmentDescriptorSet);
+
+		Context.Vk.CmdBindIndexBuffer(cmd, ComponentManager.IndexBuffer.Value.Buffer, 0, IndexType.Uint32);
+
+		Context.Vk.CmdDrawIndexedIndirect(cmd, _indirectBuffer.Value.Buffer, 0, 1, 0);
+
+		cmd.EndRenderPass();
+
+		Check(cmd.End(), "Failed to end command buffer.");
+
+		return cmd;
 	}
 
-	private static DescriptorSet CreateDescriptorSet(DescriptorPool pool)
+	private static RenderPass CreateRenderPass()
 	{
-		var dataAllocInfo = new DescriptorSetAllocateInfo
+		var attachmentDescription = new AttachmentDescription2
 		{
-			SType = StructureType.DescriptorSetAllocateInfo,
-			DescriptorPool = pool,
-			DescriptorSetCount = 1,
-			PSetLayouts = ComponentDataLayout.AsPointer()
+			SType = StructureType.AttachmentDescription2,
+			Format = Context.SwapchainSurfaceFormat.Format,
+			Samples = SampleCountFlags.Count1Bit,
+			LoadOp = AttachmentLoadOp.Clear,
+			StoreOp = AttachmentStoreOp.Store,
+			StencilLoadOp = AttachmentLoadOp.DontCare,
+			StencilStoreOp = AttachmentStoreOp.DontCare,
+			InitialLayout = ImageLayout.Undefined,
+			FinalLayout = ImageLayout.PresentSrcKhr
 		};
 
-		Check(Context.Vk.AllocateDescriptorSets(Context.Device, dataAllocInfo, out var descriptorSet),
-			"Failed to allocate ui data descriptor sets.");
+		var attachmentReference = new AttachmentReference2
+		{
+			SType = StructureType.AttachmentReference2,
+			Attachment = 0,
+			AspectMask = ImageAspectFlags.ColorBit,
+			Layout = ImageLayout.AttachmentOptimal
+		};
 
-		return descriptorSet;
+		var subpassDescription = new SubpassDescription2
+		{
+			SType = StructureType.SubpassDescription2,
+			PipelineBindPoint = PipelineBindPoint.Graphics,
+			ColorAttachmentCount = 1,
+			PColorAttachments = &attachmentReference
+		};
+
+		var renderPassInfo2 = new RenderPassCreateInfo2
+		{
+			SType = StructureType.RenderPassCreateInfo2,
+			AttachmentCount = 1,
+			PAttachments = &attachmentDescription,
+			SubpassCount = 1,
+			PSubpasses = &subpassDescription
+		};
+
+		Check(Context.Vk.CreateRenderPass2(Context.Device, renderPassInfo2, null, out var renderPass), "Failed to create render pass.");
+
+		return renderPass;
 	}
 
-	private static VulkanBuffer CreateIndexBuffer(int maxComponents) =>
-		new((ulong) (6 * 4 * maxComponents), BufferUsageFlags.IndexBufferBit | BufferUsageFlags.StorageBufferBit,
-			VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
+	private static Framebuffer CreateFramebuffer(RenderPass renderPass, ImageView imageView, Vector2<uint> size)
+	{
+		var attachments = stackalloc ImageView[] {imageView};
+		var createInfo = new FramebufferCreateInfo
+		{
+			SType = StructureType.FramebufferCreateInfo,
+			RenderPass = renderPass,
+			Width = size.X,
+			Height = size.Y,
+			Layers = 1,
+			AttachmentCount = 1,
+			PAttachments = attachments
+		};
+
+		Check(Context.Vk.CreateFramebuffer(Context.Device, &createInfo, null, out var framebuffer), "Failed to create framebuffer.");
+
+		return framebuffer;
+	}
+
+	private static AutoPipeline CreatePipeline(OnAccessValueReCreator<PipelineLayout> pipelineLayout, OnAccessValueReCreator<RenderPass> renderPass,
+		Vector2<uint> size) =>
+		PipelineManager.GraphicsBuilder()
+			.WithShader("./Assets/Shaders/Ui2/rectangle.vert", ShaderKind.VertexShader)
+			.WithShader("./Assets/Shaders/Ui2/rectangle.frag", ShaderKind.FragmentShader)
+			.SetViewportAndScissorFromSize(size)
+			.AddColorBlendAttachmentOneMinusSrcAlpha()
+			.With(pipelineLayout, renderPass)
+			.AutoPipeline($"RenderUiRoot");
 
 	private static VulkanBuffer CreateIndirectBuffer() => new((ulong) sizeof(DrawIndexedIndirectCommand), BufferUsageFlags.IndirectBufferBit,
 		VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU);
@@ -116,11 +218,5 @@ public unsafe partial class UiRootRenderer : RenderChain
 		};
 	}
 
-	public override void Dispose()
-	{
-		_componentDataSet.Dispose();
-		_componentDataPool.Dispose();
-
-		GC.SuppressFinalize(this);
-	}
+	public override void Dispose() => GC.SuppressFinalize(this);
 }

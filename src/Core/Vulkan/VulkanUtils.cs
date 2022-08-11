@@ -366,7 +366,7 @@ public static unsafe class VulkanUtils
 		string source;
 		if (path.StartsWith("@"))
 		{
-			if (Context.ShadercOptions.TryGetVirtualShader(path, out var code))
+			if (Context.ShadercOptions.TryGetVirtualShader(path, out string? code))
 			{
 				source = code;
 			}
@@ -477,12 +477,10 @@ public static unsafe class VulkanUtils
 		}
 		else
 		{
-			var stagingBuffer = new VulkanBuffer(bufferSize, BufferUsageFlags.TransferSrcBit,
-				VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_ONLY);
+			var stagingBuffer = new VulkanBuffer(bufferSize, BufferUsageFlags.TransferSrcBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_ONLY);
 			action.Invoke(stagingBuffer.GetHostSpan());
 
-			buffer = new VulkanBuffer(bufferSize, BufferUsageFlags.TransferDstBit | bufferUsage,
-				VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
+			buffer = new VulkanBuffer(bufferSize, BufferUsageFlags.TransferDstBit | bufferUsage, VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
 
 			stagingBuffer.CopyTo(buffer);
 			stagingBuffer.Dispose();
@@ -731,5 +729,44 @@ public static unsafe class VulkanUtils
 		Context.Vk.CreatePipelineLayout(Context.Device, &layoutCreateInfo, null, out var layout);
 
 		return layout;
+	}
+
+	public static DescriptorSet AllocateDescriptorSet(DescriptorSetLayout layout, DescriptorPool descriptorPool)
+	{
+		var allocInfo = new DescriptorSetAllocateInfo
+		{
+			SType = StructureType.DescriptorSetAllocateInfo,
+			DescriptorPool = descriptorPool,
+			DescriptorSetCount = 1,
+			PSetLayouts = &layout
+		};
+
+		Check(Context.Vk.AllocateDescriptorSets(Context.Device, &allocInfo, out var set), "Failed to allocate descriptor set.");
+
+		return set;
+	}
+
+	public static DescriptorSet AllocateVariableDescriptorSet(DescriptorSetLayout layout, DescriptorPool descriptorPool, uint bindingCount)
+	{
+		uint* counts = stackalloc uint[] {bindingCount};
+		var variableCount = new DescriptorSetVariableDescriptorCountAllocateInfo
+		{
+			SType = StructureType.DescriptorSetVariableDescriptorCountAllocateInfo,
+			DescriptorSetCount = 1,
+			PDescriptorCounts = counts
+		};
+
+		var allocInfo = new DescriptorSetAllocateInfo
+		{
+			SType = StructureType.DescriptorSetAllocateInfo,
+			DescriptorPool = descriptorPool,
+			DescriptorSetCount = 1,
+			PSetLayouts = &layout,
+			PNext = &variableCount
+		};
+
+		Check(Context.Vk.AllocateDescriptorSets(Context.Device, &allocInfo, out var set), "Failed to allocate descriptor set.");
+
+		return set;
 	}
 }
