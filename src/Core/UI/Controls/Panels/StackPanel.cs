@@ -56,4 +56,6 @@ public class StackPanel : UiControl
 			offset = Math.Min(offset, area[stackComponent]);
 		}
 	}
+
+	public StackPanel(RootPanel rootPanel) : base(rootPanel) { }
 }

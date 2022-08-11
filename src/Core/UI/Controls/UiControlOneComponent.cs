@@ -1,14 +1,16 @@
 ﻿using System;
+using Core.UI.Controls.Panels;
 using SimpleMath.Vectors;
 
 namespace Core.UI.Controls;
 
 public abstract unsafe class UiControlOneComponent : UiControl
 {
-	public readonly UiComponent Component = UiComponentFactory.CreateComponent();
+	public readonly UiComponent Component;
 
-	public UiControlOneComponent()
+	public UiControlOneComponent(RootPanel rootPanel) : base(rootPanel)
 	{
+		Component = rootPanel.CreateComponent();
 		Component.GetData()->MaskStart = new Vector2<float>(float.NegativeInfinity);
 		Component.GetData()->MaskEnd = new Vector2<float>(float.PositiveInfinity);
 		Component.MarkForGPUUpdate();

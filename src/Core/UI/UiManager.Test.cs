@@ -6,54 +6,60 @@ using System.Text.RegularExpressions;
 using Core.UI.Animations;
 using Core.UI.Controls;
 using Core.UI.Controls.Panels;
+using Core.UI.Fonts;
 using Core.UI.Transforms;
 using Core.Window;
+using SDL2;
 using SimpleMath.Vectors;
+using static Core.Vulkan.Renderers.GeneralRenderer;
 using Rectangle = Core.UI.Controls.Rectangle;
 
 namespace Core.UI;
 
 public static partial class UiManager
 {
+	public static Font Consolas = default!;
+
 	private static unsafe void InitTestScene()
 	{
+		Consolas = FontLoader.LoadFromText("Assets/Fonts/consolas.fnt");
 		// off main root control example:
 		// var infoBoxRoot = new FullScreenRootPanel();
-		// var infoBox = new ControlInfoBox();
+		// var infoBox = new ControlInfoBox(infoBoxRoot);
 		// infoBoxRoot.AddChild(infoBox);
 		// AfterUpdate += () =>
 		// {
 		// 	infoBox.Control = KeyboardInput.IsKeyPressed(SDL.SDL_Keycode.SDLK_LALT) && TopControl is not null && TopControl.Selectable ? TopControl : null;
 		// 	infoBoxRoot.Update();
 		// };
-		//
-		// var mainControl = new AbsolutePanel();
-		// // mainControl.Selectable = false;
-		// // mainControl.MarginLT = new Vector2<float>(300, 100);
-		// // mainControl.Scale = new Vector2<float>(0.5f);
-		// MainRoot.AddChild(mainControl);
-		//
-		// var bg = new CustomBox();
-		// bg.VertMaterial = UiMaterialManager.GetFactory("core:default_vertex_material").Create();
-		// bg.FragMaterial = UiMaterialManager.GetFactory("core:dots_background_material").Create();
-		// *bg.FragMaterial.GetMemPtr<float>() = 1f;
-		// bg.FragMaterial.MarkForGPUUpdate();
-		// bg.Selectable = false;
-		// mainControl.AddChild(bg);
-		//
-		// LabelTest(mainControl);
-		// StackPanelTest(mainControl);
-		// WrapPanelTest(mainControl);
-		// DockPanelTest(mainControl);
-		// Transform3DTest(mainControl);
-		// AnimationTest(mainControl);
-		// TextInputTest(mainControl);
-		// AlignPanelTest(mainControl);
+
+		var mainControl = new AbsolutePanel(MainRoot);
+		// mainControl.Selectable = false;
+		// mainControl.MarginLT = new Vector2<float>(300, 100);
+		// mainControl.Scale = new Vector2<float>(0.5f);
+		MainRoot.AddChild(mainControl);
+
+		var bg = new CustomBox(MainRoot);
+		bg.VertMaterial = MainRoot.MaterialManager.GetFactory("default_vertex_material").Create();
+		bg.FragMaterial = MainRoot.MaterialManager.GetFactory("dots_background_material").Create();
+		*bg.FragMaterial.GetMemPtr<float>() = 1f;
+		bg.FragMaterial.MarkForGPUUpdate();
+		bg.Selectable = false;
+		mainControl.AddChild(bg);
+
+		LabelTest(mainControl);
+		StackPanelTest(mainControl);
+		WrapPanelTest(mainControl);
+		DockPanelTest(mainControl);
+		Transform3DTest(mainControl);
+		AnimationTest(mainControl);
+		TextInputTest(mainControl);
+		AlignPanelTest(mainControl);
 	}
 
 	private static void TextInputTest(AbsolutePanel parent)
 	{
-		var input = new TextInputBox();
+		var input = new TextInputBox(MainRoot);
 		input.MarginLT = (10, 110);
 		input.OffsetZ = 150;
 		input.Scale = (2, 2);
@@ -64,7 +70,7 @@ public static partial class UiManager
 
 	private static void AlignPanelTest(AbsolutePanel parent)
 	{
-		var box = new Rectangle
+		var box = new Rectangle(MainRoot)
 		{
 			Color = RandomColorInt() & (127 << 24),
 			Size = (150, 150),
@@ -77,19 +83,19 @@ public static partial class UiManager
 
 		foreach (var alignment in values)
 		{
-			var alignPanel = new AlignPanel
+			var alignPanel = new AlignPanel(MainRoot)
 			{
 				Alignment = alignment
 			};
 			box.AddChild(alignPanel);
 
-			var smallBox = new Rectangle
+			var smallBox = new Rectangle(MainRoot)
 			{
 				Color = RandomColorInt(),
 				Size = (30, 30),
 				OffsetZ = 1
 			};
-			var text = new Label
+			var text = new Label(MainRoot)
 			{
 				Text = Regex.Replace(alignment.Stringify(), "[a-z]*", ""),
 				OffsetZ = 2
@@ -125,14 +131,14 @@ public static partial class UiManager
 
 	private static void LabelTest(UiControl parent)
 	{
-		var testText1 = new Label();
+		var testText1 = new Label(MainRoot);
 		testText1.Scale = new Vector2<float>(1.0f);
 		testText1.Text = "Frame time:";
 		testText1.OffsetZ = 34;
 		testText1.MarginLT = new Vector2<float>(10, 42);
 		parent.AddChild(testText1);
 
-		var testText2 = new Label();
+		var testText2 = new Label(MainRoot);
 		testText2.Scale = new Vector2<float>(0.5f);
 		testText2.Text = "Scaled text";
 		testText2.OffsetZ = 34;
@@ -142,28 +148,28 @@ public static partial class UiManager
 
 	private static void StackPanelTest(UiControl parent)
 	{
-		var stackPanel = new StackPanel();
+		var stackPanel = new StackPanel(MainRoot);
 		stackPanel.Spacing = 30;
 		stackPanel.Size = new Vector2<float>(800, 600);
 		stackPanel.MarginLT = new Vector2<float>(150, 150);
 		stackPanel.OffsetZ = 5;
 
-		var box1 = new Rectangle {Color = RandomColorInt(), OffsetZ = 1};
+		var box1 = new Rectangle(MainRoot) {Color = RandomColorInt(), OffsetZ = 1};
 		box1.Size.X = 30;
 		box1.MarginLT = new Vector2<float>(30, 30);
 		stackPanel.AddChild(box1);
 
-		var box2 = new Rectangle {Color = RandomColorInt(), OffsetZ = 1};
+		var box2 = new Rectangle(MainRoot) {Color = RandomColorInt(), OffsetZ = 1};
 		box2.Size.X = 60;
 		box2.MarginLT = new Vector2<float>(30, -30);
 		stackPanel.AddChild(box2);
 
-		var box3 = new Rectangle {Color = RandomColorInt(), OffsetZ = 1};
+		var box3 = new Rectangle(MainRoot) {Color = RandomColorInt(), OffsetZ = 1};
 		box3.Size.X = 10;
 		box3.MarginRB.X = 20;
 		stackPanel.AddChild(box3);
 
-		var box4 = new Rectangle {Color = RandomColorInt(), OffsetZ = 1};
+		var box4 = new Rectangle(MainRoot) {Color = RandomColorInt(), OffsetZ = 1};
 		box4.Size.X = 10;
 		stackPanel.AddChild(box4);
 
@@ -174,7 +180,7 @@ public static partial class UiManager
 
 	private static void WrapPanelTest(UiControl parent)
 	{
-		var wrapPanel = new WrapPanel
+		var wrapPanel = new WrapPanel(MainRoot)
 		{
 			Orientation = Orientation.Horizontal,
 			Size = new Vector2<float>(450, 150),
@@ -186,9 +192,9 @@ public static partial class UiManager
 		const string text =
 			"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.";
 
-		foreach (var label in text.Split(" ").Select(word => new Label {Text = word})) wrapPanel.AddChild(label);
+		foreach (var label in text.Split(" ").Select(word => new Label(MainRoot) {Text = word})) wrapPanel.AddChild(label);
 
-		var scrollView = new ScrollView
+		var scrollView = new ScrollView(MainRoot)
 		{
 			Size = new Vector2<float>(150, 150),
 			MarginLT = new Vector2<float>(600, 150),
@@ -212,7 +218,7 @@ public static partial class UiManager
 
 	private static void DockPanelTest(UiControl parent)
 	{
-		var dockPanel = new DockPanel
+		var dockPanel = new DockPanel(MainRoot)
 		{
 			Size = (300, 300),
 			MarginLT = (750, 400),
@@ -220,23 +226,23 @@ public static partial class UiManager
 			Overflow = Overflow.Shown
 		};
 
-		var top = new Rectangle {Color = RandomColorInt()};
+		var top = new Rectangle(MainRoot) {Color = RandomColorInt()};
 		top.Size.Y = 30;
-		var top2 = new Rectangle {Color = RandomColorInt()};
+		var top2 = new Rectangle(MainRoot) {Color = RandomColorInt()};
 		top2.Size.Y = 45;
 
-		var left = new Rectangle {Color = RandomColorInt()};
+		var left = new Rectangle(MainRoot) {Color = RandomColorInt()};
 		left.Size.X = 60;
 
-		var bottom = new Rectangle {Color = RandomColorInt()};
+		var bottom = new Rectangle(MainRoot) {Color = RandomColorInt()};
 		bottom.Size.Y = 60;
-		var bottom2 = new Rectangle {Color = RandomColorInt()};
+		var bottom2 = new Rectangle(MainRoot) {Color = RandomColorInt()};
 		bottom2.Size.Y = 15;
 
-		var right = new Rectangle {Color = RandomColorInt()};
+		var right = new Rectangle(MainRoot) {Color = RandomColorInt()};
 		right.Size.X = 30;
 
-		var fill = new Rectangle {Color = RandomColorInt()};
+		var fill = new Rectangle(MainRoot) {Color = RandomColorInt()};
 
 		dockPanel.AddChild(top, Dock.Top);
 		dockPanel.AddChild(top2, Dock.Top);
@@ -251,7 +257,7 @@ public static partial class UiManager
 
 	private static unsafe void Transform3DTest(UiControl parent)
 	{
-		var panel = new AbsolutePanel
+		var panel = new AbsolutePanel(MainRoot)
 		{
 			Size = (150, 150),
 			MarginLT = (450, 450),
@@ -265,16 +271,16 @@ public static partial class UiManager
 			.RotateY(0.3f)
 			.Translate((0.5f, 0.5f, 0));
 
-		var box = new CustomBox
+		var box = new CustomBox(MainRoot)
 		{
 			OffsetZ = 0
 		};
 
-		box.FragMaterial = UiMaterialManager.GetFactory("core:color_material").Create();
+		box.FragMaterial = MainRoot.MaterialManager.GetFactory("color_material").Create();
 		*box.FragMaterial.GetMemPtr<int>() = RandomColorInt();
 		box.FragMaterial.MarkForGPUUpdate();
 
-		box.VertMaterial = UiMaterialManager.GetFactory("core:transform_material").Create();
+		box.VertMaterial = MainRoot.MaterialManager.GetFactory("transform_material").Create();
 		*box.VertMaterial.GetMemPtr<Matrix4x4>() = transform.Compile();
 		box.VertMaterial.MarkForGPUUpdate();
 
@@ -286,16 +292,16 @@ public static partial class UiManager
 			.RotateY(-0.15f)
 			.Translate((0.5f, 0.5f, 0));
 
-		var box2 = new CustomBox
+		var box2 = new CustomBox(MainRoot)
 		{
 			OffsetZ = 1
 		};
 
-		box2.FragMaterial = UiMaterialManager.GetFactory("core:color_material").Create();
+		box2.FragMaterial = MainRoot.MaterialManager.GetFactory("color_material").Create();
 		*box2.FragMaterial.GetMemPtr<int>() = RandomColorInt();
 		box2.FragMaterial.MarkForGPUUpdate();
 
-		box2.VertMaterial = UiMaterialManager.GetFactory("core:transform_material").Create();
+		box2.VertMaterial = MainRoot.MaterialManager.GetFactory("transform_material").Create();
 		*box2.VertMaterial.GetMemPtr<Matrix4x4>() = transform2.Compile();
 		box2.VertMaterial.MarkForGPUUpdate();
 
@@ -304,7 +310,7 @@ public static partial class UiManager
 
 	private static void AnimationTest(UiControl parent)
 	{
-		var button = new Rectangle
+		var button = new Rectangle(MainRoot)
 		{
 			Color = RandomColorInt(),
 			Size = (100, 50),
@@ -313,17 +319,17 @@ public static partial class UiManager
 		};
 		parent.AddChild(button);
 
-		var alignPanel = new AlignPanel {Alignment = Alignment.Center};
+		var alignPanel = new AlignPanel(MainRoot) {Alignment = Alignment.Center};
 		button.AddChild(alignPanel);
 
-		var text = new Label
+		var text = new Label(MainRoot)
 		{
 			Text = "Animate",
 			OffsetZ = 1
 		};
 		alignPanel.AddChild(text);
 
-		var box1 = new Rectangle
+		var box1 = new Rectangle(MainRoot)
 		{
 			Color = RandomColorInt(),
 			Size = (75, 75),
@@ -332,7 +338,7 @@ public static partial class UiManager
 		};
 		parent.AddChild(box1);
 
-		var box2 = new Rectangle
+		var box2 = new Rectangle(MainRoot)
 		{
 			Color = RandomColorInt(),
 			Size = (75, 75),

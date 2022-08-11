@@ -5,7 +5,11 @@ namespace Core.UI.Controls.Panels;
 
 public class FullScreenRootPanel : RootPanel
 {
-	public FullScreenRootPanel() => Selectable = false;
+	public FullScreenRootPanel(UiComponentManager componentManager, UiMaterialManager2 materialManager, UiGlobalDataManager globalDataManager) : base(
+		componentManager, materialManager, globalDataManager)
+	{
+		Selectable = false;
+	}
 
 	public override void Update()
 	{

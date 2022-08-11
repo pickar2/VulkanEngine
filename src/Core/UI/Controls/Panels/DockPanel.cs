@@ -97,6 +97,8 @@ public class DockPanel : UiControl
 			// if (!_docks.ContainsKey(child)) break;
 		}
 	}
+
+	public DockPanel(RootPanel rootPanel) : base(rootPanel) { }
 }
 
 public enum Dock

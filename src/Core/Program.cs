@@ -80,6 +80,12 @@ internal static class Program
 			return true;
 		}), SDL.SDL_Keycode.SDLK_p);
 
+		KeyboardInput.GlobalContext.AddKeyBind(new NamedFunc("toggle_debug", () =>
+		{
+			Context.State.DebugMode.Value = !Context.State.DebugMode.Value;
+			return true;
+		}), SDL.SDL_Keycode.SDLK_t);
+
 		windowThread.Join();
 
 		Context.Dispose();

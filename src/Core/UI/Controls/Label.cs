@@ -9,8 +9,8 @@ namespace Core.UI.Controls;
 
 public class Label : StackPanel
 {
-	private static readonly MaterialDataFactory UvMaterial = UiMaterialManager.GetFactory("core:texture_uv_material");
-	private static readonly MaterialDataFactory FontMaterial = UiMaterialManager.GetFactory("core:font_material");
+	private readonly MaterialDataFactory _uvMaterial;
+	private readonly MaterialDataFactory _fontMaterial;
 
 	private Vector2<float> _parentScale;
 
@@ -20,7 +20,13 @@ public class Label : StackPanel
 	// TODO: first letter sometimes has negative left margin, which does not increase its area, and cuts first pixels of it
 	public override Overflow Overflow { get; set; } = Overflow.Shown;
 
-	public Label() => Scale = new Vector2<float>(0.5f);
+	public Label(RootPanel rootPanel) : base(rootPanel)
+	{
+		Scale = new Vector2<float>(0.5f);
+
+		_uvMaterial = rootPanel.MaterialManager.GetFactory("texture_uv_material");
+		_fontMaterial = rootPanel.MaterialManager.GetFactory("font_material");
+	}
 
 	public override unsafe Vector2<float> ParentScale
 	{
@@ -32,7 +38,7 @@ public class Label : StackPanel
 			foreach (var child in ChildrenList)
 			{
 				var scale = Math.Max(CombinedScale.X, CombinedScale.Y);
-				if (child is CustomBox box && box.FragMaterial.MaterialId == FontMaterial.Index)
+				if (child is CustomBox box && box.FragMaterial.MaterialId == _fontMaterial.Index)
 				{
 					var data = box.FragMaterial.GetMemPtr<FontMaterialData>();
 					data->FontScale = scale;
@@ -58,6 +64,7 @@ public class Label : StackPanel
 			UpdateText();
 			_needsUpdate = false;
 		}
+
 		base.Update();
 	}
 
@@ -68,11 +75,11 @@ public class Label : StackPanel
 
 		foreach (char ch in _text)
 		{
-			var character = UiRenderer.Consolas!.GetCharacter(ch);
+			var character = UiManager.Consolas.GetCharacter(ch);
 
-			var box = new CustomBox();
+			var box = new CustomBox(RootPanel);
 
-			box.VertMaterial = UvMaterial.Create();
+			box.VertMaterial = _uvMaterial.Create();
 
 			var vertData = box.VertMaterial.GetMemPtr<UvMaterialData>();
 			vertData->First = new Vector2<float>(character.X / 1024f, character.Y / 1024f);
@@ -82,7 +89,7 @@ public class Label : StackPanel
 
 			box.VertMaterial.MarkForGPUUpdate();
 
-			box.FragMaterial = FontMaterial.Create();
+			box.FragMaterial = _fontMaterial.Create();
 
 			var fragData = box.FragMaterial.GetMemPtr<FontMaterialData>();
 			fragData->TextureId = 0; // TODO: UiRenderer.Consolas.Pages[character.Page].TextureName to vulkan texture id

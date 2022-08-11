@@ -1,5 +1,6 @@
 ﻿using System;
 using Core.Native.Shaderc;
+using Core.UI.Controls.Panels;
 using Core.Vulkan;
 using Core.Vulkan.Api;
 using Core.Vulkan.Renderers;
@@ -51,6 +52,8 @@ public unsafe partial class UiRootRenderer : RenderChain
 	public readonly UiMaterialManager2 MaterialManager;
 	public readonly UiGlobalDataManager GlobalDataManager;
 
+	public RootPanel RootPanel;
+
 	public UiRootRenderer(string name, UiComponentManager componentManager, UiMaterialManager2 materialManager,
 		UiGlobalDataManager globalDataManager) : base(name)
 	{
@@ -95,6 +98,8 @@ public unsafe partial class UiRootRenderer : RenderChain
 
 		RenderCommandBuffers += (FrameInfo frameInfo) =>
 		{
+			UiManager.Update(); // TODO: remove
+
 			ComponentManager.AfterUpdate();
 			MaterialManager.AfterUpdate();
 			GlobalDataManager.AfterUpdate();

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Core.UI.Controls;
+using Core.Vulkan.Renderers;
 using Core.Window;
 using SimpleMath.Vectors;
 
@@ -42,10 +43,7 @@ public static partial class UiManager
 		MouseInput.OnMouseButtonDown += HandleClickStart;
 	}
 
-	private static void HandleCursorMove(Vector2<int> newPos, Vector2<int> motion)
-	{
-		
-	}
+	private static void HandleCursorMove(Vector2<int> newPos, Vector2<int> motion) { }
 
 	private static void HandleDragStart(Vector2<int> newPos, Vector2<int> motion, MouseButton button)
 	{
@@ -130,7 +128,7 @@ public static partial class UiManager
 
 	private static void EventsPostUpdate()
 	{
-		ControlsOnMousePos = ControlsOnPos(MouseInput.MousePos.Cast<int, float>(), MainRoot, new MList<UiControl>());
+		ControlsOnMousePos = ControlsOnPos(MouseInput.MousePos.Cast<int, float>(), GeneralRenderer.MainRoot, new MList<UiControl>());
 
 		AfterUpdate?.Invoke();
 	}

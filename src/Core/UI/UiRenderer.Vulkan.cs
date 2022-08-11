@@ -128,7 +128,7 @@ public static unsafe partial class UiRenderer
 	{
 		float aspect = (float) Context.State.WindowSize.Value.X / Context.State.WindowSize.Value.Y;
 
-		var ortho = Matrix4X4<float>.Identity.SetOrtho(0, UiManager.MainRoot.Size.X, 0, UiManager.MainRoot.Size.Y, 4096, -4096);
+		// var ortho = Matrix4X4<float>.Identity.SetOrtho(0, UiManager.MainRoot.Size.X, 0, UiManager.MainRoot.Size.Y, 4096, -4096);
 
 		var view = Matrix4x4.CreateTranslation(0, 0, 0).ToGeneric();
 		view *= Matrix4x4.CreateFromYawPitchRoll(0, 0, 0).ToGeneric();
@@ -144,7 +144,7 @@ public static unsafe partial class UiRenderer
 
 		// *ProjectionMatrixHolder.Get<Matrix4X4<float>>() = mvp;
 		*ProjectionMatrixHolder.Get<Matrix4X4<float>>() = Matrix4X4<float>.Identity;
-		*OrthoMatrixHolder.Get<Matrix4X4<float>>() = ortho;
+		// *OrthoMatrixHolder.Get<Matrix4X4<float>>() = ortho;
 
 		*FrameIndexHolder.Get<int>() = Context.FrameIndex;
 

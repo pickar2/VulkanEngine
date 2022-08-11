@@ -10,13 +10,14 @@ public class ControlInfoBox : AbsolutePanel
 {
 	private UiControl? _control;
 
-	public ControlInfoBox()
+	public ControlInfoBox(RootPanel rootPanel) : base(rootPanel)
 	{
 		OffsetZ = 2045;
 		Selectable = false;
 	}
 
 	private bool _needsUpdate;
+
 	public UiControl? Control
 	{
 		get => _control;
@@ -34,6 +35,7 @@ public class ControlInfoBox : AbsolutePanel
 			UpdateControl();
 			_needsUpdate = false;
 		}
+
 		base.Update();
 	}
 
@@ -43,7 +45,7 @@ public class ControlInfoBox : AbsolutePanel
 		ClearChildren();
 		if (_control == null) return;
 
-		var controlBg = new Rectangle
+		var controlBg = new Rectangle(RootPanel)
 		{
 			Color = Color.Brown.ToArgb() & (127 << 24)
 		};
@@ -60,7 +62,7 @@ public class ControlInfoBox : AbsolutePanel
 			controlBg.Size = _control.ComputedSize;
 		}
 
-		var stackPanel = new StackPanel
+		var stackPanel = new StackPanel(RootPanel)
 		{
 			Orientation = Orientation.Vertical,
 			MarginLT = _control.CombinedPos + (_control.ComputedSize.X, 0),
@@ -68,24 +70,25 @@ public class ControlInfoBox : AbsolutePanel
 		};
 		AddChild(stackPanel);
 
-		stackPanel.AddChild(new Label {Text = $"ControlType: {_control.GetType().Name}"});
+		stackPanel.AddChild(new Label(RootPanel) {Text = $"ControlType: {_control.GetType().Name}"});
 
-		stackPanel.AddChild(new Label {Text = "Set by user:"});
-		stackPanel.AddChild(new Label {Text = $"\tMarginLT: {_control.MarginLT}"});
-		stackPanel.AddChild(new Label {Text = $"\tMarginRB: {_control.MarginRB}"});
-		stackPanel.AddChild(new Label {Text = $"\tZIndex: {_control.OffsetZ}"});
-		stackPanel.AddChild(new Label {Text = $"\tSize: {_control.Size}"});
-		stackPanel.AddChild(new Label {Text = $"\tScale: {_control.Scale}"});
+		stackPanel.AddChild(new Label(RootPanel) {Text = "Set by user:"});
+		stackPanel.AddChild(new Label(RootPanel) {Text = $"\tMarginLT: {_control.MarginLT}"});
+		stackPanel.AddChild(new Label(RootPanel) {Text = $"\tMarginRB: {_control.MarginRB}"});
+		stackPanel.AddChild(new Label(RootPanel) {Text = $"\tZIndex: {_control.OffsetZ}"});
+		stackPanel.AddChild(new Label(RootPanel) {Text = $"\tSize: {_control.Size}"});
+		stackPanel.AddChild(new Label(RootPanel) {Text = $"\tScale: {_control.Scale}"});
 
-		stackPanel.AddChild(new Label {Text = "Computed:"});
-		stackPanel.AddChild(new Label {Text = $"\tBasePos: {new Vector3<float>(_control.BasePos.X, _control.BasePos.Y, _control.BaseZ)}"});
-		stackPanel.AddChild(new Label {Text = $"\tLocalPos: {new Vector3<float>(_control.LocalPos.X, _control.LocalPos.Y, _control.LocalZ)}"});
-		stackPanel.AddChild(new Label {Text = $"\tCombinedPos: {new Vector3<float>(_control.CombinedPos.X, _control.CombinedPos.Y, _control.CombinedZ)}"});
-		stackPanel.AddChild(new Label {Text = $"\tMaskStart: {_control.MaskStart}"});
-		stackPanel.AddChild(new Label {Text = $"\tMaskEnd: {_control.MaskEnd}"});
-		stackPanel.AddChild(new Label {Text = $"\tComputedSize: {_control.ComputedSize}"});
-		stackPanel.AddChild(new Label {Text = $"\tComputedArea: {_control.ComputedArea}"});
-		stackPanel.AddChild(new Label {Text = $"\tParentScale: {_control.ParentScale}"});
-		stackPanel.AddChild(new Label {Text = $"\tCombinedScale: {_control.CombinedScale}"});
+		stackPanel.AddChild(new Label(RootPanel) {Text = "Computed:"});
+		stackPanel.AddChild(new Label(RootPanel) {Text = $"\tBasePos: {new Vector3<float>(_control.BasePos.X, _control.BasePos.Y, _control.BaseZ)}"});
+		stackPanel.AddChild(new Label(RootPanel) {Text = $"\tLocalPos: {new Vector3<float>(_control.LocalPos.X, _control.LocalPos.Y, _control.LocalZ)}"});
+		stackPanel.AddChild(new Label(RootPanel)
+			{Text = $"\tCombinedPos: {new Vector3<float>(_control.CombinedPos.X, _control.CombinedPos.Y, _control.CombinedZ)}"});
+		stackPanel.AddChild(new Label(RootPanel) {Text = $"\tMaskStart: {_control.MaskStart}"});
+		stackPanel.AddChild(new Label(RootPanel) {Text = $"\tMaskEnd: {_control.MaskEnd}"});
+		stackPanel.AddChild(new Label(RootPanel) {Text = $"\tComputedSize: {_control.ComputedSize}"});
+		stackPanel.AddChild(new Label(RootPanel) {Text = $"\tComputedArea: {_control.ComputedArea}"});
+		stackPanel.AddChild(new Label(RootPanel) {Text = $"\tParentScale: {_control.ParentScale}"});
+		stackPanel.AddChild(new Label(RootPanel) {Text = $"\tCombinedScale: {_control.CombinedScale}"});
 	}
 }

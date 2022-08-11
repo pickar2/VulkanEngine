@@ -1,11 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
+using Core.UI.Controls.Panels;
 using SimpleMath.Vectors;
 
 namespace Core.UI.Controls;
 
 public abstract class UiControl : IDisposable
 {
+	public RootPanel? RootPanel { get; init; }
+
+	protected UiControl(RootPanel rootPanel) => RootPanel = rootPanel;
+	protected UiControl() => RootPanel = default!;
+
 	protected List<UiControl> ChildrenList = new();
 
 	// set by user
@@ -77,7 +83,7 @@ public abstract class UiControl : IDisposable
 				child.ComputeSizeAndArea(maxSize);
 				maxChildArea.Max(child.ComputedArea);
 			}
-			
+
 			ComputedSize = maxChildArea.MinV(maxSize).MinV(Size * CombinedScale);
 			ComputedArea = maxChildArea.MinV(maxSize).MinV(Size * CombinedScale + (MarginLT + MarginRB) * ParentScale);
 		}

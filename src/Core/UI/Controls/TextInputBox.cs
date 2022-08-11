@@ -1,5 +1,6 @@
 ﻿using System.Drawing;
 using Core.UI.Animations;
+using Core.UI.Controls.Panels;
 using Core.Window;
 using SimpleMath.Vectors;
 
@@ -7,9 +8,9 @@ namespace Core.UI.Controls;
 
 public class TextInputBox : UiControl
 {
-	private readonly Label _label = new();
-	private readonly Rectangle _cursor = new() {Color = Color.White.ToArgb()};
-	private readonly Rectangle _selection = new() {Color = Color.LightBlue.ToArgb() & (200 << 24)};
+	private readonly Label _label;
+	private readonly Rectangle _cursor;
+	private readonly Rectangle _selection;
 
 	private readonly Animation _cursorBlink;
 
@@ -21,9 +22,13 @@ public class TextInputBox : UiControl
 		set => _label.Text = value;
 	}
 
-	public TextInputBox()
+	public TextInputBox(RootPanel rootPanel) : base(rootPanel)
 	{
 		TightBox = true;
+
+		_selection = new Rectangle(RootPanel) {Color = Color.LightBlue.ToArgb() & (200 << 24)};
+		_cursor = new Rectangle(RootPanel) {Color = Color.White.ToArgb()};
+		_label = new Label(RootPanel);
 
 		ChildrenList.Add(_label);
 		ChildrenList.Add(_cursor);

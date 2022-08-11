@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading;
+using Core.UI.Controls;
 using Core.Utils;
 using Core.Vulkan.Api;
 using Core.Vulkan.Renderers;
@@ -66,6 +68,12 @@ public static unsafe partial class Context
 				App.Logger.Info.Message($"Window shown. Full load time: {Window.Time}ms.");
 			});
 		}
+		
+		var fpsLabel = new Label(GeneralRenderer.MainRoot) {MarginLT = (10, 10), OffsetZ = 30};
+		var frameTimeLabel = new Label(GeneralRenderer.MainRoot) {MarginLT = (10, 26), OffsetZ = 31};
+
+		GeneralRenderer.MainRoot.AddChild(fpsLabel);
+		GeneralRenderer.MainRoot.AddChild(frameTimeLabel);
 
 		FrameIndex = 0;
 		IsRendering = true;
@@ -80,21 +88,32 @@ public static unsafe partial class Context
 				continue;
 			}
 
-			Lag -= MsPerUpdate;
-
 			double fps = Maths.Round(1000 / Lag, 1);
 			double frameTime = Maths.Round(CurrentFrameTime, 2);
 
 			if (frameTimeQueue.Count >= frameTimeQueueSize) frameTimeQueue.Dequeue();
 			frameTimeQueue.Enqueue(frameTime);
+			
+			fpsLabel.Text = $"FPS: {Maths.FixedPrecision(fps, 1)}";
+			frameTimeLabel.Text = $"Frame time: {Maths.FixedNumberSize(Maths.FixedPrecision(frameTimeQueue.Sum() / frameTimeQueue.Count, 2), 4)}ms";
+
+			Lag -= MsPerUpdate;
 
 			if (!Window.IsMinimized) DrawFrame();
 
 			Lag = 0;
 		}
+		
+		GeneralRenderer.MainRoot.RemoveChild(fpsLabel);
+		GeneralRenderer.MainRoot.RemoveChild(frameTimeLabel);
+
+		fpsLabel.Dispose();
+		frameTimeLabel.Dispose();
 
 		IsRendering = false;
 		TotalTimeRenderingStopwatch.Stop();
+
+		Vk.QueueWaitIdle(GraphicsQueue);
 
 		for (int i = 0; i < State.FrameOverlap.Value; i++)
 		{

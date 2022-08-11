@@ -1,4 +1,5 @@
 ﻿using System.Drawing;
+using Core.UI.Controls.Panels;
 using Core.Window;
 using SimpleMath.Vectors;
 
@@ -12,9 +13,9 @@ public class ScrollView : UiControl
 
 	public Vector2<float> ScrollOffset;
 
-	public ScrollView()
+	public ScrollView(RootPanel rootPanel) : base(rootPanel)
 	{
-		_horizontalSlider = new Rectangle
+		_horizontalSlider = new Rectangle(RootPanel)
 		{
 			Color = Color.Cornsilk.ToArgb(),
 			Size = new Vector2<float>(50, 10),
@@ -34,7 +35,7 @@ public class ScrollView : UiControl
 		});
 		AddChild(_horizontalSlider);
 
-		_verticalSlider = new Rectangle
+		_verticalSlider = new Rectangle(RootPanel)
 		{
 			Color = Color.Cornsilk.ToArgb(),
 			Size = new Vector2<float>(10, 50),

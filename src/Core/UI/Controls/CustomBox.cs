@@ -1,4 +1,6 @@
-﻿namespace Core.UI.Controls;
+﻿using Core.UI.Controls.Panels;
+
+namespace Core.UI.Controls;
 
 public class CustomBox : UiControlOneComponent
 {
@@ -21,4 +23,6 @@ public class CustomBox : UiControlOneComponent
 			Component.MarkForGPUUpdate();
 		}
 	}
+
+	public CustomBox(RootPanel rootPanel) : base(rootPanel) { }
 }

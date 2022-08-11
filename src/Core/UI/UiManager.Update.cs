@@ -3,13 +3,13 @@ using System.Collections.Generic;
 using Core.UI.Controls;
 using Core.UI.Controls.Panels;
 using Core.Utils;
+using Core.Vulkan.Renderers;
 using SimpleMath.Vectors;
 
 namespace Core.UI;
 
 public static partial class UiManager
 {
-	public static readonly RootPanel MainRoot = new FullScreenRootPanel();
 	public static readonly HashSet<RootPanel> Roots = new();
 	public static readonly IComparer<UiControl> ZComparer = new ZComparer();
 
@@ -17,7 +17,7 @@ public static partial class UiManager
 	{
 		InitEvents();
 		InitTestScene();
-		Roots.Add(MainRoot);
+		Roots.Add(GeneralRenderer.MainRoot);
 	}
 
 	public static void Update()

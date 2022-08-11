@@ -19,25 +19,25 @@ public class AlignPanel : UiControl
 				case Alignment.TopCenter:
 					child.LocalPos = new Vector2<float>((ComputedArea.X - child.ComputedArea.X) / 2, 0);
 					break;
-				case Alignment.TopRight: 
+				case Alignment.TopRight:
 					child.LocalPos = new Vector2<float>(ComputedArea.X - child.ComputedArea.X, 0);
 					break;
-				case Alignment.CenterLeft: 
+				case Alignment.CenterLeft:
 					child.LocalPos = new Vector2<float>(0, (ComputedArea.Y - child.ComputedArea.Y) / 2);
 					break;
 				case Alignment.Center:
 					child.LocalPos = (ComputedArea - child.ComputedArea) / 2;
 					break;
-				case Alignment.CenterRight: 
+				case Alignment.CenterRight:
 					child.LocalPos = new Vector2<float>(ComputedArea.X - child.ComputedArea.X, (ComputedArea.Y - child.ComputedArea.Y) / 2);
 					break;
-				case Alignment.BottomLeft: 
+				case Alignment.BottomLeft:
 					child.LocalPos = new Vector2<float>(0, ComputedArea.Y - child.ComputedArea.Y);
 					break;
-				case Alignment.BottomCenter: 
+				case Alignment.BottomCenter:
 					child.LocalPos = new Vector2<float>((ComputedArea.X - child.ComputedArea.X) / 2, ComputedArea.Y - child.ComputedArea.Y);
 					break;
-				case Alignment.BottomRight: 
+				case Alignment.BottomRight:
 					child.LocalPos = ComputedArea - child.ComputedArea;
 					break;
 			}
@@ -47,6 +47,8 @@ public class AlignPanel : UiControl
 			child.ArrangeChildren(child.ComputedSize);
 		}
 	}
+
+	public AlignPanel(RootPanel rootPanel) : base(rootPanel) { }
 }
 
 public enum Alignment

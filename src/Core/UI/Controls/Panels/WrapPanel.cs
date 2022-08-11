@@ -94,4 +94,6 @@ public class WrapPanel : UiControl
 			child.ArrangeChildren(area);
 		}
 	}
+
+	public WrapPanel(RootPanel rootPanel) : base(rootPanel) { }
 }
