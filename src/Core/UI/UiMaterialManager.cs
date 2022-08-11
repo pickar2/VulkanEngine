@@ -1,113 +1,103 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
 using System.Text;
-using Core.Registries.API;
-using Core.Registries.Entities;
-using Core.Registries.EventManagerTypes;
+using Core.Native.Shaderc;
 using Core.Vulkan.Api;
-using Silk.NET.Vulkan;
 
 namespace Core.UI;
 
-public sealed class UiMaterialManager : SimpleRegistry<NoneEventManager<MaterialDataFactory>, MaterialDataFactory>
+public partial class UiMaterialManager
 {
-	private readonly StringBuilder _fragmentIncludes = new();
-	private readonly StringBuilder _fragmentSwitch = new();
+	private readonly Dictionary<string, MaterialDataFactory> _materials = new();
 
-	private readonly StringBuilder _vertexIncludes = new();
-	private readonly StringBuilder _vertexSwitch = new();
+	private readonly Dictionary<string, StringBuilder> _fragmentIncludeBuilders = new();
+	private readonly Dictionary<string, StringBuilder> _fragmentSwitchBuilders = new();
 
-	private UiMaterialManager() : base(NamespacedName.CreateWithName("ui-material-manager")) { }
-	public short MaterialCount { get; private set; }
-	public short VertMaterialCount { get; private set; }
-	public short FragMaterialCount { get; private set; }
-	public static UiMaterialManager Instance { get; } = new();
+	private readonly Dictionary<string, StringBuilder> _vertexIncludeBuilders = new();
+	private readonly Dictionary<string, StringBuilder> _vertexSwitchBuilders = new();
 
-	public static MaterialDataFactory GetFactory(string name)
+	public int MaterialCount { get; private set; }
+	public short VertexMaterialCount { get; private set; }
+	public short FragmentMaterialCount { get; private set; }
+
+	public string Name { get; }
+
+	public MaterialDataFactory GetFactory(string name)
 	{
-		if (!Instance.TryGetValue(name, out var factory))
+		if (!_materials.TryGetValue(name, out var factory))
 			throw new ArgumentException($"Tried to get unknown material factory `{name}`.").AsExpectedException();
 		return factory;
 	}
 
-	protected override void RegisterActions(MaterialDataFactory materialFactory, Assembly callingAssembly)
+	public void RegisterMaterialFile(string path)
 	{
-		MaterialCount++;
-		short factoryIndex = materialFactory.StageFlag switch
-		{
-			ShaderStageFlags.VertexBit => VertMaterialCount++,
-			ShaderStageFlags.FragmentBit => FragMaterialCount++,
-			_ => 0
-		};
-		materialFactory.Index = factoryIndex;
+		string[] lines = File.ReadAllLines(path);
+
+		string identifier = lines[0].Split("=")[1];
+
+		string shaderKindString = lines[1].Split("=")[1];
+		if (!Enum.TryParse<ShaderKind>(shaderKindString, out var shaderKind))
+			throw new Exception($"Unknown material shader type: `{shaderKindString}`.").AsExpectedException();
+
+		int size = int.Parse(lines[2].Split("=")[1]);
+
+		RegisterOrUpdateMaterial(identifier, path, shaderKind, size);
 	}
 
-	public static void CreateIncludesFiles()
+	public void RegisterOrUpdateMaterial(string identifier, string shaderPath, ShaderKind shaderKind, int dataSize)
 	{
-		var fragmentSb = new StringBuilder();
-		fragmentSb.Append(Instance._fragmentIncludes);
-		fragmentSb.Append(@"void fragmentSwitch(UiElementData data) {
-	int id = int(data.fragmentMaterialType);
-	switch (id) {
-");
-		fragmentSb.Append(Instance._fragmentSwitch);
-		fragmentSb.Append(@"	}
-}");
-		ShaderManager.SetVirtualShader("@fragment_includes.glsl", fragmentSb.ToString());
+		short index;
+		if (_materials.TryGetValue(identifier, out var factory))
+			index = factory.Index;
+		else
+			index = shaderKind == ShaderKind.VertexShader ? VertexMaterialCount++ : FragmentMaterialCount++;
 
+		var sb = new StringBuilder();
+		sb.Append($"#define {identifier}_binding {index}").AppendLine();
+		sb.Append($"#include \"{shaderPath}\"").AppendLine().AppendLine();
+		(shaderKind == ShaderKind.VertexShader ? _vertexIncludeBuilders : _fragmentIncludeBuilders)[identifier] = sb;
+
+		sb = new StringBuilder();
+		sb.Append($"\t\tcase {identifier}_binding:").AppendLine();
+		sb.Append($"\t\t\t{identifier}(data);").AppendLine();
+		sb.Append("\t\t\tbreak;").AppendLine();
+		(shaderKind == ShaderKind.VertexShader ? _vertexSwitchBuilders : _fragmentSwitchBuilders)[identifier] = sb;
+
+		_materials[identifier] = new MaterialDataFactory(dataSize, shaderKind.ToStageFlags(), identifier, index);
+	}
+
+	public void UpdateVertexShader()
+	{
 		var vertexSb = new StringBuilder();
-		vertexSb.Append(Instance._vertexIncludes);
+		foreach ((string? _, var builder) in _vertexIncludeBuilders) vertexSb.Append(builder);
 		vertexSb.Append(@"void vertexSwitch(UiElementData data) {
 	int id = int(data.vertexMaterialType);
 	switch (id) {
 ");
-		vertexSb.Append(Instance._vertexSwitch);
+		foreach ((string? _, var builder) in _vertexSwitchBuilders) vertexSb.Append(builder);
 		vertexSb.Append(@"	}
 }");
-		ShaderManager.SetVirtualShader("@vertex_includes.glsl", vertexSb.ToString());
-
-		// using var materialConstants = File.Create("Assets/Shaders/Ui/Generated/material_constants.glsl");
-		// using (var writer = new StreamWriter(materialConstants)) writer.Write($"#define MATERIAL_COUNT {Instance.MaterialCount}");
+		ShaderManager.SetVirtualShader($"@{Name}_vertex_includes.glsl", vertexSb.ToString());
 	}
 
-	public static void RegisterMaterial(string filename)
+	public void UpdateFragmentShader()
 	{
-		string path = "Assets/Shaders/Ui/Materials/" + filename;
-		string[] lines = File.ReadAllLines(path);
-		string identifier = lines[0].Replace("/", "").Split("=")[1];
-		string type = lines[1].Replace("/", "").Split("=")[1];
-		int size = int.Parse(lines[2].Replace("/", "").Split("=")[1]);
+		var fragmentSb = new StringBuilder();
+		foreach ((string? _, var builder) in _fragmentIncludeBuilders) fragmentSb.Append(builder);
+		fragmentSb.Append(@"void fragmentSwitch(UiElementData data) {
+	int id = int(data.fragmentMaterialType);
+	switch (id) {
+");
+		foreach ((string? _, var builder) in _fragmentSwitchBuilders) fragmentSb.Append(builder);
+		fragmentSb.Append(@"	}
+}");
+		ShaderManager.SetVirtualShader($"@{Name}_fragment_includes.glsl", fragmentSb.ToString());
+	}
 
-		NamespacedName name;
-		switch (type)
-		{
-			case "vertex":
-				Instance._vertexIncludes.Append("#define ").Append(identifier).Append("_binding ").Append(Instance.VertMaterialCount).AppendLine();
-				Instance._vertexIncludes.Append("#include ").Append("\"Assets/Shaders/Ui/Materials/" + filename + "\"").AppendLine().AppendLine();
-
-				Instance._vertexSwitch.Append("\t\tcase ").Append(identifier).Append("_binding:").AppendLine();
-				Instance._vertexSwitch.Append("\t\t\t").Append(identifier).Append("(data);").AppendLine();
-				Instance._vertexSwitch.Append("\t\t\t").Append("break;").AppendLine();
-
-				name = NamespacedName.CreateWithName(identifier);
-				// Instance.Register(new MaterialDataFactory(size, ShaderStageFlags.VertexBit, name))
-				// 	.ThrowIfFalse($"Material factory `{name.FullName}` is already registered.");
-				break;
-			case "fragment":
-				Instance._fragmentIncludes.Append("#define ").Append(identifier).Append("_binding ").Append(Instance.FragMaterialCount).AppendLine();
-				Instance._fragmentIncludes.Append("#include ").Append("\"Assets/Shaders/Ui/Materials/" + filename + "\"").AppendLine().AppendLine();
-
-				Instance._fragmentSwitch.Append("\t\tcase ").Append(identifier).Append("_binding:").AppendLine();
-				Instance._fragmentSwitch.Append("\t\t\t").Append(identifier).Append("(data);").AppendLine();
-				Instance._fragmentSwitch.Append("\t\t\t").Append("break;").AppendLine();
-
-				name = NamespacedName.CreateWithName(identifier);
-				// Instance.Register(new MaterialDataFactory(size, ShaderStageFlags.FragmentBit, name))
-				// 	.ThrowIfFalse($"Material factory `{name.FullName}` is already registered.");
-				break;
-			default:
-				throw new ArgumentException($"Unknown shader type `{type}` in resource `{path}`.").AsExpectedException();
-		}
+	public void UpdateShaders()
+	{
+		UpdateVertexShader();
+		UpdateFragmentShader();
 	}
 }

@@ -4,7 +4,7 @@ using Silk.NET.Vulkan;
 
 namespace Core.UI;
 
-public unsafe partial class UiMaterialManager2
+public unsafe partial class UiMaterialManager
 {
 	public readonly OnAccessValueReCreator<DescriptorSetLayout> VertexDescriptorSetLayout;
 	public readonly OnAccessValueReCreator<DescriptorSetLayout> FragmentDescriptorSetLayout;
@@ -21,7 +21,7 @@ public unsafe partial class UiMaterialManager2
 	private int _lastVertexMaterialCount = -1;
 	private int _lastFragmentMaterialCount = -1;
 
-	public UiMaterialManager2(string name)
+	public UiMaterialManager(string name)
 	{
 		Name = name;
 

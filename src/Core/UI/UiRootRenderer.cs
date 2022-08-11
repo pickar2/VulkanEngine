@@ -49,12 +49,12 @@ public unsafe partial class UiRootRenderer : RenderChain
 	private readonly OnAccessClassReCreator<Semaphore[]> _sortSemaphores;
 
 	public readonly UiComponentManager ComponentManager;
-	public readonly UiMaterialManager2 MaterialManager;
+	public readonly UiMaterialManager MaterialManager;
 	public readonly UiGlobalDataManager GlobalDataManager;
 
 	public RootPanel RootPanel;
 
-	public UiRootRenderer(string name, UiComponentManager componentManager, UiMaterialManager2 materialManager,
+	public UiRootRenderer(string name, UiComponentManager componentManager, UiMaterialManager materialManager,
 		UiGlobalDataManager globalDataManager) : base(name)
 	{
 		ComponentManager = componentManager;

@@ -1,5 +1,0 @@
-﻿identifier=frame-index
-data_size=4
-glsl_file=frame_index_gdata.glsl
-csharp_file=
-csharp_struct=int

@@ -48,7 +48,7 @@ public static class GeneralRenderer
 	static unsafe GeneralRenderer()
 	{
 		var componentManager = new UiComponentManager("Comp1");
-		var materialManager = new UiMaterialManager2("Mat1");
+		var materialManager = new UiMaterialManager("Mat1");
 		var globalDataManager = new UiGlobalDataManager("global");
 
 		MainRoot = new FullScreenRootPanel(componentManager, materialManager, globalDataManager);
@@ -93,164 +93,9 @@ public static class GeneralRenderer
 			ExecuteOnce.InDevice.BeforeDispose(() => texture.Dispose());
 		};
 
-		// var defaultVertexMaterial = materialManager.GetFactory("default_vertex_material");
-		// var colorFragmentMaterial = materialManager.GetFactory("color_material");
-		// var coolFragmentMaterial = materialManager.GetFactory("cool_material");
-		//
-		// var component1 = componentManager.Factory.Create();
-		// var component1Data = component1.GetData();
-		// component1Data->BasePos = (200, 300);
-		// component1Data->BaseZ = 10;
-		// component1Data->Size = (400, 400);
-		// component1Data->MaskStart = (0, 0);
-		// component1Data->MaskEnd = (1920, 1080);
-		//
-		// var vMat1 = defaultVertexMaterial.Create();
-		// vMat1.MarkForGPUUpdate();
-		// component1.VertMaterial = vMat1;
-		//
-		// var fMat1 = coolFragmentMaterial.Create();
-		// fMat1.GetMemPtr<int>()[0] = Color.Black.ToArgb();
-		// fMat1.GetMemPtr<int>()[1] = Color.Red.ToArgb();
-		// fMat1.MarkForGPUUpdate();
-		// component1.FragMaterial = fMat1;
-		//
-		// component1.MarkForGPUUpdate();
-		// var colorMaterial = materialManager.GetFactory("color_material");
-		// var vertexMaterial = materialManager.GetFactory("default_vertex_material");
-		// var transformMaterial = materialManager.GetFactory("transform_material");
-		// var coolMaterial = materialManager.GetFactory("cool_material");
-		// var bigGradientMaterial = materialManager.GetFactory("big_gradient_material");
-		// var coordinatesMaterial = materialManager.GetFactory("coordinates_material");
-		// var followCursorMaterial = materialManager.GetFactory("follow_cursor_material");
-		//
-		// var cursorVertMat = followCursorMaterial.Create();
-		// cursorVertMat.MarkForGPUUpdate();
-		//
-		// var cursorFragMat = coolMaterial.Create();
-		// var cursorFragData = cursorFragMat.GetMemPtr<CoolMaterialData>();
-		// cursorFragData->Color1 = Color.Blue.ToArgb();
-		// cursorFragData->Color2 = Color.DarkViolet.ToArgb();
-		// cursorFragMat.MarkForGPUUpdate();
-		//
-		// var cursor = componentManager.Factory.Create();
-		// var cursorData = cursor.GetData();
-		// cursorData->BasePos = (0, 0);
-		// cursorData->BaseZ = 200;
-		// cursorData->Size = (50, 50);
-		// cursorData->MaskStart = (0, 0);
-		// cursorData->MaskEnd = (2000, 2000);
-		//
-		// cursor.VertMaterial = cursorVertMat;
-		// cursor.FragMaterial = cursorFragMat;
-		// cursor.MarkForGPUUpdate();
-		//
-		// var comp = componentManager.Factory.Create();
-		// var compData = comp.GetData();
-		// compData->BasePos = (450, 100);
-		// compData->BaseZ = 300;
-		// compData->Size = (300, 300);
-		// compData->MaskStart = (0, 0);
-		// compData->MaskEnd = (2000, 2000);
-		//
-		// var cool = coolMaterial.Create();
-		// comp.FragMaterial = cool;
-		//
-		// var coolData = cool.GetMemPtr<CoolMaterialData>();
-		// coolData->Color1 = Color.Black.ToArgb();
-		// coolData->Color2 = Color.DarkRed.ToArgb();
-		// cool.MarkForGPUUpdate();
-		//
-		// var transform = transformMaterial.Create();
-		// comp.VertMaterial = transform;
-		//
-		// var transformData = transform.GetMemPtr<TransformMaterialData>();
-		// transformData->Transform = Matrix4X4<float>.Identity.RotationZ(0.08f);
-		// transform.MarkForGPUUpdate();
-		//
-		// // Components.Add(comp);
-		// comp.MarkForGPUUpdate();
-		//
-		// const short count = 1000;
-		// const short spacing = 0;
-		// const short size = 1;
-		//
-		// const short startX = 550;
-		// const short startY = 55;
-		//
-		// var defaultVertexMaterial = vertexMaterial.Create();
-		// defaultVertexMaterial.MarkForGPUUpdate();
-		//
-		// for (int i = 0; i < count; i++)
-		// {
-		// 	for (int j = 0; j < count; j++)
-		// 	{
-		// 		var square = componentManager.Factory.Create();
-		//
-		// 		var gradient = bigGradientMaterial.Create();
-		// 		var data = gradient.GetMemPtr<BigGradientMaterialData>();
-		//
-		// 		data->Color1 = Color.Blue.ToArgb();
-		// 		data->Color2 = Color.Yellow.ToArgb();
-		//
-		// 		// data->StartX = startX;
-		// 		// data->StartY = 0;
-		//
-		// 		data->EndX = (size + spacing) * count;
-		// 		data->EndY = (size + spacing) * count;
-		// 		gradient.MarkForGPUUpdate();
-		//
-		// 		var squareData = square.GetData();
-		//
-		// 		squareData->BasePos = (startX, startY);
-		// 		squareData->BaseZ = 100;
-		//
-		// 		squareData->LocalPos = ((size + spacing) * i, (size + spacing) * j);
-		//
-		// 		squareData->Size = (size, size);
-		// 		squareData->MaskStart = (0, 0);
-		// 		squareData->MaskEnd = (2000, 2000);
-		//
-		// 		square.VertMaterial = defaultVertexMaterial;
-		// 		square.FragMaterial = gradient;
-		// 		square.MarkForGPUUpdate();
-		//
-		// 		// Components.Add(square);
-		// 	}
-		// }
-
 		// Root.AddChild(new TestToTextureRenderer("ChildRenderer1"));
 		// Root.AddChild(new TestToTextureRenderer("ChildRenderer2"));
 	}
-	// var sceneWithNoDependencies = new VulkanSceneChain("SceneWithNoDependencies");
-	// Root.AddChild(sceneWithNoDependencies);
-	//
-	// var sceneWithSceneDependency = new VulkanSceneChain("SceneWithSceneDependency");
-	// var sceneDependency = new VulkanSceneChain("SceneDependency0");
-	// sceneWithSceneDependency.AddChild(sceneDependency);
-	// Root.AddChild(sceneWithSceneDependency);
-	//
-	// var sceneWithUiDependency = new VulkanSceneChain("SceneWithUiDependency");
-	// var uiDependency = new UiRootChain("UiDependency0");
-	// sceneWithUiDependency.AddChild(uiDependency);
-	// Root.AddChild(sceneWithUiDependency);
-	//
-	// var complexUi = new UiRootChain("ComplexUi");
-	// var uiDep1 = new UiRootChain("UiDep1");
-	// var uiDep2 = new UiRootChain("UiDep2");
-	// var uiDep3 = new UiRootChain("UiDep3");
-	// var sceneDep1 = new VulkanSceneChain("SceneDep1");
-	// var sceneDep2 = new VulkanSceneChain("SceneDep2");
-	// var sceneDep3 = new VulkanSceneChain("SceneDep3");
-	// uiDep1.AddChild(sceneDep1);
-	// sceneDep1.AddChild(sceneDep2);
-	// sceneDep2.AddChild(uiDep2);
-	// complexUi.AddChild(uiDep1);
-	// complexUi.AddChild(uiDep3);
-	// complexUi.AddChild(sceneDep3);
-	// Root.AddChild(complexUi);
-	// var cmd = CommandBuffers.CreateCommandBuffer(CommandBufferLevel.Primary, _commandPool!.Value);
-	// Root.GetCommandBuffer(0);
 }
 
 public abstract unsafe class RenderChain : IDisposable

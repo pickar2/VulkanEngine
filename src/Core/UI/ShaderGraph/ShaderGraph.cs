@@ -128,12 +128,12 @@ public class ShaderGraph
 
 		// Console.Out.WriteLine(graph.CompileGraph());
 
-		var dotsBgMaterialFactory = UiMaterialManager.GetFactory("core:dots_background_material");
-		var bgFragMat = dotsBgMaterialFactory.Create();
-		bgFragMat.MarkForGPUUpdate();
+		// var dotsBgMaterialFactory = UiMaterialManager.GetFactory("core:dots_background_material");
+		// var bgFragMat = dotsBgMaterialFactory.Create();
+		// bgFragMat.MarkForGPUUpdate();
 
 		var bg = UiComponentFactory.CreateComponent();
-		bg.FragMaterial = bgFragMat;
+		// bg.FragMaterial = bgFragMat;
 		var bgData = bg.GetData();
 		bgData->Size = (Context.Window.WindowWidth, Context.Window.WindowHeight);
 		bg.MarkForGPUUpdate();

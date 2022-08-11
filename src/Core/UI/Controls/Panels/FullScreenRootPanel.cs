@@ -5,7 +5,7 @@ namespace Core.UI.Controls.Panels;
 
 public class FullScreenRootPanel : RootPanel
 {
-	public FullScreenRootPanel(UiComponentManager componentManager, UiMaterialManager2 materialManager, UiGlobalDataManager globalDataManager) : base(
+	public FullScreenRootPanel(UiComponentManager componentManager, UiMaterialManager materialManager, UiGlobalDataManager globalDataManager) : base(
 		componentManager, materialManager, globalDataManager)
 	{
 		Selectable = false;
