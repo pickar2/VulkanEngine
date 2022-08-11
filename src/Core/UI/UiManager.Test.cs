@@ -8,6 +8,7 @@ using Core.UI.Controls;
 using Core.UI.Controls.Panels;
 using Core.UI.Fonts;
 using Core.UI.Transforms;
+using Core.Vulkan.Api;
 using Core.Window;
 using SDL2;
 using SimpleMath.Vectors;
@@ -55,6 +56,34 @@ public static partial class UiManager
 		AnimationTest(mainControl);
 		TextInputTest(mainControl);
 		AlignPanelTest(mainControl);
+		TexturesTest(mainControl);
+	}
+
+	private static unsafe void TexturesTest(AbsolutePanel parent)
+	{
+		var box1 = new CustomBox(MainRoot);
+		box1.MarginLT = (350, 50);
+		box1.Size = (150, 150);
+		box1.OffsetZ = 250;
+		var frag = MainRoot.MaterialManager.GetFactory("texture_material").Create();
+		box1.FragMaterial = frag;
+
+		*frag.GetMemPtr<int>() = 1;
+		frag.MarkForGPUUpdate();
+
+		parent.AddChild(box1);
+		
+		var box2 = new CustomBox(MainRoot);
+		box2.MarginLT = (600, 50);
+		box2.Size = (150, 150);
+		box2.OffsetZ = 250;
+		var frag2 = MainRoot.MaterialManager.GetFactory("texture_material").Create();
+		box2.FragMaterial = frag2;
+
+		*frag2.GetMemPtr<int>() = 4;
+		frag2.MarkForGPUUpdate();
+
+		parent.AddChild(box2);
 	}
 
 	private static void TextInputTest(AbsolutePanel parent)

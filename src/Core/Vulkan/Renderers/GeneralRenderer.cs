@@ -93,8 +93,8 @@ public static class GeneralRenderer
 			ExecuteOnce.InDevice.BeforeDispose(() => texture.Dispose());
 		};
 
-		// Root.AddChild(new TestToTextureRenderer("ChildRenderer1"));
-		// Root.AddChild(new TestToTextureRenderer("ChildRenderer2"));
+		Root.AddChild(new TestToTextureRenderer("ChildRenderer1"));
+		Root.AddChild(new TestToTextureRenderer("ChildRenderer2"));
 	}
 }
 
