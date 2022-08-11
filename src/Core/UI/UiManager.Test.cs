@@ -131,19 +131,29 @@ public static partial class UiManager
 
 	private static void LabelTest(UiControl parent)
 	{
-		var testText1 = new Label(MainRoot);
-		testText1.Scale = new Vector2<float>(1.0f);
-		testText1.Text = "Frame time:";
-		testText1.OffsetZ = 34;
-		testText1.MarginLT = new Vector2<float>(10, 42);
-		parent.AddChild(testText1);
+		var testText0 = new Label(MainRoot);
+		testText0.Text = "Press [Esc] to exit.";
+		testText0.OffsetZ = 34;
+		testText0.MarginLT = new Vector2<float>(10, 42);
+		parent.AddChild(testText0);
 
+		var testText1 = new Label(MainRoot);
+		testText1.Text = "Press [G] to change GPU.";
+		testText1.OffsetZ = 34;
+		testText1.MarginLT = new Vector2<float>(10, 42 + 16);
+		parent.AddChild(testText1);
+		
 		var testText2 = new Label(MainRoot);
-		testText2.Scale = new Vector2<float>(0.5f);
-		testText2.Text = "Scaled text";
+		testText2.Text = "Press [T] to toggle Debug Mode.";
 		testText2.OffsetZ = 34;
 		testText2.MarginLT = new Vector2<float>(10, 42 + 32);
 		parent.AddChild(testText2);
+
+		var testText3 = new Label(MainRoot);
+		testText3.Text = "Press [P] to toggle Wireframe.";
+		testText3.OffsetZ = 34;
+		testText3.MarginLT = new Vector2<float>(10, 42 + 48);
+		parent.AddChild(testText3);
 	}
 
 	private static void StackPanelTest(UiControl parent)
