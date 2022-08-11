@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.InteropServices;
 using Core.Registries.API;
 using Core.Registries.CoreTypes;
 using Core.Registries.Entities;
@@ -19,6 +20,8 @@ public unsafe class MultipleStructDataFactory : SimpleRegistry<NoneEventManager<
 
 	private readonly IntPtr[] _ptr = new IntPtr[1];
 	private int _offset;
+
+	private nint _dataBackup;
 
 	public MultipleStructDataFactory(NamespacedName identifier, bool cpuToGpuMemory = false) : base(identifier)
 	{
@@ -46,6 +49,12 @@ public unsafe class MultipleStructDataFactory : SimpleRegistry<NoneEventManager<
 
 		Context.DeviceEvents.BeforeDispose += () =>
 		{
+			if (!Context.State.Window.Value.IsClosing)
+			{
+				_dataBackup = Marshal.AllocHGlobal((int) BufferSize);
+				DataBufferCpu.GetHostSpan().CopyTo(new Span<byte>((void*) _dataBackup, (int) BufferSize));
+			}
+
 			VmaUnmapMemory(DataBufferCpu.Allocation);
 			DataBufferCpu.Dispose();
 			if (DataBufferCpu.Buffer.Handle != DataBufferGpu.Buffer.Handle)
@@ -73,6 +82,13 @@ public unsafe class MultipleStructDataFactory : SimpleRegistry<NoneEventManager<
 
 			VmaMapMemory(DataBufferCpu.Allocation, _ptr);
 			Pointer = (byte*) _ptr[0];
+
+			if (_dataBackup != default)
+			{
+				new Span<byte>((void*) _dataBackup, (int) BufferSize).CopyTo(DataBufferCpu.GetHostSpan());
+				Marshal.FreeHGlobal(_dataBackup);
+				_dataBackup = default;
+			}
 		};
 	}
 

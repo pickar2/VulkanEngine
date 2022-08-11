@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Runtime.InteropServices;
+using Core.Utils;
 using Core.Vulkan;
 using Core.Vulkan.Api;
 using Core.Vulkan.Utility;
@@ -21,6 +23,8 @@ public abstract unsafe class AbstractVulkanDataFactory<TDataHolder> : IVulkanDat
 
 	private byte* _materialData;
 	private nint Ptr => DataBufferCpu.HostMemoryPtr;
+
+	private nint _dataBackup;
 
 	public AbstractVulkanDataFactory(int dataSize)
 	{
@@ -49,6 +53,14 @@ public abstract unsafe class AbstractVulkanDataFactory<TDataHolder> : IVulkanDat
 
 		Context.DeviceEvents.BeforeDispose += () =>
 		{
+			if (!Context.State.Window.Value.IsClosing)
+			{
+				int size = Math.Min((int) BufferSize, ComponentCount * ComponentSize);
+				_dataBackup = Marshal.AllocHGlobal(size);
+				DataBufferCpu.GetHostSpan()[..size].CopyTo(new Span<byte>((void*) _dataBackup, size));
+				// App.Logger.Info.Message($"Saved {size/1024f} KB.");
+			}
+
 			DataBufferCpu.Dispose();
 			if (DataBufferCpu.Buffer.Handle != DataBufferGpu.Buffer.Handle)
 				DataBufferGpu.Dispose();
@@ -70,9 +82,17 @@ public abstract unsafe class AbstractVulkanDataFactory<TDataHolder> : IVulkanDat
 					VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
 			}
 
-			DataBufferCpu.Map();
+			_materialData = (byte*) DataBufferCpu.Map();
 
-			_materialData = (byte*) Ptr;
+			if (_dataBackup != default)
+			{
+				int size = Math.Min((int) BufferSize, ComponentCount * ComponentSize);
+				new Span<byte>((void*) _dataBackup, size).CopyTo(DataBufferCpu.GetHostSpan());
+				Marshal.FreeHGlobal(_dataBackup);
+				_dataBackup = default;
+				_copyRegions.Fill(true);
+				// App.Logger.Info.Message($"Loaded {size/1024f} KB.");
+			}
 		};
 	}
 

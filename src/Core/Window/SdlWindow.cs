@@ -19,6 +19,7 @@ public class SdlWindow : IDisposable
 	public float Time => _stopwatch.Ms();
 	public bool IsInitialized { get; private set; }
 	public bool IsRunning { get; private set; }
+	public bool IsClosing { get; private set; }
 	public bool IsMinimized => ((SDL_WindowFlags) SDL_GetWindowFlags(WindowHandle) & SDL_WindowFlags.SDL_WINDOW_MINIMIZED) > 0;
 
 	public uint WindowWidth => Context.State.WindowSize.Value.X;
@@ -71,6 +72,7 @@ public class SdlWindow : IDisposable
 
 	public void Dispose()
 	{
+		IsClosing = true;
 		SDL_DestroyWindow(WindowHandle);
 		SDL_Quit();
 		GC.SuppressFinalize(this);
@@ -88,7 +90,10 @@ public class SdlWindow : IDisposable
 		return strings;
 	}
 
-	public void Close() => IsRunning = false;
+	public void Close() {
+		IsRunning = false;
+		IsClosing = true;
+	}
 	public void SetTitle(string title) => SDL_SetWindowTitle(WindowHandle, Title = title);
 	public void Hide() => SDL_HideWindow(WindowHandle);
 	public void Show() => SDL_ShowWindow(WindowHandle);
