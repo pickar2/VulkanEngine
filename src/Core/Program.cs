@@ -75,7 +75,7 @@ internal static class Program
 		{
 			wireframe = !wireframe;
 			var mode = wireframe ? PolygonMode.Line : PolygonMode.Fill;
-			if (PipelineManager.AutoPipelines.TryGetValue("RenderChildren", out var pipeline))
+			if (PipelineManager.AutoPipelines.TryGetValue("RenderUiRoot", out var pipeline))
 				pipeline.Builder.RasterizationState(span => span[0].PolygonMode = mode);
 			return true;
 		}), SDL.SDL_Keycode.SDLK_p);

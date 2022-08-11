@@ -47,12 +47,33 @@ public abstract unsafe class AbstractVulkanDataFactory<TDataHolder> : IVulkanDat
 		_materialData = (byte*) Ptr;
 		new Span<byte>(_materialData, (int) BufferSize).Fill(default);
 
-		ExecuteOnce.InDevice.BeforeDispose(() =>
+		Context.DeviceEvents.BeforeDispose += () =>
 		{
 			DataBufferCpu.Dispose();
 			if (DataBufferCpu.Buffer.Handle != DataBufferGpu.Buffer.Handle)
 				DataBufferGpu.Dispose();
-		});
+		};
+
+		Context.DeviceEvents.AfterCreate += () =>
+		{
+			BufferChanged = true;
+
+			if (Context.IsIntegratedGpu)
+			{
+				DataBufferCpu = new VulkanBuffer(BufferSize, BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU);
+				DataBufferGpu = DataBufferCpu;
+			}
+			else
+			{
+				DataBufferCpu = new VulkanBuffer(BufferSize, BufferUsageFlags.TransferSrcBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_ONLY);
+				DataBufferGpu = new VulkanBuffer(BufferSize, BufferUsageFlags.StorageBufferBit | BufferUsageFlags.TransferDstBit,
+					VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
+			}
+
+			DataBufferCpu.Map();
+
+			_materialData = (byte*) Ptr;
+		};
 	}
 
 	public VulkanBuffer DataBufferCpu { get; private set; }

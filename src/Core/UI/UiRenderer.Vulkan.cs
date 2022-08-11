@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Numerics;
-using System.Runtime.InteropServices;
 using Core.Native.Shaderc;
 using Core.Native.SpirvReflect;
 using Core.Registries.Entities;
@@ -329,7 +328,7 @@ public static unsafe partial class UiRenderer
 			bufferInfos[index] = new DescriptorBufferInfo
 			{
 				Offset = (ulong) holder.Offset,
-				Range = (ulong) holder.Size,
+				Range = (ulong) holder.BufferSize,
 				Buffer = GlobalData.DataBufferGpu.Buffer
 			};
 

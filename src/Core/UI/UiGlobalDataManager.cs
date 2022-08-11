@@ -20,7 +20,7 @@ public unsafe class UiGlobalDataManager
 
 	public string Name { get; }
 
-	public readonly MultipleStructDataFactory GlobalData;
+	public readonly MultipleStructDataFactory Factory;
 
 	public StructHolder ProjectionMatrixHolder;
 	public StructHolder OrthoMatrixHolder;
@@ -31,12 +31,12 @@ public unsafe class UiGlobalDataManager
 	{
 		Name = name;
 
-		GlobalData = new MultipleStructDataFactory(NamespacedName.CreateWithName(name), true);
+		Factory = new MultipleStructDataFactory(NamespacedName.CreateWithName(name), true);
 
-		ProjectionMatrixHolder = GlobalData.CreateHolder(64, NamespacedName.CreateWithName("projection-matrix"));
-		FrameIndexHolder = GlobalData.CreateHolder(4, NamespacedName.CreateWithName("frame-index"));
-		MousePositionHolder = GlobalData.CreateHolder(8, NamespacedName.CreateWithName("mouse-position"));
-		OrthoMatrixHolder = GlobalData.CreateHolder(64, NamespacedName.CreateWithName("ortho-matrix"));
+		ProjectionMatrixHolder = Factory.CreateHolder(64, NamespacedName.CreateWithName("projection-matrix"));
+		FrameIndexHolder = Factory.CreateHolder(4, NamespacedName.CreateWithName("frame-index"));
+		MousePositionHolder = Factory.CreateHolder(8, NamespacedName.CreateWithName("mouse-position"));
+		OrthoMatrixHolder = Factory.CreateHolder(64, NamespacedName.CreateWithName("ortho-matrix"));
 
 		DescriptorSetLayout = ReCreate.InDevice.OnAccessValue(() => CreateSetLayout(), layout => layout.Dispose());
 		DescriptorPool = ReCreate.InDevice.OnAccessValue(() => CreateDescriptorPool(), pool => pool.Dispose());
@@ -45,9 +45,9 @@ public unsafe class UiGlobalDataManager
 
 	public void AfterUpdate()
 	{
-		if (GlobalData.BufferChanged)
+		if (Factory.BufferChanged)
 		{
-			GlobalData.BufferChanged = false;
+			Factory.BufferChanged = false;
 			UpdateSet();
 		}
 
@@ -83,16 +83,16 @@ public unsafe class UiGlobalDataManager
 
 	private void UpdateSet()
 	{
-		var bufferInfos = stackalloc DescriptorBufferInfo[GlobalData.Count];
-		var writes = stackalloc WriteDescriptorSet[GlobalData.Count];
+		var bufferInfos = stackalloc DescriptorBufferInfo[Factory.Count];
+		var writes = stackalloc WriteDescriptorSet[Factory.Count];
 		uint index = 0;
-		foreach ((string _, var holder) in GlobalData)
+		foreach ((string _, var holder) in Factory)
 		{
 			bufferInfos[index] = new DescriptorBufferInfo
 			{
 				Offset = (ulong) holder.Offset,
-				Range = (ulong) holder.Size,
-				Buffer = GlobalData.DataBufferGpu.Buffer
+				Range = (ulong) holder.BufferSize,
+				Buffer = Factory.DataBufferGpu.Buffer
 			};
 
 			writes[index] = new WriteDescriptorSet
@@ -112,9 +112,9 @@ public unsafe class UiGlobalDataManager
 
 	private DescriptorSetLayout CreateSetLayout()
 	{
-		var bindings = stackalloc DescriptorSetLayoutBinding[GlobalData.Count];
+		var bindings = stackalloc DescriptorSetLayoutBinding[Factory.Count];
 		uint index = 0;
-		for (int i = 0; i < GlobalData.Count; i++)
+		for (int i = 0; i < Factory.Count; i++)
 		{
 			bindings[index] = new DescriptorSetLayoutBinding
 			{
@@ -144,7 +144,7 @@ public unsafe class UiGlobalDataManager
 	{
 		var globalDataPoolSizes = new DescriptorPoolSize
 		{
-			DescriptorCount = (uint) GlobalData.Count,
+			DescriptorCount = (uint) Factory.Count,
 			Type = DescriptorType.StorageBuffer
 		};
 
