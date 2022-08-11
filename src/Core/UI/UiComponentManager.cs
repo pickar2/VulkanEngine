@@ -66,7 +66,7 @@ public unsafe class UiComponentManager
 			{
 				for (int j = 0; j < 6; j++) intSpan[(i * 6) + j] = Indices[j] + (i * 4);
 			}
-		}, (ulong) (6 * 4 * Factory.MaxComponents), BufferUsageFlags.IndexBufferBit);
+		}, (ulong) (6 * 4 * Factory.MaxComponents), BufferUsageFlags.IndexBufferBit | BufferUsageFlags.StorageBufferBit);
 
 	private void UpdateComponentDataDescriptorSets()
 	{

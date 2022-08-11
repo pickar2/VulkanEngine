@@ -489,46 +489,6 @@ public static unsafe class VulkanUtils
 		return buffer;
 	}
 
-	public static VulkanPipeline CreateComputePipeline(VulkanShader shader, DescriptorSetLayout[] layouts, PushConstantRange[]? pushConstantRanges = null,
-		PipelineCache pipelineCache = default)
-	{
-		pushConstantRanges ??= Array.Empty<PushConstantRange>();
-
-		var shaderStage = new PipelineShaderStageCreateInfo
-		{
-			SType = StructureType.PipelineShaderStageCreateInfo,
-			Stage = ShaderStageFlags.ComputeBit,
-			Module = shader.VulkanModule,
-			PName = StringManager.GetStringPtr<byte>("main")
-		};
-
-		var layoutCreateInfo = new PipelineLayoutCreateInfo
-		{
-			SType = StructureType.PipelineLayoutCreateInfo,
-			SetLayoutCount = (uint) layouts.Length,
-			PSetLayouts = layouts[0].AsPointer(),
-			PushConstantRangeCount = (uint) pushConstantRanges.Length
-		};
-		if (pushConstantRanges.Length > 0) layoutCreateInfo.PPushConstantRanges = pushConstantRanges[0].AsPointer();
-
-		Context.Vk.CreatePipelineLayout(Context.Device, &layoutCreateInfo, null, out var layout);
-
-		var createInfo = new ComputePipelineCreateInfo
-		{
-			SType = StructureType.ComputePipelineCreateInfo,
-			Stage = shaderStage,
-			Layout = layout
-		};
-
-		Context.Vk.CreateComputePipelines(Context.Device, pipelineCache, 1, &createInfo, null, out var pipeline);
-
-		return new VulkanPipeline
-		{
-			Pipeline = pipeline,
-			PipelineLayout = layout
-		};
-	}
-
 	public static void CopyBufferToImage(Buffer buffer, VulkanImage image)
 	{
 		// TODO: transfer command pool

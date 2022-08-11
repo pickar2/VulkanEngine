@@ -356,18 +356,18 @@ public unsafe partial class UiRenderer
 
 	private static void CreateSortPipelines()
 	{
-		_sortClearPipeline = CreateComputePipeline(_sortClearPass, new[] {_sortCountersLayout}, null, _pipelineCache);
-		_sortClearPipeline.EnqueueGlobalDispose();
-
-		_sortCountPipeline = CreateComputePipeline(_sortCountPass, new[] {_componentDataLayout, _sortCountersLayout}, null, _pipelineCache);
-		_sortCountPipeline.EnqueueGlobalDispose();
-
-		_sortOffsetsPipeline = CreateComputePipeline(_sortOffsetsPass, new[] {_sortCountersLayout}, null, _pipelineCache);
-		_sortOffsetsPipeline.EnqueueGlobalDispose();
-
-		_sortMainPipeline = CreateComputePipeline(_sortMainPass, new[] {_componentDataLayout, _sortCountersLayout, _sortIndicesLayout}, null,
-			_pipelineCache);
-		_sortMainPipeline.EnqueueGlobalDispose();
+		// _sortClearPipeline = CreateComputePipeline(_sortClearPass, new[] {_sortCountersLayout}, null, _pipelineCache);
+		// _sortClearPipeline.EnqueueGlobalDispose();
+		//
+		// _sortCountPipeline = CreateComputePipeline(_sortCountPass, new[] {_componentDataLayout, _sortCountersLayout}, null, _pipelineCache);
+		// _sortCountPipeline.EnqueueGlobalDispose();
+		//
+		// _sortOffsetsPipeline = CreateComputePipeline(_sortOffsetsPass, new[] {_sortCountersLayout}, null, _pipelineCache);
+		// _sortOffsetsPipeline.EnqueueGlobalDispose();
+		//
+		// _sortMainPipeline = CreateComputePipeline(_sortMainPass, new[] {_componentDataLayout, _sortCountersLayout, _sortIndicesLayout}, null,
+		// 	_pipelineCache);
+		// _sortMainPipeline.EnqueueGlobalDispose();
 	}
 
 	private static CommandBuffer CreateSortCommandBuffer(int imageIndex)
@@ -456,8 +456,6 @@ public unsafe partial class UiRenderer
 		Context.Vk.CmdBindDescriptorSets(commandBuffer, PipelineBindPoint.Compute, _sortMainPipeline.PipelineLayout, 2, 1,
 			_sortIndicesSets[imageIndex].AsPointer(), null);
 		Context.Vk.CmdDispatch(commandBuffer, (uint) Math.Ceiling((float) UiComponentFactory.Instance.MaxComponents / 32), 1, 1);
-
-		Context.KhrSynchronization2.CmdPipelineBarrier2(commandBuffer, &dependencyInfoStorage);
 
 		commandBuffer.End();
 

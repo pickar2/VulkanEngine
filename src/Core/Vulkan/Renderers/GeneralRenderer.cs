@@ -111,7 +111,7 @@ public static class GeneralRenderer
 		var cursor = componentManager.Factory.Create();
 		var cursorData = cursor.GetData();
 		cursorData->BasePos = (0, 0);
-		cursorData->BaseZ = 30;
+		cursorData->BaseZ = 200;
 		cursorData->Size = (50, 50);
 		cursorData->MaskStart = (0, 0);
 		cursorData->MaskEnd = (2000, 2000);
@@ -123,7 +123,7 @@ public static class GeneralRenderer
 		var comp = componentManager.Factory.Create();
 		var compData = comp.GetData();
 		compData->BasePos = (450, 100);
-		compData->BaseZ = 25;
+		compData->BaseZ = 300;
 		compData->Size = (300, 300);
 		compData->MaskStart = (0, 0);
 		compData->MaskEnd = (2000, 2000);
@@ -178,7 +178,7 @@ public static class GeneralRenderer
 				var squareData = square.GetData();
 
 				squareData->BasePos = (startX, startY);
-				squareData->BaseZ = 600;
+				squareData->BaseZ = 100;
 
 				squareData->LocalPos = ((size + spacing) * i, (size + spacing) * j);
 
