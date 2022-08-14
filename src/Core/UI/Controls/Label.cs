@@ -3,6 +3,7 @@ using System.Drawing;
 using Core.UI.Controls.Panels;
 using Core.UI.Materials.Fragment;
 using Core.UI.Materials.Vertex;
+using Core.Vulkan.Api;
 using SimpleMath.Vectors;
 
 namespace Core.UI.Controls;
@@ -92,7 +93,7 @@ public class Label : StackPanel
 			box.FragMaterial = _fontMaterial.Create();
 
 			var fragData = box.FragMaterial.GetMemPtr<FontMaterialData>();
-			fragData->TextureId = 0; // TODO: UiRenderer.Consolas.Pages[character.Page].TextureName to vulkan texture id
+			fragData->TextureId = (int) TextureManager.GetTextureId("ConsolasTexture");
 			fragData->FontScale = Math.Max(CombinedScale.X, CombinedScale.Y);
 			fragData->OutlineDistance = 0.1f;
 			fragData->Color = Color.White.ToArgb();
