@@ -1,4 +1,6 @@
-﻿using Core.Native.Shaderc;
+﻿using System.Drawing;
+using Core.Native.Shaderc;
+using Core.Native.VMA;
 using Core.UI;
 using Core.Vulkan.Api;
 using Core.Vulkan.Utility;
@@ -25,6 +27,12 @@ public unsafe class Deferred3DRenderer : RenderChain
 
 	private readonly AutoPipeline FillGBuffersPipeline;
 	private readonly AutoPipeline DeferredComposePipeline;
+
+	private readonly ReCreator<DescriptorSetLayout> _composeLayout;
+	private readonly ReCreator<DescriptorPool> _composePool;
+	private readonly ReCreator<DescriptorSet> _composeSet;
+
+	private readonly ReCreator<VulkanBuffer> _vertexBuffer;
 
 	private readonly UiMaterialManager _materialManager;
 	public Deferred3DRenderer(Vector2<uint> size, string name) : base(name)
@@ -55,11 +63,25 @@ public unsafe class Deferred3DRenderer : RenderChain
 		TextureManager.RegisterTexture("DeferredOutput", ColorAttachment.Value.ImageView);
 		Context.DeviceEvents.AfterCreate += () => TextureManager.RegisterTexture("DeferredOutput", ColorAttachment.Value.ImageView);
 
+		_composeLayout = ReCreate.InDevice.Auto(() => CreateComposeLayout(), layout => layout.Dispose());
+		_composePool = ReCreate.InDevice.Auto(() => CreateComposePool(), pool => pool.Dispose());
+
+		_composeSet = ReCreate.InDevice.Auto(() => AllocateDescriptorSet(_composeLayout, _composePool));
+		UpdateComposeDescriptorSet();
+		Context.DeviceEvents.AfterCreate += () => UpdateComposeDescriptorSet();
+
 		FillGBuffersPipelineLayout = ReCreate.InDevice.Auto(() => CreatePipelineLayout(), layout => layout.Dispose());
-		DeferredComposePipelineLayout = ReCreate.InDevice.Auto(() => CreatePipelineLayout(), layout => layout.Dispose());
+		DeferredComposePipelineLayout = ReCreate.InDevice.Auto(() => CreatePipelineLayout(_composeLayout), layout => layout.Dispose());
 		
 		FillGBuffersPipeline = CreateFillGBufferPipeline();
 		DeferredComposePipeline = CreateDeferredComposePipeline();
+
+		_vertexBuffer = ReCreate.InDevice.Auto(
+			() => new VulkanBuffer((ulong) (sizeof(DeferredVertex) * 3 * 1024), BufferUsageFlags.VertexBufferBit,
+				VulkanMemoryAllocator.VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU), buffer => buffer.Dispose());
+
+		FillVertexBuffer();
+		Context.DeviceEvents.AfterCreate += () => FillVertexBuffer();
 
 		RenderCommandBuffers += (FrameInfo frameInfo) =>
 		{
@@ -102,12 +124,15 @@ public unsafe class Deferred3DRenderer : RenderChain
 		Debug.BeginCmdLabel(cmd, $"FIll G-Buffers");
 		
 		cmd.BindGraphicsPipeline(FillGBuffersPipeline);
+		cmd.BindVertexBuffer(0, _vertexBuffer.Value);
+		cmd.Draw(3, 1, 0, 0);
 
 		Debug.EndCmdLabel(cmd);
 		Context.Vk.CmdNextSubpass(cmd, SubpassContents.Inline);
 		Debug.BeginCmdLabel(cmd, $"Compose Deferred Lighting");
 		
 		cmd.BindGraphicsPipeline(DeferredComposePipeline);
+		cmd.BindGraphicsDescriptorSets(DeferredComposePipelineLayout, 0, 1, _composeSet);
 		cmd.Draw(3, 1, 0, 0);
 
 		Debug.EndCmdLabel(cmd);
@@ -351,14 +376,175 @@ public unsafe class Deferred3DRenderer : RenderChain
 		return framebuffer;
 	}
 
+	private DescriptorSetLayout CreateComposeLayout()
+	{
+		// var bindingFlags = stackalloc DescriptorBindingFlags[]
+		// {
+		// 	DescriptorBindingFlags.UpdateAfterBindBit,
+		// 	DescriptorBindingFlags.UpdateAfterBindBit,
+		// 	DescriptorBindingFlags.UpdateAfterBindBit,
+		// 	// DescriptorBindingFlags.UpdateAfterBindBit
+		// };
+		// var flagsInfo = new DescriptorSetLayoutBindingFlagsCreateInfoEXT
+		// {
+		// 	SType = StructureType.DescriptorSetLayoutBindingFlagsCreateInfoExt,
+		// 	BindingCount = 3,
+		// 	PBindingFlags = bindingFlags
+		// };
+		var countersLayoutBindings = new DescriptorSetLayoutBinding[]
+		{
+			new()
+			{
+				Binding = 0,
+				DescriptorCount = 1,
+				DescriptorType = DescriptorType.InputAttachment,
+				StageFlags = ShaderStageFlags.FragmentBit
+			},
+			new()
+			{
+				Binding = 1,
+				DescriptorCount = 1,
+				DescriptorType = DescriptorType.InputAttachment,
+				StageFlags = ShaderStageFlags.FragmentBit
+			},
+			new()
+			{
+				Binding = 2,
+				DescriptorCount = 1,
+				DescriptorType = DescriptorType.InputAttachment,
+				StageFlags = ShaderStageFlags.FragmentBit
+			},
+			// new()
+			// {
+			// 	Binding = 3,
+			// 	DescriptorCount = 1,
+			// 	DescriptorType = DescriptorType.StorageBuffer,
+			// 	StageFlags = ShaderStageFlags.ComputeBit
+			// }
+		};
+
+		var countersLayoutCreateInfo = new DescriptorSetLayoutCreateInfo
+		{
+			SType = StructureType.DescriptorSetLayoutCreateInfo,
+			BindingCount = (uint) countersLayoutBindings.Length,
+			PBindings = countersLayoutBindings[0].AsPointer(),
+			Flags = DescriptorSetLayoutCreateFlags.UpdateAfterBindPoolBit,
+			// PNext = &flagsInfo
+		};
+
+		Check(Context.Vk.CreateDescriptorSetLayout(Context.Device, &countersLayoutCreateInfo, null, out var layout),
+			"Failed to create descriptor set layout.");
+
+		return layout;	
+	}
+
+	private DescriptorPool CreateComposePool()
+	{
+		var countersPoolSizes = new DescriptorPoolSize[]
+		{
+			new()
+			{
+				Type = DescriptorType.InputAttachment,
+				DescriptorCount = 3
+			}
+		};
+
+		var countersCreateInfo = new DescriptorPoolCreateInfo
+		{
+			SType = StructureType.DescriptorPoolCreateInfo,
+			MaxSets = 1,
+			PoolSizeCount = (uint) countersPoolSizes.Length,
+			PPoolSizes = countersPoolSizes[0].AsPointer(),
+			Flags = DescriptorPoolCreateFlags.UpdateAfterBindBit
+		};
+
+		Check(Context.Vk.CreateDescriptorPool(Context.Device, &countersCreateInfo, null, out var pool),
+			"Failed to create ui counters descriptor pool.");
+
+		return pool;
+	}
+
+	private void UpdateComposeDescriptorSet()
+	{
+		var imageInfos = new DescriptorImageInfo[]
+		{
+			new()
+			{
+				ImageLayout = ImageLayout.ShaderReadOnlyOptimal,
+				ImageView = NormalAttachment.Value.ImageView
+			},
+			new()
+			{
+				ImageLayout = ImageLayout.ShaderReadOnlyOptimal,
+				ImageView = PositionAttachment.Value.ImageView
+			},
+			new()
+			{
+				ImageLayout = ImageLayout.ShaderReadOnlyOptimal,
+				ImageView = MaterialAttachment.Value.ImageView
+			},
+		};
+
+		var writes = new WriteDescriptorSet[]
+		{
+			new()
+			{
+				SType = StructureType.WriteDescriptorSet,
+				DescriptorCount = 1,
+				DstBinding = 0,
+				DescriptorType = DescriptorType.InputAttachment,
+				DstSet = _composeSet,
+				PImageInfo = imageInfos[0].AsPointer()
+			},
+			new()
+			{
+				SType = StructureType.WriteDescriptorSet,
+				DescriptorCount = 1,
+				DstBinding = 1,
+				DescriptorType = DescriptorType.InputAttachment,
+				DstSet = _composeSet,
+				PImageInfo = imageInfos[1].AsPointer()
+			},
+			new()
+			{
+				SType = StructureType.WriteDescriptorSet,
+				DescriptorCount = 1,
+				DstBinding = 2,
+				DescriptorType = DescriptorType.InputAttachment,
+				DstSet = _composeSet,
+				PImageInfo = imageInfos[2].AsPointer()
+			}
+		};
+
+		Context.Vk.UpdateDescriptorSets(Context.Device, (uint) writes.Length, writes[0], 0, null);
+	}
+
+	public void FillVertexBuffer()
+	{
+		var vertices = _vertexBuffer.Value.GetHostSpan<DeferredVertex>();
+
+		vertices[0] = new DeferredVertex(new Vector4<uint>(0, 0, 0, (uint) Color.CadetBlue.ToArgb()), new Vector3<float>(0, 0, 0), new Vector3<float>(), new Vector2<float>());
+		vertices[1] = new DeferredVertex(new Vector4<uint>(0, 0, 0, (uint) Color.CadetBlue.ToArgb()), new Vector3<float>(0.5f, 1f, 0), new Vector3<float>(), new Vector2<float>());
+		vertices[2] = new DeferredVertex(new Vector4<uint>(0, 0, 0, (uint) Color.CadetBlue.ToArgb()), new Vector3<float>(1f, 0, 0), new Vector3<float>(), new Vector2<float>());
+	}
+
 	private AutoPipeline CreateFillGBufferPipeline() =>
 		PipelineManager.GraphicsBuilder()
 			.WithShader("./Assets/Shaders/Deferred/fill_gbuffers.vert", ShaderKind.VertexShader)
 			.WithShader("./Assets/Shaders/Deferred/fill_gbuffers.frag", ShaderKind.FragmentShader)
 			.SetViewportAndScissorFromSize(Size)
-			.AddColorBlendAttachmentBlendDisabled()
-			.AddColorBlendAttachmentBlendDisabled()
-			.AddColorBlendAttachmentBlendDisabled()
+			.AddColorBlendAttachment(new PipelineColorBlendAttachmentState
+			{
+				ColorWriteMask = ColorComponentFlags.RBit | ColorComponentFlags.GBit | ColorComponentFlags.BBit | ColorComponentFlags.ABit
+			})
+			.AddColorBlendAttachment(new PipelineColorBlendAttachmentState
+			{
+				ColorWriteMask = ColorComponentFlags.RBit | ColorComponentFlags.GBit | ColorComponentFlags.BBit | ColorComponentFlags.ABit
+			})
+			.AddColorBlendAttachment(new PipelineColorBlendAttachmentState
+			{
+				ColorWriteMask = ColorComponentFlags.RBit | ColorComponentFlags.GBit | ColorComponentFlags.BBit | ColorComponentFlags.ABit
+			})
 			.DepthStencilState(state =>
 			{
 				state[0].DepthTestEnable = true;
@@ -383,4 +569,48 @@ public unsafe class Deferred3DRenderer : RenderChain
 			.AutoPipeline("DeferredCompose");
 
 	public override void Dispose() { }
+}
+
+public struct DeferredVertex
+{
+	// layout(location = 0) in uint inModelId;
+	// layout(location = 1) in uint inMaterialType;
+	// layout(location = 2) in uvec2 inMaterialIndex;
+	// layout(location = 3) in vec3 inPos;
+	// layout(location = 4) in vec3 inNormal;
+	// layout(location = 5) in vec2 inUV;
+
+	public uint ModelId;
+	public ushort VertexMaterialType;
+	public ushort FragmentMaterialType;
+	public uint VertexMaterialIndex;
+	public uint FragmentMaterialIndex;
+
+	public Vector3<float> Position;
+	public Vector3<float> Normal;
+	public Vector2<float> Uv;
+
+	public DeferredVertex(uint modelId, ushort vertexMaterialType, ushort fragmentMaterialType, uint vertexMaterialIndex, uint fragmentMaterialIndex, Vector3<float> position, Vector3<float> normal, Vector2<float> uv)
+	{
+		ModelId = modelId;
+		VertexMaterialType = vertexMaterialType;
+		FragmentMaterialType = fragmentMaterialType;
+		VertexMaterialIndex = vertexMaterialIndex;
+		FragmentMaterialIndex = fragmentMaterialIndex;
+		Position = position;
+		Normal = normal;
+		Uv = uv;
+	}
+
+	public DeferredVertex(Vector4<uint> material, Vector3<float> position, Vector3<float> normal, Vector2<float> uv)
+	{
+		ModelId = material.X;
+		VertexMaterialType = (ushort) (material.Y >> 8);
+		FragmentMaterialType = (ushort) (material.Y & 0xffff);
+		VertexMaterialIndex = material.Z;
+		FragmentMaterialIndex = material.W;
+		Position = position;
+		Normal = normal;
+		Uv = uv;
+	}
 }

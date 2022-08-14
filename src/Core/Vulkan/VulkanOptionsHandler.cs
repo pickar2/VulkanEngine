@@ -95,7 +95,8 @@ public class VulkanState
 		FillModeNonSolid = true,
 		ShaderFloat64 = false,
 		ShaderInt16 = true,
-		DrawIndirectFirstInstance = true
+		DrawIndirectFirstInstance = true,
+		IndependentBlend = true
 		// TextureCompressionEtc2 = true,
 		// TextureCompressionAstcLdr = true,
 		// DepthBounds = true,

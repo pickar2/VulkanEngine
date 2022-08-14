@@ -24,4 +24,6 @@ void main() {
     outPos = inPos;
     outNormal = inNormal;
     outUV = inUV;
+    
+    gl_Position = vec4(inPos, 1.0);
 }

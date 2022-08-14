@@ -30,5 +30,5 @@ void main() {
 	N.y = -N.y;
 	outNormal = vec4(N, 1.0);
 
-    outMaterial = uvec4(inMaterialType, inMaterialIndex, inModelId);
+    outMaterial = uvec4(inModelId, inMaterialIndex, inMaterialType);
 }

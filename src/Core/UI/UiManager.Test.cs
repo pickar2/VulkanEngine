@@ -56,11 +56,12 @@ public static partial class UiManager
 		AnimationTest(mainControl);
 		TextInputTest(mainControl);
 		AlignPanelTest(mainControl);
-		TexturesTest(mainControl);
+		VulkanPanelTest(mainControl);
 	}
 
-	private static unsafe void TexturesTest(AbsolutePanel parent)
+	private static unsafe void VulkanPanelTest(AbsolutePanel parent)
 	{
+		// TODO: Vulkan panel is just texture which ID can change every frame.
 		var box1 = new CustomBox(MainRoot);
 		box1.MarginLT = (350, 50);
 		box1.Size = (640, 360);

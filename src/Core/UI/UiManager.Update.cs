@@ -33,9 +33,9 @@ public static partial class UiManager
 	{
 		if (startControl is null) return list;
 
-		if (startControl.Selectable && IsControlPartVisible(startControl, point) && IsInsideControl(startControl, point))
-			list.BinaryInsert(startControl, ZComparer);
-		foreach (var child in startControl.Children) ControlsOnPos(point, child, list);
+		// if (startControl.Selectable && IsControlPartVisible(startControl, point) && IsInsideControl(startControl, point))
+			// list.BinaryInsert(startControl, ZComparer);
+		// foreach (var child in startControl.Children) ControlsOnPos(point, child, list);
 
 		return list;
 	}
