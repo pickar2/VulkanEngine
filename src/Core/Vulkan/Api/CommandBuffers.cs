@@ -6,23 +6,23 @@ namespace Core.Vulkan.Api;
 
 public static class CommandBuffers
 {
-	public static readonly OnAccessValueReCreator<CommandPool> GraphicsPool;
-	public static readonly OnAccessValueReCreator<CommandPool> ComputePool;
-	public static readonly OnAccessValueReCreator<CommandPool> TransferToDevicePool;
-	public static readonly OnAccessValueReCreator<CommandPool> TransferToHostPool;
+	public static readonly ReCreator<CommandPool> GraphicsPool;
+	public static readonly ReCreator<CommandPool> ComputePool;
+	public static readonly ReCreator<CommandPool> TransferToDevicePool;
+	public static readonly ReCreator<CommandPool> TransferToHostPool;
 
 	static CommandBuffers()
 	{
-		GraphicsPool = ReCreate.InDevice.OnAccessValue(() => CreateCommandPool(Context.GraphicsQueue, CommandPoolCreateFlags.TransientBit),
+		GraphicsPool = ReCreate.InDevice.Auto(() => CreateCommandPool(Context.GraphicsQueue, CommandPoolCreateFlags.TransientBit),
 			pool => pool.Dispose());
 
-		ComputePool = ReCreate.InDevice.OnAccessValue(() => CreateCommandPool(Context.ComputeQueue, CommandPoolCreateFlags.TransientBit),
+		ComputePool = ReCreate.InDevice.Auto(() => CreateCommandPool(Context.ComputeQueue, CommandPoolCreateFlags.TransientBit),
 			pool => pool.Dispose());
 
-		TransferToDevicePool = ReCreate.InDevice.OnAccessValue(() => CreateCommandPool(Context.TransferToDeviceQueue, CommandPoolCreateFlags.TransientBit),
+		TransferToDevicePool = ReCreate.InDevice.Auto(() => CreateCommandPool(Context.TransferToDeviceQueue, CommandPoolCreateFlags.TransientBit),
 			pool => pool.Dispose());
 
-		TransferToHostPool = ReCreate.InDevice.OnAccessValue(() => CreateCommandPool(Context.TransferToHostQueue, CommandPoolCreateFlags.TransientBit),
+		TransferToHostPool = ReCreate.InDevice.Auto(() => CreateCommandPool(Context.TransferToHostQueue, CommandPoolCreateFlags.TransientBit),
 			pool => pool.Dispose());
 	}
 
@@ -44,44 +44,15 @@ public static class CommandBuffers
 		return commandBuffers;
 	}
 
-	[Obsolete($"Use {nameof(OneTimeCommand)} instead.")]
-	public static CommandBuffer BeginSingleTimeCommands(CommandPool commandPool)
-	{
-		var commandBuffer = CreateCommandBuffer(CommandBufferLevel.Primary, commandPool);
-
-		commandBuffer.Begin(CommandBufferUsageFlags.OneTimeSubmitBit);
-
-		return commandBuffer;
-	}
-
-	[Obsolete($"Use {nameof(OneTimeCommand)} instead.")]
-	public static unsafe void EndSingleTimeCommands(ref CommandBuffer commandBuffer, CommandPool commandPool, VulkanQueue vulkanQueue)
-	{
-		commandBuffer.End();
-
-		var submitInfo = new SubmitInfo
-		{
-			SType = StructureType.SubmitInfo,
-			PCommandBuffers = commandBuffer.AsPointer(),
-			CommandBufferCount = 1
-		};
-
-		var fence = CreateFence(false);
-		vulkanQueue.Submit(submitInfo, fence);
-		fence.Wait(ulong.MaxValue);
-
-		Context.Vk.DestroyFence(Context.Device, fence, null);
-		Context.Vk.FreeCommandBuffers(Context.Device, commandPool, 1, commandBuffer);
-	}
-
-	public static OneTimeCommand OneTimeGraphics() => new(GraphicsPool, Context.GraphicsQueue);
-	public static OneTimeCommand OneTimeCompute() => new(ComputePool, Context.ComputeQueue);
-	public static OneTimeCommand OneTimeTransferToDevice() => new(TransferToDevicePool, Context.TransferToDeviceQueue);
-	public static OneTimeCommand OneTimeTransferToHost() => new(TransferToHostPool, Context.TransferToHostQueue);
+	public static OneTimeCommand OneTimeGraphics(string? name = null) => new(GraphicsPool, Context.GraphicsQueue, name);
+	public static OneTimeCommand OneTimeCompute(string? name = null) => new(ComputePool, Context.ComputeQueue, name);
+	public static OneTimeCommand OneTimeTransferToDevice(string? name = null) => new(TransferToDevicePool, Context.TransferToDeviceQueue, name);
+	public static OneTimeCommand OneTimeTransferToHost(string? name = null) => new(TransferToHostPool, Context.TransferToHostQueue, name);
 }
 
 public unsafe class OneTimeCommand
 {
+	private readonly string? _name;
 	private readonly CommandPool _pool;
 	private readonly CommandBuffer _cmd;
 	private readonly VulkanQueue _queue;
@@ -92,11 +63,12 @@ public unsafe class OneTimeCommand
 
 	public static implicit operator CommandBuffer(OneTimeCommand oneTimeCommand) => oneTimeCommand.Cmd;
 
-	public OneTimeCommand(CommandPool pool, VulkanQueue queue)
+	public OneTimeCommand(CommandPool pool, VulkanQueue queue, string? name = null)
 	{
 		_pool = pool;
 		_cmd = CommandBuffers.CreateCommandBuffer(CommandBufferLevel.Primary, _pool);
 		_queue = queue;
+		_name = name;
 
 		_cmd.Begin(CommandBufferUsageFlags.OneTimeSubmitBit);
 	}
@@ -119,7 +91,9 @@ public unsafe class OneTimeCommand
 			PCommandBuffers = &cmd
 		};
 
+		if (_name is not null) Debug.BeginQueueLabel(_queue, _name);
 		_queue.Submit(submitInfo, fence);
+		if (_name is not null) Debug.EndQueueLabel(_queue);
 		fence.Wait();
 
 		if (disposeFence) fence.Dispose();
@@ -145,7 +119,9 @@ public unsafe class OneTimeCommand
 
 		Fence = fence;
 
+		if (_name is not null) Debug.BeginQueueLabel(_queue, _name);
 		_queue.Submit(submitInfo, fence);
+		if (_name is not null) Debug.EndQueueLabel(_queue);
 	}
 
 	public void SubmitWithSemaphore(Semaphore signalSemaphore = default, Fence fence = default, Semaphore[]? waitSemaphores = null)
@@ -172,7 +148,9 @@ public unsafe class OneTimeCommand
 		Fence = fence;
 		Semaphore = signalSemaphore;
 
+		if (_name is not null) Debug.BeginQueueLabel(_queue, _name);
 		_queue.Submit(submitInfo, fence);
+		if (_name is not null) Debug.EndQueueLabel(_queue);
 	}
 
 	public void WaitOnFence()

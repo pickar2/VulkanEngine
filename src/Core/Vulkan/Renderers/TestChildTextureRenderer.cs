@@ -9,21 +9,21 @@ namespace Core.Vulkan.Renderers;
 
 public unsafe class TestChildTextureRenderer : RenderChain
 {
-	private readonly OnAccessValueReCreator<RenderPass> _renderPass;
-	private readonly OnAccessClassReCreator<Framebuffer[]> _framebuffers;
-	private readonly OnAccessValueReCreator<CommandPool> _commandPool;
+	private readonly ReCreator<RenderPass> _renderPass;
+	private readonly ReCreator<Framebuffer[]> _framebuffers;
+	private readonly ReCreator<CommandPool> _commandPool;
 
-	private readonly OnAccessValueReCreator<PipelineLayout> _pipelineLayout;
+	private readonly ReCreator<PipelineLayout> _pipelineLayout;
 	private readonly AutoPipeline _pipeline;
 
-	private readonly OnAccessClassReCreator<VulkanBuffer> _vertexBuffer;
+	private readonly ReCreator<VulkanBuffer> _vertexBuffer;
 
 	public TestChildTextureRenderer(string name) : base(name)
 	{
-		_commandPool = ReCreate.InDevice.OnAccessValue(() => CreateCommandPool(Context.GraphicsQueue), commandPool => commandPool.Dispose());
+		_commandPool = ReCreate.InDevice.Auto(() => CreateCommandPool(Context.GraphicsQueue), commandPool => commandPool.Dispose());
 
-		_renderPass = ReCreate.InDevice.OnAccessValue(() => CreateRenderPass(), renderPass => renderPass.Dispose());
-		_framebuffers = ReCreate.InSwapchain.OnAccessClass(() =>
+		_renderPass = ReCreate.InDevice.Auto(() => CreateRenderPass(), renderPass => renderPass.Dispose());
+		_framebuffers = ReCreate.InSwapchain.Auto(() =>
 		{
 			var arr = new Framebuffer[Context.SwapchainImageCount];
 			for (int i = 0; i < arr.Length; i++)
@@ -36,11 +36,11 @@ public unsafe class TestChildTextureRenderer : RenderChain
 				arr[index].Dispose();
 		});
 
-		_pipelineLayout = ReCreate.InDevice.OnAccessValue(() => CreatePipelineLayout(TextureManager.DescriptorSetLayout), layout => layout.Dispose());
+		_pipelineLayout = ReCreate.InDevice.Auto(() => CreatePipelineLayout(TextureManager.DescriptorSetLayout), layout => layout.Dispose());
 		_pipeline = CreatePipeline(_pipelineLayout, _renderPass, Context.State.WindowSize);
 
 		ulong bufferSize = (ulong) (sizeof(Vector3<float>) * 6);
-		_vertexBuffer = ReCreate.InDevice.OnAccessClass(() =>
+		_vertexBuffer = ReCreate.InDevice.Auto(() =>
 		{
 			var buffer = new VulkanBuffer(bufferSize, BufferUsageFlags.VertexBufferBit, VulkanMemoryAllocator.VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU);
 			var vectors = buffer.GetHostSpan<Vector3<float>>();
@@ -166,7 +166,7 @@ public unsafe class TestChildTextureRenderer : RenderChain
 		return framebuffer;
 	}
 
-	private static AutoPipeline CreatePipeline(OnAccessValueReCreator<PipelineLayout> pipelineLayout, OnAccessValueReCreator<RenderPass> renderPass,
+	private static AutoPipeline CreatePipeline(ReCreator<PipelineLayout> pipelineLayout, ReCreator<RenderPass> renderPass,
 		Vector2<uint> size) =>
 		PipelineManager.GraphicsBuilder()
 			.WithShader("./assets/shaders/general/simple_draw.vert", ShaderKind.VertexShader)

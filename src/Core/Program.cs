@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using Core.UI;
 using Core.Vulkan;
 using Core.Vulkan.Api;
 using Core.Window;
@@ -61,6 +62,7 @@ internal static class Program
 		}), SDL.SDL_Keycode.SDLK_ESCAPE);
 
 		Context.Init();
+		UiManager.Init();
 
 		int gpu = Context.SelectedDeviceIndex;
 		KeyboardInput.GlobalContext.AddKeyBind(new NamedFunc("change_gpu", () =>

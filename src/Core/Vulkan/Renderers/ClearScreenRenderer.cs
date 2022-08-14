@@ -9,14 +9,14 @@ namespace Core.Vulkan.Renderers;
 
 public unsafe class ClearScreenRenderer : RenderChain
 {
-	private readonly OnAccessValueReCreator<RenderPass> _renderPass;
-	private readonly OnAccessClassReCreator<Framebuffer[]> _framebuffers;
-	private readonly OnAccessValueReCreator<CommandPool> _commandPool;
+	private readonly ReCreator<RenderPass> _renderPass;
+	private readonly ReCreator<Framebuffer[]> _framebuffers;
+	private readonly ReCreator<CommandPool> _commandPool;
 
 	public ClearScreenRenderer(string name) : base(name)
 	{
-		_renderPass = ReCreate.InDevice.OnAccessValue(() => CreateRenderPass(), renderPass => renderPass.Dispose());
-		_framebuffers = ReCreate.InSwapchain.OnAccessClass(() =>
+		_renderPass = ReCreate.InDevice.Auto(() => CreateRenderPass(), renderPass => renderPass.Dispose());
+		_framebuffers = ReCreate.InSwapchain.Auto(() =>
 		{
 			var arr = new Framebuffer[Context.SwapchainImageCount];
 			for (int i = 0; i < arr.Length; i++)
@@ -29,7 +29,7 @@ public unsafe class ClearScreenRenderer : RenderChain
 				arr[index].Dispose();
 		});
 
-		_commandPool = ReCreate.InDevice.OnAccessValue(() => CreateCommandPool(Context.GraphicsQueue), commandPool => commandPool.Dispose());
+		_commandPool = ReCreate.InDevice.Auto(() => CreateCommandPool(Context.GraphicsQueue), commandPool => commandPool.Dispose());
 
 		RenderCommandBuffers += frameInfo => CreateCommandBuffer(frameInfo);
 	}

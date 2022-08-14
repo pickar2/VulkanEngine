@@ -13,7 +13,7 @@ public static partial class UiManager
 	public static readonly HashSet<RootPanel> Roots = new();
 	public static readonly IComparer<UiControl> ZComparer = new ZComparer();
 
-	static UiManager()
+	public static void Init()
 	{
 		InitEvents();
 		InitTestScene();

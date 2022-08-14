@@ -14,9 +14,9 @@ namespace Core.UI;
 
 public unsafe class UiGlobalDataManager
 {
-	public readonly OnAccessValueReCreator<DescriptorSetLayout> DescriptorSetLayout;
-	public readonly OnAccessValueReCreator<DescriptorPool> DescriptorPool;
-	public readonly OnAccessValueReCreator<DescriptorSet> DescriptorSet;
+	public readonly ReCreator<DescriptorSetLayout> DescriptorSetLayout;
+	public readonly ReCreator<DescriptorPool> DescriptorPool;
+	public readonly ReCreator<DescriptorSet> DescriptorSet;
 
 	public string Name { get; }
 
@@ -38,9 +38,9 @@ public unsafe class UiGlobalDataManager
 		MousePositionHolder = Factory.CreateHolder(8, NamespacedName.CreateWithName("mouse-position"));
 		OrthoMatrixHolder = Factory.CreateHolder(64, NamespacedName.CreateWithName("ortho-matrix"));
 
-		DescriptorSetLayout = ReCreate.InDevice.OnAccessValue(() => CreateSetLayout(), layout => layout.Dispose());
-		DescriptorPool = ReCreate.InDevice.OnAccessValue(() => CreateDescriptorPool(), pool => pool.Dispose());
-		DescriptorSet = ReCreate.InDevice.OnAccessValue(() => CreateDescriptorSet());
+		DescriptorSetLayout = ReCreate.InDevice.Auto(() => CreateSetLayout(), layout => layout.Dispose());
+		DescriptorPool = ReCreate.InDevice.Auto(() => CreateDescriptorPool(), pool => pool.Dispose());
+		DescriptorSet = ReCreate.InDevice.Auto(() => CreateDescriptorSet());
 	}
 
 	public void AfterUpdate()

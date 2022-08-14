@@ -13,12 +13,12 @@ namespace Core.Vulkan.Renderers;
 
 public unsafe class TestToTextureRenderer : RenderChain
 {
-	private readonly OnAccessValueReCreator<RenderPass> _renderPass;
-	private readonly OnAccessClassReCreator<Framebuffer[]> _framebuffers;
-	private readonly OnAccessValueReCreator<CommandPool> _commandPool;
-	public readonly OnAccessClassReCreator<VulkanImage2[]> Attachments;
+	private readonly ReCreator<RenderPass> _renderPass;
+	private readonly ReCreator<Framebuffer[]> _framebuffers;
+	private readonly ReCreator<CommandPool> _commandPool;
+	public readonly ReCreator<VulkanImage2[]> Attachments;
 
-	private readonly OnAccessValueReCreator<PipelineLayout> _pipelineLayout;
+	private readonly ReCreator<PipelineLayout> _pipelineLayout;
 	private readonly AutoPipeline _pipeline;
 
 	private readonly Vector2<uint> _size = new(1920, 1080);
@@ -26,10 +26,12 @@ public unsafe class TestToTextureRenderer : RenderChain
 	private Color _color;
 	private static int _index = 0;
 
+	private ArrayReCreator<CommandBuffer> _commandBuffers;
+
 	public TestToTextureRenderer(string name) : base(name)
 	{
-		_commandPool = ReCreate.InDevice.OnAccessValue(() => CreateCommandPool(Context.GraphicsQueue), commandPool => commandPool.Dispose());
-		Attachments = ReCreate.InDevice.OnAccessClass(() =>
+		_commandPool = ReCreate.InDevice.Auto(() => CreateCommandPool(Context.GraphicsQueue), commandPool => commandPool.Dispose());
+		Attachments = ReCreate.InDevice.Auto(() =>
 		{
 			var arr = new VulkanImage2[Context.SwapchainImageCount];
 			for (int i = 0; i < arr.Length; i++)
@@ -47,8 +49,8 @@ public unsafe class TestToTextureRenderer : RenderChain
 				arr[index].Dispose();
 		});
 
-		_renderPass = ReCreate.InDevice.OnAccessValue(() => CreateRenderPass(), renderPass => renderPass.Dispose());
-		_framebuffers = ReCreate.InSwapchain.OnAccessClass(() =>
+		_renderPass = ReCreate.InDevice.Auto(() => CreateRenderPass(), renderPass => renderPass.Dispose());
+		_framebuffers = ReCreate.InSwapchain.Auto(() =>
 		{
 			var arr = new Framebuffer[Context.SwapchainImageCount];
 			for (int i = 0; i < arr.Length; i++)
@@ -61,7 +63,7 @@ public unsafe class TestToTextureRenderer : RenderChain
 				arr[index].Dispose();
 		});
 
-		_pipelineLayout = ReCreate.InDevice.OnAccessValue(() => CreatePipelineLayout(), layout => layout.Dispose());
+		_pipelineLayout = ReCreate.InDevice.Auto(() => CreatePipelineLayout(), layout => layout.Dispose());
 		_pipeline = CreatePipeline(_pipelineLayout, _renderPass, _size);
 
 		var animationColor = new Animation
@@ -69,17 +71,18 @@ public unsafe class TestToTextureRenderer : RenderChain
 			Curve = DefaultCurves.EaseInOutSine,
 			Type = AnimationType.RepeatAndReverse,
 			Duration = 200 * (_index == 0 ? 7 : 5),
-			Interpolator = new RGBInterpolator(UiManager.RandomColor(), UiManager.RandomColor(), c => _color = c)
+			Interpolator = new RGBInterpolator(ColorUtils.RandomColor(), ColorUtils.RandomColor(), c => _color = c)
 		};
 		animationColor.Start();
 
-		RenderCommandBuffers += frameInfo => CreateCommandBuffer(frameInfo);
+		_commandBuffers = ReCreate.InDevice.AutoArray(_ => CreateCommandBuffer(), () => Context.State.FrameOverlap);
+
+		RenderCommandBuffers += frameInfo => _commandBuffers[frameInfo.FrameId];
 		_index++;
 	}
 
-	private CommandBuffer CreateCommandBuffer(FrameInfo frameInfo)
+	private CommandBuffer CreateCommandBuffer()
 	{
-		UiManager.Update();
 		var clearValues = stackalloc ClearValue[1];
 
 		float clearColor = DefaultCurves.EaseInOutSine.Interpolate((float) ((Math.Cos(Context.FrameIndex / 20d) * 0.5) + 0.5));
@@ -90,7 +93,7 @@ public unsafe class TestToTextureRenderer : RenderChain
 
 		var cmd = CommandBuffers.CreateCommandBuffer(CommandBufferLevel.Primary, _commandPool);
 
-		Check(cmd.Begin(CommandBufferUsageFlags.OneTimeSubmitBit), "Failed to begin command buffer.");
+		Check(cmd.Begin(), "Failed to begin command buffer.");
 
 		var renderPassBeginInfo = new RenderPassBeginInfo
 		{
@@ -178,7 +181,7 @@ public unsafe class TestToTextureRenderer : RenderChain
 		return framebuffer;
 	}
 
-	private static AutoPipeline CreatePipeline(OnAccessValueReCreator<PipelineLayout> pipelineLayout, OnAccessValueReCreator<RenderPass> renderPass,
+	private static AutoPipeline CreatePipeline(ReCreator<PipelineLayout> pipelineLayout, ReCreator<RenderPass> renderPass,
 		Vector2<uint> size) =>
 		PipelineManager.GraphicsBuilder()
 			.WithShader("./assets/shaders/general/full_screen_triangle.vert", ShaderKind.VertexShader)

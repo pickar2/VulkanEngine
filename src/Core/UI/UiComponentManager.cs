@@ -10,11 +10,11 @@ public unsafe class UiComponentManager
 {
 	private static readonly int[] Indices = {0, 1, 2, 1, 2, 3};
 
-	public readonly OnAccessValueReCreator<DescriptorSetLayout> DescriptorSetLayout;
-	public readonly OnAccessValueReCreator<DescriptorPool> DescriptorPool;
-	public readonly OnAccessValueReCreator<DescriptorSet> DescriptorSet;
+	public readonly ReCreator<DescriptorSetLayout> DescriptorSetLayout;
+	public readonly ReCreator<DescriptorPool> DescriptorPool;
+	public readonly ReCreator<DescriptorSet> DescriptorSet;
 
-	public readonly OnAccessClassReCreator<VulkanBuffer> IndexBuffer;
+	public readonly ReCreator<VulkanBuffer> IndexBuffer;
 
 	public bool RequireWait { get; private set; }
 	public Semaphore WaitSemaphore { get; private set; }
@@ -27,11 +27,11 @@ public unsafe class UiComponentManager
 	{
 		Name = name;
 
-		DescriptorSetLayout = ReCreate.InDevice.OnAccessValue(() => CreateSetLayout(), layout => layout.Dispose());
-		DescriptorPool = ReCreate.InDevice.OnAccessValue(() => CreateDescriptorPool(), pool => pool.Dispose());
-		DescriptorSet = ReCreate.InDevice.OnAccessValue(() => CreateDescriptorSet());
+		DescriptorSetLayout = ReCreate.InDevice.Auto(() => CreateSetLayout(), layout => layout.Dispose());
+		DescriptorPool = ReCreate.InDevice.Auto(() => CreateDescriptorPool(), pool => pool.Dispose());
+		DescriptorSet = ReCreate.InDevice.Auto(() => CreateDescriptorSet());
 
-		IndexBuffer = ReCreate.InDevice.OnAccessClass(() => CreateAndFillIndexBuffer(), buffer => buffer.Dispose());
+		IndexBuffer = ReCreate.InDevice.Auto(() => CreateAndFillIndexBuffer(), buffer => buffer.Dispose());
 	}
 
 	public void AfterUpdate()
@@ -40,6 +40,8 @@ public unsafe class UiComponentManager
 		{
 			Factory.BufferChanged = false;
 
+			var buf = IndexBuffer.Value;
+			ExecuteOnce.AtCurrentFrameStart(() => buf.Dispose());
 			IndexBuffer.ReCreate();
 			UpdateComponentDataDescriptorSets();
 		}

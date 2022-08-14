@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using Core.UI;
 using Core.UI.Controls;
 using Core.Utils;
 using Core.Vulkan.Api;
@@ -98,6 +99,8 @@ public static unsafe partial class Context
 			frameTimeLabel.Text = $"Frame time: {Maths.FixedNumberSize(Maths.FixedPrecision(frameTimeQueue.Sum() / frameTimeQueue.Count, 2), 4)}ms";
 
 			Lag -= MsPerUpdate;
+			
+			UiManager.Update();
 
 			if (!Window.IsMinimized) DrawFrame();
 
@@ -154,11 +157,11 @@ public static unsafe partial class Context
 		//                         $"NormalizedFrameTime: {NormalizedFrameTime}\r\n" +
 		//                         $"Lag: {Lag}, FrameIndex: {FrameIndex}, FrameId: {FrameId}, SwapchainImageId: {SwapchainImageId}");
 
-		var waitSemaphores = new List<Semaphore> {currentFrame.PresentSemaphore};
+		var waitSemaphores = new List<SemaphoreWithStage> {new(currentFrame.PresentSemaphore, PipelineStageFlags.ColorAttachmentOutputBit)};
 		GeneralRenderer.Root.StartRendering(frameInfo, waitSemaphores, out var signalSemaphores, currentFrame.Fence);
 
 		var pRenderSemaphores = stackalloc Semaphore[signalSemaphores.Count];
-		for (int i = 0; i < signalSemaphores.Count; i++) pRenderSemaphores[i] = signalSemaphores[i];
+		for (int i = 0; i < signalSemaphores.Count; i++) pRenderSemaphores[i] = signalSemaphores[i].Semaphore;
 
 		var swapchain = Swapchain;
 		var presentInfo = new PresentInfoKHR

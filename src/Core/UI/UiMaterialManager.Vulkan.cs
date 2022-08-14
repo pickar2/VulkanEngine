@@ -6,14 +6,14 @@ namespace Core.UI;
 
 public unsafe partial class UiMaterialManager
 {
-	public readonly OnAccessValueReCreator<DescriptorSetLayout> VertexDescriptorSetLayout;
-	public readonly OnAccessValueReCreator<DescriptorSetLayout> FragmentDescriptorSetLayout;
+	public readonly ReCreator<DescriptorSetLayout> VertexDescriptorSetLayout;
+	public readonly ReCreator<DescriptorSetLayout> FragmentDescriptorSetLayout;
 
-	public readonly OnAccessValueReCreator<DescriptorPool> VertexDescriptorPool;
-	public readonly OnAccessValueReCreator<DescriptorPool> FragmentDescriptorPool;
+	public readonly ReCreator<DescriptorPool> VertexDescriptorPool;
+	public readonly ReCreator<DescriptorPool> FragmentDescriptorPool;
 
-	public readonly OnAccessValueReCreator<DescriptorSet> VertexDescriptorSet;
-	public readonly OnAccessValueReCreator<DescriptorSet> FragmentDescriptorSet;
+	public readonly ReCreator<DescriptorSet> VertexDescriptorSet;
+	public readonly ReCreator<DescriptorSet> FragmentDescriptorSet;
 
 	public bool RequireWait { get; private set; }
 	public Semaphore WaitSemaphore { get; private set; }
@@ -26,21 +26,21 @@ public unsafe partial class UiMaterialManager
 		Name = name;
 
 		VertexDescriptorSetLayout =
-			ReCreate.InDevice.OnAccessValue(() => CreateSetLayout(ShaderStageFlags.VertexBit | ShaderStageFlags.ComputeBit, (uint) VertexMaterialCount),
+			ReCreate.InDevice.Auto(() => CreateSetLayout(ShaderStageFlags.VertexBit | ShaderStageFlags.ComputeBit, (uint) VertexMaterialCount),
 				layout => layout.Dispose());
 		FragmentDescriptorSetLayout =
-			ReCreate.InDevice.OnAccessValue(() => CreateSetLayout(ShaderStageFlags.FragmentBit | ShaderStageFlags.ComputeBit, (uint) FragmentMaterialCount),
+			ReCreate.InDevice.Auto(() => CreateSetLayout(ShaderStageFlags.FragmentBit | ShaderStageFlags.ComputeBit, (uint) FragmentMaterialCount),
 				layout => layout.Dispose());
 
-		VertexDescriptorPool = ReCreate.InDevice.OnAccessValue(() => CreateDescriptorPool(), pool => pool.Dispose());
-		FragmentDescriptorPool = ReCreate.InDevice.OnAccessValue(() => CreateDescriptorPool(), pool => pool.Dispose());
+		VertexDescriptorPool = ReCreate.InDevice.Auto(() => CreateDescriptorPool(), pool => pool.Dispose());
+		FragmentDescriptorPool = ReCreate.InDevice.Auto(() => CreateDescriptorPool(), pool => pool.Dispose());
 
-		VertexDescriptorSet = ReCreate.InDevice.OnAccessValue(() =>
+		VertexDescriptorSet = ReCreate.InDevice.Auto(() =>
 		{
 			_lastVertexMaterialCount = VertexMaterialCount;
 			return AllocateDescriptorSet(VertexDescriptorSetLayout, VertexDescriptorPool);
 		});
-		FragmentDescriptorSet = ReCreate.InDevice.OnAccessValue(() =>
+		FragmentDescriptorSet = ReCreate.InDevice.Auto(() =>
 		{
 			_lastFragmentMaterialCount = FragmentMaterialCount;
 			return AllocateDescriptorSet(FragmentDescriptorSetLayout, FragmentDescriptorPool);

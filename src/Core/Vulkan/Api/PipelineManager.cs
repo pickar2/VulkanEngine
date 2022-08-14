@@ -11,10 +11,10 @@ namespace Core.Vulkan.Api;
 
 public static unsafe class PipelineManager
 {
-	public static readonly OnAccessValueReCreator<PipelineCache> PipelineCache;
+	public static readonly ReCreator<PipelineCache> PipelineCache;
 	public static readonly Dictionary<string, AutoPipeline> AutoPipelines = new();
 
-	static PipelineManager() => PipelineCache = ReCreate.InDevice.OnAccessValue(() => CreatePipelineCache(), cache => cache.Dispose());
+	static PipelineManager() => PipelineCache = ReCreate.InDevice.Auto(() => CreatePipelineCache(), cache => cache.Dispose());
 
 	private static PipelineCache CreatePipelineCache()
 	{
@@ -99,6 +99,7 @@ public class AutoPipeline
 		Name = name;
 		Builder = builder;
 		Context.DeviceEvents.BeforeDispose += () => Dispose();
+		PipelineManager.AutoPipelines.Add(name, this);
 
 		if (!Context.State.AllowShaderWatchers) return;
 		foreach ((var shaderKind, string? path) in Builder.Shaders)
@@ -116,8 +117,6 @@ public class AutoPipeline
 				});
 			};
 		}
-
-		PipelineManager.AutoPipelines.Add(name, this);
 	}
 
 	public void Dispose()
@@ -154,8 +153,8 @@ public unsafe class GraphicsPipelineBuilder
 
 	private PipelineDynamicStateCreateInfo _dynamicState;
 
-	private OnAccessValueReCreator<PipelineLayout> _pipelineLayout;
-	private OnAccessValueReCreator<RenderPass> _renderPass;
+	private ReCreator<PipelineLayout> _pipelineLayout;
+	private ReCreator<RenderPass> _renderPass;
 	private uint _subpass;
 	private Pipeline _basePipeline;
 	private int _basePipelineIndex;
@@ -216,7 +215,7 @@ public unsafe class GraphicsPipelineBuilder
 		return pipeline;
 	}
 
-	public GraphicsPipelineBuilder With(OnAccessValueReCreator<PipelineLayout> pipelineLayout, OnAccessValueReCreator<RenderPass> renderPass, uint subpass = 0,
+	public GraphicsPipelineBuilder With(ReCreator<PipelineLayout> pipelineLayout, ReCreator<RenderPass> renderPass, uint subpass = 0,
 		Pipeline basePipeline = default,
 		int basePipelineIndex = -1)
 	{

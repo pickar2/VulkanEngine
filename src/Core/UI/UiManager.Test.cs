@@ -68,7 +68,7 @@ public static partial class UiManager
 		var frag = MainRoot.MaterialManager.GetFactory("texture_material").Create();
 		box1.FragMaterial = frag;
 
-		*frag.GetMemPtr<int>() = 1;
+		*frag.GetMemPtr<int>() = (int) TextureManager.GetTextureId("ChildRenderer1 0");
 		frag.MarkForGPUUpdate();
 
 		parent.AddChild(box1);
@@ -80,7 +80,7 @@ public static partial class UiManager
 		var frag2 = MainRoot.MaterialManager.GetFactory("texture_material").Create();
 		box2.FragMaterial = frag2;
 
-		*frag2.GetMemPtr<int>() = 4;
+		*frag2.GetMemPtr<int>() = (int) TextureManager.GetTextureId("ChildRenderer2 0");
 		frag2.MarkForGPUUpdate();
 
 		parent.AddChild(box2);
@@ -101,7 +101,7 @@ public static partial class UiManager
 	{
 		var box = new Rectangle(MainRoot)
 		{
-			Color = RandomColorInt() & (127 << 24),
+			Color = ColorUtils.RandomColorInt() & (127 << 24),
 			Size = (150, 150),
 			OffsetZ = 200,
 			MarginLT = (350, 150)
@@ -120,7 +120,7 @@ public static partial class UiManager
 
 			var smallBox = new Rectangle(MainRoot)
 			{
-				Color = RandomColorInt(),
+				Color = ColorUtils.RandomColorInt(),
 				Size = (30, 30),
 				OffsetZ = 1
 			};
@@ -132,30 +132,6 @@ public static partial class UiManager
 			alignPanel.AddChild(text);
 			alignPanel.AddChild(smallBox);
 		}
-	}
-
-	private static readonly Random Random = new(1234);
-
-	public static int RandomColorInt(bool randomTransparency = false)
-	{
-		int color = (randomTransparency ? Random.Next(256) : 255) << 24;
-
-		color |= Random.Next(256) << 16;
-		color |= Random.Next(256) << 8;
-		color |= Random.Next(256);
-
-		return color;
-	}
-
-	public static Color RandomColor(bool randomTransparency = false)
-	{
-		int color = (randomTransparency ? Random.Next(256) : 255) << 24;
-
-		color |= Random.Next(256) << 16;
-		color |= Random.Next(256) << 8;
-		color |= Random.Next(256);
-
-		return Color.FromArgb(color);
 	}
 
 	private static void LabelTest(UiControl parent)
@@ -193,22 +169,22 @@ public static partial class UiManager
 		stackPanel.MarginLT = new Vector2<float>(150, 150);
 		stackPanel.OffsetZ = 5;
 
-		var box1 = new Rectangle(MainRoot) {Color = RandomColorInt(), OffsetZ = 1};
+		var box1 = new Rectangle(MainRoot) {Color = ColorUtils.RandomColorInt(), OffsetZ = 1};
 		box1.Size.X = 30;
 		box1.MarginLT = new Vector2<float>(30, 30);
 		stackPanel.AddChild(box1);
 
-		var box2 = new Rectangle(MainRoot) {Color = RandomColorInt(), OffsetZ = 1};
+		var box2 = new Rectangle(MainRoot) {Color = ColorUtils.RandomColorInt(), OffsetZ = 1};
 		box2.Size.X = 60;
 		box2.MarginLT = new Vector2<float>(30, -30);
 		stackPanel.AddChild(box2);
 
-		var box3 = new Rectangle(MainRoot) {Color = RandomColorInt(), OffsetZ = 1};
+		var box3 = new Rectangle(MainRoot) {Color = ColorUtils.RandomColorInt(), OffsetZ = 1};
 		box3.Size.X = 10;
 		box3.MarginRB.X = 20;
 		stackPanel.AddChild(box3);
 
-		var box4 = new Rectangle(MainRoot) {Color = RandomColorInt(), OffsetZ = 1};
+		var box4 = new Rectangle(MainRoot) {Color = ColorUtils.RandomColorInt(), OffsetZ = 1};
 		box4.Size.X = 10;
 		stackPanel.AddChild(box4);
 
@@ -265,23 +241,23 @@ public static partial class UiManager
 			Overflow = Overflow.Shown
 		};
 
-		var top = new Rectangle(MainRoot) {Color = RandomColorInt()};
+		var top = new Rectangle(MainRoot) {Color = ColorUtils.RandomColorInt()};
 		top.Size.Y = 30;
-		var top2 = new Rectangle(MainRoot) {Color = RandomColorInt()};
+		var top2 = new Rectangle(MainRoot) {Color = ColorUtils.RandomColorInt()};
 		top2.Size.Y = 45;
 
-		var left = new Rectangle(MainRoot) {Color = RandomColorInt()};
+		var left = new Rectangle(MainRoot) {Color = ColorUtils.RandomColorInt()};
 		left.Size.X = 60;
 
-		var bottom = new Rectangle(MainRoot) {Color = RandomColorInt()};
+		var bottom = new Rectangle(MainRoot) {Color = ColorUtils.RandomColorInt()};
 		bottom.Size.Y = 60;
-		var bottom2 = new Rectangle(MainRoot) {Color = RandomColorInt()};
+		var bottom2 = new Rectangle(MainRoot) {Color = ColorUtils.RandomColorInt()};
 		bottom2.Size.Y = 15;
 
-		var right = new Rectangle(MainRoot) {Color = RandomColorInt()};
+		var right = new Rectangle(MainRoot) {Color = ColorUtils.RandomColorInt()};
 		right.Size.X = 30;
 
-		var fill = new Rectangle(MainRoot) {Color = RandomColorInt()};
+		var fill = new Rectangle(MainRoot) {Color = ColorUtils.RandomColorInt()};
 
 		dockPanel.AddChild(top, Dock.Top);
 		dockPanel.AddChild(top2, Dock.Top);
@@ -316,7 +292,7 @@ public static partial class UiManager
 		};
 
 		box.FragMaterial = MainRoot.MaterialManager.GetFactory("color_material").Create();
-		*box.FragMaterial.GetMemPtr<int>() = RandomColorInt();
+		*box.FragMaterial.GetMemPtr<int>() = ColorUtils.RandomColorInt();
 		box.FragMaterial.MarkForGPUUpdate();
 
 		box.VertMaterial = MainRoot.MaterialManager.GetFactory("transform_material").Create();
@@ -337,7 +313,7 @@ public static partial class UiManager
 		};
 
 		box2.FragMaterial = MainRoot.MaterialManager.GetFactory("color_material").Create();
-		*box2.FragMaterial.GetMemPtr<int>() = RandomColorInt();
+		*box2.FragMaterial.GetMemPtr<int>() = ColorUtils.RandomColorInt();
 		box2.FragMaterial.MarkForGPUUpdate();
 
 		box2.VertMaterial = MainRoot.MaterialManager.GetFactory("transform_material").Create();
@@ -351,7 +327,7 @@ public static partial class UiManager
 	{
 		var button = new Rectangle(MainRoot)
 		{
-			Color = RandomColorInt(),
+			Color = ColorUtils.RandomColorInt(),
 			Size = (100, 50),
 			MarginLT = (700, 350),
 			OffsetZ = 10
@@ -370,7 +346,7 @@ public static partial class UiManager
 
 		var box1 = new Rectangle(MainRoot)
 		{
-			Color = RandomColorInt(),
+			Color = ColorUtils.RandomColorInt(),
 			Size = (75, 75),
 			MarginLT = (900, 150),
 			OffsetZ = 10
@@ -379,7 +355,7 @@ public static partial class UiManager
 
 		var box2 = new Rectangle(MainRoot)
 		{
-			Color = RandomColorInt(),
+			Color = ColorUtils.RandomColorInt(),
 			Size = (75, 75),
 			MarginLT = (900, 300),
 			OffsetZ = 10

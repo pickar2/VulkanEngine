@@ -12,10 +12,10 @@ public static unsafe class TextureManager
 
 	private static readonly Dictionary<string, Texture> RegisteredTextures = new();
 
-	public static readonly OnAccessValueReCreator<DescriptorSetLayout> DescriptorSetLayout;
-	public static readonly OnAccessValueReCreator<DescriptorPool> DescriptorPool;
-	public static readonly OnAccessValueReCreator<DescriptorSet> DescriptorSet;
-	public static readonly OnAccessValueReCreator<Sampler> Sampler;
+	public static readonly ReCreator<DescriptorSetLayout> DescriptorSetLayout;
+	public static readonly ReCreator<DescriptorPool> DescriptorPool;
+	public static readonly ReCreator<DescriptorSet> DescriptorSet;
+	public static readonly ReCreator<Sampler> Sampler;
 
 	/*
 	 * TODO: 
@@ -26,11 +26,11 @@ public static unsafe class TextureManager
 	 */
 	static TextureManager()
 	{
-		Sampler = ReCreate.InDevice.OnAccessValue(() => CreateImageSampler(16), sampler => sampler.Dispose());
+		Sampler = ReCreate.InDevice.Auto(() => CreateImageSampler(16), sampler => sampler.Dispose());
 
-		DescriptorSetLayout = ReCreate.InDevice.OnAccessValue(() => CreateDescriptorSetLayout(), layout => layout.Dispose());
-		DescriptorPool = ReCreate.InDevice.OnAccessValue(() => CreateDescriptorPool(), pool => pool.Dispose());
-		DescriptorSet = ReCreate.InDevice.OnAccessValue(() => AllocateVariableDescriptorSet(DescriptorSetLayout, DescriptorPool, CurrentSetSize));
+		DescriptorSetLayout = ReCreate.InDevice.Auto(() => CreateDescriptorSetLayout(), layout => layout.Dispose());
+		DescriptorPool = ReCreate.InDevice.Auto(() => CreateDescriptorPool(), pool => pool.Dispose());
+		DescriptorSet = ReCreate.InDevice.Auto(() => AllocateVariableDescriptorSet(DescriptorSetLayout, DescriptorPool, CurrentSetSize));
 
 		// FullSetUpdate();
 		Context.DeviceEvents.AfterCreate += () => TextureCount = 0;

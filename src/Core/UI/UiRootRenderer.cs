@@ -14,45 +14,43 @@ namespace Core.UI;
 public unsafe partial class UiRootRenderer : RenderChain
 {
 	// Render
-	private readonly OnAccessValueReCreator<RenderPass> _renderPass;
-	private readonly OnAccessClassReCreator<Framebuffer[]> _framebuffers;
-	private readonly OnAccessValueReCreator<CommandPool> _commandPool;
+	private readonly ReCreator<RenderPass> _renderPass;
+	private readonly ArrayReCreator<Framebuffer> _framebuffers;
+	private readonly ReCreator<CommandPool> _commandPool;
 
-	private readonly OnAccessValueReCreator<PipelineLayout> _pipelineLayout;
+	private readonly ReCreator<PipelineLayout> _pipelineLayout;
 	private readonly AutoPipeline _pipeline;
 
-	private readonly OnAccessClassReCreator<VulkanBuffer> _indirectBuffer;
+	private readonly ReCreator<VulkanBuffer> _indirectBuffer;
 
 	// Compute
 	private const int ZCount = 2048;
 	private const int CountDataSize = 16;
 
-	private readonly OnAccessValueReCreator<DescriptorSetLayout> _sortCountersLayout;
-	private readonly OnAccessValueReCreator<DescriptorPool> _sortCountersPool;
-	private readonly OnAccessValueReCreator<DescriptorSet> _sortCountersSet;
+	private readonly ReCreator<DescriptorSetLayout> _sortCountersLayout;
+	private readonly ReCreator<DescriptorPool> _sortCountersPool;
+	private readonly ReCreator<DescriptorSet> _sortCountersSet;
 
-	private readonly OnAccessValueReCreator<DescriptorSetLayout> _sortIndicesLayout;
-	private readonly OnAccessValueReCreator<DescriptorPool> _sortIndicesPool;
-	private readonly OnAccessValueReCreator<DescriptorSet> _sortIndicesSet;
+	private readonly ReCreator<DescriptorSetLayout> _sortIndicesLayout;
+	private readonly ReCreator<DescriptorPool> _sortIndicesPool;
+	private readonly ReCreator<DescriptorSet> _sortIndicesSet;
 
-	private readonly OnAccessClassReCreator<VulkanPipeline> _sortClearPipeline;
-	private readonly OnAccessClassReCreator<VulkanPipeline> _sortCountPipeline;
-	private readonly OnAccessClassReCreator<VulkanPipeline> _sortOffsetPipeline;
-	private readonly OnAccessClassReCreator<VulkanPipeline> _sortMainPipeline;
+	private readonly ReCreator<VulkanPipeline> _sortClearPipeline;
+	private readonly ReCreator<VulkanPipeline> _sortCountPipeline;
+	private readonly ReCreator<VulkanPipeline> _sortOffsetPipeline;
+	private readonly ReCreator<VulkanPipeline> _sortMainPipeline;
 
-	private readonly OnAccessClassReCreator<VulkanBuffer> _counters1Buffer;
-	private readonly OnAccessClassReCreator<VulkanBuffer> _counters2Buffer;
-	private readonly OnAccessClassReCreator<VulkanBuffer> _offsetsBuffer;
-	private readonly OnAccessClassReCreator<VulkanBuffer> _countBufferCpu;
-	private readonly OnAccessClassReCreator<VulkanBuffer> _countBuffer;
+	private readonly ReCreator<VulkanBuffer> _counters1Buffer;
+	private readonly ReCreator<VulkanBuffer> _counters2Buffer;
+	private readonly ReCreator<VulkanBuffer> _offsetsBuffer;
+	private readonly ReCreator<VulkanBuffer> _countBufferCpu;
+	private readonly ReCreator<VulkanBuffer> _countBuffer;
 
-	private readonly OnAccessClassReCreator<Semaphore[]> _sortSemaphores;
+	private readonly ArrayReCreator<Semaphore> _sortSemaphores;
 
 	public readonly UiComponentManager ComponentManager;
 	public readonly UiMaterialManager MaterialManager;
 	public readonly UiGlobalDataManager GlobalDataManager;
-
-	public RootPanel RootPanel;
 
 	public UiRootRenderer(string name, UiComponentManager componentManager, UiMaterialManager materialManager,
 		UiGlobalDataManager globalDataManager) : base(name)
@@ -62,44 +60,25 @@ public unsafe partial class UiRootRenderer : RenderChain
 		GlobalDataManager = globalDataManager;
 
 		// Render
-		_commandPool = ReCreate.InDevice.OnAccessValue(() => CreateCommandPool(Context.GraphicsQueue), commandPool => commandPool.Dispose());
+		_commandPool = ReCreate.InDevice.Auto(() => CreateCommandPool(Context.GraphicsQueue, CommandPoolCreateFlags.TransientBit), commandPool => commandPool.Dispose());
 
-		_renderPass = ReCreate.InDevice.OnAccessValue(() => CreateRenderPass(), renderPass => renderPass.Dispose());
-		_framebuffers = ReCreate.InSwapchain.OnAccessClass(() =>
-		{
-			var arr = new Framebuffer[Context.SwapchainImageCount];
-			for (int i = 0; i < arr.Length; i++)
-				arr[i] = CreateFramebuffer(_renderPass, Context.SwapchainImages[i].ImageView, Context.State.WindowSize);
+		_renderPass = ReCreate.InDevice.Auto(() => CreateRenderPass(), renderPass => renderPass.Dispose());
 
-			return arr;
-		}, arr =>
-		{
-			for (int index = 0; index < arr.Length; index++)
-				arr[index].Dispose();
-		});
+		_framebuffers = ReCreate.InDevice.AutoArray(i => CreateFramebuffer(_renderPass, Context.SwapchainImages[i].ImageView, Context.State.WindowSize),
+			(int) Context.SwapchainImageCount, framebuffer => framebuffer.Dispose());
 
 		_pipelineLayout =
-			ReCreate.InDevice.OnAccessValue(
+			ReCreate.InDevice.Auto(
 				() => CreatePipelineLayout(TextureManager.DescriptorSetLayout, GlobalDataManager.DescriptorSetLayout, ComponentManager.DescriptorSetLayout,
 					MaterialManager.VertexDescriptorSetLayout, MaterialManager.FragmentDescriptorSetLayout), layout => layout.Dispose());
 		_pipeline = CreatePipeline(_pipelineLayout, _renderPass, Context.State.WindowSize);
 
-		_indirectBuffer = ReCreate.InDevice.OnAccessClass(() => CreateIndirectBuffer(), buffer => buffer.Dispose());
-		_sortSemaphores = ReCreate.InDevice.OnAccessClass(() =>
-		{
-			var semaphores = new Semaphore[Context.State.FrameOverlap];
-			for (var i = 0; i < semaphores.Length; i++) semaphores[i] = CreateSemaphore();
+		_indirectBuffer = ReCreate.InDevice.Auto(() => CreateIndirectBuffer(), buffer => buffer.Dispose());
 
-			return semaphores;
-		}, semaphores =>
-		{
-			for (int index = 0; index < semaphores.Length; index++) semaphores[index].Dispose();
-		});
+		_sortSemaphores = ReCreate.InDevice.AutoArray(_ => CreateSemaphore(), Context.State.FrameOverlap, semaphore => semaphore.Dispose());
 
 		RenderCommandBuffers += (FrameInfo frameInfo) =>
 		{
-			UiManager.Update(); // TODO: remove
-
 			ComponentManager.AfterUpdate();
 			MaterialManager.AfterUpdate();
 			GlobalDataManager.AfterUpdate();
@@ -117,7 +96,7 @@ public unsafe partial class UiRootRenderer : RenderChain
 
 			var semaphore = ComponentManager.WaitSemaphore;
 			ExecuteOnce.AtCurrentFrameStart(() => semaphore.Dispose());
-			return semaphore;
+			return new SemaphoreWithStage(semaphore, PipelineStageFlags.TransferBit);
 		};
 		RenderWaitSemaphores += (FrameInfo frameInfo) =>
 		{
@@ -125,62 +104,62 @@ public unsafe partial class UiRootRenderer : RenderChain
 
 			var semaphore = MaterialManager.WaitSemaphore;
 			ExecuteOnce.AtCurrentFrameStart(() => semaphore.Dispose());
-			return semaphore;
+			return new SemaphoreWithStage(semaphore, PipelineStageFlags.TransferBit);
 		};
-		RenderWaitSemaphores += (FrameInfo frameInfo) => _sortSemaphores.Value[frameInfo.FrameId];
+		RenderWaitSemaphores += (FrameInfo frameInfo) => new SemaphoreWithStage(_sortSemaphores[frameInfo.FrameId], PipelineStageFlags.ComputeShaderBit);
 
 		// Compute
 		_counters1Buffer =
-			ReCreate.InDevice.OnAccessClass(() => new VulkanBuffer(ZCount * 4, BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY),
-				buffer => buffer.Dispose());
+			ReCreate.InDevice.Auto(
+				() => new VulkanBuffer(ZCount * 4, BufferUsageFlags.StorageBufferBit | BufferUsageFlags.TransferDstBit,
+					VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY), buffer => buffer.Dispose());
 
 		_counters2Buffer =
-			ReCreate.InDevice.OnAccessClass(() => new VulkanBuffer(ZCount * 4, BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY),
-				buffer => buffer.Dispose());
+			ReCreate.InDevice.Auto(
+				() => new VulkanBuffer(ZCount * 4, BufferUsageFlags.StorageBufferBit | BufferUsageFlags.TransferDstBit,
+					VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY), buffer => buffer.Dispose());
 
 		_offsetsBuffer =
-			ReCreate.InDevice.OnAccessClass(() => new VulkanBuffer(ZCount * 4, BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY),
-				buffer => buffer.Dispose());
+			ReCreate.InDevice.Auto(
+				() => new VulkanBuffer(ZCount * 4, BufferUsageFlags.StorageBufferBit | BufferUsageFlags.TransferDstBit,
+					VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY), buffer => buffer.Dispose());
 
 		_countBufferCpu =
-			ReCreate.InDevice.OnAccessClass(() => new VulkanBuffer(CountDataSize, BufferUsageFlags.TransferSrcBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_ONLY),
+			ReCreate.InDevice.Auto(() => new VulkanBuffer(CountDataSize, BufferUsageFlags.TransferSrcBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_ONLY),
 				buffer => buffer.Dispose());
 
 		_countBuffer =
-			ReCreate.InDevice.OnAccessClass(
+			ReCreate.InDevice.Auto(
 				() => new VulkanBuffer(CountDataSize, BufferUsageFlags.StorageBufferBit | BufferUsageFlags.TransferDstBit,
 					VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY), buffer => buffer.Dispose());
 
-		_sortCountersLayout = ReCreate.InDevice.OnAccessValue(() => CreateSortCountersLayout(), layout => layout.Dispose());
-		_sortIndicesLayout = ReCreate.InDevice.OnAccessValue(() => CreateSortIndicesLayout(), layout => layout.Dispose());
+		_sortCountersLayout = ReCreate.InDevice.Auto(() => CreateSortCountersLayout(), layout => layout.Dispose());
+		_sortIndicesLayout = ReCreate.InDevice.Auto(() => CreateSortIndicesLayout(), layout => layout.Dispose());
 
-		_sortCountersPool = ReCreate.InDevice.OnAccessValue(() => CreateSortCountersPool(), pool => pool.Dispose());
-		_sortIndicesPool = ReCreate.InDevice.OnAccessValue(() => CreateSortIndicesPool(), pool => pool.Dispose());
+		_sortCountersPool = ReCreate.InDevice.Auto(() => CreateSortCountersPool(), pool => pool.Dispose());
+		_sortIndicesPool = ReCreate.InDevice.Auto(() => CreateSortIndicesPool(), pool => pool.Dispose());
 
-		_sortCountersSet = ReCreate.InDevice.OnAccessValue(() => AllocateDescriptorSet(_sortCountersLayout, _sortCountersPool));
-		_sortIndicesSet = ReCreate.InDevice.OnAccessValue(() => AllocateDescriptorSet(_sortIndicesLayout, _sortIndicesPool));
+		_sortCountersSet = ReCreate.InDevice.Auto(() => AllocateDescriptorSet(_sortCountersLayout, _sortCountersPool));
+		_sortIndicesSet = ReCreate.InDevice.Auto(() => AllocateDescriptorSet(_sortIndicesLayout, _sortIndicesPool));
 
-		_sortClearPipeline = ReCreate.InDevice.OnAccessClass(() =>
+		_sortClearPipeline = ReCreate.InDevice.Auto(() =>
 			PipelineManager.CreateComputePipeline(ShaderManager.GetOrCreate("./assets/shaders/ui2/compute/sort_clear_pass.comp", ShaderKind.ComputeShader),
 				new[] {_sortCountersLayout.Value}), pipeline => pipeline.Dispose());
 
-		_sortCountPipeline = ReCreate.InDevice.OnAccessClass(() =>
+		_sortCountPipeline = ReCreate.InDevice.Auto(() =>
 			PipelineManager.CreateComputePipeline(ShaderManager.GetOrCreate("./assets/shaders/ui2/compute/sort_count_pass.comp", ShaderKind.ComputeShader),
 				new[] {ComponentManager.DescriptorSetLayout.Value, _sortCountersLayout.Value}), pipeline => pipeline.Dispose());
 
-		_sortOffsetPipeline = ReCreate.InDevice.OnAccessClass(() =>
+		_sortOffsetPipeline = ReCreate.InDevice.Auto(() =>
 			PipelineManager.CreateComputePipeline(ShaderManager.GetOrCreate("./assets/shaders/ui2/compute/sort_offsets_pass.comp", ShaderKind.ComputeShader),
 				new[] {_sortCountersLayout.Value}), pipeline => pipeline.Dispose());
 
-		_sortMainPipeline = ReCreate.InDevice.OnAccessClass(() =>
+		_sortMainPipeline = ReCreate.InDevice.Auto(() =>
 			PipelineManager.CreateComputePipeline(ShaderManager.GetOrCreate("./assets/shaders/ui2/compute/sort_main_pass.comp", ShaderKind.ComputeShader),
 				new[] {ComponentManager.DescriptorSetLayout.Value, _sortCountersLayout.Value, _sortIndicesLayout.Value}), pipeline => pipeline.Dispose());
 
 		UpdateCountersDescriptorSet();
-		Context.DeviceEvents.AfterCreate += () =>
-		{
-			UpdateCountersDescriptorSet();
-		};
+		Context.DeviceEvents.AfterCreate += () => UpdateCountersDescriptorSet();
 	}
 
 	private CommandBuffer CreateCommandBuffer(FrameInfo frameInfo)
@@ -196,7 +175,7 @@ public unsafe partial class UiRootRenderer : RenderChain
 			SType = StructureType.RenderPassBeginInfo,
 			RenderPass = _renderPass,
 			RenderArea = new Rect2D(default, Context.SwapchainExtent),
-			Framebuffer = _framebuffers.Value[frameInfo.SwapchainImageId],
+			Framebuffer = _framebuffers[frameInfo.SwapchainImageId],
 			ClearValueCount = 1,
 			PClearValues = clearValues
 		};
@@ -237,7 +216,7 @@ public unsafe partial class UiRootRenderer : RenderChain
 			SrcStageMask = PipelineStageFlags2.TransferBit,
 			SrcAccessMask = AccessFlags2.TransferWriteBit,
 			DstStageMask = PipelineStageFlags2.ComputeShaderBit,
-			DstAccessMask = AccessFlags2.ShaderReadBit
+			DstAccessMask = AccessFlags2.ShaderStorageReadBit
 		};
 
 		var dependencyInfo = new DependencyInfo
@@ -272,16 +251,14 @@ public unsafe partial class UiRootRenderer : RenderChain
 		var indicesSet = _sortIndicesSet.Value;
 		var countersSet = _sortCountersSet.Value;
 
-		var cmd = CommandBuffers.OneTimeCompute();
+		var cmd = CommandBuffers.OneTimeCompute($"{Name} sort");
 
 		Context.Vk.CmdCopyBuffer(cmd, _countBufferCpu.Value, _countBuffer.Value, 1, countDataCopyRegion);
+		Context.Vk.CmdFillBuffer(cmd, _counters1Buffer.Value, 0, _counters1Buffer.Value.BufferSize, 0);
+		Context.Vk.CmdFillBuffer(cmd, _counters2Buffer.Value, 0, _counters2Buffer.Value.BufferSize, 0);
+		Context.Vk.CmdFillBuffer(cmd, _offsetsBuffer.Value, 0, _offsetsBuffer.Value.BufferSize, 0);
+
 		Context.KhrSynchronization2.CmdPipelineBarrier2(cmd, &dependencyInfo);
-
-		Context.Vk.CmdBindPipeline(cmd, PipelineBindPoint.Compute, _sortClearPipeline.Value.Pipeline);
-		Context.Vk.CmdBindDescriptorSets(cmd, PipelineBindPoint.Compute, _sortClearPipeline.Value.PipelineLayout, 0, 1, &countersSet, null);
-		Context.Vk.CmdDispatch(cmd, (uint) Math.Ceiling((float) ZCount / 32), 1, 1);
-
-		Context.KhrSynchronization2.CmdPipelineBarrier2(cmd, &dependencyInfoStorage);
 
 		Context.Vk.CmdBindPipeline(cmd, PipelineBindPoint.Compute, _sortCountPipeline.Value.Pipeline);
 		Context.Vk.CmdBindDescriptorSets(cmd, PipelineBindPoint.Compute, _sortCountPipeline.Value.PipelineLayout, 0, 1, &componentSet, null);
@@ -302,7 +279,7 @@ public unsafe partial class UiRootRenderer : RenderChain
 		Context.Vk.CmdBindDescriptorSets(cmd, PipelineBindPoint.Compute, _sortMainPipeline.Value.PipelineLayout, 2, 1, &indicesSet, null);
 		Context.Vk.CmdDispatch(cmd, (uint) Math.Ceiling((float) ComponentManager.Factory.MaxComponents / 32), 1, 1);
 
-		cmd.SubmitWithSemaphore(_sortSemaphores.Value[frameInfo.FrameId]);
+		cmd.SubmitWithSemaphore(_sortSemaphores[frameInfo.FrameId]);
 	}
 
 	private static RenderPass CreateRenderPass()
@@ -369,7 +346,7 @@ public unsafe partial class UiRootRenderer : RenderChain
 		return framebuffer;
 	}
 
-	private static AutoPipeline CreatePipeline(OnAccessValueReCreator<PipelineLayout> pipelineLayout, OnAccessValueReCreator<RenderPass> renderPass,
+	private static AutoPipeline CreatePipeline(ReCreator<PipelineLayout> pipelineLayout, ReCreator<RenderPass> renderPass,
 		Vector2<uint> size) =>
 		PipelineManager.GraphicsBuilder()
 			.WithShader("./Assets/Shaders/Ui2/rectangle.vert", ShaderKind.VertexShader)

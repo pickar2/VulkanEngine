@@ -41,8 +41,7 @@ namespace Core.Vulkan.Renderers;
  */
 public static class GeneralRenderer
 {
-	public static readonly RenderChain Root = new TestChildTextureRenderer("Root");
-
+	public static readonly RenderChain Root;
 	public static readonly RootPanel MainRoot;
 
 	static unsafe GeneralRenderer()
@@ -75,6 +74,8 @@ public static class GeneralRenderer
 
 		Root = new UiRootRenderer("Root1", componentManager, materialManager, globalDataManager);
 
+		for (int i = 0; i < 15; i++) Root.AddChild(new TestToTextureRenderer($"ChildRenderer{i}"));
+
 		byte[] bytes = File.ReadAllBytes($"Assets/Textures/{UiManager.Consolas.Pages[0].TextureName}");
 		var qoiImage = QoiDecoder.Decode(bytes);
 
@@ -92,9 +93,6 @@ public static class GeneralRenderer
 
 			ExecuteOnce.InDevice.BeforeDispose(() => texture.Dispose());
 		};
-
-		Root.AddChild(new TestToTextureRenderer("ChildRenderer1"));
-		Root.AddChild(new TestToTextureRenderer("ChildRenderer2"));
 	}
 }
 
@@ -105,21 +103,21 @@ public abstract unsafe class RenderChain : IDisposable
 	public readonly List<RenderChain> Children = new();
 
 	public event Func<FrameInfo, CommandBuffer>? RenderCommandBuffers;
-	public event Func<FrameInfo, Semaphore>? RenderWaitSemaphores;
-	public event Func<FrameInfo, Semaphore>? RenderSignalSemaphores;
+	public event Func<FrameInfo, SemaphoreWithStage>? RenderWaitSemaphores;
+	public event Func<FrameInfo, SemaphoreWithStage>? RenderSignalSemaphores;
 
 	protected Delegate[]? RenderCommandBufferDelegates => RenderCommandBuffers?.GetInvocationList();
 	protected Delegate[]? RenderSignalSemaphoresDelegates => RenderSignalSemaphores?.GetInvocationList();
 	protected Delegate[]? RenderWaitSemaphoresDelegates => RenderWaitSemaphores?.GetInvocationList();
 
-	protected readonly OnAccessValueReCreator<Semaphore> RenderFinishedSemaphore;
+	protected readonly ReCreator<Semaphore> RenderFinishedSemaphore;
 
 	protected RenderChain(string name)
 	{
 		Name = name;
 
-		RenderFinishedSemaphore = ReCreate.InDevice.OnAccessValue(() => CreateSemaphore(), semaphore => semaphore.Dispose());
-		RenderSignalSemaphores += frameInfo => RenderFinishedSemaphore;
+		RenderFinishedSemaphore = ReCreate.InDevice.Auto(() => CreateSemaphore(), semaphore => semaphore.Dispose());
+		RenderSignalSemaphores += frameInfo => new SemaphoreWithStage(RenderFinishedSemaphore, PipelineStageFlags.ColorAttachmentOutputBit);
 	}
 
 	public void AddChild(RenderChain child)
@@ -128,19 +126,21 @@ public abstract unsafe class RenderChain : IDisposable
 		child.Parent = this;
 	}
 
-	public void StartRendering(FrameInfo frameInfo, List<Semaphore>? waitSemaphores, out List<Semaphore> signalSemaphores, Fence queueFence = default)
+	public void StartRendering(FrameInfo frameInfo, List<SemaphoreWithStage>? waitSemaphores, out List<SemaphoreWithStage> signalSemaphores, Fence queueFence = default)
 	{
+		Debug.BeginQueueLabel(Context.GraphicsQueue, Name);
+
 		// get signal semaphores
-		signalSemaphores = new List<Semaphore>();
+		signalSemaphores = new List<SemaphoreWithStage>();
 		var signalSemaphoreDelegates = RenderSignalSemaphores?.GetInvocationList();
 		if (signalSemaphoreDelegates is not null)
 		{
 			foreach (var @delegate in signalSemaphoreDelegates)
-				signalSemaphores.Add(((Func<FrameInfo, Semaphore>) @delegate).Invoke(frameInfo));
+				signalSemaphores.Add(((Func<FrameInfo, SemaphoreWithStage>) @delegate).Invoke(frameInfo));
 		}
 
 		var pSignalSemaphores = stackalloc Semaphore[signalSemaphores.Count];
-		for (int i = 0; i < signalSemaphores.Count; i++) pSignalSemaphores[i] = signalSemaphores[i];
+		for (int i = 0; i < signalSemaphores.Count; i++) pSignalSemaphores[i] = signalSemaphores[i].Semaphore;
 
 		// get command buffers
 		var commandBufferDelegates = RenderCommandBuffers?.GetInvocationList();
@@ -156,7 +156,7 @@ public abstract unsafe class RenderChain : IDisposable
 		}
 
 		// start rendering children and get wait semaphores
-		var childrenWaitSemaphores = new List<Semaphore>();
+		var childrenWaitSemaphores = new List<SemaphoreWithStage>();
 		foreach (var child in Children)
 		{
 			child.StartRendering(frameInfo, null, out var childWaitSemaphores);
@@ -164,15 +164,15 @@ public abstract unsafe class RenderChain : IDisposable
 		}
 
 		var waitSemaphoreDelegates = RenderWaitSemaphores?.GetInvocationList();
-		var waitSemaphoresFromDelegates = new Semaphore[waitSemaphoreDelegates?.Length ?? 0];
+		var waitSemaphoresFromDelegates = new SemaphoreWithStage[waitSemaphoreDelegates?.Length ?? 0];
 		int waitSemaphoresFromDelegatesCount = 0;
 
 		if (waitSemaphoreDelegates is not null)
 		{
 			foreach (var @delegate in waitSemaphoreDelegates)
 			{
-				var semaphore = ((Func<FrameInfo, Semaphore>) @delegate).Invoke(frameInfo);
-				if (semaphore.Handle == default) continue;
+				var semaphore = ((Func<FrameInfo, SemaphoreWithStage>) @delegate).Invoke(frameInfo);
+				if (semaphore.Semaphore.Handle == default) continue;
 				waitSemaphoresFromDelegates[waitSemaphoresFromDelegatesCount++] = semaphore;
 			}
 		}
@@ -180,18 +180,35 @@ public abstract unsafe class RenderChain : IDisposable
 		int waitSemaphoreCount = (waitSemaphores?.Count ?? 0) + childrenWaitSemaphores.Count + waitSemaphoresFromDelegatesCount;
 
 		var pWaitDstStageMasks = stackalloc PipelineStageFlags[waitSemaphoreCount];
-		for (int i = 0; i < waitSemaphoreCount; i++) pWaitDstStageMasks[i] = PipelineStageFlags.BottomOfPipeBit; // TODO: real stage per semaphore
 
 		var pWaitSemaphores = stackalloc Semaphore[waitSemaphoreCount];
 		int index = 0;
 
 		if (waitSemaphores is not null)
+		{
 			foreach (var semaphore in waitSemaphores)
-				pWaitSemaphores[index++] = semaphore;
+			{
+				pWaitSemaphores[index] = semaphore.Semaphore;
+				pWaitDstStageMasks[index] = semaphore.StageFlags;
+				index++;
+			}
+		}
 
-		foreach (var semaphore in childrenWaitSemaphores) pWaitSemaphores[index++] = semaphore;
+		foreach (var semaphore in childrenWaitSemaphores)
+		{
+			pWaitSemaphores[index] = semaphore.Semaphore;
+			pWaitDstStageMasks[index] = semaphore.StageFlags;
+			index++;
+		}
 
-		for (int i = 0; i < waitSemaphoresFromDelegatesCount; i++) pWaitSemaphores[index++] = waitSemaphoresFromDelegates[i];
+		for (int i = 0; i < waitSemaphoresFromDelegatesCount; i++)
+		{
+			var semaphore = waitSemaphoresFromDelegates[i];
+
+			pWaitSemaphores[index] = semaphore.Semaphore;
+			pWaitDstStageMasks[index] = semaphore.StageFlags;
+			index++;
+		}
 
 		// submit
 		var submitInfo = new SubmitInfo
@@ -206,14 +223,24 @@ public abstract unsafe class RenderChain : IDisposable
 			PCommandBuffers = pCommandBuffers
 		};
 
-		Debug.BeginQueueLabel(Context.GraphicsQueue, Name);
-
 		Context.GraphicsQueue.Submit(submitInfo, queueFence);
 
 		Debug.EndQueueLabel(Context.GraphicsQueue);
 	}
 
 	public abstract void Dispose();
+}
+
+public readonly struct SemaphoreWithStage
+{
+	public readonly Semaphore Semaphore;
+	public readonly PipelineStageFlags StageFlags;
+
+	public SemaphoreWithStage(Semaphore semaphore, PipelineStageFlags stageFlags)
+	{
+		Semaphore = semaphore;
+		StageFlags = stageFlags;
+	}
 }
 
 public static class RendererChainableExtensions
