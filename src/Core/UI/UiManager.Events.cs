@@ -25,7 +25,7 @@ public static partial class UiManager
 	public static event Action? BeforeUpdate;
 	public static event Action? AfterUpdate;
 
-	public static MList<UiControl> ControlsOnMousePos { get; private set; } = new();
+	public static List<UiControl> ControlsOnMousePos { get; private set; } = new();
 	public static UiControl? TopControl => ControlsOnMousePos.Count > 0 ? ControlsOnMousePos[0] : null;
 
 	private static void InitEvents()
@@ -128,7 +128,7 @@ public static partial class UiManager
 
 	private static void EventsPostUpdate()
 	{
-		ControlsOnMousePos = ControlsOnPos(MouseInput.MousePos.Cast<int, float>(), GeneralRenderer.MainRoot, new MList<UiControl>());
+		ControlsOnMousePos = ControlsOnPos(MouseInput.MousePos.Cast<int, float>(), GeneralRenderer.MainRoot, new List<UiControl>());
 
 		AfterUpdate?.Invoke();
 	}

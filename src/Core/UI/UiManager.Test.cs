@@ -63,27 +63,27 @@ public static partial class UiManager
 	{
 		var box1 = new CustomBox(MainRoot);
 		box1.MarginLT = (350, 50);
-		box1.Size = (150, 150);
+		box1.Size = (640, 360);
 		box1.OffsetZ = 250;
 		var frag = MainRoot.MaterialManager.GetFactory("texture_material").Create();
 		box1.FragMaterial = frag;
 
-		*frag.GetMemPtr<int>() = (int) TextureManager.GetTextureId("ChildRenderer1 0");
+		*frag.GetMemPtr<int>() = (int) TextureManager.GetTextureId("DeferredOutput");
 		frag.MarkForGPUUpdate();
 
 		parent.AddChild(box1);
 		
-		var box2 = new CustomBox(MainRoot);
-		box2.MarginLT = (600, 50);
-		box2.Size = (150, 150);
-		box2.OffsetZ = 250;
-		var frag2 = MainRoot.MaterialManager.GetFactory("texture_material").Create();
-		box2.FragMaterial = frag2;
-
-		*frag2.GetMemPtr<int>() = (int) TextureManager.GetTextureId("ChildRenderer2 0");
-		frag2.MarkForGPUUpdate();
-
-		parent.AddChild(box2);
+		// var box2 = new CustomBox(MainRoot);
+		// box2.MarginLT = (600, 50);
+		// box2.Size = (150, 150);
+		// box2.OffsetZ = 250;
+		// var frag2 = MainRoot.MaterialManager.GetFactory("texture_material").Create();
+		// box2.FragMaterial = frag2;
+		//
+		// *frag2.GetMemPtr<int>() = (int) TextureManager.GetTextureId("ChildRenderer2 0");
+		// frag2.MarkForGPUUpdate();
+		//
+		// parent.AddChild(box2);
 	}
 
 	private static void TextInputTest(AbsolutePanel parent)

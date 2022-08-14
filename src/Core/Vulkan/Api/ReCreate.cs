@@ -136,14 +136,14 @@ public class ReCreator<T>
 		}
 	}
 
-	public readonly VulkanLevel Level;
+	private readonly VulkanLevel _level;
 
 	private readonly Func<T> _createFunc;
 	private readonly Action _disposeAction;
 
 	public ReCreator(VulkanLevel level, Func<T> createFunc, Action<T>? disposeFunc = null)
 	{
-		Level = level;
+		_level = level;
 		_createFunc = () =>
 		{
 			_hasValue = true;
@@ -168,7 +168,7 @@ public class ReCreator<T>
 			};
 		}
 
-		var events = Context.GetLevelEvents(Level);
+		var events = Context.GetLevelEvents(_level);
 		events.BeforeDispose += _disposeAction;
 	}
 
@@ -183,7 +183,7 @@ public class ReCreator<T>
 	public void Dispose(bool disposeObject = false)
 	{
 		if (disposeObject) _disposeAction();
-		var events = Context.GetLevelEvents(Level);
+		var events = Context.GetLevelEvents(_level);
 		events.BeforeDispose -= _disposeAction;
 	}
 
