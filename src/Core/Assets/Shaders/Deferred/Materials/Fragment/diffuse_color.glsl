@@ -12,5 +12,5 @@ readonly layout(std430, set = FRAGMENT_MATERIAL_SET, binding = color_material_bi
 
 void color_material(UiElementData data) {
     color_material_struct mat = color_material_data[data.fragmentDataIndex];
-    outColor = intToRGBA(mat.color);
+    outColor = intToRGBA(mat.color) * vec4(inUV, 1, 1);
 }

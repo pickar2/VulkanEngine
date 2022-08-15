@@ -35,15 +35,16 @@ public unsafe class Deferred3DRenderer : RenderChain
 	private readonly ReCreator<VulkanBuffer> _vertexBuffer;
 
 	private readonly UiMaterialManager _materialManager;
+
 	public Deferred3DRenderer(Vector2<uint> size, string name) : base(name)
 	{
-		_materialManager = new UiMaterialManager($"{Name} Material Manager");
+		_materialManager = new UiMaterialManager($"{Name}MaterialManager");
 		InitMaterials();
 
 		Size = size;
 
 		ColorAttachment = ReCreate.InDevice.Auto(() =>
-			FrameGraph.CreateAttachment(Format.R8G8B8A8Srgb, ImageAspectFlags.ColorBit, Size, ImageUsageFlags.SampledBit), image => image.Dispose());
+			FrameGraph.CreateAttachment(Format.R8G8B8A8Unorm, ImageAspectFlags.ColorBit, Size, ImageUsageFlags.SampledBit), image => image.Dispose());
 
 		DepthAttachment = ReCreate.InDevice.Auto(() =>
 			FrameGraph.CreateAttachment(Format.D32Sfloat, ImageAspectFlags.DepthBit, Size), image => image.Dispose());
@@ -71,8 +72,11 @@ public unsafe class Deferred3DRenderer : RenderChain
 		Context.DeviceEvents.AfterCreate += () => UpdateComposeDescriptorSet();
 
 		FillGBuffersPipelineLayout = ReCreate.InDevice.Auto(() => CreatePipelineLayout(), layout => layout.Dispose());
-		DeferredComposePipelineLayout = ReCreate.InDevice.Auto(() => CreatePipelineLayout(_composeLayout), layout => layout.Dispose());
-		
+		DeferredComposePipelineLayout =
+			ReCreate.InDevice.Auto(
+				() => CreatePipelineLayout(_composeLayout, _materialManager.VertexDescriptorSetLayout, _materialManager.FragmentDescriptorSetLayout),
+				layout => layout.Dispose());
+
 		FillGBuffersPipeline = CreateFillGBufferPipeline();
 		DeferredComposePipeline = CreateDeferredComposePipeline();
 
@@ -122,7 +126,7 @@ public unsafe class Deferred3DRenderer : RenderChain
 
 		cmd.BeginRenderPass(renderPassBeginInfo, SubpassContents.Inline);
 		Debug.BeginCmdLabel(cmd, $"FIll G-Buffers");
-		
+
 		cmd.BindGraphicsPipeline(FillGBuffersPipeline);
 		cmd.BindVertexBuffer(0, _vertexBuffer.Value);
 		cmd.Draw(3, 1, 0, 0);
@@ -130,9 +134,12 @@ public unsafe class Deferred3DRenderer : RenderChain
 		Debug.EndCmdLabel(cmd);
 		Context.Vk.CmdNextSubpass(cmd, SubpassContents.Inline);
 		Debug.BeginCmdLabel(cmd, $"Compose Deferred Lighting");
-		
+
 		cmd.BindGraphicsPipeline(DeferredComposePipeline);
 		cmd.BindGraphicsDescriptorSets(DeferredComposePipelineLayout, 0, 1, _composeSet);
+		cmd.BindGraphicsDescriptorSets(DeferredComposePipelineLayout, 1, 1, _materialManager.VertexDescriptorSet);
+		cmd.BindGraphicsDescriptorSets(DeferredComposePipelineLayout, 2, 1, _materialManager.FragmentDescriptorSet);
+
 		cmd.Draw(3, 1, 0, 0);
 
 		Debug.EndCmdLabel(cmd);
@@ -146,8 +153,12 @@ public unsafe class Deferred3DRenderer : RenderChain
 
 	private void InitMaterials()
 	{
-		_materialManager.RegisterMaterialFile($"./Assets/Shaders/Deferred/Materials/Fragment/diffuse_color.glsl");
 		_materialManager.RegisterMaterialFile($"./Assets/Shaders/Deferred/Materials/Vertex/model_id_transform.glsl");
+
+		_materialManager.RegisterMaterialFile($"./Assets/Shaders/Deferred/Materials/Fragment/no_material.glsl");
+		_materialManager.RegisterMaterialFile($"./Assets/Shaders/Deferred/Materials/Fragment/diffuse_color.glsl");
+
+		_materialManager.UpdateShaders();
 	}
 
 	private RenderPass CreateRenderPass()
@@ -435,7 +446,7 @@ public unsafe class Deferred3DRenderer : RenderChain
 		Check(Context.Vk.CreateDescriptorSetLayout(Context.Device, &countersLayoutCreateInfo, null, out var layout),
 			"Failed to create descriptor set layout.");
 
-		return layout;	
+		return layout;
 	}
 
 	private DescriptorPool CreateComposePool()
@@ -523,9 +534,15 @@ public unsafe class Deferred3DRenderer : RenderChain
 	{
 		var vertices = _vertexBuffer.Value.GetHostSpan<DeferredVertex>();
 
-		vertices[0] = new DeferredVertex(new Vector4<uint>(0, 0, 0, (uint) Color.CadetBlue.ToArgb()), new Vector3<float>(0, 0, 0), new Vector3<float>(), new Vector2<float>());
-		vertices[1] = new DeferredVertex(new Vector4<uint>(0, 0, 0, (uint) Color.CadetBlue.ToArgb()), new Vector3<float>(0.5f, 1f, 0), new Vector3<float>(), new Vector2<float>());
-		vertices[2] = new DeferredVertex(new Vector4<uint>(0, 0, 0, (uint) Color.CadetBlue.ToArgb()), new Vector3<float>(1f, 0, 0), new Vector3<float>(), new Vector2<float>());
+		var material = _materialManager.GetFactory("color_material").Create();
+
+		*material.GetMemPtr<int>() = Color.BlueViolet.ToArgb();
+
+		material.MarkForGPUUpdate();
+
+		vertices[0] = new DeferredVertex(1, 0, (ushort) material.MaterialId, 0, 0, new Vector3<float>(-1, 1, 0), new Vector3<float>(), new Vector2<float>());
+		vertices[1] = new DeferredVertex(1, 0, (ushort) material.MaterialId, 0, 0, new Vector3<float>(0f, -1f, 0), new Vector3<float>(), new Vector2<float>());
+		vertices[2] = new DeferredVertex(1, 0, (ushort) material.MaterialId, 0, 0, new Vector3<float>(1f, 1, 0), new Vector3<float>(), new Vector2<float>());
 	}
 
 	private AutoPipeline CreateFillGBufferPipeline() =>
@@ -581,8 +598,8 @@ public struct DeferredVertex
 	// layout(location = 5) in vec2 inUV;
 
 	public uint ModelId;
-	public ushort VertexMaterialType;
 	public ushort FragmentMaterialType;
+	public ushort VertexMaterialType;
 	public uint VertexMaterialIndex;
 	public uint FragmentMaterialIndex;
 
@@ -590,7 +607,8 @@ public struct DeferredVertex
 	public Vector3<float> Normal;
 	public Vector2<float> Uv;
 
-	public DeferredVertex(uint modelId, ushort vertexMaterialType, ushort fragmentMaterialType, uint vertexMaterialIndex, uint fragmentMaterialIndex, Vector3<float> position, Vector3<float> normal, Vector2<float> uv)
+	public DeferredVertex(uint modelId, ushort vertexMaterialType, ushort fragmentMaterialType, uint vertexMaterialIndex, uint fragmentMaterialIndex,
+		Vector3<float> position, Vector3<float> normal, Vector2<float> uv)
 	{
 		ModelId = modelId;
 		VertexMaterialType = vertexMaterialType;
@@ -613,4 +631,6 @@ public struct DeferredVertex
 		Normal = normal;
 		Uv = uv;
 	}
+
+	// public static uint ComposeMaterial(ushort vertexMaterialType, ushort fragmentMaterialType) =>  (uint) fragmentMaterialType << 8 | vertexMaterialType;
 }
