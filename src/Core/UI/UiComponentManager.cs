@@ -14,7 +14,7 @@ public unsafe class UiComponentManager
 	public readonly ReCreator<DescriptorPool> DescriptorPool;
 	public readonly ReCreator<DescriptorSet> DescriptorSet;
 
-	public readonly ReCreator<VulkanBuffer> IndexBuffer;
+	public readonly ArrayReCreator<VulkanBuffer> IndexBuffers;
 
 	public bool RequireWait { get; private set; }
 	public Semaphore WaitSemaphore { get; private set; }
@@ -31,7 +31,7 @@ public unsafe class UiComponentManager
 		DescriptorPool = ReCreate.InDevice.Auto(() => CreateDescriptorPool(), pool => pool.Dispose());
 		DescriptorSet = ReCreate.InDevice.Auto(() => CreateDescriptorSet());
 
-		IndexBuffer = ReCreate.InDevice.Auto(() => CreateAndFillIndexBuffer(), buffer => buffer.Dispose());
+		IndexBuffers = ReCreate.InDevice.AutoArray(_ => CreateAndFillIndexBuffer(), () => Context.State.FrameOverlap, buffer => buffer.Dispose());
 	}
 
 	public void AfterUpdate()
@@ -40,9 +40,13 @@ public unsafe class UiComponentManager
 		{
 			Factory.BufferChanged = false;
 
-			var buf = IndexBuffer.Value;
-			ExecuteOnce.AtCurrentFrameStart(() => buf.Dispose());
-			IndexBuffer.ReCreate();
+			for (int i = 0; i < IndexBuffers.Array.Length; i++)
+			{
+				var buf = IndexBuffers[i];
+				ExecuteOnce.AtCurrentFrameStart(() => buf.Dispose());
+			}
+
+			IndexBuffers.ReCreateAll();
 			UpdateComponentDataDescriptorSets();
 		}
 
@@ -53,12 +57,13 @@ public unsafe class UiComponentManager
 			var command = CommandBuffers.OneTimeTransferToHost();
 
 			command.Cmd.CopyBuffer(Factory.DataBufferCpu, Factory.DataBufferGpu, regions);
-			command.SubmitWithSemaphore();
-			
-			ExecuteOnce.AtCurrentFrameStart(() => Context.Vk.FreeCommandBuffers(Context.Device, CommandBuffers.TransferToHostPool, 1, command.Cmd));
+			command.SubmitAndWait();
+			// command.SubmitWithSemaphore();
 
-			RequireWait = true;
-			WaitSemaphore = command.Semaphore;
+			// ExecuteOnce.AtCurrentFrameStart(() => Context.Vk.FreeCommandBuffers(Context.Device, CommandBuffers.TransferToHostPool, 1, command.Cmd));
+
+			// RequireWait = true;
+			// WaitSemaphore = command.Semaphore;
 		}
 	}
 

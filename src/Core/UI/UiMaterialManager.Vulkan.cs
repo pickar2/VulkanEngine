@@ -139,11 +139,13 @@ public unsafe partial class UiMaterialManager
 		RequireWait = false;
 		if (!copying) return;
 
-		command.SubmitWithSemaphore();
+		command.SubmitAndWait();
 
-		ExecuteOnce.AtCurrentFrameStart(() => Context.Vk.FreeCommandBuffers(Context.Device, CommandBuffers.TransferToHostPool, 1, command.Cmd));
-		RequireWait = true;
-		WaitSemaphore = command.Semaphore;
+		// command.SubmitWithSemaphore();
+
+		// ExecuteOnce.AtCurrentFrameStart(() => Context.Vk.FreeCommandBuffers(Context.Device, CommandBuffers.TransferToHostPool, 1, command.Cmd));
+		// RequireWait = true;
+		// WaitSemaphore = command.Semaphore;
 	}
 
 	private static DescriptorSetLayout CreateSetLayout(ShaderStageFlags flags, uint bindingCount)

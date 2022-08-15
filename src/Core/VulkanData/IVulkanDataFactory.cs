@@ -17,6 +17,5 @@ public unsafe interface IVulkanDataFactory
 	public void DisposeVulkanDataIndex(int index);
 	public void MarkForCopy(int index);
 
-	public void RecordCopyCommand(CommandBuffer cb);
 	public void GetCopyRegions(out uint copyCount, out BufferCopy[] regions);
 }

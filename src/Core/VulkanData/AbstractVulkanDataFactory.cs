@@ -18,13 +18,20 @@ public abstract unsafe class AbstractVulkanDataFactory<TDataHolder> : IVulkanDat
 	private int _copyRegionSizeLog2 = (int) Math.Log2(1024);
 
 	private int _gapCount;
-
 	private int[] _gaps = new int[512];
 
-	private byte* _materialData;
-	private nint Ptr => DataBufferCpu.HostMemoryPtr;
-
+	private byte* _data;
 	private nint _dataBackup;
+	private int _backupSize;
+
+	public VulkanBuffer DataBufferCpu { get; private set; }
+	public VulkanBuffer DataBufferGpu { get; private set; }
+	public bool BufferChanged { get; set; } = true;
+
+	public int MaxComponents { get; private set; } = 256;
+	public int ComponentCount { get; private set; }
+	public int ComponentSize { get; }
+	public ulong BufferSize { get; private set; }
 
 	public AbstractVulkanDataFactory(int dataSize)
 	{
@@ -36,30 +43,40 @@ public abstract unsafe class AbstractVulkanDataFactory<TDataHolder> : IVulkanDat
 
 		if (Context.IsIntegratedGpu)
 		{
-			DataBufferCpu = new VulkanBuffer(BufferSize, BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU);
-			DataBufferGpu = DataBufferCpu;
+			DataBufferGpu = DataBufferCpu = new VulkanBuffer(BufferSize, BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU);
+
+			_data = (byte*) Marshal.AllocHGlobal((int) BufferSize);
 		}
 		else
 		{
 			DataBufferCpu = new VulkanBuffer(BufferSize, BufferUsageFlags.TransferSrcBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_ONLY);
 			DataBufferGpu = new VulkanBuffer(BufferSize, BufferUsageFlags.StorageBufferBit | BufferUsageFlags.TransferDstBit,
 				VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
+
+			_data = (byte*) DataBufferCpu.Map();
 		}
 
-		DataBufferCpu.Map();
-
-		_materialData = (byte*) Ptr;
-		new Span<byte>(_materialData, (int) BufferSize).Fill(default);
+		new Span<byte>(_data, (int) BufferSize).Fill(default);
 
 		Context.DeviceEvents.BeforeDispose += () =>
 		{
 			if (!Context.State.Window.Value.IsClosing)
 			{
-				int size = Math.Min((int) BufferSize, ComponentCount * ComponentSize);
-				_dataBackup = Marshal.AllocHGlobal(size);
-				DataBufferCpu.GetHostSpan()[..size].CopyTo(new Span<byte>((void*) _dataBackup, size));
-				// App.Logger.Info.Message($"Saved {size/1024f} KB.");
+				if (!Context.IsIntegratedGpu)
+				{
+					int size = Math.Min((int) BufferSize, ComponentCount * ComponentSize);
+					_dataBackup = Marshal.AllocHGlobal(size);
+					_backupSize = size;
+					DataBufferCpu.GetHostSpan()[..size].CopyTo(new Span<byte>((void*) _dataBackup, size));
+				}
+				else
+				{
+					_dataBackup = (nint) _data;
+					_backupSize = (int) BufferSize;
+				}
 			}
+
+			if (Context.State.Window.Value.IsClosing && Context.IsIntegratedGpu) Marshal.FreeHGlobal((nint) _data);
 
 			DataBufferCpu.Dispose();
 			if (DataBufferCpu.Buffer.Handle != DataBufferGpu.Buffer.Handle)
@@ -72,51 +89,88 @@ public abstract unsafe class AbstractVulkanDataFactory<TDataHolder> : IVulkanDat
 
 			if (Context.IsIntegratedGpu)
 			{
-				DataBufferCpu = new VulkanBuffer(BufferSize, BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU);
-				DataBufferGpu = DataBufferCpu;
+				DataBufferGpu = DataBufferCpu = new VulkanBuffer(BufferSize, BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU);
+
+				_data = (byte*) Marshal.AllocHGlobal((int) BufferSize);
 			}
 			else
 			{
 				DataBufferCpu = new VulkanBuffer(BufferSize, BufferUsageFlags.TransferSrcBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_ONLY);
 				DataBufferGpu = new VulkanBuffer(BufferSize, BufferUsageFlags.StorageBufferBit | BufferUsageFlags.TransferDstBit,
 					VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
-			}
 
-			_materialData = (byte*) DataBufferCpu.Map();
+				_data = (byte*) DataBufferCpu.Map();
+			}
 
 			if (_dataBackup != default)
 			{
-				int size = Math.Min((int) BufferSize, ComponentCount * ComponentSize);
-				new Span<byte>((void*) _dataBackup, size).CopyTo(DataBufferCpu.GetHostSpan());
+				var backup = new Span<byte>((void*) _dataBackup, _backupSize);
+				if (Context.IsIntegratedGpu) backup.CopyTo(new Span<byte>(_data, _backupSize));
+				backup.CopyTo(DataBufferCpu.GetHostSpan());
 				Marshal.FreeHGlobal(_dataBackup);
 				_dataBackup = default;
 				_copyRegions.Fill(true);
-				// App.Logger.Info.Message($"Loaded {size/1024f} KB.");
 			}
 		};
 	}
 
-	public VulkanBuffer DataBufferCpu { get; private set; }
-	public VulkanBuffer DataBufferGpu { get; private set; }
-	public bool BufferChanged { get; set; } = true;
+	private void DoubleBufferSize()
+	{
+		int newMaxComponents = MaxComponents * 2;
 
-	public int MaxComponents { get; private set; } = 256;
-	public int ComponentCount { get; private set; }
-	public int ComponentSize { get; }
-	public ulong BufferSize { get; private set; }
+		if ((int) Math.Ceiling((double) newMaxComponents / _copyRegionSize) > MaxCopyRegions)
+		{
+			_copyRegionSize *= 2;
+			_copyRegionSizeLog2++;
+		}
+
+		int copyRegionsSize = (int) Math.Ceiling((double) newMaxComponents / _copyRegionSize);
+		_copyRegions = new bool[copyRegionsSize];
+
+		BufferSize = (ulong) Math.Max(4, newMaxComponents * ComponentSize);
+		_copyRegionByteSize = Math.Min((ulong) (_copyRegionSize * ComponentSize), BufferSize);
+
+		var newDataBuffer = Context.IsIntegratedGpu
+			? new VulkanBuffer(BufferSize, BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU)
+			: new VulkanBuffer(BufferSize, BufferUsageFlags.TransferSrcBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_ONLY);
+
+		nint newPtr = Context.IsIntegratedGpu ? Marshal.AllocHGlobal((int) BufferSize) : newDataBuffer.Map();
+
+		var oldSpan = new Span<byte>(_data, MaxComponents * ComponentSize);
+		var newSpan = new Span<byte>((void*) newPtr, (int) BufferSize);
+		oldSpan.CopyTo(newSpan);
+		newSpan.Slice(MaxComponents * ComponentSize, MaxComponents * ComponentSize).Fill(default);
+
+		var old = DataBufferCpu;
+		ExecuteOnce.AtCurrentFrameStart(() => old.Dispose());
+		DataBufferCpu = newDataBuffer;
+		if (Context.IsIntegratedGpu)
+		{
+			DataBufferGpu = newDataBuffer;
+			Marshal.FreeHGlobal((nint) _data);
+		}
+		else
+		{
+			var oldGpu = DataBufferGpu;
+			ExecuteOnce.AtCurrentFrameStart(() => oldGpu.Dispose());
+			DataBufferGpu = new VulkanBuffer(BufferSize, BufferUsageFlags.StorageBufferBit | BufferUsageFlags.TransferDstBit,
+				VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
+
+			DataBufferCpu.CopyTo(DataBufferGpu, (ulong) (MaxComponents * ComponentSize));
+		}
+
+		MaxComponents = newMaxComponents;
+
+		_data = (byte*) newPtr;
+		BufferChanged = true;
+	}
 
 	public void MarkForCopy(int index) => _copyRegions[index >> _copyRegionSizeLog2] = true;
-
-	public void RecordCopyCommand(CommandBuffer cb)
-	{
-		GetCopyRegions(out uint copyCount, out var copyRegions);
-		if (copyCount > 0) Context.Vk.CmdCopyBuffer(cb, DataBufferCpu.Buffer, DataBufferGpu.Buffer, copyCount, copyRegions[0]);
-	}
 
 	public void GetCopyRegions(out uint copyCount, out BufferCopy[] regions)
 	{
 		copyCount = 0;
-		if (Context.IsIntegratedGpu || ComponentSize == 0)
+		if (ComponentSize == 0)
 		{
 			regions = Array.Empty<BufferCopy>();
 			return;
@@ -181,13 +235,30 @@ public abstract unsafe class AbstractVulkanDataFactory<TDataHolder> : IVulkanDat
 				DstOffset = offset
 			};
 		}
+
+		if (copyCount > 0 && Context.IsIntegratedGpu)
+		{
+			var span = new Span<byte>(_data, (int) BufferSize);
+			var otherSpan = DataBufferCpu.GetHostSpan();
+
+			foreach (var region in regions)
+			{
+				span = span.Slice((int) region.SrcOffset, (int) region.Size);
+				otherSpan = otherSpan.Slice((int) region.DstOffset, (int) region.Size);
+
+				span.CopyTo(otherSpan);
+			}
+
+			copyCount = 0;
+			regions = Array.Empty<BufferCopy>();
+		}
 	}
 
 	// TODO: binary insert into gaps array
 	// Reasoning: for instanced rendering it will be useful to have continuous id range for all instances
 	public void DisposeVulkanDataIndex(int index)
 	{
-		new Span<byte>(_materialData + (index * ComponentSize), ComponentSize).Fill(default);
+		new Span<byte>(_data + (index * ComponentSize), ComponentSize).Fill(default);
 		MarkForCopy(index);
 		if (_gapCount >= _gaps.Length)
 		{
@@ -199,57 +270,7 @@ public abstract unsafe class AbstractVulkanDataFactory<TDataHolder> : IVulkanDat
 		_gaps[_gapCount++] = index;
 	}
 
-	public TDataStruct* GetPointerToData<TDataStruct>(int index) where TDataStruct : unmanaged => (TDataStruct*) (_materialData + (index * ComponentSize));
-
-	private void DoubleBufferSize()
-	{
-		int newMaxComponents = MaxComponents * 2;
-
-		if ((int) Math.Ceiling((double) newMaxComponents / _copyRegionSize) > MaxCopyRegions)
-		{
-			_copyRegionSize *= 2;
-			_copyRegionSizeLog2++;
-		}
-
-		int copyRegionsSize = (int) Math.Ceiling((double) newMaxComponents / _copyRegionSize);
-		_copyRegions = new bool[copyRegionsSize];
-
-		BufferSize = (ulong) Math.Max(4, newMaxComponents * ComponentSize);
-		_copyRegionByteSize = Math.Min((ulong) (_copyRegionSize * ComponentSize), BufferSize);
-
-		var newDataBuffer = Context.IsIntegratedGpu
-			? new VulkanBuffer(BufferSize, BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU)
-			: new VulkanBuffer(BufferSize, BufferUsageFlags.TransferSrcBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_ONLY);
-
-		var ptr = newDataBuffer.Map();
-
-		var oldSpan = new Span<byte>(_materialData, MaxComponents * ComponentSize);
-		var newSpan = new Span<byte>((void*) ptr, (int) BufferSize);
-		oldSpan.CopyTo(newSpan);
-		newSpan.Slice(MaxComponents * ComponentSize, MaxComponents * ComponentSize).Fill(default);
-
-		var old = DataBufferCpu;
-		ExecuteOnce.AtCurrentFrameStart(() => old.Dispose());
-		DataBufferCpu = newDataBuffer;
-		if (Context.IsIntegratedGpu)
-		{
-			DataBufferGpu = newDataBuffer;
-		}
-		else
-		{
-			var oldGpu = DataBufferGpu;
-			ExecuteOnce.AtCurrentFrameStart(() => oldGpu.Dispose());
-			DataBufferGpu = new VulkanBuffer(BufferSize, BufferUsageFlags.StorageBufferBit | BufferUsageFlags.TransferDstBit,
-				VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
-
-			DataBufferCpu.CopyTo(DataBufferGpu, (ulong) (MaxComponents * ComponentSize));
-		}
-
-		MaxComponents = newMaxComponents;
-
-		_materialData = (byte*) Ptr;
-		BufferChanged = true;
-	}
+	public TDataStruct* GetPointerToData<TDataStruct>(int index) where TDataStruct : unmanaged => (TDataStruct*) (_data + (index * ComponentSize));
 
 	public virtual TDataHolder Create()
 	{
@@ -261,7 +282,7 @@ public abstract unsafe class AbstractVulkanDataFactory<TDataHolder> : IVulkanDat
 			index = ComponentCount++;
 		}
 
-		new Span<byte>(_materialData + (index * ComponentSize), ComponentSize).Fill(0);
+		new Span<byte>(_data + (index * ComponentSize), ComponentSize).Fill(0);
 
 		return new TDataHolder
 		{

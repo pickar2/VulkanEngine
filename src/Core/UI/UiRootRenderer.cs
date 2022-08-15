@@ -1,6 +1,5 @@
 ﻿using System;
 using Core.Native.Shaderc;
-using Core.UI.Controls.Panels;
 using Core.Vulkan;
 using Core.Vulkan.Api;
 using Core.Vulkan.Renderers;
@@ -13,15 +12,18 @@ namespace Core.UI;
 
 public unsafe partial class UiRootRenderer : RenderChain
 {
+	private OneTimeCommand? _previousSort;
+
 	// Render
 	private readonly ReCreator<RenderPass> _renderPass;
+
 	private readonly ArrayReCreator<Framebuffer> _framebuffers;
-	private readonly ReCreator<CommandPool> _commandPool;
+	// private readonly ReCreator<CommandPool> _commandPool;
 
 	private readonly ReCreator<PipelineLayout> _pipelineLayout;
 	private readonly AutoPipeline _pipeline;
 
-	private readonly ReCreator<VulkanBuffer> _indirectBuffer;
+	private readonly ArrayReCreator<VulkanBuffer> _indirectBuffer;
 
 	// Compute
 	private const int ZCount = 2048;
@@ -29,22 +31,22 @@ public unsafe partial class UiRootRenderer : RenderChain
 
 	private readonly ReCreator<DescriptorSetLayout> _sortCountersLayout;
 	private readonly ReCreator<DescriptorPool> _sortCountersPool;
-	private readonly ReCreator<DescriptorSet> _sortCountersSet;
+	private readonly ArrayReCreator<DescriptorSet> _sortCountersSets;
 
 	private readonly ReCreator<DescriptorSetLayout> _sortIndicesLayout;
 	private readonly ReCreator<DescriptorPool> _sortIndicesPool;
-	private readonly ReCreator<DescriptorSet> _sortIndicesSet;
+	private readonly ArrayReCreator<DescriptorSet> _sortIndicesSets;
 
 	private readonly ReCreator<VulkanPipeline> _sortClearPipeline;
 	private readonly ReCreator<VulkanPipeline> _sortCountPipeline;
 	private readonly ReCreator<VulkanPipeline> _sortOffsetPipeline;
 	private readonly ReCreator<VulkanPipeline> _sortMainPipeline;
 
-	private readonly ReCreator<VulkanBuffer> _counters1Buffer;
-	private readonly ReCreator<VulkanBuffer> _counters2Buffer;
-	private readonly ReCreator<VulkanBuffer> _offsetsBuffer;
-	private readonly ReCreator<VulkanBuffer> _countBufferCpu;
-	private readonly ReCreator<VulkanBuffer> _countBuffer;
+	private readonly ArrayReCreator<VulkanBuffer> _counters1Buffer;
+	private readonly ArrayReCreator<VulkanBuffer> _counters2Buffer;
+	private readonly ArrayReCreator<VulkanBuffer> _offsetsBuffer;
+	private readonly ArrayReCreator<VulkanBuffer> _countBufferCpu;
+	private readonly ArrayReCreator<VulkanBuffer> _countBuffer;
 
 	private readonly ArrayReCreator<Semaphore> _sortSemaphores;
 
@@ -60,11 +62,12 @@ public unsafe partial class UiRootRenderer : RenderChain
 		GlobalDataManager = globalDataManager;
 
 		// Render
-		_commandPool = ReCreate.InDevice.Auto(() => CreateCommandPool(Context.GraphicsQueue, CommandPoolCreateFlags.TransientBit), commandPool => commandPool.Dispose());
+		// _commandPool = ReCreate.InDevice.Auto(() => CreateCommandPool(Context.GraphicsQueue, CommandPoolCreateFlags.TransientBit),
+		// 	commandPool => commandPool.Dispose());
 
 		_renderPass = ReCreate.InDevice.Auto(() => CreateRenderPass(), renderPass => renderPass.Dispose());
 
-		_framebuffers = ReCreate.InDevice.AutoArray(i => CreateFramebuffer(_renderPass, Context.SwapchainImages[i].ImageView, Context.State.WindowSize),
+		_framebuffers = ReCreate.InSwapchain.AutoArray(i => CreateFramebuffer(_renderPass, Context.SwapchainImages[i].ImageView, Context.State.WindowSize),
 			(int) Context.SwapchainImageCount, framebuffer => framebuffer.Dispose());
 
 		_pipelineLayout =
@@ -73,20 +76,20 @@ public unsafe partial class UiRootRenderer : RenderChain
 					MaterialManager.VertexDescriptorSetLayout, MaterialManager.FragmentDescriptorSetLayout), layout => layout.Dispose());
 		_pipeline = CreatePipeline(_pipelineLayout, _renderPass, Context.State.WindowSize);
 
-		_indirectBuffer = ReCreate.InDevice.Auto(() => CreateIndirectBuffer(), buffer => buffer.Dispose());
+		_indirectBuffer = ReCreate.InDevice.AutoArrayFrameOverlap(_ => CreateIndirectBuffer(), buffer => buffer.Dispose());
 
-		_sortSemaphores = ReCreate.InDevice.AutoArray(_ => CreateSemaphore(), Context.State.FrameOverlap, semaphore => semaphore.Dispose());
+		_sortSemaphores = ReCreate.InDevice.AutoArrayFrameOverlap(_ => CreateSemaphore(), semaphore => semaphore.Dispose());
 
 		RenderCommandBuffers += (FrameInfo frameInfo) =>
 		{
 			ComponentManager.AfterUpdate();
 			MaterialManager.AfterUpdate();
 			GlobalDataManager.AfterUpdate();
-			UpdateIndicesDescriptorSet();
+			UpdateIndicesDescriptorSet(frameInfo);
 
 			RunSorting(frameInfo);
 
-			FillIndirectBuffer(ComponentManager.Factory.ComponentCount, _indirectBuffer);
+			FillIndirectBuffer(ComponentManager.Factory.ComponentCount, _indirectBuffer[frameInfo.FrameId]);
 			return CreateCommandBuffer(frameInfo);
 		};
 
@@ -106,31 +109,32 @@ public unsafe partial class UiRootRenderer : RenderChain
 			ExecuteOnce.AtCurrentFrameStart(() => semaphore.Dispose());
 			return new SemaphoreWithStage(semaphore, PipelineStageFlags.TransferBit);
 		};
-		RenderWaitSemaphores += (FrameInfo frameInfo) => new SemaphoreWithStage(_sortSemaphores[frameInfo.FrameId], PipelineStageFlags.ComputeShaderBit);
+		// RenderWaitSemaphores += (FrameInfo frameInfo) => new SemaphoreWithStage(_sortSemaphores[frameInfo.FrameId], PipelineStageFlags.ComputeShaderBit);
 
 		// Compute
 		_counters1Buffer =
-			ReCreate.InDevice.Auto(
-				() => new VulkanBuffer(ZCount * 4, BufferUsageFlags.StorageBufferBit | BufferUsageFlags.TransferDstBit,
+			ReCreate.InDevice.AutoArrayFrameOverlap(
+				_ => new VulkanBuffer(ZCount * 4, BufferUsageFlags.StorageBufferBit | BufferUsageFlags.TransferDstBit,
 					VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY), buffer => buffer.Dispose());
 
 		_counters2Buffer =
-			ReCreate.InDevice.Auto(
-				() => new VulkanBuffer(ZCount * 4, BufferUsageFlags.StorageBufferBit | BufferUsageFlags.TransferDstBit,
+			ReCreate.InDevice.AutoArrayFrameOverlap(
+				_ => new VulkanBuffer(ZCount * 4, BufferUsageFlags.StorageBufferBit | BufferUsageFlags.TransferDstBit,
 					VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY), buffer => buffer.Dispose());
 
 		_offsetsBuffer =
-			ReCreate.InDevice.Auto(
-				() => new VulkanBuffer(ZCount * 4, BufferUsageFlags.StorageBufferBit | BufferUsageFlags.TransferDstBit,
+			ReCreate.InDevice.AutoArrayFrameOverlap(
+				_ => new VulkanBuffer(ZCount * 4, BufferUsageFlags.StorageBufferBit | BufferUsageFlags.TransferDstBit,
 					VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY), buffer => buffer.Dispose());
 
 		_countBufferCpu =
-			ReCreate.InDevice.Auto(() => new VulkanBuffer(CountDataSize, BufferUsageFlags.TransferSrcBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_ONLY),
+			ReCreate.InDevice.AutoArrayFrameOverlap(
+				_ => new VulkanBuffer(CountDataSize, BufferUsageFlags.TransferSrcBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_ONLY),
 				buffer => buffer.Dispose());
 
 		_countBuffer =
-			ReCreate.InDevice.Auto(
-				() => new VulkanBuffer(CountDataSize, BufferUsageFlags.StorageBufferBit | BufferUsageFlags.TransferDstBit,
+			ReCreate.InDevice.AutoArrayFrameOverlap(
+				_ => new VulkanBuffer(CountDataSize, BufferUsageFlags.StorageBufferBit | BufferUsageFlags.TransferDstBit,
 					VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY), buffer => buffer.Dispose());
 
 		_sortCountersLayout = ReCreate.InDevice.Auto(() => CreateSortCountersLayout(), layout => layout.Dispose());
@@ -139,8 +143,8 @@ public unsafe partial class UiRootRenderer : RenderChain
 		_sortCountersPool = ReCreate.InDevice.Auto(() => CreateSortCountersPool(), pool => pool.Dispose());
 		_sortIndicesPool = ReCreate.InDevice.Auto(() => CreateSortIndicesPool(), pool => pool.Dispose());
 
-		_sortCountersSet = ReCreate.InDevice.Auto(() => AllocateDescriptorSet(_sortCountersLayout, _sortCountersPool));
-		_sortIndicesSet = ReCreate.InDevice.Auto(() => AllocateDescriptorSet(_sortIndicesLayout, _sortIndicesPool));
+		_sortCountersSets = ReCreate.InDevice.AutoArrayFrameOverlap(_ => AllocateDescriptorSet(_sortCountersLayout, _sortCountersPool));
+		_sortIndicesSets = ReCreate.InDevice.AutoArrayFrameOverlap(_ => AllocateDescriptorSet(_sortIndicesLayout, _sortIndicesPool));
 
 		_sortClearPipeline = ReCreate.InDevice.Auto(() =>
 			PipelineManager.CreateComputePipeline(ShaderManager.GetOrCreate("./assets/shaders/ui2/compute/sort_clear_pass.comp", ShaderKind.ComputeShader),
@@ -158,8 +162,8 @@ public unsafe partial class UiRootRenderer : RenderChain
 			PipelineManager.CreateComputePipeline(ShaderManager.GetOrCreate("./assets/shaders/ui2/compute/sort_main_pass.comp", ShaderKind.ComputeShader),
 				new[] {ComponentManager.DescriptorSetLayout.Value, _sortCountersLayout.Value, _sortIndicesLayout.Value}), pipeline => pipeline.Dispose());
 
-		UpdateCountersDescriptorSet();
-		Context.DeviceEvents.AfterCreate += () => UpdateCountersDescriptorSet();
+		UpdateCountersDescriptorSets();
+		Context.DeviceEvents.AfterCreate += () => UpdateCountersDescriptorSets();
 	}
 
 	private CommandBuffer CreateCommandBuffer(FrameInfo frameInfo)
@@ -191,9 +195,9 @@ public unsafe partial class UiRootRenderer : RenderChain
 		cmd.BindGraphicsDescriptorSets(_pipelineLayout, 3, 1, MaterialManager.VertexDescriptorSet);
 		cmd.BindGraphicsDescriptorSets(_pipelineLayout, 4, 1, MaterialManager.FragmentDescriptorSet);
 
-		Context.Vk.CmdBindIndexBuffer(cmd, ComponentManager.IndexBuffer.Value, 0, IndexType.Uint32);
+		Context.Vk.CmdBindIndexBuffer(cmd, ComponentManager.IndexBuffers[frameInfo.FrameId], 0, IndexType.Uint32);
 
-		Context.Vk.CmdDrawIndexedIndirect(cmd, _indirectBuffer.Value, 0, 1, 0);
+		Context.Vk.CmdDrawIndexedIndirect(cmd, _indirectBuffer[frameInfo.FrameId], 0, 1, 0);
 
 		cmd.EndRenderPass();
 
@@ -206,7 +210,7 @@ public unsafe partial class UiRootRenderer : RenderChain
 
 	private void RunSorting(FrameInfo frameInfo)
 	{
-		var intSpan = _countBufferCpu.Value.GetHostSpan<int>();
+		var intSpan = _countBufferCpu[frameInfo.FrameId].GetHostSpan<int>();
 		intSpan[0] = ComponentManager.Factory.ComponentCount;
 		intSpan[1] = ZCount;
 		// intSpan[2] = (int) SwapchainHelper.Extent.Width;
@@ -250,15 +254,15 @@ public unsafe partial class UiRootRenderer : RenderChain
 		};
 
 		var componentSet = ComponentManager.DescriptorSet.Value;
-		var indicesSet = _sortIndicesSet.Value;
-		var countersSet = _sortCountersSet.Value;
+		var indicesSet = _sortIndicesSets[frameInfo.FrameId];
+		var countersSet = _sortCountersSets[frameInfo.FrameId];
 
 		var cmd = CommandBuffers.OneTimeCompute($"{Name} sort");
 
-		Context.Vk.CmdCopyBuffer(cmd, _countBufferCpu.Value, _countBuffer.Value, 1, countDataCopyRegion);
-		Context.Vk.CmdFillBuffer(cmd, _counters1Buffer.Value, 0, _counters1Buffer.Value.BufferSize, 0);
-		Context.Vk.CmdFillBuffer(cmd, _counters2Buffer.Value, 0, _counters2Buffer.Value.BufferSize, 0);
-		Context.Vk.CmdFillBuffer(cmd, _offsetsBuffer.Value, 0, _offsetsBuffer.Value.BufferSize, 0);
+		Context.Vk.CmdCopyBuffer(cmd, _countBufferCpu[frameInfo.FrameId], _countBuffer[frameInfo.FrameId], 1, countDataCopyRegion);
+		Context.Vk.CmdFillBuffer(cmd, _counters1Buffer[frameInfo.FrameId], 0, _counters1Buffer[frameInfo.FrameId].BufferSize, 0);
+		Context.Vk.CmdFillBuffer(cmd, _counters2Buffer[frameInfo.FrameId], 0, _counters2Buffer[frameInfo.FrameId].BufferSize, 0);
+		Context.Vk.CmdFillBuffer(cmd, _offsetsBuffer[frameInfo.FrameId], 0, _offsetsBuffer[frameInfo.FrameId].BufferSize, 0);
 
 		Context.KhrSynchronization2.CmdPipelineBarrier2(cmd, &dependencyInfo);
 
@@ -281,9 +285,25 @@ public unsafe partial class UiRootRenderer : RenderChain
 		Context.Vk.CmdBindDescriptorSets(cmd, PipelineBindPoint.Compute, _sortMainPipeline.Value.PipelineLayout, 2, 1, &indicesSet, null);
 		Context.Vk.CmdDispatch(cmd, (uint) Math.Ceiling((float) ComponentManager.Factory.MaxComponents / 32), 1, 1);
 
-		cmd.SubmitWithSemaphore(_sortSemaphores[frameInfo.FrameId]);
+		// if (_previousSort is not null)
+		// {
+		// 	_previousSort.WaitOnFence();
+		// 	var fence = _previousSort.Fence;
+		// 	fence.Dispose();
+		// }
+		//
+		// _previousSort = cmd;
+		// cmd.SubmitWithSemaphore(_sortSemaphores[frameInfo.FrameId], CreateFence(false));
 
-		ExecuteOnce.AtCurrentFrameStart(() => Context.Vk.FreeCommandBuffers(Context.Device, CommandBuffers.ComputePool, 1, cmd.Cmd));
+		// cmd.SubmitWithSemaphore(_sortSemaphores[frameInfo.FrameId]);
+
+		cmd.SubmitAndWait();
+
+		// App.Logger.Info.Message($"Submitted on semaphore {_sortSemaphores[frameInfo.FrameId].Handle}");
+
+		// cmd.SubmitAndWait();
+
+		// ExecuteOnce.AtCurrentFrameStart(() => Context.Vk.FreeCommandBuffers(Context.Device, CommandBuffers.ComputePool, 1, cmd.Cmd));
 	}
 
 	private static RenderPass CreateRenderPass()
@@ -442,7 +462,7 @@ public unsafe partial class UiRootRenderer : RenderChain
 	{
 		var bindingFlags = stackalloc DescriptorBindingFlags[]
 		{
-			DescriptorBindingFlags.UpdateAfterBindBit,
+			DescriptorBindingFlags.UpdateAfterBindBit
 		};
 		var flagsInfo = new DescriptorSetLayoutBindingFlagsCreateInfoEXT
 		{
@@ -481,14 +501,14 @@ public unsafe partial class UiRootRenderer : RenderChain
 			new()
 			{
 				Type = DescriptorType.StorageBuffer,
-				DescriptorCount = 4
+				DescriptorCount = (uint) (4 * Context.State.FrameOverlap)
 			}
 		};
 
 		var countersCreateInfo = new DescriptorPoolCreateInfo
 		{
 			SType = StructureType.DescriptorPoolCreateInfo,
-			MaxSets = 1,
+			MaxSets = (uint) Context.State.FrameOverlap.Value,
 			PoolSizeCount = (uint) countersPoolSizes.Length,
 			PPoolSizes = countersPoolSizes[0].AsPointer(),
 			Flags = DescriptorPoolCreateFlags.UpdateAfterBindBit
@@ -504,14 +524,14 @@ public unsafe partial class UiRootRenderer : RenderChain
 	{
 		var indicesPoolSizes = new DescriptorPoolSize
 		{
-			DescriptorCount = Context.SwapchainImageCount,
+			DescriptorCount = (uint) Context.State.FrameOverlap.Value,
 			Type = DescriptorType.StorageBuffer
 		};
 
 		var indicesCreateInfo = new DescriptorPoolCreateInfo
 		{
 			SType = StructureType.DescriptorPoolCreateInfo,
-			MaxSets = Context.SwapchainImageCount,
+			MaxSets = (uint) Context.State.FrameOverlap.Value,
 			PoolSizeCount = 1,
 			PPoolSizes = &indicesPoolSizes,
 			Flags = DescriptorPoolCreateFlags.UpdateAfterBindBit
@@ -523,99 +543,105 @@ public unsafe partial class UiRootRenderer : RenderChain
 		return pool;
 	}
 
-	private void UpdateCountersDescriptorSet()
+	private void UpdateCountersDescriptorSets()
 	{
-		var bufferInfos = new DescriptorBufferInfo[]
+		for (int i = 0; i < Context.State.FrameOverlap; i++)
 		{
-			new()
+			var bufferInfos = new DescriptorBufferInfo[]
 			{
-				Offset = 0,
-				Range = ZCount * 4,
-				Buffer = _counters1Buffer.Value
-			},
-			new()
-			{
-				Offset = 0,
-				Range = ZCount * 4,
-				Buffer = _counters2Buffer.Value
-			},
-			new()
-			{
-				Offset = 0,
-				Range = ZCount * 4,
-				Buffer = _offsetsBuffer.Value
-			},
-			new()
-			{
-				Offset = 0,
-				Range = CountDataSize,
-				Buffer = _countBuffer.Value
-			}
-		};
+				new()
+				{
+					Offset = 0,
+					Range = ZCount * 4,
+					Buffer = _counters1Buffer[i]
+				},
+				new()
+				{
+					Offset = 0,
+					Range = ZCount * 4,
+					Buffer = _counters2Buffer[i]
+				},
+				new()
+				{
+					Offset = 0,
+					Range = ZCount * 4,
+					Buffer = _offsetsBuffer[i]
+				},
+				new()
+				{
+					Offset = 0,
+					Range = CountDataSize,
+					Buffer = _countBuffer[i]
+				}
+			};
 
-		var writes = new WriteDescriptorSet[]
+			var writes = new WriteDescriptorSet[]
+			{
+				new()
+				{
+					SType = StructureType.WriteDescriptorSet,
+					DescriptorCount = 1,
+					DstBinding = 0,
+					DescriptorType = DescriptorType.StorageBuffer,
+					DstSet = _sortCountersSets[i],
+					PBufferInfo = bufferInfos[0].AsPointer()
+				},
+				new()
+				{
+					SType = StructureType.WriteDescriptorSet,
+					DescriptorCount = 1,
+					DstBinding = 1,
+					DescriptorType = DescriptorType.StorageBuffer,
+					DstSet = _sortCountersSets[i],
+					PBufferInfo = bufferInfos[1].AsPointer()
+				},
+				new()
+				{
+					SType = StructureType.WriteDescriptorSet,
+					DescriptorCount = 1,
+					DstBinding = 2,
+					DescriptorType = DescriptorType.StorageBuffer,
+					DstSet = _sortCountersSets[i],
+					PBufferInfo = bufferInfos[2].AsPointer()
+				},
+				new()
+				{
+					SType = StructureType.WriteDescriptorSet,
+					DescriptorCount = 1,
+					DstBinding = 3,
+					DescriptorType = DescriptorType.StorageBuffer,
+					DstSet = _sortCountersSets[i],
+					PBufferInfo = bufferInfos[3].AsPointer()
+				}
+			};
+
+			Context.Vk.UpdateDescriptorSets(Context.Device, (uint) writes.Length, writes[0], 0, null);
+		}
+	}
+
+	private void UpdateIndicesDescriptorSet(FrameInfo frameInfo)
+	{
+		// for (int i = 0; i < Context.State.FrameOverlap; i++)
 		{
-			new()
+			var bufferInfo = new DescriptorBufferInfo
+			{
+				Offset = 0,
+				Range = Vk.WholeSize,
+				Buffer = ComponentManager.IndexBuffers[frameInfo.FrameId]
+			};
+
+			var write = new WriteDescriptorSet
 			{
 				SType = StructureType.WriteDescriptorSet,
 				DescriptorCount = 1,
 				DstBinding = 0,
 				DescriptorType = DescriptorType.StorageBuffer,
-				DstSet = _sortCountersSet,
-				PBufferInfo = bufferInfos[0].AsPointer()
-			},
-			new()
-			{
-				SType = StructureType.WriteDescriptorSet,
-				DescriptorCount = 1,
-				DstBinding = 1,
-				DescriptorType = DescriptorType.StorageBuffer,
-				DstSet = _sortCountersSet,
-				PBufferInfo = bufferInfos[1].AsPointer()
-			},
-			new()
-			{
-				SType = StructureType.WriteDescriptorSet,
-				DescriptorCount = 1,
-				DstBinding = 2,
-				DescriptorType = DescriptorType.StorageBuffer,
-				DstSet = _sortCountersSet,
-				PBufferInfo = bufferInfos[2].AsPointer()
-			},
-			new()
-			{
-				SType = StructureType.WriteDescriptorSet,
-				DescriptorCount = 1,
-				DstBinding = 3,
-				DescriptorType = DescriptorType.StorageBuffer,
-				DstSet = _sortCountersSet,
-				PBufferInfo = bufferInfos[3].AsPointer()
-			}
-		};
+				DstSet = _sortIndicesSets[frameInfo.FrameId],
+				PBufferInfo = &bufferInfo
+			};
 
-		Context.Vk.UpdateDescriptorSets(Context.Device, (uint) writes.Length, writes[0], 0, null);
-	}
-
-	private void UpdateIndicesDescriptorSet()
-	{
-		var bufferInfo = new DescriptorBufferInfo
-		{
-			Offset = 0,
-			Range = Vk.WholeSize,
-			Buffer = ComponentManager.IndexBuffer.Value
-		};
-
-		var write = new WriteDescriptorSet
-		{
-			SType = StructureType.WriteDescriptorSet,
-			DescriptorCount = 1,
-			DstBinding = 0,
-			DescriptorType = DescriptorType.StorageBuffer,
-			DstSet = _sortIndicesSet,
-			PBufferInfo = &bufferInfo
-		};
-
-		Context.Vk.UpdateDescriptorSets(Context.Device, 1, write, 0, null);
+			Context.Vk.UpdateDescriptorSets(Context.Device, 1, write, 0, null);
+		}
 	}
 
 	public override void Dispose() => GC.SuppressFinalize(this);

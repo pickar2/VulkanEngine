@@ -1,16 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.IO;
 using Core.Serializer.Entities.QoiSharp;
-using Core.TemporaryMath;
 using Core.UI;
 using Core.UI.Controls.Panels;
-using Core.UI.Materials.Fragment;
-using Core.UI.Materials.Vertex;
 using Core.Vulkan.Api;
 using Core.Vulkan.Utility;
-using Silk.NET.Maths;
 using Silk.NET.Vulkan;
 
 namespace Core.Vulkan.Renderers;
@@ -72,12 +67,12 @@ public static class GeneralRenderer
 
 		materialManager.UpdateShaders();
 
-		var deferred = new Deferred3DRenderer((1280, 720), "TestDeferred");
+		// var deferred = new Deferred3DRenderer((1280, 720), "TestDeferred");
 		Root = new UiRootRenderer("Root1", componentManager, materialManager, globalDataManager);
 
 		// for (int i = 0; i < 2; i++) Root.AddChild(new TestToTextureRenderer($"ChildRenderer{i}"));
-		
-		Root.AddChild(deferred);
+
+		// Root.AddChild(deferred);
 
 		byte[] bytes = File.ReadAllBytes($"Assets/Textures/{UiManager.Consolas.Pages[0].TextureName}");
 		var qoiImage = QoiDecoder.Decode(bytes);
@@ -129,7 +124,8 @@ public abstract unsafe class RenderChain : IDisposable
 		child.Parent = this;
 	}
 
-	public void StartRendering(FrameInfo frameInfo, List<SemaphoreWithStage>? waitSemaphores, out List<SemaphoreWithStage> signalSemaphores, Fence queueFence = default)
+	public void StartRendering(FrameInfo frameInfo, List<SemaphoreWithStage>? waitSemaphores, out List<SemaphoreWithStage> signalSemaphores,
+		Fence queueFence = default)
 	{
 		Debug.BeginQueueLabel(Context.GraphicsQueue, Name);
 
@@ -225,6 +221,8 @@ public abstract unsafe class RenderChain : IDisposable
 			CommandBufferCount = (uint) commandBufferCount,
 			PCommandBuffers = pCommandBuffers
 		};
+
+		// App.Logger.Info.Message($"{Name} : {waitSemaphoreCount} : {string.Join(", ", new Span<SemaphoreWithStage>(pWaitSemaphores, waitSemaphoreCount).ToArray().Select(s => s.Semaphore.Handle))}");
 
 		Context.GraphicsQueue.Submit(submitInfo, queueFence);
 

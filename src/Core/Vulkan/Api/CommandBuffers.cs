@@ -1,8 +1,5 @@
-﻿using System;
-using System.Threading;
-using Core.Vulkan.Utility;
+﻿using Core.Vulkan.Utility;
 using Silk.NET.Vulkan;
-using Semaphore = Silk.NET.Vulkan.Semaphore;
 
 namespace Core.Vulkan.Api;
 
@@ -14,7 +11,7 @@ public static class CommandBuffers
 	public static readonly ReCreator<CommandPool> TransferToHostPool;
 
 	private const int FramesToTrim = 120;
-	private static int _trim; 
+	private static int _trim;
 
 	static CommandBuffers()
 	{
@@ -24,10 +21,12 @@ public static class CommandBuffers
 		ComputePool = ReCreate.InDevice.Auto(() => CreateCommandPool(Context.ComputeQueue, CommandPoolCreateFlags.TransientBit, "ComputeOneTimePool"),
 			pool => pool.Dispose());
 
-		TransferToDevicePool = ReCreate.InDevice.Auto(() => CreateCommandPool(Context.TransferToDeviceQueue, CommandPoolCreateFlags.TransientBit, "TransferToDeviceOneTimePool"),
+		TransferToDevicePool = ReCreate.InDevice.Auto(
+			() => CreateCommandPool(Context.TransferToDeviceQueue, CommandPoolCreateFlags.TransientBit, "TransferToDeviceOneTimePool"),
 			pool => pool.Dispose());
 
-		TransferToHostPool = ReCreate.InDevice.Auto(() => CreateCommandPool(Context.TransferToHostQueue, CommandPoolCreateFlags.TransientBit, "TransferToHostOneTimePool"),
+		TransferToHostPool = ReCreate.InDevice.Auto(
+			() => CreateCommandPool(Context.TransferToHostQueue, CommandPoolCreateFlags.TransientBit, "TransferToHostOneTimePool"),
 			pool => pool.Dispose());
 
 		Context.OnFrameStart += info =>
@@ -172,7 +171,6 @@ public unsafe class OneTimeCommand
 	public void WaitOnFence()
 	{
 		if (Fence.Handle != default) Fence.Wait();
-		Dispose();
 	}
 
 	public void Dispose()

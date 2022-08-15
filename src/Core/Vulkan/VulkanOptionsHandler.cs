@@ -64,7 +64,7 @@ public class VulkanState
 			ShaderSampledImageArrayNonUniformIndexing = true,
 			ShaderStorageBufferArrayNonUniformIndexing = true,
 			DescriptorBindingStorageBufferUpdateAfterBind = true,
-			DescriptorBindingSampledImageUpdateAfterBind = true,
+			DescriptorBindingSampledImageUpdateAfterBind = true
 		},
 		new PhysicalDeviceShaderAtomicFloatFeaturesEXT
 		{
@@ -116,7 +116,7 @@ public class VulkanState
 	//
 	// public readonly VulkanOption<bool> Wireframe = new(false, VulkanLevel.RenderGraph, false);
 
-	public readonly VulkanOption<int> MaxFps = new(500);
+	public readonly VulkanOption<int> MaxFps = new(2000);
 
 	public readonly Dictionary<string, VulkanOption> Options = new();
 
@@ -134,7 +134,7 @@ public class VulkanState
 		Options["ValidationLayers"] = ValidationLayers;
 		Options["AllowShaderWatchers"] = AllowShaderWatchers;
 		Options["WatchShadersFromSrc"] = WatchShadersFromSrc;
-		
+
 		Options["InstanceExtensions"] = InstanceExtensions;
 		Options["ProgramLayers"] = ProgramLayers;
 		Options["DeviceExtensions"] = DeviceExtensions;

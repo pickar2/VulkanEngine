@@ -72,11 +72,11 @@ public unsafe class VulkanBuffer : IDisposable
 			if (regions[index].Size == Vk.WholeSize)
 				regions[index].Size = BufferSize;
 
-		if (Context.IsIntegratedGpu)
-		{
-			CopyMemoryWithMapping(other, regions);
-			return;
-		}
+		// if (Context.IsIntegratedGpu)
+		// {
+		// 	CopyMemoryWithMapping(other, regions);
+		// 	return;
+		// }
 
 		if (MemoryUsage == VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_ONLY)
 		{

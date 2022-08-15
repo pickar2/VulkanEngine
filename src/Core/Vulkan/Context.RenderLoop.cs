@@ -69,7 +69,7 @@ public static unsafe partial class Context
 				App.Logger.Info.Message($"Window shown. Full load time: {Window.Time}ms.");
 			});
 		}
-		
+
 		var fpsLabel = new Label(GeneralRenderer.MainRoot) {MarginLT = (10, 10), OffsetZ = 30};
 		var frameTimeLabel = new Label(GeneralRenderer.MainRoot) {MarginLT = (10, 26), OffsetZ = 31};
 
@@ -94,19 +94,19 @@ public static unsafe partial class Context
 
 			if (frameTimeQueue.Count >= frameTimeQueueSize) frameTimeQueue.Dequeue();
 			frameTimeQueue.Enqueue(frameTime);
-			
+
 			fpsLabel.Text = $"FPS: {Maths.FixedPrecision(fps, 1)}";
 			frameTimeLabel.Text = $"Frame time: {Maths.FixedNumberSize(Maths.FixedPrecision(frameTimeQueue.Sum() / frameTimeQueue.Count, 2), 4)}ms";
 
 			Lag -= MsPerUpdate;
-			
+
 			UiManager.Update();
 
 			if (!Window.IsMinimized) DrawFrame();
 
 			Lag = 0;
 		}
-		
+
 		GeneralRenderer.MainRoot.RemoveChild(fpsLabel);
 		GeneralRenderer.MainRoot.RemoveChild(frameTimeLabel);
 
@@ -184,6 +184,9 @@ public static unsafe partial class Context
 
 		ExecuteAndClearAtFrameEnd(FrameId);
 		OnFrameEnd?.Invoke(frameInfo);
+
+		// currentFrame.Fence.Wait();
+		// currentFrame.Fence.Reset();
 
 		FrameIndex++;
 		FrameTimeStopwatch.Stop();

@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
-using System.IO;
-using System.Runtime.CompilerServices;
-using Core.Utils;
 
 namespace Core.Vulkan.Api;
 
@@ -20,22 +16,16 @@ public class ReCreateLevel
 
 	public ReCreateLevel(VulkanLevel level) => _level = level;
 
-	public ReCreator<T> Auto<T>(Func<T> createFunc, Action<T>? disposeFunc = null, [CallerFilePath] string path = "", [CallerLineNumber] int line = 0)
-	{
-		return new(_level, createFunc, t =>
-		{
-			var sw = new Stopwatch();
-			sw.Start();
+	public ReCreator<T> Auto<T>(Func<T> createFunc, Action<T>? disposeFunc = null) => new(_level, createFunc, disposeFunc);
 
-			disposeFunc?.Invoke(t);
+	public ArrayReCreator<T> AutoArray<T>(Func<int, T> createFunc, int count, Action<T>? disposeFunc = null) =>
+		new(_level, createFunc, () => count, disposeFunc);
 
-			sw.Stop();
-			App.Logger.Info.Message($"Dispose from {Path.GetFileName(path)}:{line} took {StopwatchExtensions.Ms(sw)}ms");
-		});
-	}
+	public ArrayReCreator<T> AutoArray<T>(Func<int, T> createFunc, Func<int> countFunc, Action<T>? disposeFunc = null) =>
+		new(_level, createFunc, countFunc, disposeFunc);
 
-	public ArrayReCreator<T> AutoArray<T>(Func<int, T> createFunc, int count, Action<T>? disposeFunc = null) => new(_level, createFunc, () => count, disposeFunc);
-	public ArrayReCreator<T> AutoArray<T>(Func<int, T> createFunc, Func<int> countFunc, Action<T>? disposeFunc = null) => new(_level, createFunc, countFunc, disposeFunc);
+	public ArrayReCreator<T> AutoArrayFrameOverlap<T>(Func<int, T> createFunc, Action<T>? disposeFunc = null) =>
+		new(_level, createFunc, () => Context.State.FrameOverlap, disposeFunc);
 }
 
 public class ArrayReCreator<T>
@@ -49,12 +39,13 @@ public class ArrayReCreator<T>
 		{
 			_value ??= new T[Count];
 			_hasValue ??= new bool[Count];
-			for (var i = 0; i < _value.Length; i++)
+			for (int i = 0; i < _value.Length; i++)
 			{
 				if (_hasValue[i]) continue;
 				_value[i] = _createFunc(i);
 				_hasValue[i] = true;
 			}
+
 			return _value;
 		}
 	}
@@ -123,9 +114,15 @@ public class ArrayReCreator<T>
 
 	public void ReCreateAll()
 	{
+		_value = new T[Count];
+		for (int i = 0; i < _value.Length; i++) _value[i] = _createFunc(i);
+	}
+
+	public void DisposeAndReCreateAll()
+	{
 		_disposeAction();
 		_value = new T[Count];
-		for (var i = 0; i < _value.Length; i++) _value[i] = _createFunc(i);
+		for (int i = 0; i < _value.Length; i++) _value[i] = _createFunc(i);
 	}
 
 	public void Dispose(bool disposeObject = false)
