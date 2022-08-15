@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using Core.Utils;
 
 namespace Core.Vulkan;
 
@@ -89,14 +91,30 @@ public class VulkanLevelEvents
 	public event Action? AfterDispose;
 
 	[Obsolete]
-	internal void InvokeBeforeCreate() => BeforeCreate?.Invoke();
+	internal void InvokeBeforeCreate()
+	{
+		// App.Logger.Debug.Message($"BeforeCreate: {BeforeCreate?.GetInvocationList().Length}");
+		BeforeCreate?.Invoke();
+	}
 
 	[Obsolete]
-	internal void InvokeAfterCreate() => AfterCreate?.Invoke();
+	internal void InvokeAfterCreate()
+	{
+		// App.Logger.Debug.Message($"AfterCreate: {AfterCreate?.GetInvocationList().Length}");
+		AfterCreate?.Invoke();
+	}
 
 	[Obsolete]
-	internal void InvokeBeforeDispose() => BeforeDispose?.Invoke();
+	internal void InvokeBeforeDispose()
+	{
+		// App.Logger.Debug.Message($"BeforeDispose: {BeforeDispose?.GetInvocationList().Length}");
+		BeforeDispose?.Invoke();
+	}
 
 	[Obsolete]
-	internal void InvokeAfterDispose() => AfterDispose?.Invoke();
+	internal void InvokeAfterDispose()
+	{
+		// App.Logger.Debug.Message($"AfterDispose: {AfterDispose?.GetInvocationList().Length}");
+		AfterDispose?.Invoke();
+	}
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -16,6 +17,7 @@ using Silk.NET.Vulkan;
 using Silk.NET.Vulkan.Extensions.EXT;
 using Silk.NET.Vulkan.Extensions.KHR;
 using static Core.Native.VMA.VulkanMemoryAllocator;
+using Debug = Core.Vulkan.Api.Debug;
 using Result = Silk.NET.Vulkan.Result;
 
 #pragma warning disable CS0612

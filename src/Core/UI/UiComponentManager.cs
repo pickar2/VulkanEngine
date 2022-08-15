@@ -54,6 +54,8 @@ public unsafe class UiComponentManager
 
 			command.Cmd.CopyBuffer(Factory.DataBufferCpu, Factory.DataBufferGpu, regions);
 			command.SubmitWithSemaphore();
+			
+			ExecuteOnce.AtCurrentFrameStart(() => Context.Vk.FreeCommandBuffers(Context.Device, CommandBuffers.TransferToHostPool, 1, command.Cmd));
 
 			RequireWait = true;
 			WaitSemaphore = command.Semaphore;

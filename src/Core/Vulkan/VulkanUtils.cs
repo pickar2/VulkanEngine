@@ -168,7 +168,7 @@ public static unsafe class VulkanUtils
 		return result;
 	}
 
-	public static CommandPool CreateCommandPool(VulkanQueue vulkanQueue, CommandPoolCreateFlags flags = 0)
+	public static CommandPool CreateCommandPool(VulkanQueue vulkanQueue, CommandPoolCreateFlags flags = 0, string? debugName = null)
 	{
 		CommandPoolCreateInfo poolInfo = new()
 		{
@@ -178,6 +178,9 @@ public static unsafe class VulkanUtils
 		};
 
 		Check(Context.Vk.CreateCommandPool(Context.Device, poolInfo, null, out var pool), "Failed to create command pool");
+		
+		if (debugName is not null)
+			Debug.SetObjectName(pool.Handle, ObjectType.CommandPool, debugName);
 
 		return pool;
 	}

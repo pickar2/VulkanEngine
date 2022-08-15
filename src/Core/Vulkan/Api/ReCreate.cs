@@ -1,4 +1,8 @@
 ﻿using System;
+using System.Diagnostics;
+using System.IO;
+using System.Runtime.CompilerServices;
+using Core.Utils;
 
 namespace Core.Vulkan.Api;
 
@@ -16,7 +20,19 @@ public class ReCreateLevel
 
 	public ReCreateLevel(VulkanLevel level) => _level = level;
 
-	public ReCreator<T> Auto<T>(Func<T> createFunc, Action<T>? disposeFunc = null) => new(_level, createFunc, disposeFunc);
+	public ReCreator<T> Auto<T>(Func<T> createFunc, Action<T>? disposeFunc = null, [CallerFilePath] string path = "", [CallerLineNumber] int line = 0)
+	{
+		return new(_level, createFunc, t =>
+		{
+			var sw = new Stopwatch();
+			sw.Start();
+
+			disposeFunc?.Invoke(t);
+
+			sw.Stop();
+			App.Logger.Info.Message($"Dispose from {Path.GetFileName(path)}:{line} took {StopwatchExtensions.Ms(sw)}ms");
+		});
+	}
 
 	public ArrayReCreator<T> AutoArray<T>(Func<int, T> createFunc, int count, Action<T>? disposeFunc = null) => new(_level, createFunc, () => count, disposeFunc);
 	public ArrayReCreator<T> AutoArray<T>(Func<int, T> createFunc, Func<int> countFunc, Action<T>? disposeFunc = null) => new(_level, createFunc, countFunc, disposeFunc);

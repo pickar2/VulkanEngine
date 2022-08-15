@@ -140,6 +140,8 @@ public unsafe partial class UiMaterialManager
 		if (!copying) return;
 
 		command.SubmitWithSemaphore();
+
+		ExecuteOnce.AtCurrentFrameStart(() => Context.Vk.FreeCommandBuffers(Context.Device, CommandBuffers.TransferToHostPool, 1, command.Cmd));
 		RequireWait = true;
 		WaitSemaphore = command.Semaphore;
 	}

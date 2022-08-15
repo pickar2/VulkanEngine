@@ -116,7 +116,7 @@ public class VulkanState
 	//
 	// public readonly VulkanOption<bool> Wireframe = new(false, VulkanLevel.RenderGraph, false);
 
-	public readonly VulkanOption<int> MaxFps = new(60);
+	public readonly VulkanOption<int> MaxFps = new(500);
 
 	public readonly Dictionary<string, VulkanOption> Options = new();
 

@@ -26,9 +26,9 @@ public static unsafe partial class Context
 	private static Thread? _renderThread;
 	private static double MsPerUpdate { get; set; } = 1000 / 60d;
 
-	public delegate Action<FrameInfo> FrameEvent(FrameInfo frameInfo);
-	public static event FrameEvent? OnFrameStart;
-	public static event FrameEvent? OnFrameEnd;
+	// public delegate Action<FrameInfo> FrameEvent(FrameInfo frameInfo);
+	public static event Action<FrameInfo>? OnFrameStart;
+	public static event Action<FrameInfo>? OnFrameEnd;
 
 	public static bool IsRendering { get; private set; }
 	public static int FrameIndex { get; private set; }
@@ -120,6 +120,9 @@ public static unsafe partial class Context
 
 		for (int i = 0; i < State.FrameOverlap.Value; i++)
 		{
+			// App.Logger.Debug.Message($"Before frame {i}: {_actionsAtFrameStart[i].Count}");
+			// App.Logger.Debug.Message($"After frame {i}: {_actionsAtFrameEnd[i].Count}");
+
 			ExecuteAndClearAtFrameStart(i);
 			ExecuteAndClearAtFrameEnd(i);
 		}

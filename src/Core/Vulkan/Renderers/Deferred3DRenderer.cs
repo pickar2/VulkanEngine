@@ -148,6 +148,8 @@ public unsafe class Deferred3DRenderer : RenderChain
 
 		Check(cmd.End(), "Failed to end command buffer.");
 
+		ExecuteOnce.AtCurrentFrameStart(() => Context.Vk.FreeCommandBuffers(Context.Device, CommandBuffers.GraphicsPool, 1, cmd));
+
 		return cmd;
 	}
 

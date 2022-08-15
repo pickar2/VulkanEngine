@@ -166,7 +166,7 @@ public unsafe partial class UiRootRenderer : RenderChain
 	{
 		var clearValues = stackalloc ClearValue[] {new(new ClearColorValue(0.66f, 0.66f, 0.66f, 1))};
 
-		var cmd = CommandBuffers.CreateCommandBuffer(CommandBufferLevel.Primary, _commandPool);
+		var cmd = CommandBuffers.CreateCommandBuffer(CommandBufferLevel.Primary, CommandBuffers.GraphicsPool);
 
 		Check(cmd.Begin(CommandBufferUsageFlags.OneTimeSubmitBit), "Failed to begin command buffer.");
 
@@ -198,6 +198,8 @@ public unsafe partial class UiRootRenderer : RenderChain
 		cmd.EndRenderPass();
 
 		Check(cmd.End(), "Failed to end command buffer.");
+
+		ExecuteOnce.AtCurrentFrameStart(() => Context.Vk.FreeCommandBuffers(Context.Device, CommandBuffers.GraphicsPool, 1, cmd));
 
 		return cmd;
 	}
@@ -280,6 +282,8 @@ public unsafe partial class UiRootRenderer : RenderChain
 		Context.Vk.CmdDispatch(cmd, (uint) Math.Ceiling((float) ComponentManager.Factory.MaxComponents / 32), 1, 1);
 
 		cmd.SubmitWithSemaphore(_sortSemaphores[frameInfo.FrameId]);
+
+		ExecuteOnce.AtCurrentFrameStart(() => Context.Vk.FreeCommandBuffers(Context.Device, CommandBuffers.ComputePool, 1, cmd.Cmd));
 	}
 
 	private static RenderPass CreateRenderPass()

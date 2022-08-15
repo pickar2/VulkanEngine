@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Threading;
 using Core.Vulkan.Utility;
 using Silk.NET.Vulkan;
+using Semaphore = Silk.NET.Vulkan.Semaphore;
 
 namespace Core.Vulkan.Api;
 
@@ -11,19 +13,33 @@ public static class CommandBuffers
 	public static readonly ReCreator<CommandPool> TransferToDevicePool;
 	public static readonly ReCreator<CommandPool> TransferToHostPool;
 
+	private const int FramesToTrim = 120;
+	private static int _trim; 
+
 	static CommandBuffers()
 	{
-		GraphicsPool = ReCreate.InDevice.Auto(() => CreateCommandPool(Context.GraphicsQueue, CommandPoolCreateFlags.TransientBit),
+		GraphicsPool = ReCreate.InDevice.Auto(() => CreateCommandPool(Context.GraphicsQueue, CommandPoolCreateFlags.TransientBit, "GraphicsOneTimePool"),
 			pool => pool.Dispose());
 
-		ComputePool = ReCreate.InDevice.Auto(() => CreateCommandPool(Context.ComputeQueue, CommandPoolCreateFlags.TransientBit),
+		ComputePool = ReCreate.InDevice.Auto(() => CreateCommandPool(Context.ComputeQueue, CommandPoolCreateFlags.TransientBit, "ComputeOneTimePool"),
 			pool => pool.Dispose());
 
-		TransferToDevicePool = ReCreate.InDevice.Auto(() => CreateCommandPool(Context.TransferToDeviceQueue, CommandPoolCreateFlags.TransientBit),
+		TransferToDevicePool = ReCreate.InDevice.Auto(() => CreateCommandPool(Context.TransferToDeviceQueue, CommandPoolCreateFlags.TransientBit, "TransferToDeviceOneTimePool"),
 			pool => pool.Dispose());
 
-		TransferToHostPool = ReCreate.InDevice.Auto(() => CreateCommandPool(Context.TransferToHostQueue, CommandPoolCreateFlags.TransientBit),
+		TransferToHostPool = ReCreate.InDevice.Auto(() => CreateCommandPool(Context.TransferToHostQueue, CommandPoolCreateFlags.TransientBit, "TransferToHostOneTimePool"),
 			pool => pool.Dispose());
+
+		Context.OnFrameStart += info =>
+		{
+			if (++_trim < FramesToTrim) return;
+			_trim = 0;
+
+			Context.Vk.TrimCommandPool(Context.Device, GraphicsPool, 0);
+			Context.Vk.TrimCommandPool(Context.Device, ComputePool, 0);
+			Context.Vk.TrimCommandPool(Context.Device, TransferToDevicePool, 0);
+			Context.Vk.TrimCommandPool(Context.Device, TransferToHostPool, 0);
+		};
 	}
 
 	public static CommandBuffer CreateCommandBuffer(CommandBufferLevel level, CommandPool commandPool) => CreateCommandBuffers(level, commandPool, 1)[0];
