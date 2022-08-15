@@ -185,9 +185,6 @@ public static unsafe partial class Context
 		ExecuteAndClearAtFrameEnd(FrameId);
 		OnFrameEnd?.Invoke(frameInfo);
 
-		// currentFrame.Fence.Wait();
-		// currentFrame.Fence.Reset();
-
 		FrameIndex++;
 		FrameTimeStopwatch.Stop();
 	}

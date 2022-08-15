@@ -12,8 +12,6 @@ namespace Core.UI;
 
 public unsafe partial class UiRootRenderer : RenderChain
 {
-	private OneTimeCommand? _previousSort;
-
 	// Render
 	private readonly ReCreator<RenderPass> _renderPass;
 
@@ -285,24 +283,9 @@ public unsafe partial class UiRootRenderer : RenderChain
 		Context.Vk.CmdBindDescriptorSets(cmd, PipelineBindPoint.Compute, _sortMainPipeline.Value.PipelineLayout, 2, 1, &indicesSet, null);
 		Context.Vk.CmdDispatch(cmd, (uint) Math.Ceiling((float) ComponentManager.Factory.MaxComponents / 32), 1, 1);
 
-		// if (_previousSort is not null)
-		// {
-		// 	_previousSort.WaitOnFence();
-		// 	var fence = _previousSort.Fence;
-		// 	fence.Dispose();
-		// }
-		//
-		// _previousSort = cmd;
-		// cmd.SubmitWithSemaphore(_sortSemaphores[frameInfo.FrameId], CreateFence(false));
+		cmd.SubmitAndWait(); // TODO: run in parallel with semaphore
 
 		// cmd.SubmitWithSemaphore(_sortSemaphores[frameInfo.FrameId]);
-
-		cmd.SubmitAndWait();
-
-		// App.Logger.Info.Message($"Submitted on semaphore {_sortSemaphores[frameInfo.FrameId].Handle}");
-
-		// cmd.SubmitAndWait();
-
 		// ExecuteOnce.AtCurrentFrameStart(() => Context.Vk.FreeCommandBuffers(Context.Device, CommandBuffers.ComputePool, 1, cmd.Cmd));
 	}
 
