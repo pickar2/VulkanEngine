@@ -764,9 +764,19 @@ public static unsafe partial class Context
 	public static VulkanImage2[] SwapchainImages = Array.Empty<VulkanImage2>();
 	public static bool IsReady { get; set; }
 
+	public static QueryPool TimestampQueryPool;
+
 	public static void CreateLevelSwapchain()
 	{
 		SwapchainEvents.InvokeBeforeCreate();
+	
+		var queryPoolCreateInfo = new QueryPoolCreateInfo
+		{
+			SType = StructureType.QueryPoolCreateInfo,
+			QueryCount = (uint) State.FrameOverlap.Value * 2,
+			QueryType = QueryType.Timestamp
+		};
+		Check(Vk.CreateQueryPool(Device, queryPoolCreateInfo, null, out TimestampQueryPool), "Failed to create query pool.");
 
 		SwapchainDetails = GetSwapchainDetails(PhysicalDevice);
 		SwapchainSurfaceFormat = ChooseSurfaceFormat(SwapchainDetails.SurfaceFormats);
@@ -867,6 +877,8 @@ public static unsafe partial class Context
 
 		Vk.QueueWaitIdle(GraphicsQueue.Queue);
 		SwapchainEvents.InvokeBeforeDispose();
+
+		Vk.DestroyQueryPool(Device, TimestampQueryPool, null);
 
 		foreach (var frame in _frames) frame.Dispose();
 

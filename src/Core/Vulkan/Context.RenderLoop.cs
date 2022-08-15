@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using Core.Native.VMA;
 using Core.UI;
 using Core.UI.Controls;
 using Core.Utils;
@@ -53,8 +54,9 @@ public static unsafe partial class Context
 		TotalTimeRenderingStopwatch.Restart();
 		var waitHandle = new EventWaitHandle(false, EventResetMode.AutoReset);
 
-		const int frameTimeQueueSize = 15;
-		var frameTimeQueue = new Queue<double>(frameTimeQueueSize);
+		const int queueSize = 15;
+		var frameTimeQueue = new Queue<double>(queueSize);
+		var fpsQueue = new Queue<double>(queueSize);
 
 		_actionsAtFrameStart = new List<Action>[State.FrameOverlap.Value];
 		for (int i = 0; i < _actionsAtFrameStart.Length; i++) _actionsAtFrameStart[i] = new List<Action>();
@@ -76,6 +78,12 @@ public static unsafe partial class Context
 		GeneralRenderer.MainRoot.AddChild(fpsLabel);
 		GeneralRenderer.MainRoot.AddChild(frameTimeLabel);
 
+		var buffer = new VulkanBuffer(16, BufferUsageFlags.TransferDstBit, VulkanMemoryAllocator.VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU);
+		var span = buffer.GetHostSpan<ulong>();
+
+		Vk.GetPhysicalDeviceProperties(PhysicalDevice, out var properties);
+		var period = properties.Limits.TimestampPeriod;
+
 		FrameIndex = 0;
 		IsRendering = true;
 		while (IsReady && IsRunning && IsRendering)
@@ -85,27 +93,37 @@ public static unsafe partial class Context
 			LagStopwatch.Restart();
 			if (Lag < MsPerUpdate)
 			{
-				waitHandle.WaitOne((int) (MsPerUpdate - Lag > 1 ? Math.Floor(MsPerUpdate - Lag) : 0));
+				waitHandle.WaitOne((int) (MsPerUpdate - Lag > 2 ? Math.Floor(MsPerUpdate - Lag) : 0));
+				// waitHandle.WaitOne(0);
 				continue;
 			}
 
-			double fps = Maths.Round(1000 / Lag, 1);
-			double frameTime = Maths.Round(CurrentFrameTime, 2);
+			double fps = Maths.Round(1000 / Lag, 2);
+			if (fpsQueue.Count >= queueSize) fpsQueue.Dequeue();
+			fpsQueue.Enqueue(fps);
+			var averageFps = fpsQueue.Sum() / fpsQueue.Count;
 
-			if (frameTimeQueue.Count >= frameTimeQueueSize) frameTimeQueue.Dequeue();
+			double frameTime = Maths.Round((span[1] - span[0]) / 1000000f * period, 2);
+
+			if (frameTimeQueue.Count >= queueSize) frameTimeQueue.Dequeue();
 			frameTimeQueue.Enqueue(frameTime);
 
-			fpsLabel.Text = $"FPS: {Maths.FixedPrecision(fps, 1)}";
-			frameTimeLabel.Text = $"Frame time: {Maths.FixedNumberSize(Maths.FixedPrecision(frameTimeQueue.Sum() / frameTimeQueue.Count, 2), 4)}ms";
+			var averageFrameTime = frameTimeQueue.Sum() / frameTimeQueue.Count;
+			double uncappedFps = Maths.Round(1000 / averageFrameTime, 2);
+
+			fpsLabel.Text = $"FPS: {Maths.FixedPrecision(averageFps, 1)} ({Maths.FixedPrecision(uncappedFps, 1)})";
+			frameTimeLabel.Text = $"Frame time: {Maths.FixedNumberSize(Maths.FixedPrecision(averageFrameTime, 2), 4)}ms";
 
 			Lag -= MsPerUpdate;
 
 			UiManager.Update();
 
-			if (!Window.IsMinimized) DrawFrame();
+			if (!Window.IsMinimized) DrawFrame(buffer);
 
 			Lag = 0;
 		}
+
+		buffer.Dispose();
 
 		GeneralRenderer.MainRoot.RemoveChild(fpsLabel);
 		GeneralRenderer.MainRoot.RemoveChild(frameTimeLabel);
@@ -128,7 +146,7 @@ public static unsafe partial class Context
 		}
 	}
 
-	private static void DrawFrame()
+	private static void DrawFrame(VulkanBuffer buffer)
 	{
 		FrameTimeStopwatch.Restart();
 
@@ -151,6 +169,13 @@ public static unsafe partial class Context
 			FrameId = FrameId,
 			SwapchainImageId = SwapchainImageId
 		};
+
+		var timestampStart = CommandBuffers.OneTimeGraphics();
+		if (FrameIndex >= State.FrameOverlap)
+			Vk.CmdCopyQueryPoolResults(timestampStart, TimestampQueryPool, (uint) (FrameId * 2), 2, buffer, 0, 8, QueryResultFlags.Result64Bit);
+		Vk.CmdResetQueryPool(timestampStart, TimestampQueryPool, (uint) (FrameId * 2), 2);
+		KhrSynchronization2.CmdWriteTimestamp2(timestampStart, PipelineStageFlags2.ColorAttachmentOutputBit, TimestampQueryPool, (uint) (FrameId * 2));
+		timestampStart.SubmitAndWait();
 
 		OnFrameStart?.Invoke(frameInfo);
 		ExecuteAndClearAtFrameStart(FrameId);
@@ -184,6 +209,10 @@ public static unsafe partial class Context
 
 		ExecuteAndClearAtFrameEnd(FrameId);
 		OnFrameEnd?.Invoke(frameInfo);
+
+		var timestampEnd = CommandBuffers.OneTimeGraphics();
+		KhrSynchronization2.CmdWriteTimestamp2(timestampEnd, PipelineStageFlags2.ColorAttachmentOutputBit, TimestampQueryPool, (uint) (frameInfo.FrameId * 2) + 1);
+		timestampEnd.SubmitAndWait();
 
 		FrameIndex++;
 		FrameTimeStopwatch.Stop();
