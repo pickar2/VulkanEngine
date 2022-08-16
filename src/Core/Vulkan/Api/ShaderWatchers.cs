@@ -9,7 +9,7 @@ public static class ShaderWatchers
 	private static readonly Dictionary<string, AbstractWatcherCallbacksHandler> Watchers = new();
 
 	static ShaderWatchers() =>
-		Context.DeviceEvents.BeforeDispose += () =>
+		Context.ContextEvents.BeforeDispose += () =>
 		{
 			foreach ((string? _, var watcher) in Watchers) watcher.Stop();
 			Watchers.Clear();
@@ -18,16 +18,20 @@ public static class ShaderWatchers
 	public static void AddWatcherCallback(string path, string name, Action callback)
 	{
 		if (!Context.State.AllowShaderWatchers) return;
+
+		// App.Logger.Info.Message($"Adding watcher for `{path}`.");
+
 		if (path.StartsWith("@"))
 		{
-			if (!Context.ShadercOptions.TryGetVirtualShader(path, out _))
-				 throw new Exception($"Virtual shader file `{path}` does not exist.").AsExpectedException();
+			if (!ShaderManager.TryGetVirtualShaderContent(path, out _))
+				throw new Exception($"Virtual shader file `{path}` does not exist.").AsExpectedException();
+
 			if (!Watchers.TryGetValue(path, out var watcher)) watcher = Watchers[path] = new ManualWatcherHandler(path);
 			watcher.AddCallback(name, callback);
 		}
 		else
 		{
-			if (!File.Exists(path)) throw new Exception($"Shader file `{path}` does not exist.").AsExpectedException();
+			if (!File.Exists(path)) return;
 
 			if (!Watchers.TryGetValue(path, out var watcher)) watcher = Watchers[path] = CreateFsWatcher(path);
 			watcher.AddCallback(name, callback);
@@ -40,65 +44,66 @@ public static class ShaderWatchers
 		watcher.RemoveCallback(name);
 	}
 
-	private static FileSystemWatcherHandler CreateFsWatcher(string path)
+	private static FileSystemWatcherHandler CreateFsWatcher(string filePath)
 	{
-		string lookUpPath = path;
-		if (Context.State.WatchShadersFromSrc)
-		{
-			lookUpPath = Path.GetFullPath($"../../../../{path}");
-			if (!File.Exists(lookUpPath)) lookUpPath = path;
-		}
-
-		var watcher = new FileSystemWatcher(Path.GetDirectoryName(lookUpPath)!);
-		watcher.Filter = Path.GetFileName(lookUpPath);
+		var watcher = new FileSystemWatcher(Path.GetDirectoryName(filePath)!);
+		watcher.Filter = Path.GetFileName(filePath);
 		watcher.NotifyFilter = NotifyFilters.LastWrite;
 		watcher.EnableRaisingEvents = true;
 
-		return new FileSystemWatcherHandler(path, watcher);
+		return new FileSystemWatcherHandler(filePath, watcher);
 	}
 
 	public static void RemoveWatcher(string path)
 	{
-		if (Watchers.Remove(path, out var watcher)) 
+		if (Watchers.Remove(path, out var watcher))
 			watcher.Stop();
 	}
-	
-	public static void ForceUpdate(string path) {
-		if (Watchers.TryGetValue(path, out var watcher)) 
+
+	public static void ForceUpdate(string path)
+	{
+		// App.Logger.Info.Message($"Force updating {path}. ({Watchers.ContainsKey(path)})");
+		if (Watchers.TryGetValue(path, out var watcher))
 			watcher.InvokeUpdate();
 	}
 }
 
 public abstract class AbstractWatcherCallbacksHandler
 {
-	private readonly Dictionary<string, Action> _callbacks = new();
-	private event Action? OnFileChanged;
-	private readonly string _path;
+	protected readonly Dictionary<string, Action> Callbacks = new();
+	protected event Action? OnFileChanged;
+	protected readonly string Path;
 
-	protected AbstractWatcherCallbacksHandler(string path) => _path = path;
+	protected AbstractWatcherCallbacksHandler(string path) => Path = path;
 
 	public void InvokeUpdate()
 	{
-		if (!Context.State.AllowShaderWatchers) return;
-		if (!ShaderManager.TryGetShader(_path, out var shader)) return;
-
-		ExecuteOnce.InSwapchain.AfterDispose(() => shader.Dispose());
-		ShaderManager.CreateShader(_path, shader.ShaderKind);
+		if (ShaderManager.TryGetShader(Path, out var shader))
+		{
+			// App.Logger.Info.Message($"Recompiling {Path}");
+			ExecuteOnce.InSwapchain.AfterDispose(() => shader.Dispose());
+			ShaderManager.CreateShader(Path, Path, shader.ShaderKind);
+		}
 
 		OnFileChanged?.Invoke();
+
+		// App.Logger.Info.Message($"Updated {Path}");
 	}
 
 	public void AddCallback(string name, Action callback)
 	{
-		if (_callbacks.TryGetValue(name, out var old)) OnFileChanged -= old;
+		if (Callbacks.TryGetValue(name, out var old)) OnFileChanged -= old;
 
-		_callbacks[name] = callback;
-		OnFileChanged += callback;
+		OnFileChanged += Callbacks[name] = () =>
+		{
+			// App.Logger.Info.Message($"Invoking {name}");
+			callback();
+		};
 	}
 
 	public void RemoveCallback(string name)
 	{
-		if (_callbacks.Remove(name, out var old))
+		if (Callbacks.Remove(name, out var old))
 			OnFileChanged -= old;
 	}
 
@@ -108,11 +113,21 @@ public abstract class AbstractWatcherCallbacksHandler
 public class FileSystemWatcherHandler : AbstractWatcherCallbacksHandler
 {
 	private readonly FileSystemWatcher _watcher;
+	private DateTime _lastReadTime = DateTime.UnixEpoch;
 
 	public FileSystemWatcherHandler(string path, FileSystemWatcher watcher) : base(path)
 	{
 		_watcher = watcher;
-		watcher.Changed += (_, _) => InvokeUpdate();
+
+		watcher.Changed += (_, b) =>
+		{
+			var lastWriteTime = File.GetLastWriteTime(Path);
+			if (lastWriteTime == _lastReadTime) return;
+
+			// App.Logger.Info.Message($"File {Path} changed. ");
+			InvokeUpdate();
+			_lastReadTime = lastWriteTime;
+		};
 	}
 
 	public override void Stop() => _watcher.Dispose();

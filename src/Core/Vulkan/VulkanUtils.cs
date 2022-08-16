@@ -35,6 +35,8 @@ public static unsafe class VulkanUtils
 		if ((Result) result != expectedResult) throw new Exception($"{errorString} (Code: {result}, {(Result) result})");
 	}
 
+	public static string NormalizePath(string path) => Path.GetFullPath(new Uri(path).LocalPath);
+
 	public static int SizeOfFormat(this Format format)
 	{
 		int result = format switch
@@ -178,7 +180,7 @@ public static unsafe class VulkanUtils
 		};
 
 		Check(Context.Vk.CreateCommandPool(Context.Device, poolInfo, null, out var pool), "Failed to create command pool");
-		
+
 		if (debugName is not null)
 			Debug.SetObjectName(pool.Handle, ObjectType.CommandPool, debugName);
 
@@ -362,42 +364,33 @@ public static unsafe class VulkanUtils
 
 	public static VulkanShader CreateShader(string path, ShaderKind shaderKind, string entryPoint = "main")
 	{
-		string lookUpPath = path;
 		string source;
 		if (path.StartsWith("@"))
 		{
-			if (Context.ShadercOptions.TryGetVirtualShader(path, out string? code))
-			{
+			if (ShaderManager.TryGetVirtualShaderContent(path, out string? code))
 				source = code;
-			}
 			else
 				throw new Exception($"Virtual shader file `{path}` does not exist.").AsExpectedException();
 		}
 		else
 		{
-			if (State.AllowShaderWatchers && State.WatchShadersFromSrc)
-			{
-				lookUpPath = Path.GetFullPath($"../../../../{path}");
-				if (!File.Exists(lookUpPath)) lookUpPath = path;
-			}
+			if (!File.Exists(path)) throw new Exception($"Shader file `{path}` does not exist.").AsExpectedException();
 
-			if (!File.Exists(lookUpPath)) throw new Exception($"Shader file `{lookUpPath}` does not exist.").AsExpectedException();
-
-			using var stream = GetReadStream(lookUpPath);
+			using var stream = GetReadStream(path);
 			using var reader = new StreamReader(stream);
 			source = reader.ReadToEnd();
 		}
 
-		var result = Context.Compiler.Compile(source, lookUpPath, shaderKind, entryPoint);
+		var result = Context.Compiler.Compile(source, path, shaderKind, entryPoint);
 
 		if (result.ErrorCount > 0 || result.WarningCount > 0)
 		{
-			App.Logger.Warn.Message($"Shader `{lookUpPath}` compilation finished with {result.WarningCount} warnings and {result.ErrorCount} errors:");
+			App.Logger.Warn.Message($"Shader `{path}` compilation finished with {result.WarningCount} warnings and {result.ErrorCount} errors:");
 			if (result.ErrorCount > 0 && result.Status == Status.Success) App.Logger.Error.Message($"{result.ErrorMessage}");
 		}
 
 		if (result.Status != Status.Success)
-			throw new Exception($"Shader `{lookUpPath}` was not compiled: {result.Status}\r\n{result.ErrorMessage}").AsExpectedException();
+			throw new Exception($"Shader `{path}` was not compiled: {result.Status}\r\n{result.ErrorMessage}").AsExpectedException();
 
 		var spirvShaderModule = new ReflectShaderModule(result.CodePointer, result.CodeLength);
 		var createInfo = new ShaderModuleCreateInfo
@@ -407,8 +400,7 @@ public static unsafe class VulkanUtils
 			CodeSize = result.CodeLength
 		};
 
-		Check(Context.Vk.CreateShaderModule(Context.Device, createInfo, null, out var vulkanShaderModule),
-			$"Failed to create shader module {lookUpPath}");
+		Check(Context.Vk.CreateShaderModule(Context.Device, createInfo, null, out var vulkanShaderModule), $"Failed to create shader module {path}");
 		result.Dispose();
 
 		Debug.SetObjectName(vulkanShaderModule.Handle, ObjectType.ShaderModule, $"Shader {path}");
@@ -492,7 +484,7 @@ public static unsafe class VulkanUtils
 	public static void CopyBufferToImage(Buffer buffer, VulkanImage image)
 	{
 		var cmd = CommandBuffers.OneTimeGraphics();
-		
+
 		var imageCopy = new BufferImageCopy
 		{
 			ImageSubresource = new ImageSubresourceLayers
@@ -505,9 +497,9 @@ public static unsafe class VulkanUtils
 			ImageOffset = new Offset3D(0, 0, 0),
 			ImageExtent = new Extent3D(image.Width, image.Height, 1)
 		};
-		
+
 		Context.Vk.CmdCopyBufferToImage(cmd, buffer, image.Image, ImageLayout.TransferDstOptimal, 1, &imageCopy);
-		
+
 		cmd.SubmitAndWait();
 	}
 

@@ -8,7 +8,8 @@
 
 layout (input_attachment_index = 0, binding = 0) uniform subpassInput samplerPosition;
 layout (input_attachment_index = 1, binding = 1) uniform subpassInput samplerNormal;
-layout (input_attachment_index = 2, binding = 2) uniform usubpassInput samplerMaterial;
+layout (input_attachment_index = 2, binding = 2) uniform subpassInput samplerFragCoord;
+layout (input_attachment_index = 3, binding = 3) uniform usubpassInput samplerMaterial;
 
 layout (location = 0) in vec2 inUV;
 
@@ -16,26 +17,32 @@ layout (location = 0) out vec4 outColor;
 
 #include "Default/functions.glsl"
 
+vec3 fragPos;
+vec3 normal;
+vec4 fragCoord;
+uvec4 material;
+
 #include "@TestDeferredMaterialManager_fragment_includes.glsl"
 
 void main() {
-	vec3 fragPos = subpassLoad(samplerPosition).rgb;
-	vec3 normal = subpassLoad(samplerNormal).rgb;
-	uvec4 material = uvec4(subpassLoad(samplerMaterial));
+    fragPos = subpassLoad(samplerPosition).rgb;
+    normal = subpassLoad(samplerNormal).rgb;
+    fragCoord = subpassLoad(samplerFragCoord);
+    material = uvec4(subpassLoad(samplerMaterial));
 
-	outColor = vec4(0, 0, 0, 1.0);
+    outColor = vec4(0, 0, 0, 1.0);
 
     uint16_t vertMat = uint16_t(material.y >> 8);
     uint16_t fragMat = uint16_t(material.y & 0xffffu);
 
     UiElementData d;
-	d.modelId = material.x;
+    d.modelId = material.x;
 
-	d.vertexMaterialType = vertMat;
-	d.fragmentMaterialType = fragMat;
+    d.vertexMaterialType = vertMat;
+    d.fragmentMaterialType = fragMat;
 
-	d.vertexDataIndex = material.z;
-	d.fragmentDataIndex = material.w;
+    d.vertexDataIndex = material.z;
+    d.fragmentDataIndex = material.w;
 
     fragmentSwitch(d);
 }

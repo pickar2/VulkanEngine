@@ -9,47 +9,72 @@ namespace Core.Vulkan.Api;
 
 public static class ShaderManager
 {
-	private static readonly Dictionary<string, VulkanShader> CachedShaders = new();
+	private static readonly Dictionary<string, VulkanShader> PathToCachedShader = new();
+	private static readonly Dictionary<string, string> VirtualShaderNameToContent = new();
 
-	static ShaderManager() =>
+	private static readonly Dictionary<string, string> ShaderNameToPath = new();
+
+	static ShaderManager()
+	{
+		Context.ContextEvents.BeforeDispose += () => VirtualShaderNameToContent.Clear();
 		Context.DeviceEvents.BeforeDispose += () =>
 		{
-			foreach ((string? _, var shader) in CachedShaders) shader.Dispose();
-			CachedShaders.Clear();
+			foreach ((string? _, var shader) in PathToCachedShader) shader.Dispose();
+			PathToCachedShader.Clear();
 		};
+	}
 
-	public static void SetVirtualShader(string name, string content) => Context.ShadercOptions.SetVirtualShader(name, content);
+	public static void SetVirtualShader(string name, string content)
+	{
+		if (!name.StartsWith("@")) throw new ArgumentException("Virtual shader name must start with `@`.").AsExpectedException();
+		VirtualShaderNameToContent[name] = content;
+	}
+
+	public static bool TryGetVirtualShaderContent(string name, [MaybeNullWhen(false)] out string content) =>
+		VirtualShaderNameToContent.TryGetValue(name, out content);
 
 	public static VulkanShader GetOrCreate(string path, ShaderKind shaderKind)
 	{
-		return CachedShaders.TryGetValue(path, out var shader) ? shader : CreateShader(path, shaderKind);
+		var searchPath = path.StartsWith("@") ? path : NormalizeShaderPath(path);
+		return PathToCachedShader.TryGetValue(searchPath, out var shader) ? shader : CreateShader(path, path, shaderKind);
 	}
 
-	public static bool TryGetShader(string path, [MaybeNullWhen(false)] out VulkanShader shader) => CachedShaders.TryGetValue(path, out shader);
-
-	public static VulkanShader CreateShader(string path, ShaderKind shaderKind)
+	public static bool TryGetShader(string path, [MaybeNullWhen(false)] out VulkanShader shader)
 	{
+		if (!path.StartsWith("@")) path = NormalizeShaderPath(path);
+		return PathToCachedShader.TryGetValue(path, out shader);
+	}
+
+	public static bool TryGetShaderPath(string name, [MaybeNullWhen(false)] out string path) => ShaderNameToPath.TryGetValue(name, out path);
+
+	public static VulkanShader CreateShader(string name, string path, ShaderKind shaderKind)
+	{
+		path = NormalizeShaderPath(path);
+		ShaderNameToPath[name] = path;
+
 		var shader = VulkanUtils.CreateShader(path, shaderKind);
-		CachedShaders[path] = shader;
+		PathToCachedShader[name] = shader;
 
 		return shader;
 	}
 
-	public static bool RemoveShaderFromCache(string path)
-	{
-		ShaderWatchers.RemoveWatcher(path);
-		return CachedShaders.Remove(path);
-	}
+	public static string NormalizeShaderPath(string path) => NormalizePath(Path.Combine(Context.ShadercOptions.BaseDirectory, path));
 
-	public static bool RemoveShaderFromCache(string path, [MaybeNullWhen(false)] out VulkanShader shader)
-	{
-		ShaderWatchers.RemoveWatcher(path);
-		return CachedShaders.Remove(path, out shader);
-	}
-
-	public static void DisposeShader(string path)
-	{
-		if (!RemoveShaderFromCache(path, out var shader)) return;
-		shader.Dispose();
-	}
+	// public static bool RemoveShaderFromCache(string path)
+	// {
+	// 	ShaderWatchers.RemoveWatcher(path);
+	// 	return PathToCachedShader.Remove(path);
+	// }
+	//
+	// public static bool RemoveShaderFromCache(string path, [MaybeNullWhen(false)] out VulkanShader shader)
+	// {
+	// 	ShaderWatchers.RemoveWatcher(path);
+	// 	return PathToCachedShader.Remove(path, out shader);
+	// }
+	//
+	// public static void DisposeShader(string path)
+	// {
+	// 	if (!RemoveShaderFromCache(path, out var shader)) return;
+	// 	shader.Dispose();
+	// }
 }

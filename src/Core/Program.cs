@@ -49,7 +49,7 @@ internal static class Program
 		if (cmdArgs.Contains("-debug")) Context.State.DebugMode.UpdateImmediately(true);
 		if (cmdArgs.Contains("-validation")) Context.State.UseValidation.UpdateImmediately(true);
 		if (cmdArgs.Contains("-watchShaders")) Context.State.AllowShaderWatchers.UpdateImmediately(true);
-		if (cmdArgs.Contains("-watchShadersSrc")) Context.State.WatchShadersFromSrc.UpdateImmediately(true);
+		if (cmdArgs.Contains("-watchShadersSrc")) Context.State.LoadShadersFromSrc.UpdateImmediately(true);
 		if (cmdArgs.Contains("-gpu-1")) Context.State.SelectedGpuIndex.UpdateImmediately(-1);
 		if (cmdArgs.Contains("-gpu0")) Context.State.SelectedGpuIndex.UpdateImmediately(0);
 		if (cmdArgs.Contains("-gpu1")) Context.State.SelectedGpuIndex.UpdateImmediately(1);

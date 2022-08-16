@@ -17,6 +17,7 @@ public unsafe class Deferred3DRenderer : RenderChain
 	public readonly ReCreator<VulkanImage2> DepthAttachment;
 	public readonly ReCreator<VulkanImage2> NormalAttachment;
 	public readonly ReCreator<VulkanImage2> PositionAttachment;
+	public readonly ReCreator<VulkanImage2> FragCoordsAttachment;
 	public readonly ReCreator<VulkanImage2> MaterialAttachment;
 
 	public readonly ReCreator<Framebuffer> Framebuffer;
@@ -32,14 +33,22 @@ public unsafe class Deferred3DRenderer : RenderChain
 	private readonly ReCreator<DescriptorPool> _composePool;
 	private readonly ReCreator<DescriptorSet> _composeSet;
 
+	private readonly ReCreator<DescriptorSetLayout> _worldLayout;
+	private readonly ReCreator<DescriptorPool> _worldPool;
+	private readonly ReCreator<DescriptorSet> _worldSet;
+
+	private readonly ReCreator<VulkanBuffer> _worldBuffer;
 	private readonly ReCreator<VulkanBuffer> _vertexBuffer;
 
-	private readonly UiMaterialManager _materialManager;
+	private readonly MaterialManager _materialManager;
+	private readonly GlobalDataManager _globalDataManager;
 
 	public Deferred3DRenderer(Vector2<uint> size, string name) : base(name)
 	{
-		_materialManager = new UiMaterialManager($"{Name}MaterialManager");
+		_materialManager = new MaterialManager($"{Name}MaterialManager");
 		InitMaterials();
+
+		_globalDataManager = new GlobalDataManager($"{Name}GlobalDataManager");
 
 		Size = size;
 
@@ -53,6 +62,9 @@ public unsafe class Deferred3DRenderer : RenderChain
 			FrameGraph.CreateAttachment(Format.R16G16B16A16Sfloat, ImageAspectFlags.ColorBit, Size), image => image.Dispose());
 
 		PositionAttachment = ReCreate.InDevice.Auto(() =>
+			FrameGraph.CreateAttachment(Format.R16G16B16A16Sfloat, ImageAspectFlags.ColorBit, Size), image => image.Dispose());
+
+		FragCoordsAttachment = ReCreate.InDevice.Auto(() =>
 			FrameGraph.CreateAttachment(Format.R16G16B16A16Sfloat, ImageAspectFlags.ColorBit, Size), image => image.Dispose());
 
 		MaterialAttachment = ReCreate.InDevice.Auto(() =>
@@ -108,7 +120,8 @@ public unsafe class Deferred3DRenderer : RenderChain
 		var colorClearValue = new ClearValue(new ClearColorValue(0, 0, 0, 1));
 		var depthClearValue = new ClearValue(default, new ClearDepthStencilValue(1, 0));
 		var gBufferClearValue = new ClearValue(new ClearColorValue(0, 0, 0, 1));
-		var clearValues = stackalloc ClearValue[] {colorClearValue, depthClearValue, gBufferClearValue, gBufferClearValue, gBufferClearValue};
+		var clearValues = stackalloc ClearValue[]
+			{colorClearValue, depthClearValue, gBufferClearValue, gBufferClearValue, gBufferClearValue, gBufferClearValue};
 
 		var cmd = CommandBuffers.CreateCommandBuffer(CommandBufferLevel.Primary, CommandBuffers.GraphicsPool);
 
@@ -120,7 +133,7 @@ public unsafe class Deferred3DRenderer : RenderChain
 			RenderPass = RenderPass,
 			RenderArea = new Rect2D(default, new Extent2D(Size.X, Size.Y)),
 			Framebuffer = Framebuffer,
-			ClearValueCount = 5,
+			ClearValueCount = 6,
 			PClearValues = clearValues
 		};
 
@@ -165,8 +178,8 @@ public unsafe class Deferred3DRenderer : RenderChain
 
 	private RenderPass CreateRenderPass()
 	{
-		// out color, depth, normal, position, material
-		int attachmentCount = 5;
+		// out color, depth, normal, position, fragCoord, material
+		int attachmentCount = 6;
 		var attachmentDescriptions = stackalloc AttachmentDescription2[attachmentCount];
 
 		// Color
@@ -225,8 +238,22 @@ public unsafe class Deferred3DRenderer : RenderChain
 			StencilStoreOp = AttachmentStoreOp.DontCare
 		};
 
-		// Materials
+		// Positions
 		attachmentDescriptions[4] = new AttachmentDescription2
+		{
+			SType = StructureType.AttachmentDescription2,
+			Samples = SampleCountFlags.Count1Bit,
+			Format = FragCoordsAttachment.Value.Format,
+			InitialLayout = ImageLayout.Undefined,
+			FinalLayout = ImageLayout.ShaderReadOnlyOptimal,
+			LoadOp = AttachmentLoadOp.Clear,
+			StoreOp = AttachmentStoreOp.DontCare,
+			StencilLoadOp = AttachmentLoadOp.DontCare,
+			StencilStoreOp = AttachmentStoreOp.DontCare
+		};
+
+		// Materials
+		attachmentDescriptions[5] = new AttachmentDescription2
 		{
 			SType = StructureType.AttachmentDescription2,
 			Samples = SampleCountFlags.Count1Bit,
@@ -271,10 +298,18 @@ public unsafe class Deferred3DRenderer : RenderChain
 			AspectMask = ImageAspectFlags.ColorBit
 		};
 
-		var materialAttachmentReference = new AttachmentReference2
+		var fragCoordAttachmentReference = new AttachmentReference2
 		{
 			SType = StructureType.AttachmentReference2,
 			Attachment = 4,
+			Layout = ImageLayout.AttachmentOptimal,
+			AspectMask = ImageAspectFlags.ColorBit
+		};
+
+		var materialAttachmentReference = new AttachmentReference2
+		{
+			SType = StructureType.AttachmentReference2,
+			Attachment = 5,
 			Layout = ImageLayout.AttachmentOptimal,
 			AspectMask = ImageAspectFlags.ColorBit
 		};
@@ -295,10 +330,18 @@ public unsafe class Deferred3DRenderer : RenderChain
 			AspectMask = ImageAspectFlags.ColorBit
 		};
 
-		var materialShaderReference = new AttachmentReference2
+		var fragCoordShaderReference = new AttachmentReference2
 		{
 			SType = StructureType.AttachmentReference2,
 			Attachment = 4,
+			Layout = ImageLayout.ShaderReadOnlyOptimal,
+			AspectMask = ImageAspectFlags.ColorBit
+		};
+
+		var materialShaderReference = new AttachmentReference2
+		{
+			SType = StructureType.AttachmentReference2,
+			Attachment = 5,
 			Layout = ImageLayout.ShaderReadOnlyOptimal,
 			AspectMask = ImageAspectFlags.ColorBit
 		};
@@ -308,8 +351,9 @@ public unsafe class Deferred3DRenderer : RenderChain
 		var subpassDescriptions = stackalloc SubpassDescription2[subpassCount];
 
 		// Fill G-Buffers
-		int gBufferColorReferenceCount = 3;
-		var gBufferColorReferences = stackalloc AttachmentReference2[] {normalAttachmentReference, positionAttachmentReference, materialAttachmentReference};
+		int gBufferColorReferenceCount = 4;
+		var gBufferColorReferences = stackalloc AttachmentReference2[]
+			{normalAttachmentReference, positionAttachmentReference, fragCoordAttachmentReference, materialAttachmentReference};
 		subpassDescriptions[0] = new SubpassDescription2
 		{
 			SType = StructureType.SubpassDescription2,
@@ -321,8 +365,9 @@ public unsafe class Deferred3DRenderer : RenderChain
 		};
 
 		// Compose deferred lighting
-		int deferredComposeInputReferenceCount = 3;
-		var deferredComposeInputReferences = stackalloc AttachmentReference2[] {normalShaderReference, positionShaderReference, materialShaderReference};
+		int deferredComposeInputReferenceCount = 4;
+		var deferredComposeInputReferences = stackalloc AttachmentReference2[]
+			{normalShaderReference, positionShaderReference, fragCoordShaderReference, materialShaderReference};
 		subpassDescriptions[1] = new SubpassDescription2
 		{
 			SType = StructureType.SubpassDescription2,
@@ -370,7 +415,8 @@ public unsafe class Deferred3DRenderer : RenderChain
 		var attachments = stackalloc ImageView[]
 		{
 			ColorAttachment.Value.ImageView, DepthAttachment.Value.ImageView,
-			NormalAttachment.Value.ImageView, PositionAttachment.Value.ImageView, MaterialAttachment.Value.ImageView
+			NormalAttachment.Value.ImageView, PositionAttachment.Value.ImageView,
+			FragCoordsAttachment.Value.ImageView, MaterialAttachment.Value.ImageView
 		};
 
 		var createInfo = new FramebufferCreateInfo
@@ -380,7 +426,7 @@ public unsafe class Deferred3DRenderer : RenderChain
 			Width = Size.X,
 			Height = Size.Y,
 			Layers = 1,
-			AttachmentCount = 5,
+			AttachmentCount = 6,
 			PAttachments = attachments
 		};
 
@@ -427,6 +473,13 @@ public unsafe class Deferred3DRenderer : RenderChain
 				DescriptorType = DescriptorType.InputAttachment,
 				StageFlags = ShaderStageFlags.FragmentBit
 			},
+			new()
+			{
+				Binding = 3,
+				DescriptorCount = 1,
+				DescriptorType = DescriptorType.InputAttachment,
+				StageFlags = ShaderStageFlags.FragmentBit
+			},
 			// new()
 			// {
 			// 	Binding = 3,
@@ -458,7 +511,7 @@ public unsafe class Deferred3DRenderer : RenderChain
 			new()
 			{
 				Type = DescriptorType.InputAttachment,
-				DescriptorCount = 3
+				DescriptorCount = 4
 			}
 		};
 
@@ -490,6 +543,11 @@ public unsafe class Deferred3DRenderer : RenderChain
 			{
 				ImageLayout = ImageLayout.ShaderReadOnlyOptimal,
 				ImageView = PositionAttachment.Value.ImageView
+			},
+			new()
+			{
+				ImageLayout = ImageLayout.ShaderReadOnlyOptimal,
+				ImageView = FragCoordsAttachment.Value.ImageView
 			},
 			new()
 			{
@@ -526,6 +584,15 @@ public unsafe class Deferred3DRenderer : RenderChain
 				DescriptorType = DescriptorType.InputAttachment,
 				DstSet = _composeSet,
 				PImageInfo = imageInfos[2].AsPointer()
+			},
+			new()
+			{
+				SType = StructureType.WriteDescriptorSet,
+				DescriptorCount = 1,
+				DstBinding = 3,
+				DescriptorType = DescriptorType.InputAttachment,
+				DstSet = _composeSet,
+				PImageInfo = imageInfos[3].AsPointer()
 			}
 		};
 
@@ -542,9 +609,11 @@ public unsafe class Deferred3DRenderer : RenderChain
 
 		material.MarkForGPUUpdate();
 
-		vertices[0] = new DeferredVertex(1, 0, (ushort) material.MaterialId, 0, 0, new Vector3<float>(-1, 1, 0), new Vector3<float>(), new Vector2<float>());
-		vertices[1] = new DeferredVertex(1, 0, (ushort) material.MaterialId, 0, 0, new Vector3<float>(0f, -1f, 0), new Vector3<float>(), new Vector2<float>());
-		vertices[2] = new DeferredVertex(1, 0, (ushort) material.MaterialId, 0, 0, new Vector3<float>(1f, 1, 0), new Vector3<float>(), new Vector2<float>());
+		vertices[0] = new DeferredVertex(1, 0, (ushort) material.MaterialId, 0, 0, new Vector3<float>(-1, 1, 0), new Vector3<float>(), new Vector2<float>(0));
+		vertices[1] = new DeferredVertex(1, 0, (ushort) material.MaterialId, 0, 0, new Vector3<float>(0f, -1f, 0), new Vector3<float>(),
+			new Vector2<float>(0, 1));
+		vertices[2] = new DeferredVertex(1, 0, (ushort) material.MaterialId, 0, 0, new Vector3<float>(1f, 1, 0), new Vector3<float>(),
+			new Vector2<float>(1, 0));
 	}
 
 	private AutoPipeline CreateFillGBufferPipeline() =>
@@ -552,6 +621,10 @@ public unsafe class Deferred3DRenderer : RenderChain
 			.WithShader("./Assets/Shaders/Deferred/fill_gbuffers.vert", ShaderKind.VertexShader)
 			.WithShader("./Assets/Shaders/Deferred/fill_gbuffers.frag", ShaderKind.FragmentShader)
 			.SetViewportAndScissorFromSize(Size)
+			.AddColorBlendAttachment(new PipelineColorBlendAttachmentState
+			{
+				ColorWriteMask = ColorComponentFlags.RBit | ColorComponentFlags.GBit | ColorComponentFlags.BBit | ColorComponentFlags.ABit
+			})
 			.AddColorBlendAttachment(new PipelineColorBlendAttachmentState
 			{
 				ColorWriteMask = ColorComponentFlags.RBit | ColorComponentFlags.GBit | ColorComponentFlags.BBit | ColorComponentFlags.ABit
@@ -633,6 +706,4 @@ public struct DeferredVertex
 		Normal = normal;
 		Uv = uv;
 	}
-
-	// public static uint ComposeMaterial(ushort vertexMaterialType, ushort fragmentMaterialType) =>  (uint) fragmentMaterialType << 8 | vertexMaterialType;
 }

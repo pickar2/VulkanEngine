@@ -12,7 +12,7 @@ using SimpleMath.Vectors;
 
 namespace Core.UI;
 
-public unsafe class UiGlobalDataManager
+public unsafe class GlobalDataManager
 {
 	public readonly ReCreator<DescriptorSetLayout> DescriptorSetLayout;
 	public readonly ReCreator<DescriptorPool> DescriptorPool;
@@ -27,11 +27,11 @@ public unsafe class UiGlobalDataManager
 	public StructHolder FrameIndexHolder;
 	public StructHolder MousePositionHolder;
 
-	public UiGlobalDataManager(string name)
+	public GlobalDataManager(string name)
 	{
-		Name = name;
+		Name = name.ToLower();
 
-		Factory = new MultipleStructDataFactory(NamespacedName.CreateWithName(name), true);
+		Factory = new MultipleStructDataFactory(NamespacedName.CreateWithName(Name), true);
 
 		ProjectionMatrixHolder = Factory.CreateHolder(64, NamespacedName.CreateWithName("projection-matrix"));
 		FrameIndexHolder = Factory.CreateHolder(4, NamespacedName.CreateWithName("frame-index"));
@@ -50,35 +50,6 @@ public unsafe class UiGlobalDataManager
 			Factory.BufferChanged = false;
 			UpdateSet();
 		}
-
-		UpdateData();
-	}
-
-	private void UpdateData()
-	{
-		float aspect = (float) Context.State.WindowSize.Value.X / Context.State.WindowSize.Value.Y;
-
-		var ortho = Matrix4X4<float>.Identity.SetOrtho(0, Context.State.WindowSize.Value.X, 0, Context.State.WindowSize.Value.Y, 4096, -4096);
-
-		var view = Matrix4x4.CreateTranslation(0, 0, 0).ToGeneric();
-		view *= Matrix4x4.CreateFromYawPitchRoll(0, 0, 0).ToGeneric();
-
-		var model = Matrix4X4<float>.Identity;
-		model *= Matrix4x4.CreateScale(aspect, 1, 1).ToGeneric();
-		model *= Matrix4x4.CreateRotationY(Context.FrameIndex / 50.0f).ToGeneric();
-		model *= Matrix4x4.CreateTranslation(0, 0, -3).ToGeneric();
-
-		var proj = Matrix4X4<float>.Identity.SetPerspective(90f.ToRadians(), aspect, 0.01f, 1000.0f);
-
-		var mvp = model * view * proj;
-
-		// *ProjectionMatrixHolder.Get<Matrix4X4<float>>() = mvp;
-		*ProjectionMatrixHolder.Get<Matrix4X4<float>>() = Matrix4X4<float>.Identity;
-		*OrthoMatrixHolder.Get<Matrix4X4<float>>() = ortho;
-
-		*FrameIndexHolder.Get<int>() = Context.FrameIndex;
-
-		*MousePositionHolder.Get<Vector2<int>>() = MouseInput.MousePos;
 	}
 
 	private void UpdateSet()

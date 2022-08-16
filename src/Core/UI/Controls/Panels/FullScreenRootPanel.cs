@@ -1,11 +1,12 @@
-﻿using Core.Vulkan;
+﻿using CommandLine;
+using Core.Vulkan;
 using SimpleMath.Vectors;
 
 namespace Core.UI.Controls.Panels;
 
 public class FullScreenRootPanel : RootPanel
 {
-	public FullScreenRootPanel(UiComponentManager componentManager, UiMaterialManager materialManager, UiGlobalDataManager globalDataManager) : base(
+	public FullScreenRootPanel(UiComponentManager componentManager, MaterialManager materialManager, GlobalDataManager globalDataManager) : base(
 		componentManager, materialManager, globalDataManager)
 	{
 		Selectable = false;
@@ -13,13 +14,12 @@ public class FullScreenRootPanel : RootPanel
 
 	public override void Update()
 	{
-		var screenSize = new Vector2<float>(Context.Window.WindowWidth, Context.Window.WindowHeight);
-		Size = screenSize;
+		Size = Context.State.WindowSize.Value.Cast<uint, float>();
 		base.Update();
 
 		PropagateScale(Scale);
-		ComputeSizeAndArea(screenSize);
-		ArrangeChildren(screenSize);
+		ComputeSizeAndArea(Size);
+		ArrangeChildren(Size);
 		UpdateChildrenMask(new Vector2<float>(float.NegativeInfinity), new Vector2<float>(float.PositiveInfinity));
 	}
 }

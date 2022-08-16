@@ -102,16 +102,16 @@ public class AutoPipeline
 		PipelineManager.AutoPipelines.Add(name, this);
 
 		if (!Context.State.AllowShaderWatchers) return;
-		foreach ((var shaderKind, string? path) in Builder.Shaders)
+		foreach ((var shaderKind, string? shaderPath) in Builder.Shaders)
 		{
-			ShaderWatchers.AddWatcherCallback(path, $"{shaderKind}.{Builder.GetHashCode()}", () =>
+			ShaderWatchers.AddWatcherCallback(shaderPath, $"{shaderKind}.{Builder.GetHashCode()}", () =>
 			{
 				IsChanged = true;
 			});
 
 			Context.DeviceEvents.AfterCreate += () =>
 			{
-				ShaderWatchers.AddWatcherCallback(path, $"{shaderKind}.{Builder.GetHashCode()}", () =>
+				ShaderWatchers.AddWatcherCallback(shaderPath, $"{shaderKind}.{Builder.GetHashCode()}", () =>
 				{
 					IsChanged = true;
 				});
@@ -243,7 +243,7 @@ public unsafe class GraphicsPipelineBuilder
 	{
 		IsChanged = true;
 
-		Shaders[shaderKind] = path;
+		Shaders[shaderKind] = ShaderManager.NormalizeShaderPath(path);
 
 		return this;
 	}

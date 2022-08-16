@@ -1,9 +1,15 @@
 ﻿using System;
+using System.Numerics;
 using Core.Native.Shaderc;
+using Core.TemporaryMath;
+using Core.UI.Controls.Panels;
+using Core.Utils;
 using Core.Vulkan;
 using Core.Vulkan.Api;
 using Core.Vulkan.Renderers;
 using Core.Vulkan.Utility;
+using Core.Window;
+using Silk.NET.Maths;
 using Silk.NET.Vulkan;
 using SimpleMath.Vectors;
 using static Core.Native.VMA.VulkanMemoryAllocator;
@@ -48,16 +54,17 @@ public unsafe partial class UiRootRenderer : RenderChain
 
 	private readonly ArrayReCreator<Semaphore> _sortSemaphores;
 
+	public readonly RootPanel RootPanel;
 	public readonly UiComponentManager ComponentManager;
-	public readonly UiMaterialManager MaterialManager;
-	public readonly UiGlobalDataManager GlobalDataManager;
+	public readonly MaterialManager MaterialManager;
+	public readonly GlobalDataManager GlobalDataManager;
 
-	public UiRootRenderer(string name, UiComponentManager componentManager, UiMaterialManager materialManager,
-		UiGlobalDataManager globalDataManager) : base(name)
+	public UiRootRenderer(string name, RootPanel rootPanel) : base(name)
 	{
-		ComponentManager = componentManager;
-		MaterialManager = materialManager;
-		GlobalDataManager = globalDataManager;
+		RootPanel = rootPanel;
+		ComponentManager = rootPanel.ComponentManager;
+		MaterialManager = rootPanel.MaterialManager;
+		GlobalDataManager = rootPanel.GlobalDataManager;
 
 		// Render
 		// _commandPool = ReCreate.InDevice.Auto(() => CreateCommandPool(Context.GraphicsQueue, CommandPoolCreateFlags.TransientBit),
@@ -78,12 +85,16 @@ public unsafe partial class UiRootRenderer : RenderChain
 
 		_sortSemaphores = ReCreate.InDevice.AutoArrayFrameOverlap(_ => CreateSemaphore(), semaphore => semaphore.Dispose());
 
+		Context.SwapchainEvents.AfterCreate += () => _pipeline.Builder.SetViewportAndScissorFromSize(Context.State.WindowSize);
+
 		RenderCommandBuffers += (FrameInfo frameInfo) =>
 		{
 			ComponentManager.AfterUpdate();
 			MaterialManager.AfterUpdate();
 			GlobalDataManager.AfterUpdate();
 			UpdateIndicesDescriptorSet(frameInfo);
+
+			UpdateGlobalData();
 
 			RunSorting(frameInfo);
 
@@ -204,6 +215,32 @@ public unsafe partial class UiRootRenderer : RenderChain
 		ExecuteOnce.AtCurrentFrameStart(() => Context.Vk.FreeCommandBuffers(Context.Device, CommandBuffers.GraphicsPool, 1, cmd));
 
 		return cmd;
+	}
+
+	private void UpdateGlobalData()
+	{
+		// App.Logger.Info.Message($"{RootPanel.Size} : {RootPanel.Scale}");
+		float aspect = (float) Context.State.WindowSize.Value.X / Context.State.WindowSize.Value.Y;
+
+		var ortho = Matrix4X4<float>.Identity.SetOrtho(0, Context.State.WindowSize.Value.X, 0, Context.State.WindowSize.Value.Y, 4096, -4096);
+
+		var view = Matrix4x4.CreateTranslation(0, 0, 0).ToGeneric();
+		view *= Matrix4x4.CreateFromYawPitchRoll(0, 0, 0).ToGeneric();
+
+		var model = Matrix4X4<float>.Identity;
+		model *= Matrix4x4.CreateScale(aspect, 1, 1).ToGeneric();
+		// model *= Matrix4x4.CreateRotationY(Context.FrameIndex / 50.0f).ToGeneric();
+		model *= Matrix4x4.CreateTranslation(0, 0, -1).ToGeneric();
+
+		var proj = Matrix4X4<float>.Identity.SetPerspective(90f.ToRadians(), aspect, 0.01f, 1000.0f);
+
+		var mvp = model * view * proj;
+
+		// *GlobalDataManager.ProjectionMatrixHolder.Get<Matrix4X4<float>>() = mvp;
+		*GlobalDataManager.ProjectionMatrixHolder.Get<Matrix4X4<float>>() = Matrix4X4<float>.Identity;
+		*GlobalDataManager.OrthoMatrixHolder.Get<Matrix4X4<float>>() = ortho;
+		*GlobalDataManager.FrameIndexHolder.Get<int>() = Context.FrameIndex;
+		*GlobalDataManager.MousePositionHolder.Get<Vector2<int>>() = MouseInput.MousePos;
 	}
 
 	private void RunSorting(FrameInfo frameInfo)

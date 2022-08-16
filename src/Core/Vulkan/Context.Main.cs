@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -48,7 +49,10 @@ public static unsafe partial class Context
 	{
 		ContextEvents.InvokeBeforeCreate();
 
-		ShadercOptions = new ShadercOptionsCustom();
+		var baseDirectory = NormalizePath(Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location) + (State.LoadShadersFromSrc ? "/../../../../" : ""));
+		// App.Logger.Info.Message($"Base directory : {baseDirectory}");
+
+		ShadercOptions = new ShadercOptionsCustom(baseDirectory);
 		ShadercOptions.EnableDebugInfo();
 		ShadercOptions.Optimization = OptimizationLevel.Performance;
 		ShadercOptions.TargetSpirVVersion = new SpirVVersion(1, 5);
@@ -769,7 +773,7 @@ public static unsafe partial class Context
 	public static void CreateLevelSwapchain()
 	{
 		SwapchainEvents.InvokeBeforeCreate();
-	
+
 		var queryPoolCreateInfo = new QueryPoolCreateInfo
 		{
 			SType = StructureType.QueryPoolCreateInfo,

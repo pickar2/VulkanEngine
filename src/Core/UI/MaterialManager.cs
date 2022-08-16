@@ -7,7 +7,7 @@ using Core.Vulkan.Api;
 
 namespace Core.UI;
 
-public partial class UiMaterialManager
+public partial class MaterialManager
 {
 	private readonly Dictionary<string, MaterialDataFactory> _materials = new();
 
@@ -67,7 +67,7 @@ public partial class UiMaterialManager
 		_materials[identifier] = new MaterialDataFactory(dataSize, shaderKind.ToStageFlags(), identifier, index);
 	}
 
-	public void UpdateVertexShader()
+	public string GenerateVertexShader()
 	{
 		var vertexSb = new StringBuilder();
 		foreach ((string? _, var builder) in _vertexIncludeBuilders) vertexSb.Append(builder);
@@ -78,10 +78,11 @@ public partial class UiMaterialManager
 		foreach ((string? _, var builder) in _vertexSwitchBuilders) vertexSb.Append(builder);
 		vertexSb.Append(@"	}
 }");
-		ShaderManager.SetVirtualShader($"@{Name}_vertex_includes.glsl", vertexSb.ToString());
+
+		return vertexSb.ToString();
 	}
 
-	public void UpdateFragmentShader()
+	public string GenerateFragmentShader()
 	{
 		var fragmentSb = new StringBuilder();
 		foreach ((string? _, var builder) in _fragmentIncludeBuilders) fragmentSb.Append(builder);
@@ -92,12 +93,13 @@ public partial class UiMaterialManager
 		foreach ((string? _, var builder) in _fragmentSwitchBuilders) fragmentSb.Append(builder);
 		fragmentSb.Append(@"	}
 }");
-		ShaderManager.SetVirtualShader($"@{Name}_fragment_includes.glsl", fragmentSb.ToString());
+
+		return fragmentSb.ToString();
 	}
 
 	public void UpdateShaders()
 	{
-		UpdateVertexShader();
-		UpdateFragmentShader();
+		ShaderManager.SetVirtualShader($"@{Name}_vertex_includes.glsl", GenerateVertexShader());
+		ShaderManager.SetVirtualShader($"@{Name}_fragment_includes.glsl", GenerateFragmentShader());
 	}
 }

@@ -10,10 +10,10 @@ public abstract class RootPanel : AbsolutePanel
 	public Vector<float> CursorPos { get; set; }
 
 	public readonly UiComponentManager ComponentManager;
-	public readonly UiMaterialManager MaterialManager;
-	public readonly UiGlobalDataManager GlobalDataManager;
+	public readonly MaterialManager MaterialManager;
+	public readonly GlobalDataManager GlobalDataManager;
 
-	protected RootPanel(UiComponentManager componentManager, UiMaterialManager materialManager, UiGlobalDataManager globalDataManager)
+	protected RootPanel(UiComponentManager componentManager, MaterialManager materialManager, GlobalDataManager globalDataManager)
 	{
 		ComponentManager = componentManager;
 		MaterialManager = materialManager;

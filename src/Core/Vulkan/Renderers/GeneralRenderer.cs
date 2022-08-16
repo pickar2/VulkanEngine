@@ -42,8 +42,8 @@ public static class GeneralRenderer
 	static unsafe GeneralRenderer()
 	{
 		var componentManager = new UiComponentManager("Comp1");
-		var materialManager = new UiMaterialManager("Mat1");
-		var globalDataManager = new UiGlobalDataManager("global");
+		var materialManager = new MaterialManager("Mat1");
+		var globalDataManager = new GlobalDataManager("global");
 
 		MainRoot = new FullScreenRootPanel(componentManager, materialManager, globalDataManager);
 
@@ -68,7 +68,7 @@ public static class GeneralRenderer
 		materialManager.UpdateShaders();
 
 		var deferred = new Deferred3DRenderer((1280, 720), "TestDeferred");
-		Root = new UiRootRenderer("Root1", componentManager, materialManager, globalDataManager);
+		Root = new UiRootRenderer("Root1", MainRoot);
 
 		// for (int i = 0; i < 2; i++) Root.AddChild(new TestToTextureRenderer($"ChildRenderer{i}"));
 
