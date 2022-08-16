@@ -30,16 +30,16 @@ void main() {
     fragCoord = subpassLoad(samplerFragCoord);
     material = uvec4(subpassLoad(samplerMaterial));
 
-    outColor = vec4(0, 0, 0, 1.0);
+    outColor = vec4(0, 0, 0, 0.0);
 
-    uint16_t vertMat = uint16_t(material.y >> 8);
-    uint16_t fragMat = uint16_t(material.y & 0xffffu);
+    uint vertMat = material.y >> 8;
+    uint fragMat = material.y & 0xffffu;
 
     UiElementData d;
     d.modelId = material.x;
 
     d.vertexMaterialType = vertMat;
-    d.fragmentMaterialType = fragMat;
+    d.fragmentMaterialType = fragMat * (int(sin(inUV.y * 100) * cos(fragCoord.x * 10) + 2) % 2 + 1);
 
     d.vertexDataIndex = material.z;
     d.fragmentDataIndex = material.w;

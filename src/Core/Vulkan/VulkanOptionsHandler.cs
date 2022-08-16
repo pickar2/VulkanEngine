@@ -18,6 +18,7 @@ public class VulkanState
 	public readonly VulkanOption<bool> UseValidation = new(false, VulkanLevel.Instance);
 	public readonly VulkanOption<bool> LoadShadersFromSrc = new(false, VulkanLevel.Context);
 	public readonly VulkanOption<bool> AllowShaderWatchers = new(false, VulkanLevel.Context);
+	public readonly VulkanOption<bool> AllowShaderCompileErrors = new(true);
 
 	public readonly VulkanOption<SdlWindow> Window = new(default!, VulkanLevel.Instance);
 
@@ -134,6 +135,7 @@ public class VulkanState
 		Options["ValidationLayers"] = ValidationLayers;
 		Options["AllowShaderWatchers"] = AllowShaderWatchers;
 		Options["LoadShadersFromSrc"] = LoadShadersFromSrc;
+		Options["AllowShaderCompileErrors"] = AllowShaderCompileErrors;
 
 		Options["InstanceExtensions"] = InstanceExtensions;
 		Options["ProgramLayers"] = ProgramLayers;

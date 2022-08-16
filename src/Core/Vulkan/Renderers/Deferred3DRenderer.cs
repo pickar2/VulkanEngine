@@ -172,6 +172,7 @@ public unsafe class Deferred3DRenderer : RenderChain
 
 		_materialManager.RegisterMaterialFile($"./Assets/Shaders/Deferred/Materials/Fragment/no_material.glsl");
 		_materialManager.RegisterMaterialFile($"./Assets/Shaders/Deferred/Materials/Fragment/diffuse_color.glsl");
+		_materialManager.RegisterMaterialFile($"./Assets/Shaders/Deferred/Materials/Fragment/cool_material.glsl");
 
 		_materialManager.UpdateShaders();
 	}
@@ -603,16 +604,23 @@ public unsafe class Deferred3DRenderer : RenderChain
 	{
 		var vertices = _vertexBuffer.Value.GetHostSpan<DeferredVertex>();
 
-		var material = _materialManager.GetFactory("color_material").Create();
+		var colorMat = _materialManager.GetFactory("color_material").Create();
 
-		*material.GetMemPtr<int>() = Color.BlueViolet.ToArgb();
+		*colorMat.GetMemPtr<int>() = Color.BlueViolet.ToArgb();
 
-		material.MarkForGPUUpdate();
+		colorMat.MarkForGPUUpdate();
+		
+		var coolMat = _materialManager.GetFactory("cool_material").Create();
 
-		vertices[0] = new DeferredVertex(1, 0, (ushort) material.MaterialId, 0, 0, new Vector3<float>(-1, 1, 0), new Vector3<float>(), new Vector2<float>(0));
-		vertices[1] = new DeferredVertex(1, 0, (ushort) material.MaterialId, 0, 0, new Vector3<float>(0f, -1f, 0), new Vector3<float>(),
+		*coolMat.GetMemPtr<int>() = Color.Black.ToArgb();
+		*coolMat.GetMemPtr<int>() = Color.Red.ToArgb();
+
+		coolMat.MarkForGPUUpdate();
+
+		vertices[0] = new DeferredVertex(1, 0, (ushort) colorMat.MaterialId, 0, 0, new Vector3<float>(-1, 1, 0), new Vector3<float>(), new Vector2<float>(0));
+		vertices[1] = new DeferredVertex(1, 0, (ushort) colorMat.MaterialId, 0, 0, new Vector3<float>(0f, -1f, 0), new Vector3<float>(),
 			new Vector2<float>(0, 1));
-		vertices[2] = new DeferredVertex(1, 0, (ushort) material.MaterialId, 0, 0, new Vector3<float>(1f, 1, 0), new Vector3<float>(),
+		vertices[2] = new DeferredVertex(1, 0, (ushort) colorMat.MaterialId, 0, 0, new Vector3<float>(1f, 1, 0), new Vector3<float>(),
 			new Vector2<float>(1, 0));
 	}
 

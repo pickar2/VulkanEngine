@@ -1,8 +1,8 @@
 ﻿struct UiElementData { // 16 bytes (aligned for 4 bytes)
     uint modelId;
 
-    uint16_t vertexMaterialType;
-    uint16_t fragmentMaterialType;
+    uint vertexMaterialType; // uint16_t
+    uint fragmentMaterialType; // uint16_t
 
     uint vertexDataIndex;
     uint fragmentDataIndex;
@@ -56,10 +56,10 @@
 //struct TransformationMatrix { // 16 bytes (aligned for 16 bytes)
 //	mat2 transform;
 //};
-
-struct Pos {
-    float x;
-    float y;
-
-    int16_t z;
-};
+//
+//struct Pos {
+//    float x;
+//    float y;
+//
+//    int16_t z;
+//};

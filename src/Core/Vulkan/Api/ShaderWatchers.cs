@@ -74,15 +74,16 @@ public abstract class AbstractWatcherCallbacksHandler
 	protected event Action? OnFileChanged;
 	protected readonly string Path;
 
-	protected AbstractWatcherCallbacksHandler(string path) => Path = path;
+	protected AbstractWatcherCallbacksHandler(string path) => Path = ShaderManager.NormalizeShaderPath(path);
 
 	public void InvokeUpdate()
 	{
 		if (ShaderManager.TryGetShader(Path, out var shader))
 		{
 			// App.Logger.Info.Message($"Recompiling {Path}");
-			ExecuteOnce.InSwapchain.AfterDispose(() => shader.Dispose());
-			ShaderManager.CreateShader(Path, Path, shader.ShaderKind);
+			var newShader = ShaderManager.CreateShader(Path, Path, shader.ShaderKind);
+			if (newShader != shader)
+				ExecuteOnce.InSwapchain.AfterDispose(() => shader.Dispose());
 		}
 
 		OnFileChanged?.Invoke();

@@ -39,11 +39,7 @@ public static class ShaderManager
 		return PathToCachedShader.TryGetValue(searchPath, out var shader) ? shader : CreateShader(path, path, shaderKind);
 	}
 
-	public static bool TryGetShader(string path, [MaybeNullWhen(false)] out VulkanShader shader)
-	{
-		if (!path.StartsWith("@")) path = NormalizeShaderPath(path);
-		return PathToCachedShader.TryGetValue(path, out shader);
-	}
+	public static bool TryGetShader(string path, [MaybeNullWhen(false)] out VulkanShader shader) => PathToCachedShader.TryGetValue(path, out shader);
 
 	public static bool TryGetShaderPath(string name, [MaybeNullWhen(false)] out string path) => ShaderNameToPath.TryGetValue(name, out path);
 

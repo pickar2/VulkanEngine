@@ -361,6 +361,11 @@ public static unsafe class VulkanUtils
 
 		throw new TimeoutException($"Failed to get a read handle to {path} within {timeoutTicks / 10000f}ms.");
 	}
+	
+	private static string FixShaderErrorMessageString(string path, string errorMessage)
+	{
+		return errorMessage.Replace(path, Path.GetFileName(path));
+	}
 
 	public static VulkanShader CreateShader(string path, ShaderKind shaderKind, string entryPoint = "main")
 	{
@@ -386,11 +391,20 @@ public static unsafe class VulkanUtils
 		if (result.ErrorCount > 0 || result.WarningCount > 0)
 		{
 			App.Logger.Warn.Message($"Shader `{path}` compilation finished with {result.WarningCount} warnings and {result.ErrorCount} errors:");
-			if (result.ErrorCount > 0 && result.Status == Status.Success) App.Logger.Error.Message($"{result.ErrorMessage}");
+			if (result.ErrorCount > 0 && result.Status == Status.Success) App.Logger.Error.Message($"{FixShaderErrorMessageString(path, result.ErrorMessage!)}");
 		}
 
 		if (result.Status != Status.Success)
-			throw new Exception($"Shader `{path}` was not compiled: {result.Status}\r\n{result.ErrorMessage}").AsExpectedException();
+		{
+			if (State.AllowShaderCompileErrors && ShaderManager.TryGetShader(path, out var oldShader))
+			{
+				App.Logger.Error.Message($"{FixShaderErrorMessageString(path, result.ErrorMessage!)}");
+				result.Dispose();
+				return oldShader;
+			}
+
+			throw new Exception($"Shader `{path}` was not compiled: {result.Status}\r\n{FixShaderErrorMessageString(path, result.ErrorMessage!)}").AsExpectedException();
+		}
 
 		var spirvShaderModule = new ReflectShaderModule(result.CodePointer, result.CodeLength);
 		var createInfo = new ShaderModuleCreateInfo
