@@ -103,8 +103,13 @@ public unsafe class Deferred3DRenderer : RenderChain
 		*coolMat.GetMemPtr<int>() = Color.Red.ToArgb();
 		coolMat.MarkForGPUUpdate();
 
-		Scene.AddMesh(StaticMesh.Triangle((ushort) colorMat.MaterialId, (uint) colorMat.VulkanDataIndex));
-		Scene.UpdateIndirectCommand();
+		var triangle = StaticMesh.Triangle((ushort) colorMat.MaterialId, (uint) colorMat.VulkanDataIndex);
+		Scene.AddMesh(triangle);
+		Scene.AddMesh(triangle);
+		Scene.AddMesh(triangle);
+		Scene.AddMesh(triangle);
+		Scene.AddMesh(StaticMesh.Triangle((ushort) colorMat.MaterialId, (uint) 1));
+		Scene.UpdateBuffers();
 
 		RenderCommandBuffers += (FrameInfo frameInfo) =>
 		{
@@ -153,7 +158,6 @@ public unsafe class Deferred3DRenderer : RenderChain
 		cmd.BindVertexBuffer(1, Scene.ModelBuffer.Value);
 		Context.Vk.CmdBindIndexBuffer(cmd, Scene.IndexBuffer.Value, 0, IndexType.Uint32);
 
-		// cmd.Draw(3, 1, 0, 0);
 		Context.Vk.CmdDrawIndexedIndirect(cmd, Scene.IndirectCommandBuffer.Value, 0, Scene.IndirectCommandCount, (uint) sizeof(DrawIndexedIndirectCommand));
 
 		Debug.EndCmdLabel(cmd);

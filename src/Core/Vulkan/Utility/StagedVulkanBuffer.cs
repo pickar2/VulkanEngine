@@ -34,6 +34,7 @@ public class StagedVulkanBuffer : IDisposable
 
 	public Span<byte> GetHostSpan() => _stagingBuffer.GetHostSpan();
 	public Span<T> GetHostSpan<T>() where T : unmanaged => _stagingBuffer.GetHostSpan<T>();
+	public nint GetHostPointer() => _stagingBuffer.HostMemoryPtr;
 
 	public void UpdateGpuBuffer()
 	{

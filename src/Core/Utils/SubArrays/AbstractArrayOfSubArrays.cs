@@ -1,7 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
+using Core.Vulkan.Api;
+using Core.Vulkan.Utility;
+using Silk.NET.Vulkan;
 
 namespace Core.Utils.SubArrays;
 
@@ -85,12 +89,12 @@ public abstract unsafe class AbstractArrayOfSubArrays
 
 	protected int MaxKey { get; set; } = int.MinValue;
 
-	public byte* Data { get; protected set; }
+	public byte* DataPtr { get; protected set; }
 
 	public int StartItemCapacity { get; }
 	public int ItemSize { get; }
-	public int GlobalItemCapacity { get; private set; }
-	public int GlobalAllocatedItemCount { get; private set; }
+	public int GlobalItemCapacity { get; protected set; }
+	public int GlobalAllocatedItemCount { get; protected set; }
 
 	public abstract SubArrayData GetData(int key);
 	public abstract SubArrayData GetOrCreateData(int key);
@@ -120,22 +124,14 @@ public abstract unsafe class AbstractArrayOfSubArrays
 		int reserved = 0;
 		while (data.GapCount > 0 && reserved < count)
 		{
-			accessors[reserved++] = new KeyedPointerAccessor
-			{
-				Data = data,
-				Index = data.Gaps[--data.GapCount] * ItemSize
-			};
+			accessors[reserved++] = new KeyedPointerAccessor(data, data.Gaps[--data.GapCount] * ItemSize);
 		}
 
 		while (data.ItemCount + (count - reserved) > data.ItemCapacity) DoubleSubArraySize(data);
 
 		while (reserved < count)
 		{
-			accessors[reserved++] = new KeyedPointerAccessor
-			{
-				Data = data,
-				Index = data.ItemCount++ * ItemSize
-			};
+			accessors[reserved++] = new KeyedPointerAccessor(data, data.ItemCount++ * ItemSize);
 		}
 
 		return accessors;
@@ -147,20 +143,12 @@ public abstract unsafe class AbstractArrayOfSubArrays
 
 		if (data.GapCount > 0)
 		{
-			return new KeyedPointerAccessor
-			{
-				Data = data,
-				Index = data.Gaps[--data.GapCount] * ItemSize
-			};
+			return new KeyedPointerAccessor(data, data.Gaps[--data.GapCount] * ItemSize);
 		}
 
 		if (data.ItemCount >= data.ItemCapacity) DoubleSubArraySize(data);
 
-		return new KeyedPointerAccessor
-		{
-			Data = data,
-			Index = data.ItemCount++ * ItemSize
-		};
+		return new KeyedPointerAccessor(data, data.ItemCount++ * ItemSize);
 	}
 
 	public void Remove(int key, int index)
@@ -184,7 +172,7 @@ public abstract unsafe class AbstractArrayOfSubArrays
 		{
 			if (i > key) break;
 			var data = GetData(i);
-			startIndex = data.StartByteIndex + data.ByteCapacity;
+			startIndex = data.ByteOffset + data.ByteCapacity;
 		}
 
 		return startIndex;
@@ -192,10 +180,10 @@ public abstract unsafe class AbstractArrayOfSubArrays
 
 	private void ShiftData(int byteIndexFrom, int byteCount)
 	{
-		var span = new Span<byte>(Data, GlobalItemCapacity * ItemSize);
+		var span = new Span<byte>(DataPtr, GlobalItemCapacity * ItemSize);
 
 		var data = GetData(MaxKey);
-		var from = span.Slice(byteIndexFrom, Math.Max(0, data.StartByteIndex + ((data.ItemCount + data.GapCount) * ItemSize) - byteIndexFrom));
+		var from = span.Slice(byteIndexFrom, Math.Max(0, data.ByteOffset + ((data.ItemCount + data.GapCount) * ItemSize) - byteIndexFrom));
 		var to = span[(byteIndexFrom + byteCount)..];
 		from.CopyTo(to);
 
@@ -217,7 +205,7 @@ public abstract unsafe class AbstractArrayOfSubArrays
 			foreach (int i in Keys)
 			{
 				if (i < key) continue;
-				GetData(i).StartByteIndex += amount;
+				GetData(i).ByteOffset += amount;
 			}
 		}
 
@@ -226,7 +214,7 @@ public abstract unsafe class AbstractArrayOfSubArrays
 		return new SubArrayData
 		{
 			Storage = this,
-			StartByteIndex = startIndex,
+			ByteOffset = startIndex,
 			ItemCapacity = StartItemCapacity,
 			Key = key
 		};
@@ -236,23 +224,23 @@ public abstract unsafe class AbstractArrayOfSubArrays
 	{
 		EnsureCapacity(GlobalAllocatedItemCount + data.ItemCapacity);
 
-		ShiftData(data.StartByteIndex + data.ByteCapacity, data.ByteCapacity);
+		ShiftData(data.ByteOffset + data.ByteCapacity, data.ByteCapacity);
 		foreach (int key in Keys)
 		{
 			if (key <= data.Key) continue;
-			GetData(key).StartByteIndex += data.ByteCapacity;
+			GetData(key).ByteOffset += data.ByteCapacity;
 		}
 
 		GlobalAllocatedItemCount += data.ItemCapacity;
 		data.ItemCapacity *= 2;
 	}
 
-	private void EnsureCapacity(int required)
+	protected virtual void EnsureCapacity(int required)
 	{
 		if (required < GlobalItemCapacity) return;
 
 		int byteSize = GlobalItemCapacity * ItemSize;
-		var oldSpan = new Span<byte>(Data, byteSize);
+		var oldSpan = new Span<byte>(DataPtr, byteSize);
 
 		byte* newPointer = CreateDataPointer(byteSize * 2);
 		var newSpan = new Span<byte>(newPointer, byteSize * 2);
@@ -260,14 +248,14 @@ public abstract unsafe class AbstractArrayOfSubArrays
 		oldSpan.CopyTo(newSpan);
 		newSpan.Slice(byteSize, byteSize).Fill(default);
 
-		byte* oldPointer = Data;
-		Data = newPointer;
+		byte* oldPointer = DataPtr;
+		DataPtr = newPointer;
 		DisposePointer(oldPointer);
 
 		GlobalItemCapacity *= 2;
 	}
 
-	public void Dispose() => DisposePointer(Data);
+	public void Dispose() => DisposePointer(DataPtr);
 
 	protected abstract byte* CreateDataPointer(int size);
 	protected abstract void DisposePointer(byte* pointer);
@@ -277,33 +265,65 @@ public unsafe class GlobalFixedAOSA : FixedKeyCountAOSA
 {
 	public GlobalFixedAOSA(int itemSize, int keyCount, int startItemCapacity) : base(itemSize, keyCount, startItemCapacity)
 	{
-		Data = (byte*) Marshal.AllocHGlobal(Math.Max(4, GlobalItemCapacity * ItemSize)).ToPointer();
-		new Span<byte>(Data, Math.Max(4, GlobalItemCapacity * ItemSize)).Fill(default);
+		DataPtr = (byte*) Marshal.AllocHGlobal(Math.Max(4, GlobalItemCapacity * ItemSize)).ToPointer();
+		new Span<byte>(DataPtr, Math.Max(4, GlobalItemCapacity * ItemSize)).Fill(default);
 	}
 
 	protected override byte* CreateDataPointer(int size) => (byte*) Marshal.AllocHGlobal(size).ToPointer();
-	protected override void DisposePointer(byte* pointer) => Marshal.FreeHGlobal(new IntPtr(pointer));
+	protected override void DisposePointer(byte* pointer) => Marshal.FreeHGlobal((nint) pointer);
 }
 
 public unsafe class GlobalAOSA : ArrayOfSubArrays
 {
 	public GlobalAOSA(int itemSize, int startItemCapacity) : base(itemSize, startItemCapacity)
 	{
-		Data = (byte*) Marshal.AllocHGlobal(Math.Max(4, GlobalItemCapacity * ItemSize)).ToPointer();
-		new Span<byte>(Data, Math.Max(4, GlobalItemCapacity * ItemSize)).Fill(default);
+		DataPtr = (byte*) Marshal.AllocHGlobal(Math.Max(4, GlobalItemCapacity * ItemSize)).ToPointer();
+		new Span<byte>(DataPtr, Math.Max(4, GlobalItemCapacity * ItemSize)).Fill(default);
 	}
 
 	protected override byte* CreateDataPointer(int size) => (byte*) Marshal.AllocHGlobal(size).ToPointer();
-	protected override void DisposePointer(byte* pointer) => Marshal.FreeHGlobal(new IntPtr(pointer));
+	protected override void DisposePointer(byte* pointer) => Marshal.FreeHGlobal((nint) pointer);
 }
 
-public class SubArrayData
+public unsafe class VulkanAOSA : ArrayOfSubArrays
+{
+	public readonly ReCreator<StagedVulkanBuffer> Buffer;
+
+	public VulkanAOSA(int itemSize, int startItemCapacity) : base(itemSize, startItemCapacity)
+	{
+		Buffer = ReCreate.InDevice.Auto(() => new StagedVulkanBuffer((ulong) Math.Max(4, GlobalItemCapacity * ItemSize), BufferUsageFlags.StorageBufferBit),
+			buffer => buffer.Dispose());
+
+		DataPtr = (byte*) Buffer.Value.GetHostPointer();
+		Buffer.Value.GetHostSpan().Fill(default);
+	}
+
+	protected override byte* CreateDataPointer(int size)
+	{
+		Buffer.Value.UpdateBufferSize((ulong) size);
+		return (byte*) Buffer.Value.GetHostPointer();
+	}
+
+	protected override void DisposePointer(byte* pointer) { }
+
+	protected override void EnsureCapacity(int required)
+	{
+		if (required < GlobalItemCapacity) return;
+
+		Buffer.Value.UpdateBufferSize(Buffer.Value.BufferSize * 2);
+		DataPtr = (byte*) Buffer.Value.GetHostPointer();
+
+		GlobalItemCapacity *= 2;
+	}
+}
+
+public unsafe class SubArrayData
 {
 	public int[] Gaps = new int[8];
 	public AbstractArrayOfSubArrays Storage { get; init; } = default!;
 	public int Key { get; init; }
 
-	public int StartByteIndex { get; set; }
+	public int ByteOffset { get; set; }
 
 	public int GapCount { get; set; }
 
@@ -311,15 +331,27 @@ public class SubArrayData
 	public int ItemCapacity { get; set; }
 
 	public int ByteCapacity => ItemCapacity * Storage.ItemSize;
+
+	public KeyedPointerAccessor GetAccessorByOffset(byte itemOffset) => new(this, itemOffset);
+	public KeyedPointerAccessor GetAccessor(int itemIndex) => new(this, Storage.ItemSize * itemIndex);
+
+	public void PutDataByOffset<T>(byte itemOffset, T data) where T : unmanaged => *((T*) (Storage.DataPtr + ByteOffset + itemOffset)) = data;
+	public void PutData<T>(int itemIndex, T data) where T : unmanaged => *((T*) (Storage.DataPtr + ByteOffset + Storage.ItemSize * itemIndex)) = data;
 }
 
-public class KeyedPointerAccessor
+public readonly struct KeyedPointerAccessor
 {
-	public SubArrayData Data { get; init; } = default!;
-	public int Index { get; init; }
+	public SubArrayData Data { get; }
+	public int ByteOffset { get; }
+
+	public KeyedPointerAccessor(SubArrayData data, int byteOffset)
+	{
+		Data = data;
+		ByteOffset = byteOffset;
+	}
 
 	public unsafe TDataStruct* GetPointerToData<TDataStruct>() where TDataStruct : unmanaged =>
-		(TDataStruct*) (Data.Storage.Data + Data.StartByteIndex + Index);
+		(TDataStruct*) (Data.Storage.DataPtr + Data.ByteOffset + ByteOffset);
 }
 
 public static class AOSATest
@@ -396,20 +428,5 @@ public static class AOSATest
 
 		// test.Dispose();
 		// Console.Out.WriteLine("Disposed");
-	}
-
-
-	public struct ThreeInts
-	{
-		public int I1, I2, I3;
-
-		public ThreeInts(int i1, int i2, int i3)
-		{
-			I1 = i1;
-			I2 = i2;
-			I3 = i3;
-		}
-
-		public override string ToString() => $"({I1}, {I2}, {I3})";
 	}
 }
