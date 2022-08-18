@@ -78,7 +78,7 @@ public static unsafe partial class Context
 		GeneralRenderer.MainRoot.AddChild(fpsLabel);
 		GeneralRenderer.MainRoot.AddChild(frameTimeLabel);
 
-		var buffer = new VulkanBuffer(16, BufferUsageFlags.TransferDstBit, VulkanMemoryAllocator.VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU);
+		var buffer = new VulkanBuffer(16, BufferUsageFlags.TransferDstBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU);
 		var span = buffer.GetHostSpan<ulong>();
 
 		Vk.GetPhysicalDeviceProperties(PhysicalDevice, out var properties);

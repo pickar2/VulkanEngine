@@ -134,6 +134,7 @@ public unsafe class GraphicsPipelineBuilder
 
 	private PipelineCreateFlags _pipelineCreateFlags;
 
+	private int _instanceInputs;
 	public readonly Dictionary<ShaderKind, string> Shaders = new();
 
 	private PipelineInputAssemblyStateCreateInfo _inputAssemblyState;
@@ -172,7 +173,7 @@ public unsafe class GraphicsPipelineBuilder
 		PipelineVertexInputStateCreateInfo vertexInputState = default;
 		if (Shaders.TryGetValue(ShaderKind.VertexShader, out string? vertexShader))
 		{
-			vertexInputState = ReflectUtils.VertexInputStateFromShader(ShaderManager.GetOrCreate(vertexShader, ShaderKind.VertexShader));
+			vertexInputState = ReflectUtils.VertexInputStateFromShader(ShaderManager.GetOrCreate(vertexShader, ShaderKind.VertexShader), _instanceInputs);
 		}
 
 		_viewportState = new PipelineViewportStateCreateInfo
@@ -248,12 +249,20 @@ public unsafe class GraphicsPipelineBuilder
 		return this;
 	}
 
+	public GraphicsPipelineBuilder SetInstanceInputs(int instanceInputs)
+	{
+		_instanceInputs = instanceInputs;
+
+		return this;
+	}
+
 	public GraphicsPipelineBuilder ResetToDefault()
 	{
 		IsChanged = true;
 
 		_pipelineCreateFlags = 0;
 
+		_instanceInputs = 0;
 		Shaders.Clear();
 
 		_inputAssemblyState = new PipelineInputAssemblyStateCreateInfo

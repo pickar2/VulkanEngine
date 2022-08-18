@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using Core.Native.Shaderc;
+using Core.Native.VMA;
 using Core.Utils;
 using Core.Vulkan.Api;
 using Core.Vulkan.Native;

@@ -7,9 +7,9 @@ namespace Core.Native.SpirvReflect;
 
 public static unsafe class ReflectUtils
 {
-	public static PipelineVertexInputStateCreateInfo VertexInputStateFromShader(VulkanShader shader)
+	public static PipelineVertexInputStateCreateInfo VertexInputStateFromShader(VulkanShader shader, int instanceInputs = 0)
 	{
-		var bindingDescriptions = new VertexInputBindingDescription[1];
+		var bindingDescriptions = new VertexInputBindingDescription[instanceInputs == 0 ? 1 : 2];
 
 		bindingDescriptions[0] = new VertexInputBindingDescription
 		{
@@ -17,6 +17,16 @@ public static unsafe class ReflectUtils
 			Binding = 0,
 			Stride = 0
 		};
+
+		if (bindingDescriptions.Length > 1)
+		{
+			bindingDescriptions[1] = new VertexInputBindingDescription
+			{
+				InputRate = VertexInputRate.Instance,
+				Binding = 1,
+				Stride = 0
+			};
+		}
 
 		var inputVariables = shader.ReflectModule.GetInputVariables();
 
@@ -29,7 +39,7 @@ public static unsafe class ReflectUtils
 			var attribute = new VertexInputAttributeDescription
 			{
 				Location = inputVariable.location,
-				Binding = bindingDescriptions[0].Binding,
+				Binding = instanceInputs-- > 0 ? 1u : 0u,
 				Format = (Format) inputVariable.format
 			};
 
@@ -47,10 +57,10 @@ public static unsafe class ReflectUtils
 				Binding = desc.Binding,
 				Format = desc.Format,
 				Location = desc.Location,
-				Offset = bindingDescriptions[0].Stride
+				Offset = bindingDescriptions[desc.Binding].Stride
 			};
 
-			bindingDescriptions[0].Stride += (uint) VulkanUtils.SizeOfFormat(desc.Format);
+			bindingDescriptions[desc.Binding].Stride += (uint) desc.Format.SizeOfFormat();
 		}
 
 		var arr = attributeDescriptions.ToArray();
@@ -63,7 +73,7 @@ public static unsafe class ReflectUtils
 		if (attributeDescriptions.Count <= 0) return createInfo;
 
 		// TODO: fix possible memory access violation (Unsafe.AsPointer on stack variable, stack is closing before pointer is used)
-		createInfo.VertexBindingDescriptionCount = 1;
+		createInfo.VertexBindingDescriptionCount = (uint) bindingDescriptions.Length;
 		createInfo.PVertexBindingDescriptions = bindingDescriptions[0].AsPointer();
 		createInfo.VertexAttributeDescriptionCount = (uint) attributeDescriptions.Count;
 		createInfo.PVertexAttributeDescriptions = arr[0].AsPointer();

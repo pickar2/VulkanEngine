@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using Core.Native.VMA;
 using Core.Registries.Entities;
 using Silk.NET.Vulkan;
 using SimpleMath.Vectors;

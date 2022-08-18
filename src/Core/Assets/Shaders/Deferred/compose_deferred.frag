@@ -45,4 +45,6 @@ void main() {
     d.fragmentDataIndex = material.w;
 
     fragmentSwitch(d);
+
+    outColor.a = 1.0;
 }

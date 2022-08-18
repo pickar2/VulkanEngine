@@ -3,11 +3,12 @@ using Core.Native.Shaderc;
 using Core.Native.VMA;
 using Core.UI;
 using Core.Vulkan.Api;
+using Core.Vulkan.Renderers;
 using Core.Vulkan.Utility;
 using Silk.NET.Vulkan;
 using SimpleMath.Vectors;
 
-namespace Core.Vulkan.Renderers;
+namespace Core.Vulkan.Deferred3D;
 
 public unsafe class Deferred3DRenderer : RenderChain
 {
@@ -38,7 +39,8 @@ public unsafe class Deferred3DRenderer : RenderChain
 	private readonly ReCreator<DescriptorSet> _worldSet;
 
 	private readonly ReCreator<VulkanBuffer> _worldBuffer;
-	private readonly ReCreator<VulkanBuffer> _vertexBuffer;
+
+	public readonly Scene Scene = new();
 
 	private readonly MaterialManager _materialManager;
 	private readonly GlobalDataManager _globalDataManager;
@@ -92,12 +94,17 @@ public unsafe class Deferred3DRenderer : RenderChain
 		FillGBuffersPipeline = CreateFillGBufferPipeline();
 		DeferredComposePipeline = CreateDeferredComposePipeline();
 
-		_vertexBuffer = ReCreate.InDevice.Auto(
-			() => new VulkanBuffer((ulong) (sizeof(DeferredVertex) * 3 * 1024), BufferUsageFlags.VertexBufferBit,
-				VulkanMemoryAllocator.VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU), buffer => buffer.Dispose());
+		var colorMat = _materialManager.GetFactory("color_material").Create();
+		*colorMat.GetMemPtr<int>() = Color.BlueViolet.ToArgb();
+		colorMat.MarkForGPUUpdate();
 
-		FillVertexBuffer();
-		Context.DeviceEvents.AfterCreate += () => FillVertexBuffer();
+		var coolMat = _materialManager.GetFactory("cool_material").Create();
+		*coolMat.GetMemPtr<int>() = Color.Black.ToArgb();
+		*coolMat.GetMemPtr<int>() = Color.Red.ToArgb();
+		coolMat.MarkForGPUUpdate();
+
+		Scene.AddMesh(StaticMesh.Triangle((ushort) colorMat.MaterialId, (uint) colorMat.VulkanDataIndex));
+		Scene.UpdateIndirectCommand();
 
 		RenderCommandBuffers += (FrameInfo frameInfo) =>
 		{
@@ -138,15 +145,20 @@ public unsafe class Deferred3DRenderer : RenderChain
 		};
 
 		cmd.BeginRenderPass(renderPassBeginInfo, SubpassContents.Inline);
+
 		Debug.BeginCmdLabel(cmd, $"FIll G-Buffers");
 
 		cmd.BindGraphicsPipeline(FillGBuffersPipeline);
-		cmd.BindVertexBuffer(0, _vertexBuffer.Value);
-		cmd.Draw(3, 1, 0, 0);
+		cmd.BindVertexBuffer(0, Scene.VertexBuffer.Value);
+		cmd.BindVertexBuffer(1, Scene.ModelBuffer.Value);
+		Context.Vk.CmdBindIndexBuffer(cmd, Scene.IndexBuffer.Value, 0, IndexType.Uint32);
+
+		// cmd.Draw(3, 1, 0, 0);
+		Context.Vk.CmdDrawIndexedIndirect(cmd, Scene.IndirectCommandBuffer.Value, 0, Scene.IndirectCommandCount, (uint) sizeof(DrawIndexedIndirectCommand));
 
 		Debug.EndCmdLabel(cmd);
-		Context.Vk.CmdNextSubpass(cmd, SubpassContents.Inline);
 		Debug.BeginCmdLabel(cmd, $"Compose Deferred Lighting");
+		Context.Vk.CmdNextSubpass(cmd, SubpassContents.Inline);
 
 		cmd.BindGraphicsPipeline(DeferredComposePipeline);
 		cmd.BindGraphicsDescriptorSets(DeferredComposePipelineLayout, 0, 1, _composeSet);
@@ -600,34 +612,35 @@ public unsafe class Deferred3DRenderer : RenderChain
 		Context.Vk.UpdateDescriptorSets(Context.Device, (uint) writes.Length, writes[0], 0, null);
 	}
 
-	public void FillVertexBuffer()
-	{
-		var vertices = _vertexBuffer.Value.GetHostSpan<DeferredVertex>();
-
-		var colorMat = _materialManager.GetFactory("color_material").Create();
-
-		*colorMat.GetMemPtr<int>() = Color.BlueViolet.ToArgb();
-
-		colorMat.MarkForGPUUpdate();
-		
-		var coolMat = _materialManager.GetFactory("cool_material").Create();
-
-		*coolMat.GetMemPtr<int>() = Color.Black.ToArgb();
-		*coolMat.GetMemPtr<int>() = Color.Red.ToArgb();
-
-		coolMat.MarkForGPUUpdate();
-
-		vertices[0] = new DeferredVertex(1, 0, (ushort) colorMat.MaterialId, 0, 0, new Vector3<float>(-1, 1, 0), new Vector3<float>(), new Vector2<float>(0));
-		vertices[1] = new DeferredVertex(1, 0, (ushort) colorMat.MaterialId, 0, 0, new Vector3<float>(0f, -1f, 0), new Vector3<float>(),
-			new Vector2<float>(0, 1));
-		vertices[2] = new DeferredVertex(1, 0, (ushort) colorMat.MaterialId, 0, 0, new Vector3<float>(1f, 1, 0), new Vector3<float>(),
-			new Vector2<float>(1, 0));
-	}
+	// public void FillVertexBuffer()
+	// {
+	// 	var vertices = _vertexBuffer.Value.GetHostSpan<DeferredVertex>();
+	//
+	// 	var colorMat = _materialManager.GetFactory("color_material").Create();
+	//
+	// 	*colorMat.GetMemPtr<int>() = Color.BlueViolet.ToArgb();
+	//
+	// 	colorMat.MarkForGPUUpdate();
+	//
+	// 	var coolMat = _materialManager.GetFactory("cool_material").Create();
+	//
+	// 	*coolMat.GetMemPtr<int>() = Color.Black.ToArgb();
+	// 	*coolMat.GetMemPtr<int>() = Color.Red.ToArgb();
+	//
+	// 	coolMat.MarkForGPUUpdate();
+	//
+	// 	vertices[0] = new DeferredVertex(0, (ushort) colorMat.MaterialId, 0, 0, new Vector3<float>(-1, 1, 0), new Vector3<float>(), new Vector2<float>(0));
+	// 	vertices[1] = new DeferredVertex(0, (ushort) colorMat.MaterialId, 0, 0, new Vector3<float>(0f, -1f, 0), new Vector3<float>(),
+	// 		new Vector2<float>(0, 1));
+	// 	vertices[2] = new DeferredVertex(0, (ushort) colorMat.MaterialId, 0, 0, new Vector3<float>(1f, 1, 0), new Vector3<float>(),
+	// 		new Vector2<float>(1, 0));
+	// }
 
 	private AutoPipeline CreateFillGBufferPipeline() =>
 		PipelineManager.GraphicsBuilder()
 			.WithShader("./Assets/Shaders/Deferred/fill_gbuffers.vert", ShaderKind.VertexShader)
 			.WithShader("./Assets/Shaders/Deferred/fill_gbuffers.frag", ShaderKind.FragmentShader)
+			.SetInstanceInputs(2)
 			.SetViewportAndScissorFromSize(Size)
 			.AddColorBlendAttachment(new PipelineColorBlendAttachmentState
 			{
@@ -669,49 +682,4 @@ public unsafe class Deferred3DRenderer : RenderChain
 			.AutoPipeline("DeferredCompose");
 
 	public override void Dispose() { }
-}
-
-public struct DeferredVertex
-{
-	// layout(location = 0) in uint inModelId;
-	// layout(location = 1) in uint inMaterialType;
-	// layout(location = 2) in uvec2 inMaterialIndex;
-	// layout(location = 3) in vec3 inPos;
-	// layout(location = 4) in vec3 inNormal;
-	// layout(location = 5) in vec2 inUV;
-
-	public uint ModelId;
-	public ushort FragmentMaterialType;
-	public ushort VertexMaterialType;
-	public uint VertexMaterialIndex;
-	public uint FragmentMaterialIndex;
-
-	public Vector3<float> Position;
-	public Vector3<float> Normal;
-	public Vector2<float> Uv;
-
-	public DeferredVertex(uint modelId, ushort vertexMaterialType, ushort fragmentMaterialType, uint vertexMaterialIndex, uint fragmentMaterialIndex,
-		Vector3<float> position, Vector3<float> normal, Vector2<float> uv)
-	{
-		ModelId = modelId;
-		VertexMaterialType = vertexMaterialType;
-		FragmentMaterialType = fragmentMaterialType;
-		VertexMaterialIndex = vertexMaterialIndex;
-		FragmentMaterialIndex = fragmentMaterialIndex;
-		Position = position;
-		Normal = normal;
-		Uv = uv;
-	}
-
-	public DeferredVertex(Vector4<uint> material, Vector3<float> position, Vector3<float> normal, Vector2<float> uv)
-	{
-		ModelId = material.X;
-		VertexMaterialType = (ushort) (material.Y >> 8);
-		FragmentMaterialType = (ushort) (material.Y & 0xffff);
-		VertexMaterialIndex = material.Z;
-		FragmentMaterialIndex = material.W;
-		Position = position;
-		Normal = normal;
-		Uv = uv;
-	}
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using Core.Native.VMA;
 using Core.Registries.API;
 using Core.Registries.CoreTypes;
 using Core.Registries.Entities;

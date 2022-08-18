@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Numerics;
 using Core.Native.Shaderc;
+using Core.Native.VMA;
 using Core.TemporaryMath;
 using Core.UI.Controls.Panels;
 using Core.Utils;
@@ -41,7 +42,6 @@ public unsafe partial class UiRootRenderer : RenderChain
 	private readonly ReCreator<DescriptorPool> _sortIndicesPool;
 	private readonly ArrayReCreator<DescriptorSet> _sortIndicesSets;
 
-	private readonly ReCreator<VulkanPipeline> _sortClearPipeline;
 	private readonly ReCreator<VulkanPipeline> _sortCountPipeline;
 	private readonly ReCreator<VulkanPipeline> _sortOffsetPipeline;
 	private readonly ReCreator<VulkanPipeline> _sortMainPipeline;
@@ -52,7 +52,7 @@ public unsafe partial class UiRootRenderer : RenderChain
 	private readonly ArrayReCreator<VulkanBuffer> _countBufferCpu;
 	private readonly ArrayReCreator<VulkanBuffer> _countBuffer;
 
-	private readonly ArrayReCreator<Semaphore> _sortSemaphores;
+	// private readonly ArrayReCreator<Semaphore> _sortSemaphores;
 
 	public readonly RootPanel RootPanel;
 	public readonly UiComponentManager ComponentManager;
@@ -83,7 +83,7 @@ public unsafe partial class UiRootRenderer : RenderChain
 
 		_indirectBuffer = ReCreate.InDevice.AutoArrayFrameOverlap(_ => CreateIndirectBuffer(), buffer => buffer.Dispose());
 
-		_sortSemaphores = ReCreate.InDevice.AutoArrayFrameOverlap(_ => CreateSemaphore(), semaphore => semaphore.Dispose());
+		// _sortSemaphores = ReCreate.InDevice.AutoArrayFrameOverlap(_ => CreateSemaphore(), semaphore => semaphore.Dispose());
 
 		Context.SwapchainEvents.AfterCreate += () => _pipeline.Builder.SetViewportAndScissorFromSize(Context.State.WindowSize);
 
@@ -155,20 +155,16 @@ public unsafe partial class UiRootRenderer : RenderChain
 		_sortCountersSets = ReCreate.InDevice.AutoArrayFrameOverlap(_ => AllocateDescriptorSet(_sortCountersLayout, _sortCountersPool));
 		_sortIndicesSets = ReCreate.InDevice.AutoArrayFrameOverlap(_ => AllocateDescriptorSet(_sortIndicesLayout, _sortIndicesPool));
 
-		_sortClearPipeline = ReCreate.InDevice.Auto(() =>
-			PipelineManager.CreateComputePipeline(ShaderManager.GetOrCreate("./assets/shaders/ui2/compute/sort_clear_pass.comp", ShaderKind.ComputeShader),
-				new[] {_sortCountersLayout.Value}), pipeline => pipeline.Dispose());
-
 		_sortCountPipeline = ReCreate.InDevice.Auto(() =>
-			PipelineManager.CreateComputePipeline(ShaderManager.GetOrCreate("./assets/shaders/ui2/compute/sort_count_pass.comp", ShaderKind.ComputeShader),
+			PipelineManager.CreateComputePipeline(ShaderManager.GetOrCreate("Assets/Shaders/Ui2/Compute/sort_count_pass.comp", ShaderKind.ComputeShader),
 				new[] {ComponentManager.DescriptorSetLayout.Value, _sortCountersLayout.Value}), pipeline => pipeline.Dispose());
 
 		_sortOffsetPipeline = ReCreate.InDevice.Auto(() =>
-			PipelineManager.CreateComputePipeline(ShaderManager.GetOrCreate("./assets/shaders/ui2/compute/sort_offsets_pass.comp", ShaderKind.ComputeShader),
+			PipelineManager.CreateComputePipeline(ShaderManager.GetOrCreate("Assets/Shaders/Ui2/Compute/sort_offsets_pass.comp", ShaderKind.ComputeShader),
 				new[] {_sortCountersLayout.Value}), pipeline => pipeline.Dispose());
 
 		_sortMainPipeline = ReCreate.InDevice.Auto(() =>
-			PipelineManager.CreateComputePipeline(ShaderManager.GetOrCreate("./assets/shaders/ui2/compute/sort_main_pass.comp", ShaderKind.ComputeShader),
+			PipelineManager.CreateComputePipeline(ShaderManager.GetOrCreate("Assets/Shaders/Ui2/Compute/sort_main_pass.comp", ShaderKind.ComputeShader),
 				new[] {ComponentManager.DescriptorSetLayout.Value, _sortCountersLayout.Value, _sortIndicesLayout.Value}), pipeline => pipeline.Dispose());
 
 		UpdateCountersDescriptorSets();

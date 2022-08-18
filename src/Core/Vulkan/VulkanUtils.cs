@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using Core.Native.Shaderc;
 using Core.Native.SpirvReflect;
+using Core.Native.VMA;
 using Core.Vulkan.Api;
 using Core.Vulkan.Utility;
 using Silk.NET.Vulkan;

@@ -4,11 +4,13 @@
 #extension GL_AMD_gpu_shader_int16 : enable 
 
 layout(location = 0) flat in uint inModelId;
-layout(location = 1) flat in uint inMaterialType;
-layout(location = 2) flat in uvec2 inMaterialIndex;
-layout(location = 3) in vec3 inPos;
-layout(location = 4) in vec3 inNormal;
-layout(location = 5) in vec2 inUV;
+layout(location = 1) flat in uint inMaterialOffset;
+
+layout(location = 2) flat in uint inMaterialType;
+layout(location = 3) flat in uvec2 inMaterialIndex;
+layout(location = 4) in vec3 inPos;
+layout(location = 5) in vec3 inNormal;
+layout(location = 6) in vec2 inUV;
 
 layout(location = 0) out vec4 outPosition;
 layout(location = 1) out vec4 outNormal;
@@ -33,5 +35,5 @@ void main() {
 
     outFragCoord = vec4(inUV, 0, 0);
 
-    outMaterial = uvec4(inModelId, inMaterialType, inMaterialIndex);
+    outMaterial = uvec4(inModelId, inMaterialType, inMaterialIndex.y, inMaterialOffset);
 }

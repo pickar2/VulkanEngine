@@ -5,6 +5,7 @@ using Core.Serializer.Entities.QoiSharp;
 using Core.UI;
 using Core.UI.Controls.Panels;
 using Core.Vulkan.Api;
+using Core.Vulkan.Deferred3D;
 using Core.Vulkan.Utility;
 using Silk.NET.Vulkan;
 

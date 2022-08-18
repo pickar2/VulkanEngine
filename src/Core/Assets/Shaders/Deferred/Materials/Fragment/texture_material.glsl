@@ -12,5 +12,5 @@ readonly layout(std430, set = FRAGMENT_MATERIAL_SET, binding = texture_material_
 
 void texture_material(UiElementData data) {
     texture_material_struct mat = texture_material_data[data.fragmentDataIndex];
-    outColor = texture(textures[mat.textureId], fragTexCoord);
+    outColor = texture(textures[mat.textureId], fragCoord.xy);
 }

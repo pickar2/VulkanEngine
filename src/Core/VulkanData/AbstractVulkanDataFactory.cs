@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using Core.Native.VMA;
 using Core.Utils;
 using Core.Vulkan;
 using Core.Vulkan.Api;

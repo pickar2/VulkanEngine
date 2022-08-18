@@ -42,7 +42,7 @@ public unsafe class TestChildTextureRenderer : RenderChain
 		ulong bufferSize = (ulong) (sizeof(Vector3<float>) * 6);
 		_vertexBuffer = ReCreate.InDevice.Auto(() =>
 		{
-			var buffer = new VulkanBuffer(bufferSize, BufferUsageFlags.VertexBufferBit, VulkanMemoryAllocator.VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU);
+			var buffer = new VulkanBuffer(bufferSize, BufferUsageFlags.VertexBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU);
 			var vectors = buffer.GetHostSpan<Vector3<float>>();
 
 			vectors[0] = new Vector3<float>(-1, 1, 0);

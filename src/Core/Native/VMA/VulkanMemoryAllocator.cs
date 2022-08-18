@@ -14,272 +14,10 @@ public static class VulkanMemoryAllocator
 {
 	private const string libraryName = "Native/Libs/vk_mem_alloc.dll";
 
-	#region Constants
-
 	public static readonly Version VmaVersion = new(2, 3, 0); // (2019-12-04)
 
 	public const int VK_MAX_MEMORY_TYPES = 32;
 	public const int VK_MAX_MEMORY_HEAPS = 16;
-
-	#endregion
-
-	#region Enums
-
-	public enum VmaAllocatorCreateFlags
-	{
-		VMA_ALLOCATOR_CREATE_EXTERNALLY_SYNCHRONIZED_BIT = 0x00000001,
-		VMA_ALLOCATOR_CREATE_KHR_DEDICATED_ALLOCATION_BIT = 0x00000002,
-		VMA_ALLOCATOR_CREATE_KHR_BIND_MEMORY2_BIT = 0x00000004,
-		VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT = 0x00000008,
-		VMA_ALLOCATOR_CREATE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
-	}
-
-	public enum VmaRecordFlags
-	{
-		VMA_RECORD_FLUSH_AFTER_CALL_BIT = 0x00000001,
-		VMA_RECORD_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
-	}
-
-	public enum VmaMemoryUsage
-	{
-		VMA_MEMORY_USAGE_UNKNOWN = 0,
-		VMA_MEMORY_USAGE_GPU_ONLY = 1,
-		VMA_MEMORY_USAGE_CPU_ONLY = 2,
-		VMA_MEMORY_USAGE_CPU_TO_GPU = 3,
-		VMA_MEMORY_USAGE_GPU_TO_CPU = 4,
-		VMA_MEMORY_USAGE_GPU_LAZILY_ALLOCATED = 6,
-		VMA_MEMORY_USAGE_MAX_ENUM = 0x7FFFFFFF
-	}
-
-	public enum VmaAllocationCreateFlags
-	{
-		VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT = 0x00000001,
-		VMA_ALLOCATION_CREATE_NEVER_ALLOCATE_BIT = 0x00000002,
-		VMA_ALLOCATION_CREATE_MAPPED_BIT = 0x00000004,
-		VMA_ALLOCATION_CREATE_CAN_BECOME_LOST_BIT = 0x00000008,
-		VMA_ALLOCATION_CREATE_CAN_MAKE_OTHER_LOST_BIT = 0x00000010,
-		VMA_ALLOCATION_CREATE_USER_DATA_COPY_STRING_BIT = 0x00000020,
-		VMA_ALLOCATION_CREATE_UPPER_ADDRESS_BIT = 0x00000040,
-		VMA_ALLOCATION_CREATE_DONT_BIND_BIT = 0x00000080,
-		VMA_ALLOCATION_CREATE_WITHIN_BUDGET_BIT = 0x00000100,
-		VMA_ALLOCATION_CREATE_STRATEGY_BEST_FIT_BIT = 0x00010000,
-		VMA_ALLOCATION_CREATE_STRATEGY_WORST_FIT_BIT = 0x00020000,
-		VMA_ALLOCATION_CREATE_STRATEGY_FIRST_FIT_BIT = 0x00040000,
-		// VMA_ALLOCATION_CREATE_STRATEGY_MIN_MEMORY_BIT = VMA_ALLOCATION_CREATE_STRATEGY_BEST_FIT_BIT,
-		// VMA_ALLOCATION_CREATE_STRATEGY_MIN_TIME_BIT = VMA_ALLOCATION_CREATE_STRATEGY_FIRST_FIT_BIT,
-		// VMA_ALLOCATION_CREATE_STRATEGY_MIN_FRAGMENTATION_BIT = VMA_ALLOCATION_CREATE_STRATEGY_WORST_FIT_BIT,
-
-		VMA_ALLOCATION_CREATE_STRATEGY_MASK =
-			VMA_ALLOCATION_CREATE_STRATEGY_BEST_FIT_BIT |
-			VMA_ALLOCATION_CREATE_STRATEGY_WORST_FIT_BIT |
-			VMA_ALLOCATION_CREATE_STRATEGY_FIRST_FIT_BIT,
-		VMA_ALLOCATION_CREATE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
-	}
-
-	public enum VmaPoolCreateFlags
-	{
-		VMA_POOL_CREATE_IGNORE_BUFFER_IMAGE_GRANULARITY_BIT = 0x00000002,
-		VMA_POOL_CREATE_LINEAR_ALGORITHM_BIT = 0x00000004,
-		VMA_POOL_CREATE_BUDDY_ALGORITHM_BIT = 0x00000008,
-
-		VMA_POOL_CREATE_ALGORITHM_MASK =
-			VMA_POOL_CREATE_LINEAR_ALGORITHM_BIT |
-			VMA_POOL_CREATE_BUDDY_ALGORITHM_BIT,
-		VMA_POOL_CREATE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
-	}
-
-	public enum VmaDefragmentationFlags
-	{
-		VMA_DEFRAGMENTATION_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
-	}
-
-	#endregion
-
-	#region Structs
-
-	/* pfnAllocate is a PFN_vmaAllocateDeviceMemoryFunction
-	 * pfnFree is a PFN_vmaFreeDeviceMemoryFunction
-	 */
-	public struct VmaDeviceMemoryCallbacks
-	{
-		public IntPtr pfnAllocate;
-		public IntPtr pfnFree;
-	}
-
-	public struct VmaVulkanFunctions
-	{
-		public IntPtr vkGetInstanceProcAddr;
-		public IntPtr vkGetDeviceProcAddr;
-
-		public IntPtr vkGetPhysicalDeviceProperties;
-		public IntPtr vkGetPhysicalDeviceMemoryProperties;
-		public IntPtr vkAllocateMemory;
-		public IntPtr vkFreeMemory;
-		public IntPtr vkMapMemory;
-		public IntPtr vkUnmapMemory;
-		public IntPtr vkFlushMappedMemoryRanges;
-		public IntPtr vkInvalidateMappedMemoryRanges;
-		public IntPtr vkBindBufferMemory;
-		public IntPtr vkBindImageMemory;
-		public IntPtr vkGetBufferMemoryRequirements;
-		public IntPtr vkGetImageMemoryRequirements;
-		public IntPtr vkCreateBuffer;
-		public IntPtr vkDestroyBuffer;
-		public IntPtr vkCreateImage;
-		public IntPtr vkDestroyImage;
-		public IntPtr vkCmdCopyBuffer;
-
-#if VMA_VULKAN_VERSION_1001000
-		public IntPtr vkGetBufferMemoryRequirements2KHR;
-		public IntPtr vkGetImageMemoryRequirements2KHR;
-		public IntPtr vkBindBufferMemory2KHR;
-		public IntPtr vkBindImageMemory2KHR;
-		public IntPtr vkGetPhysicalDeviceMemoryProperties2KHR;
-#endif
-	}
-
-	/* pFilePath is a const char* */
-	public struct VmaRecordSettings
-	{
-		public VmaRecordFlags flags;
-		public IntPtr pFilePath;
-	}
-
-	public struct VmaAllocatorCreateInfo
-	{
-		public VmaAllocatorCreateFlags flags;
-		public IntPtr physicalDevice;
-		public IntPtr device;
-		public ulong preferredLargeHeapBlockSize;
-		public IntPtr pAllocationCallbacks;
-		public IntPtr pDeviceMemoryCallbacks;
-		public IntPtr pHeapSizeLimit;
-		public IntPtr pVulkanFunctions;
-		public IntPtr instance;
-		public uint vulkanApiVersion;
-		public IntPtr pTypeExternalMemoryHandleTypes;
-	}
-
-	/* blockSize is a VkDeviceSize
-	 * min/maxBlockCount refer to size_t
-	 */
-	public struct VmaPoolCreateInfo
-	{
-		public uint memoryTypeIndex;
-		public VmaPoolCreateFlags flags;
-		public ulong blockSize;
-		public uint minBlockCount;
-		public uint maxBlockCount;
-		public uint frameInUseCount;
-	}
-
-	/* all ulongs refer to VkDeviceSize
-	 * all uints refer to size_t
-	 */
-	public struct VmaPoolStats
-	{
-		public ulong size;
-		public ulong unusedSize;
-		public uint allocationCount;
-		public uint unusedRangeCount;
-		public ulong unusedRangeSizeMax;
-		public uint blockCount;
-	}
-
-	/* all ulongs here refer to VkDeviceSize */
-	public struct VmaBudget
-	{
-		public ulong blockBytes;
-		public ulong allocationBytes;
-		public ulong usage;
-		public ulong budget;
-	}
-
-	/* deviceMemory is a VkDeviceMemory
-	 * offset, size refer to VkDeviceSize
-	 * pMappedData, pUserData refer to void*
-	 */
-	public struct VmaAllocationInfo
-	{
-		public uint memoryType;
-		public ulong deviceMemory;
-		public ulong offset;
-		public ulong size;
-		public IntPtr pMappedData;
-		public IntPtr pUserData;
-	}
-
-	/* all ulongs here refer to VkDeviceSize */
-	public struct VmaStatInfo
-	{
-		public uint blockCount;
-		public uint allocationCount;
-		public uint unusedRangeCount;
-		public ulong usedBytes;
-		public ulong unusedBytes;
-		public ulong allocationSizeMin, allocationSizeAvg, allocationSizeMax;
-		public ulong unusedRangeSizeMin, unusedRangeSizeAvg, unusedRangeSizeMax;
-	}
-
-	public struct VmaStats
-	{
-		[MarshalAs(UnmanagedType.ByValArray, SizeConst = VK_MAX_MEMORY_TYPES)]
-		public VmaStatInfo[] memoryType;
-
-		[MarshalAs(UnmanagedType.ByValArray, SizeConst = VK_MAX_MEMORY_HEAPS)]
-		public VmaStatInfo[] memoryHeap;
-
-		public VmaStatInfo total;
-	}
-
-	/* requiredFlags, preferredFlags refer to VkMemoryPropertyFlags
-	 * pool is a VmaPool
-	 * pUserData is a void*
-	 */
-	public struct VmaAllocationCreateInfo
-	{
-		public VmaAllocationCreateFlags flags;
-		public VmaMemoryUsage usage;
-		public int requiredFlags;
-		public int preferredFlags;
-		public uint memoryTypeBits;
-		public IntPtr pool;
-		public IntPtr pUserData;
-	}
-
-	/* pAllocations refers to VmaAllocation*
-	 * pAllocationsChanged is a VkBool32*
-	 * pPools is a VmaPool*
-	 * maxCpuBytesToMove, maxGpuBytesToMove refer to VkDeviceSize
-	 * commandBuffer refers to a VkCommandBuffer
-	 */
-	public struct VmaDefragmentationInfo2
-	{
-		private VmaDefragmentationFlags flags;
-		private uint allocationCount;
-		private IntPtr pAllocations;
-		private IntPtr pAllocationsChanged;
-		private uint poolCount;
-		private IntPtr pPools;
-		private ulong maxCpuBytesToMove;
-		private uint maxCpuAllocationsToMove;
-		private ulong maxGpuBytesToMove;
-		private uint maxGpuAllocationsToMove;
-		private IntPtr commandBuffer;
-	}
-
-	/* bytesMoved, bytesFreed refer to VkDeviceSize */
-	public struct VmaDefragmentationStats
-	{
-		private ulong bytesMoved;
-		private ulong bytesFreed;
-		private uint allocationsMoved;
-		private uint deviceMemoryBlocksFreed;
-	}
-
-	#endregion
-
-	#region Public API
 
 	/* allocator always refers to a VmaAllocator
 	 * allocation always refers to a VmaAllocation
@@ -680,10 +418,6 @@ public static class VulkanMemoryAllocator
 		IntPtr allocation
 	);
 
-	#endregion
-
-	#region Delegates
-
 	/* allocator is a VmaAllocator
 	 * memory is a VkDeviceMemory
 	 * size is a VkDeviceSize
@@ -705,6 +439,252 @@ public static class VulkanMemoryAllocator
 		ulong memory,
 		ulong size
 	);
+}
 
-	#endregion
+public enum VmaRecordFlags
+{
+	VMA_RECORD_FLUSH_AFTER_CALL_BIT = 0x00000001,
+	VMA_RECORD_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
+}
+
+public enum VmaAllocatorCreateFlags
+{
+	VMA_ALLOCATOR_CREATE_EXTERNALLY_SYNCHRONIZED_BIT = 0x00000001,
+	VMA_ALLOCATOR_CREATE_KHR_DEDICATED_ALLOCATION_BIT = 0x00000002,
+	VMA_ALLOCATOR_CREATE_KHR_BIND_MEMORY2_BIT = 0x00000004,
+	VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT = 0x00000008,
+	VMA_ALLOCATOR_CREATE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
+}
+
+public enum VmaMemoryUsage
+{
+	VMA_MEMORY_USAGE_UNKNOWN = 0,
+	VMA_MEMORY_USAGE_GPU_ONLY = 1,
+	VMA_MEMORY_USAGE_CPU_ONLY = 2,
+	VMA_MEMORY_USAGE_CPU_TO_GPU = 3,
+	VMA_MEMORY_USAGE_GPU_TO_CPU = 4,
+	VMA_MEMORY_USAGE_GPU_LAZILY_ALLOCATED = 6,
+	VMA_MEMORY_USAGE_MAX_ENUM = 0x7FFFFFFF
+}
+
+public enum VmaAllocationCreateFlags
+{
+	VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT = 0x00000001,
+	VMA_ALLOCATION_CREATE_NEVER_ALLOCATE_BIT = 0x00000002,
+	VMA_ALLOCATION_CREATE_MAPPED_BIT = 0x00000004,
+	VMA_ALLOCATION_CREATE_CAN_BECOME_LOST_BIT = 0x00000008,
+	VMA_ALLOCATION_CREATE_CAN_MAKE_OTHER_LOST_BIT = 0x00000010,
+	VMA_ALLOCATION_CREATE_USER_DATA_COPY_STRING_BIT = 0x00000020,
+	VMA_ALLOCATION_CREATE_UPPER_ADDRESS_BIT = 0x00000040,
+	VMA_ALLOCATION_CREATE_DONT_BIND_BIT = 0x00000080,
+	VMA_ALLOCATION_CREATE_WITHIN_BUDGET_BIT = 0x00000100,
+	VMA_ALLOCATION_CREATE_STRATEGY_BEST_FIT_BIT = 0x00010000,
+	VMA_ALLOCATION_CREATE_STRATEGY_WORST_FIT_BIT = 0x00020000,
+	VMA_ALLOCATION_CREATE_STRATEGY_FIRST_FIT_BIT = 0x00040000,
+	// VMA_ALLOCATION_CREATE_STRATEGY_MIN_MEMORY_BIT = VMA_ALLOCATION_CREATE_STRATEGY_BEST_FIT_BIT,
+	// VMA_ALLOCATION_CREATE_STRATEGY_MIN_TIME_BIT = VMA_ALLOCATION_CREATE_STRATEGY_FIRST_FIT_BIT,
+	// VMA_ALLOCATION_CREATE_STRATEGY_MIN_FRAGMENTATION_BIT = VMA_ALLOCATION_CREATE_STRATEGY_WORST_FIT_BIT,
+
+	VMA_ALLOCATION_CREATE_STRATEGY_MASK =
+		VMA_ALLOCATION_CREATE_STRATEGY_BEST_FIT_BIT |
+		VMA_ALLOCATION_CREATE_STRATEGY_WORST_FIT_BIT |
+		VMA_ALLOCATION_CREATE_STRATEGY_FIRST_FIT_BIT,
+	VMA_ALLOCATION_CREATE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
+}
+
+public enum VmaPoolCreateFlags
+{
+	VMA_POOL_CREATE_IGNORE_BUFFER_IMAGE_GRANULARITY_BIT = 0x00000002,
+	VMA_POOL_CREATE_LINEAR_ALGORITHM_BIT = 0x00000004,
+	VMA_POOL_CREATE_BUDDY_ALGORITHM_BIT = 0x00000008,
+
+	VMA_POOL_CREATE_ALGORITHM_MASK =
+		VMA_POOL_CREATE_LINEAR_ALGORITHM_BIT |
+		VMA_POOL_CREATE_BUDDY_ALGORITHM_BIT,
+	VMA_POOL_CREATE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
+}
+
+public enum VmaDefragmentationFlags
+{
+	VMA_DEFRAGMENTATION_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
+}
+
+/* pfnAllocate is a PFN_vmaAllocateDeviceMemoryFunction
+* pfnFree is a PFN_vmaFreeDeviceMemoryFunction
+*/
+public struct VmaDeviceMemoryCallbacks
+{
+	public IntPtr pfnAllocate;
+	public IntPtr pfnFree;
+}
+
+public struct VmaVulkanFunctions
+{
+	public IntPtr vkGetInstanceProcAddr;
+	public IntPtr vkGetDeviceProcAddr;
+
+	public IntPtr vkGetPhysicalDeviceProperties;
+	public IntPtr vkGetPhysicalDeviceMemoryProperties;
+	public IntPtr vkAllocateMemory;
+	public IntPtr vkFreeMemory;
+	public IntPtr vkMapMemory;
+	public IntPtr vkUnmapMemory;
+	public IntPtr vkFlushMappedMemoryRanges;
+	public IntPtr vkInvalidateMappedMemoryRanges;
+	public IntPtr vkBindBufferMemory;
+	public IntPtr vkBindImageMemory;
+	public IntPtr vkGetBufferMemoryRequirements;
+	public IntPtr vkGetImageMemoryRequirements;
+	public IntPtr vkCreateBuffer;
+	public IntPtr vkDestroyBuffer;
+	public IntPtr vkCreateImage;
+	public IntPtr vkDestroyImage;
+	public IntPtr vkCmdCopyBuffer;
+
+#if VMA_VULKAN_VERSION_1001000
+	public IntPtr vkGetBufferMemoryRequirements2KHR;
+	public IntPtr vkGetImageMemoryRequirements2KHR;
+	public IntPtr vkBindBufferMemory2KHR;
+	public IntPtr vkBindImageMemory2KHR;
+	public IntPtr vkGetPhysicalDeviceMemoryProperties2KHR;
+#endif
+}
+
+/* pFilePath is a const char* */
+public struct VmaRecordSettings
+{
+	public VmaRecordFlags flags;
+	public IntPtr pFilePath;
+}
+
+public struct VmaAllocatorCreateInfo
+{
+	public VmaAllocatorCreateFlags flags;
+	public IntPtr physicalDevice;
+	public IntPtr device;
+	public ulong preferredLargeHeapBlockSize;
+	public IntPtr pAllocationCallbacks;
+	public IntPtr pDeviceMemoryCallbacks;
+	public IntPtr pHeapSizeLimit;
+	public IntPtr pVulkanFunctions;
+	public IntPtr instance;
+	public uint vulkanApiVersion;
+	public IntPtr pTypeExternalMemoryHandleTypes;
+}
+
+/* blockSize is a VkDeviceSize
+ * min/maxBlockCount refer to size_t
+ */
+public struct VmaPoolCreateInfo
+{
+	public uint memoryTypeIndex;
+	public VmaPoolCreateFlags flags;
+	public ulong blockSize;
+	public uint minBlockCount;
+	public uint maxBlockCount;
+	public uint frameInUseCount;
+}
+
+/* all ulongs refer to VkDeviceSize
+ * all uints refer to size_t
+ */
+public struct VmaPoolStats
+{
+	public ulong size;
+	public ulong unusedSize;
+	public uint allocationCount;
+	public uint unusedRangeCount;
+	public ulong unusedRangeSizeMax;
+	public uint blockCount;
+}
+
+/* all ulongs here refer to VkDeviceSize */
+public struct VmaBudget
+{
+	public ulong blockBytes;
+	public ulong allocationBytes;
+	public ulong usage;
+	public ulong budget;
+}
+
+/* deviceMemory is a VkDeviceMemory
+ * offset, size refer to VkDeviceSize
+ * pMappedData, pUserData refer to void*
+ */
+public struct VmaAllocationInfo
+{
+	public uint memoryType;
+	public ulong deviceMemory;
+	public ulong offset;
+	public ulong size;
+	public IntPtr pMappedData;
+	public IntPtr pUserData;
+}
+
+/* all ulongs here refer to VkDeviceSize */
+public struct VmaStatInfo
+{
+	public uint blockCount;
+	public uint allocationCount;
+	public uint unusedRangeCount;
+	public ulong usedBytes;
+	public ulong unusedBytes;
+	public ulong allocationSizeMin, allocationSizeAvg, allocationSizeMax;
+	public ulong unusedRangeSizeMin, unusedRangeSizeAvg, unusedRangeSizeMax;
+}
+
+public struct VmaStats
+{
+	[MarshalAs(UnmanagedType.ByValArray, SizeConst = VulkanMemoryAllocator.VK_MAX_MEMORY_TYPES)]
+	public VmaStatInfo[] memoryType;
+
+	[MarshalAs(UnmanagedType.ByValArray, SizeConst = VulkanMemoryAllocator.VK_MAX_MEMORY_HEAPS)]
+	public VmaStatInfo[] memoryHeap;
+
+	public VmaStatInfo total;
+}
+
+/* requiredFlags, preferredFlags refer to VkMemoryPropertyFlags
+ * pool is a VmaPool
+ * pUserData is a void*
+ */
+public struct VmaAllocationCreateInfo
+{
+	public VmaAllocationCreateFlags flags;
+	public VmaMemoryUsage usage;
+	public int requiredFlags;
+	public int preferredFlags;
+	public uint memoryTypeBits;
+	public IntPtr pool;
+	public IntPtr pUserData;
+}
+
+/* pAllocations refers to VmaAllocation*
+ * pAllocationsChanged is a VkBool32*
+ * pPools is a VmaPool*
+ * maxCpuBytesToMove, maxGpuBytesToMove refer to VkDeviceSize
+ * commandBuffer refers to a VkCommandBuffer
+ */
+public struct VmaDefragmentationInfo2
+{
+	private VmaDefragmentationFlags flags;
+	private uint allocationCount;
+	private IntPtr pAllocations;
+	private IntPtr pAllocationsChanged;
+	private uint poolCount;
+	private IntPtr pPools;
+	private ulong maxCpuBytesToMove;
+	private uint maxCpuAllocationsToMove;
+	private ulong maxGpuBytesToMove;
+	private uint maxGpuAllocationsToMove;
+	private IntPtr commandBuffer;
+}
+
+/* bytesMoved, bytesFreed refer to VkDeviceSize */
+public struct VmaDefragmentationStats
+{
+	private ulong bytesMoved;
+	private ulong bytesFreed;
+	private uint allocationsMoved;
+	private uint deviceMemoryBlocksFreed;
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using Core.Native.VMA;
 using Core.Vulkan.Api;
 using Silk.NET.Vulkan;
 using static Core.Native.VMA.VulkanMemoryAllocator;
@@ -71,12 +72,6 @@ public unsafe class VulkanBuffer : IDisposable
 		for (int index = 0; index < regions.Length; index++)
 			if (regions[index].Size == Vk.WholeSize)
 				regions[index].Size = BufferSize;
-
-		// if (Context.IsIntegratedGpu)
-		// {
-		// 	CopyMemoryWithMapping(other, regions);
-		// 	return;
-		// }
 
 		if (MemoryUsage == VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_ONLY)
 		{
