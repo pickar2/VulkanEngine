@@ -100,9 +100,10 @@ readonly layout(std430, set = SCENE_DATA_SET, binding = 4) buffer sceneDataDescr
 	vec3 localCameraPos;
 	float pad0;
 	ivec3 cameraChunkPos;
-	int pad1;
+	int frameIndex;
 	vec3 viewDirection;
 	float pad2;
+	mat4 viewMatrix;
 };
 
 VoxelData GetVoxel(int chunkIndex, int x, int y, int z) {
@@ -156,7 +157,8 @@ struct RayResult
 	ivec3 cell;
 	VoxelData voxel;
 	bool hit;
-	vec3 color;
+	bvec3 mask;
+//	vec3 color;
 };
 
 float sdSphere(vec3 p, float d) { return length(p) - d; } 
@@ -167,7 +169,7 @@ float sdBox( vec3 p, vec3 b )
   return min(max(d.x,max(d.y,d.z)),0.0) +
          length(max(d,0.0));
 }
-	
+
 bool test(ivec3 c) {
 	vec3 p = vec3(c) + vec3(0.5);
 	float d = min(max(-sdSphere(p, 7.5), sdBox(p, vec3(6.0))), -sdSphere(p, 25.0));
@@ -187,7 +189,6 @@ RayResult VoxelRay(vec3 rayPos, vec3 rayDir)
 	res.cell = ivec3(floor(rayPos));
 	res.hit = false;
 
-    bvec3 mask;
 	vec3 sideDist = (sign(rayDir) * (vec3(res.cell) - rayPos) + (sign(rayDir) * 0.5) + 0.5) * deltaDist;
 	for (int i = min(0, int(res.hit)); i < MAX_RAY_STEPS; i++)
 	{
@@ -196,24 +197,12 @@ RayResult VoxelRay(vec3 rayPos, vec3 rayDir)
 //			res.dist = length(vec3(mask) * (sideDist - deltaDist));
 			res.hit = true;
 
-			res.color = vec3(0);
-
-			if (mask.x) {
-				res.color = vec3(0.5);
-			}
-			if (mask.y) {
-				res.color = vec3(1.0);
-			}
-			if (mask.z) {
-				res.color = vec3(0.75);
-			}
-
 			return res;
 		}
 
-		mask = lessThanEqual(sideDist.xyz, min(sideDist.yzx, sideDist.zxy));
-		sideDist += vec3(mask) * deltaDist;
-		res.cell += ivec3(vec3(mask)) * rayStep;
+		res.mask = lessThanEqual(sideDist.xyz, min(sideDist.yzx, sideDist.zxy));
+		sideDist += vec3(res.mask) * deltaDist;
+		res.cell += ivec3(vec3(res.mask)) * rayStep;
 	}
 
 	return res;
@@ -221,30 +210,53 @@ RayResult VoxelRay(vec3 rayPos, vec3 rayDir)
 
 #include "Default/functions.glsl"
 
+mat2 rotate(float t)
+{
+    return mat2(vec2(cos(t), sin(t)), vec2(-sin(t), cos(t)));
+}
+
 void main() {
 	outColor = vec4(0.55, 0.55, 0.77, 1.0);
 
-	vec3 rayStart = vec3(0, 10, -5);
+	vec2 uv = vec2(2 * inUV.x - 1, 1 - 2 * inUV.y);
 	
-	vec2 uv = (inUV - 0.5) * 2;
-	uv.y = -uv.y;
+	float width = 1280;
+	float height = 720;
+	float aspect = width/height;
+	
+	const float fov = 90;
+	const float mult = tan(fov / 2 * PI / 180);
+	vec3 cameraDir = vec3(viewDirection.xy, -1);
 
-	vec3 cameraDir = vec3(0.0, -1.0, 0.8);
-//	cameraDir = cameraDir / length(cameraDir);
-	vec3 cameraPlaneU = vec3(1.0, 0.0, 0.0);
-	vec3 cameraPlaneV = vec3(0.0, 1.0, 0.0) / (1280.0/720.0);
-	vec3 rayDir = cameraDir + uv.x * cameraPlaneU + uv.y * cameraPlaneV;
+	float Px = uv.x * mult * aspect;
+	float Py = uv.y * mult;
 
-	RayResult result = VoxelRay(rayStart, rayDir);
+    vec3 rayPos = localCameraPos;//vec3(0.0, 0.0, -12.0);
+	vec3 rayDir = (viewMatrix * vec4(Px, Py, -1, 1)).xyz - rayPos;
+
+	RayResult result = VoxelRay(rayPos, normalize(rayDir));
 
 	if (!result.hit) return;
+
+	outColor.xyz = vec3(result.mask); // draw normals
+//	outColor.xyz = uv.xxx;
+
+//	if (result.mask.x) {
+//		outColor.xyz = vec3(0.5);
+//	}
+//	if (result.mask.y) {
+//		outColor.xyz = vec3(1.0);
+//	}
+//	if (result.mask.z) {
+//		outColor.xyz = vec3(0.75);
+//	}
 
 	VoxelType voxelType = voxelTypes[int(result.voxel.voxelTypeIndex)];
 	switch (int(result.voxel.voxelMaterialType)) {
 		case -1: break;
 		case 0: {
 //			outColor.xyz = intToRGBA(result.voxel.voxelMaterialIndex).xyz;
-			outColor.xyz = result.color;
+//			outColor.xyz = result.color;
 			break;
 		}
 	}

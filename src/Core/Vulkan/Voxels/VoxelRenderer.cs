@@ -1,10 +1,13 @@
 ﻿using System;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using Core.Native.Shaderc;
 using Core.Native.VMA;
+using Core.Utils;
 using Core.Vulkan.Api;
 using Core.Vulkan.Renderers;
 using Core.Vulkan.Utility;
+using Silk.NET.Maths;
 using Silk.NET.Vulkan;
 using SimpleMath.Vectors;
 
@@ -99,12 +102,17 @@ public unsafe class VoxelRenderer : RenderChain
 
 	public void UpdateSceneData()
 	{
+		var dir = new Vector3<double>(Camera.Direction.X.ToRadians(), Camera.Direction.Y.ToRadians(), Camera.Direction.Z.ToRadians()).Cast<double, float>();
+		var view = Matrix4x4.CreateFromYawPitchRoll(dir.X, dir.Y, dir.Z) *
+		           Matrix4x4.CreateTranslation((float) Camera.Position.X, (float) Camera.Position.Y, (float) Camera.Position.Z);
 		var scene = _sceneData.Value.GetHostSpan<VoxelSceneData>();
-		scene[0] = new VoxelSceneData()
+		scene[0] = new VoxelSceneData
 		{
 			CameraChunkPos = (0, 0, 0),
 			LocalCameraPos = Camera.Position.Cast<double, float>(),
-			ViewDirection = Camera.Direction.Cast<double, float>()
+			ViewDirection = dir,
+			FrameIndex = Context.FrameIndex,
+			ViewMatrix = view.ToGeneric()
 		};
 	}
 
@@ -434,7 +442,8 @@ public struct VoxelSceneData
 	public Vector3<float> LocalCameraPos;
 	public float Pad0;
 	public Vector3<int> CameraChunkPos;
-	public int Pad1;
+	public int FrameIndex;
 	public Vector3<float> ViewDirection;
 	public float Pad2;
+	public Matrix4X4<float> ViewMatrix;
 }

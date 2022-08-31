@@ -25,7 +25,7 @@ public static unsafe partial class Context
 	private static List<Action>[] _actionsAtFrameEnd = Array.Empty<List<Action>>();
 
 	private static Thread? _renderThread;
-	private static double MsPerUpdate { get; set; } = 1000 / 60d;
+	public static double MsPerUpdate { get; private set; } = 1000 / 60d;
 
 	// public delegate Action<FrameInfo> FrameEvent(FrameInfo frameInfo);
 	public static event Action<FrameInfo>? OnFrameStart;

@@ -63,8 +63,8 @@ public static partial class UiManager
 	{
 		// TODO: Vulkan panel is just texture which ID can change every frame.
 		var box1 = new CustomBox(MainRoot);
-		box1.MarginLT = (350, 50);
-		box1.Size = (640, 360);
+		box1.MarginLT = (250, 50);
+		box1.Size = new Vector2<float>(640, 360) * 1.5f;
 		box1.OffsetZ = 250;
 		var frag = MainRoot.MaterialManager.GetFactory("texture_material").Create();
 		box1.FragMaterial = frag;
