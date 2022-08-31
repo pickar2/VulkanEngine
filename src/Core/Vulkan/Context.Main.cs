@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -19,7 +18,6 @@ using Silk.NET.Vulkan;
 using Silk.NET.Vulkan.Extensions.EXT;
 using Silk.NET.Vulkan.Extensions.KHR;
 using static Core.Native.VMA.VulkanMemoryAllocator;
-using Debug = Core.Vulkan.Api.Debug;
 using Result = Silk.NET.Vulkan.Result;
 
 #pragma warning disable CS0612
@@ -50,7 +48,7 @@ public static unsafe partial class Context
 	{
 		ContextEvents.InvokeBeforeCreate();
 
-		var baseDirectory = NormalizePath(Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location) + (State.LoadShadersFromSrc ? "/../../../../" : ""));
+		string baseDirectory = NormalizePath(Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location) + (State.LoadShadersFromSrc ? "/../../../../" : ""));
 		// App.Logger.Info.Message($"Base directory : {baseDirectory}");
 
 		ShadercOptions = new ShadercOptionsCustom(baseDirectory);
@@ -258,7 +256,7 @@ public static unsafe partial class Context
 	public static VulkanQueue ComputeQueue = default!;
 	public static VulkanQueue TransferToHostQueue = default!;
 	public static VulkanQueue TransferToDeviceQueue = default!;
-	public static nint VmaAllocator;
+	public static IntPtr VmaAllocator;
 	public static bool IsIntegratedGpu;
 
 	public static void CreateLevelDevice()
@@ -736,7 +734,7 @@ public static unsafe partial class Context
 			pVulkanFunctions = (nint) functions.AsPointer()
 		};
 
-		Check((Result) vmaCreateAllocator(ref vmaAllocatorCreateInfo, out nint handle), "Failed to create VMA allocator.");
+		Check((Result) vmaCreateAllocator(ref vmaAllocatorCreateInfo, out var handle), "Failed to create VMA allocator.");
 		VmaAllocator = handle;
 	}
 

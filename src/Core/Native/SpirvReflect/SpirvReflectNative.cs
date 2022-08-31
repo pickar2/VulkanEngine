@@ -4067,12 +4067,12 @@ public static unsafe partial class Native
 		[StructLayout(LayoutKind.Sequential)]
 		public readonly unsafe struct CString : IEquatable<CString>
 		{
-			internal readonly nint _pointer;
+			internal readonly IntPtr _pointer;
 
 			/// <summary>
 			///     Gets a value indicating whether this <see cref="CString" /> is a null pointer.
 			/// </summary>
-			public bool IsNull => _pointer == 0;
+			public bool IsNull => _pointer == IntPtr.Zero;
 
 			/// <summary>
 			///     Initializes a new instance of the <see cref="CString" /> struct.
@@ -4087,7 +4087,7 @@ public static unsafe partial class Native
 			///     Initializes a new instance of the <see cref="CString" /> struct.
 			/// </summary>
 			/// <param name="value">The pointer value.</param>
-			public CString(nint value)
+			public CString(IntPtr value)
 			{
 				_pointer = value;
 			}
@@ -4108,7 +4108,7 @@ public static unsafe partial class Native
 			/// <returns>
 			///     The resulting <see cref="CString" />.
 			/// </returns>
-			public static explicit operator CString(nint value)
+			public static explicit operator CString(IntPtr value)
 			{
 				return FromIntPtr(value);
 			}
@@ -4120,7 +4120,7 @@ public static unsafe partial class Native
 			/// <returns>
 			///     The resulting <see cref="CString" />.
 			/// </returns>
-			public static CString FromIntPtr(nint value)
+			public static CString FromIntPtr(IntPtr value)
 			{
 				return new CString(value);
 			}
@@ -4168,7 +4168,7 @@ public static unsafe partial class Native
 			/// <returns>
 			///     The resulting <see cref="IntPtr" />.
 			/// </returns>
-			public static nint ToIntPtr(CString value)
+			public static IntPtr ToIntPtr(CString value)
 			{
 				return value._pointer;
 			}
@@ -4577,12 +4577,12 @@ public static unsafe partial class Native
 		[StructLayout(LayoutKind.Sequential)]
 		public readonly unsafe struct CStringWide : IEquatable<CStringWide>
 		{
-			internal readonly nint _pointer;
+			internal readonly IntPtr _pointer;
 
 			/// <summary>
 			///     Gets a value indicating whether this <see cref="CStringWide" /> is a null pointer.
 			/// </summary>
-			public bool IsNull => _pointer == 0;
+			public bool IsNull => _pointer == IntPtr.Zero;
 
 			/// <summary>
 			///     Initializes a new instance of the <see cref="CStringWide" /> struct.
@@ -4597,7 +4597,7 @@ public static unsafe partial class Native
 			///     Initializes a new instance of the <see cref="CStringWide" /> struct.
 			/// </summary>
 			/// <param name="value">The pointer value.</param>
-			public CStringWide(nint value)
+			public CStringWide(IntPtr value)
 			{
 				_pointer = value;
 			}
@@ -4618,7 +4618,7 @@ public static unsafe partial class Native
 			/// <returns>
 			///     The resulting <see cref="CStringWide" />.
 			/// </returns>
-			public static explicit operator CStringWide(nint value)
+			public static explicit operator CStringWide(IntPtr value)
 			{
 				return FromIntPtr(value);
 			}
@@ -4630,7 +4630,7 @@ public static unsafe partial class Native
 			/// <returns>
 			///     The resulting <see cref="CStringWide" />.
 			/// </returns>
-			public static CStringWide FromIntPtr(nint value)
+			public static CStringWide FromIntPtr(IntPtr value)
 			{
 				return new CStringWide(value);
 			}
@@ -4678,7 +4678,7 @@ public static unsafe partial class Native
 			/// <returns>
 			///     The resulting <see cref="IntPtr" />.
 			/// </returns>
-			public static nint ToIntPtr(CStringWide value)
+			public static IntPtr ToIntPtr(CStringWide value)
 			{
 				return value._pointer;
 			}

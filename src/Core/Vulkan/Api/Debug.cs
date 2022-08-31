@@ -1,4 +1,5 @@
-﻿using Silk.NET.Vulkan;
+﻿using System;
+using Silk.NET.Vulkan;
 
 namespace Core.Vulkan.Api;
 
@@ -80,5 +81,5 @@ public static unsafe class Debug
 		Context.ExtDebugUtils.SetDebugUtilsObjectName(Context.Device, nameInfo);
 	}
 
-	public static void SetObjectName(nint handle, ObjectType type, string name) => SetObjectName((ulong) handle, type, name);
+	public static void SetObjectName(IntPtr handle, ObjectType type, string name) => SetObjectName((ulong) handle, type, name);
 }

@@ -1,0 +1,105 @@
+﻿#version 450
+
+#extension GL_EXT_nonuniform_qualifier : enable
+#extension GL_AMD_gpu_shader_int16 : enable 
+
+#define WORKGROUP_SIZE 32
+
+layout (local_size_x = WORKGROUP_SIZE, local_size_y = 1, local_size_z = 1) in;
+
+struct Update {
+	bool isProcessed;
+
+	int16_t updateType;
+
+	int16_t x;
+	int16_t y;
+
+	int dataIndex;
+};
+
+struct VelocityUpdateData {
+	vec2 velocity;
+};
+
+// 0 : AIR
+// 1 : STONE
+// 2 : SAND
+// 3 : WATER
+struct PixelData {
+	int16_t pixelType;
+};
+
+struct PixelType {
+	bool affectedByGravity;
+	int textureId;
+	float friction;
+	float density;
+//	vec2 textureUv;
+};
+
+#define CHUNK_SIZE 32
+#define CHUNK_PIXEL_COUNT CHUNK_SIZE * CHUNK_SIZE
+struct ChunkData {
+	PixelData[CHUNK_PIXEL_COUNT] pixels;
+//	i16vec2 updateMask;
+};
+
+struct ChunkInfo {
+	int x;
+	int y;
+
+	int dataIndex;
+};
+
+layout(std430, set = 0, binding = 0) buffer updatesDescriptor {
+	Update[] updates;
+};
+
+layout(std430, set = 0, binding = 1) buffer velocityUpdateDataDescriptor {
+	VelocityUpdateData[] velocityUpdates;
+};
+
+layout(std430, set = 1, binding = 0) buffer newUpdatesDescriptor {
+	Update[] newUpdates;
+};
+
+layout(std430, set = 1, binding = 1) buffer velocityNewUpdateDataDescriptor {
+	VelocityUpdateData[] velocityNewUpdates;
+};
+
+layout(std430, set = 2, binding = 0) buffer newUpdatesCounterDescriptor {
+	int updatesCount;
+	int updatesProcessed;
+
+	int newUpdatesCount;
+	int maxNewUpdates;
+
+	int[] newDataCounts;
+};
+
+readonly layout(std430, set = 2, binding = 1) buffer chunkDataDescriptor {
+	ChunkData[] chunkData;
+};
+
+readonly layout(std430, set = 2, binding = 2) buffer chunkInfoDescriptor {
+	ChunkInfo[] chunkInfo;
+};
+
+readonly layout(std430, set = 3, binding = 0) buffer pixelTypeInfoDescriptor {
+	PixelType[] pixelTypeInfo;
+};
+
+void main() {
+	if (gl_GlobalInvocationID.x >= updatesCount) return;
+	if (newUpdatesCount >= maxNewUpdates) return;
+
+	Update currentUpdate = updates[gl_GlobalInvocationID.x];
+
+	switch (int(currentUpdate.updateType)) {
+		case 0: {
+
+			break;
+		}
+	}
+}

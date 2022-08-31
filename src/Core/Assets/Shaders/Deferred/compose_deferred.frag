@@ -15,36 +15,46 @@ layout (location = 0) in vec2 inUV;
 
 layout (location = 0) out vec4 outColor;
 
-#include "Default/functions.glsl"
+layout(set = TEXTURE_SET, binding = 0) uniform sampler2D textures[];
 
-vec3 fragPos;
-vec3 normal;
-vec4 fragCoord;
-uvec4 material;
+//layout(set = MATERIAL_INDICES_SET, binding = 0) buffer material_indices_buffer {
+//    uint[] material_indices;
+//};
+
+#include "Default/functions.glsl"
 
 #include "@TestDeferredMaterialManager_fragment_includes.glsl"
 
 void main() {
-    fragPos = subpassLoad(samplerPosition).rgb;
-    normal = subpassLoad(samplerNormal).rgb;
-    fragCoord = subpassLoad(samplerFragCoord);
-    material = uvec4(subpassLoad(samplerMaterial));
+	FragmentData fragData;
+	MaterialData matData;
 
-    outColor = vec4(0, 0, 0, 0.0);
+	vec4 subpassPosition = subpassLoad(samplerPosition);
+	fragData.pos = subpassPosition.xyz;
+	fragData.linearDepth = subpassPosition.w;
 
-    uint vertMat = material.y >> 8;
-    uint fragMat = material.y & 0xffffu;
+	vec4 subpassNormal = subpassLoad(samplerNormal);
+	fragData.normal = subpassNormal.xyz;
+	//    fragData.null = samplerNormal.w;
 
-    UiElementData d;
-    d.modelId = material.x;
+	fragData.fragCoord = subpassLoad(samplerFragCoord);
 
-    d.vertexMaterialType = vertMat;
-    d.fragmentMaterialType = fragMat * (int(sin(inUV.y * 100) * cos(fragCoord.x * 10) + 2) % 2 + 1);
+	uvec4 material = subpassLoad(samplerMaterial);
 
-    d.vertexDataIndex = material.z;
-    d.fragmentDataIndex = material.w;
+	outColor = vec4(0, 0, 0, 0.0);
 
-    fragmentSwitch(d);
+	uint vertMat = material.y >> 8;
+	uint fragMat = material.y & 0xffffu;
 
-    outColor.a = 1.0;
+	matData.modelId = material.x;
+
+	matData.vertexMaterialType = vertMat;
+	matData.fragmentMaterialType = fragMat * (int(sin(inUV.y * 100) * cos(fragData.fragCoord.x * 10) + 2) % 2 + 1);
+
+	matData.vertexDataIndex = material.z;
+	matData.fragmentDataIndex = material.w;
+
+	fragmentSwitch(fragData, matData);
+
+	outColor.a = 1.0;
 }

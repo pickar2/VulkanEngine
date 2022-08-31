@@ -1,14 +1,7 @@
-﻿using System.Numerics;
-using Core.Registries.Entities;
-using Core.TemporaryMath;
-using Core.Utils;
-using Core.Vulkan;
+﻿using Core.Vulkan;
 using Core.Vulkan.Api;
 using Core.VulkanData;
-using Core.Window;
-using Silk.NET.Maths;
 using Silk.NET.Vulkan;
-using SimpleMath.Vectors;
 
 namespace Core.UI;
 
@@ -22,21 +15,21 @@ public unsafe class GlobalDataManager
 
 	public readonly MultipleStructDataFactory Factory;
 
-	public StructHolder ProjectionMatrixHolder;
-	public StructHolder OrthoMatrixHolder;
-	public StructHolder FrameIndexHolder;
-	public StructHolder MousePositionHolder;
+	public readonly StructHolder ProjectionMatrixHolder;
+	public readonly StructHolder OrthoMatrixHolder;
+	public readonly StructHolder FrameIndexHolder;
+	public readonly StructHolder MousePositionHolder;
 
 	public GlobalDataManager(string name)
 	{
 		Name = name.ToLower();
 
-		Factory = new MultipleStructDataFactory(NamespacedName.CreateWithName(Name), true);
+		Factory = new MultipleStructDataFactory(Name, true);
 
-		ProjectionMatrixHolder = Factory.CreateHolder(64, NamespacedName.CreateWithName("projection-matrix"));
-		FrameIndexHolder = Factory.CreateHolder(4, NamespacedName.CreateWithName("frame-index"));
-		MousePositionHolder = Factory.CreateHolder(8, NamespacedName.CreateWithName("mouse-position"));
-		OrthoMatrixHolder = Factory.CreateHolder(64, NamespacedName.CreateWithName("ortho-matrix"));
+		ProjectionMatrixHolder = Factory.CreateHolder(64, "projection_matrix");
+		FrameIndexHolder = Factory.CreateHolder(4, "frame_index");
+		MousePositionHolder = Factory.CreateHolder(8, "mouse_position");
+		OrthoMatrixHolder = Factory.CreateHolder(64, "ortho_matrix");
 
 		DescriptorSetLayout = ReCreate.InDevice.Auto(() => CreateSetLayout(), layout => layout.Dispose());
 		DescriptorPool = ReCreate.InDevice.Auto(() => CreateDescriptorPool(), pool => pool.Dispose());
@@ -57,7 +50,7 @@ public unsafe class GlobalDataManager
 		var bufferInfos = stackalloc DescriptorBufferInfo[Factory.Count];
 		var writes = stackalloc WriteDescriptorSet[Factory.Count];
 		uint index = 0;
-		foreach ((string _, var holder) in Factory)
+		foreach ((string _, var holder) in Factory.Holders)
 		{
 			bufferInfos[index] = new DescriptorBufferInfo
 			{

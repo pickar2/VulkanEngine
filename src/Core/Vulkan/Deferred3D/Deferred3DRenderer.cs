@@ -1,6 +1,5 @@
 ﻿using System.Drawing;
 using Core.Native.Shaderc;
-using Core.Native.VMA;
 using Core.UI;
 using Core.Vulkan.Api;
 using Core.Vulkan.Renderers;
@@ -24,21 +23,15 @@ public unsafe class Deferred3DRenderer : RenderChain
 	public readonly ReCreator<Framebuffer> Framebuffer;
 	public readonly ReCreator<RenderPass> RenderPass;
 
-	private readonly ReCreator<PipelineLayout> FillGBuffersPipelineLayout;
-	private readonly ReCreator<PipelineLayout> DeferredComposePipelineLayout;
+	private readonly ReCreator<PipelineLayout> _fillGBuffersPipelineLayout;
+	private readonly ReCreator<PipelineLayout> _deferredComposePipelineLayout;
 
-	private readonly AutoPipeline FillGBuffersPipeline;
-	private readonly AutoPipeline DeferredComposePipeline;
+	private readonly AutoPipeline _fillGBuffersPipeline;
+	private readonly AutoPipeline _deferredComposePipeline;
 
-	private readonly ReCreator<DescriptorSetLayout> _composeLayout;
-	private readonly ReCreator<DescriptorPool> _composePool;
-	private readonly ReCreator<DescriptorSet> _composeSet;
-
-	private readonly ReCreator<DescriptorSetLayout> _worldLayout;
-	private readonly ReCreator<DescriptorPool> _worldPool;
-	private readonly ReCreator<DescriptorSet> _worldSet;
-
-	private readonly ReCreator<VulkanBuffer> _worldBuffer;
+	private readonly ReCreator<DescriptorSetLayout> _composeAttachmentsLayout;
+	private readonly ReCreator<DescriptorPool> _composeAttachmentsPool;
+	private readonly ReCreator<DescriptorSet> _composeAttachmentsSet;
 
 	public readonly Scene Scene = new();
 
@@ -47,7 +40,7 @@ public unsafe class Deferred3DRenderer : RenderChain
 
 	public Deferred3DRenderer(Vector2<uint> size, string name) : base(name)
 	{
-		_materialManager = new MaterialManager($"{Name}MaterialManager");
+		_materialManager = new DeferredMaterialManager($"{Name}MaterialManager");
 		InitMaterials();
 
 		_globalDataManager = new GlobalDataManager($"{Name}GlobalDataManager");
@@ -78,21 +71,22 @@ public unsafe class Deferred3DRenderer : RenderChain
 		TextureManager.RegisterTexture("DeferredOutput", ColorAttachment.Value.ImageView);
 		Context.DeviceEvents.AfterCreate += () => TextureManager.RegisterTexture("DeferredOutput", ColorAttachment.Value.ImageView);
 
-		_composeLayout = ReCreate.InDevice.Auto(() => CreateComposeLayout(), layout => layout.Dispose());
-		_composePool = ReCreate.InDevice.Auto(() => CreateComposePool(), pool => pool.Dispose());
+		_composeAttachmentsLayout = ReCreate.InDevice.Auto(() => CreateComposeLayout(), layout => layout.Dispose());
+		_composeAttachmentsPool = ReCreate.InDevice.Auto(() => CreateComposePool(), pool => pool.Dispose());
 
-		_composeSet = ReCreate.InDevice.Auto(() => AllocateDescriptorSet(_composeLayout, _composePool));
+		_composeAttachmentsSet = ReCreate.InDevice.Auto(() => AllocateDescriptorSet(_composeAttachmentsLayout, _composeAttachmentsPool));
 		UpdateComposeDescriptorSet();
 		Context.DeviceEvents.AfterCreate += () => UpdateComposeDescriptorSet();
 
-		FillGBuffersPipelineLayout = ReCreate.InDevice.Auto(() => CreatePipelineLayout(), layout => layout.Dispose());
-		DeferredComposePipelineLayout =
+		_fillGBuffersPipelineLayout = ReCreate.InDevice.Auto(() => CreatePipelineLayout(), layout => layout.Dispose());
+		_deferredComposePipelineLayout =
 			ReCreate.InDevice.Auto(
-				() => CreatePipelineLayout(_composeLayout, _materialManager.VertexDescriptorSetLayout, _materialManager.FragmentDescriptorSetLayout),
+				() => CreatePipelineLayout(_composeAttachmentsLayout, TextureManager.DescriptorSetLayout, _materialManager.VertexDescriptorSetLayout,
+					_materialManager.FragmentDescriptorSetLayout),
 				layout => layout.Dispose());
 
-		FillGBuffersPipeline = CreateFillGBufferPipeline();
-		DeferredComposePipeline = CreateDeferredComposePipeline();
+		_fillGBuffersPipeline = CreateFillGBufferPipeline();
+		_deferredComposePipeline = CreateDeferredComposePipeline();
 
 		var colorMat = _materialManager.GetFactory("color_material").Create();
 		*colorMat.GetMemPtr<int>() = Color.BlueViolet.ToArgb();
@@ -104,12 +98,19 @@ public unsafe class Deferred3DRenderer : RenderChain
 		coolMat.MarkForGPUUpdate();
 
 		var triangle = StaticMesh.Triangle((ushort) colorMat.MaterialId, (uint) colorMat.VulkanDataIndex);
-		Scene.AddMesh(triangle);
-		Scene.AddMesh(triangle);
-		Scene.AddMesh(triangle);
-		Scene.AddMesh(triangle);
-		Scene.AddMesh(StaticMesh.Triangle((ushort) colorMat.MaterialId, (uint) 1));
-		Scene.UpdateBuffers();
+
+		void AddMeshes()
+		{
+			Scene.AddMesh(triangle);
+			Scene.AddMesh(triangle);
+			Scene.AddMesh(triangle);
+			Scene.AddMesh(triangle);
+			Scene.AddMesh(StaticMesh.Triangle((ushort) colorMat.MaterialId, (uint) 1));
+			Scene.UpdateBuffers();
+		}
+
+		AddMeshes();
+		Context.DeviceEvents.AfterCreate += () => AddMeshes();
 
 		RenderCommandBuffers += (FrameInfo frameInfo) =>
 		{
@@ -153,7 +154,7 @@ public unsafe class Deferred3DRenderer : RenderChain
 
 		Debug.BeginCmdLabel(cmd, $"FIll G-Buffers");
 
-		cmd.BindGraphicsPipeline(FillGBuffersPipeline);
+		cmd.BindGraphicsPipeline(_fillGBuffersPipeline);
 		cmd.BindVertexBuffer(0, Scene.VertexBuffer.Value);
 		cmd.BindVertexBuffer(1, Scene.ModelBuffer.Value);
 		Context.Vk.CmdBindIndexBuffer(cmd, Scene.IndexBuffer.Value, 0, IndexType.Uint32);
@@ -164,10 +165,13 @@ public unsafe class Deferred3DRenderer : RenderChain
 		Debug.BeginCmdLabel(cmd, $"Compose Deferred Lighting");
 		Context.Vk.CmdNextSubpass(cmd, SubpassContents.Inline);
 
-		cmd.BindGraphicsPipeline(DeferredComposePipeline);
-		cmd.BindGraphicsDescriptorSets(DeferredComposePipelineLayout, 0, 1, _composeSet);
-		cmd.BindGraphicsDescriptorSets(DeferredComposePipelineLayout, 1, 1, _materialManager.VertexDescriptorSet);
-		cmd.BindGraphicsDescriptorSets(DeferredComposePipelineLayout, 2, 1, _materialManager.FragmentDescriptorSet);
+		cmd.BindGraphicsPipeline(_deferredComposePipeline);
+		cmd.BindGraphicsDescriptorSets(_deferredComposePipelineLayout, 0, 1, _composeAttachmentsSet);
+		cmd.BindGraphicsDescriptorSets(_deferredComposePipelineLayout, 1, 1, TextureManager.DescriptorSet);
+		cmd.BindGraphicsDescriptorSets(_deferredComposePipelineLayout, 2, 1, _materialManager.VertexDescriptorSet);
+		cmd.BindGraphicsDescriptorSets(_deferredComposePipelineLayout, 3, 1, _materialManager.FragmentDescriptorSet);
+		// cmd.BindGraphicsDescriptorSets(_deferredComposePipelineLayout, 4, 1, Scene.);
+		// cmd.BindGraphicsDescriptorSets(_deferredComposePipelineLayout, 5, 1, _globalDataManager.DescriptorSet);
 
 		cmd.Draw(3, 1, 0, 0);
 
@@ -393,7 +397,7 @@ public unsafe class Deferred3DRenderer : RenderChain
 			PInputAttachments = deferredComposeInputReferences,
 			ColorAttachmentCount = 1,
 			PColorAttachments = &colorReference,
-			PDepthStencilAttachment = &depthReference,
+			PDepthStencilAttachment = &depthReference
 		};
 
 		int subpassDependencyCount = 1;
@@ -496,7 +500,7 @@ public unsafe class Deferred3DRenderer : RenderChain
 				DescriptorCount = 1,
 				DescriptorType = DescriptorType.InputAttachment,
 				StageFlags = ShaderStageFlags.FragmentBit
-			},
+			}
 			// new()
 			// {
 			// 	Binding = 3,
@@ -511,7 +515,7 @@ public unsafe class Deferred3DRenderer : RenderChain
 			SType = StructureType.DescriptorSetLayoutCreateInfo,
 			BindingCount = (uint) countersLayoutBindings.Length,
 			PBindings = countersLayoutBindings[0].AsPointer(),
-			Flags = DescriptorSetLayoutCreateFlags.UpdateAfterBindPoolBit,
+			Flags = DescriptorSetLayoutCreateFlags.UpdateAfterBindPoolBit
 			// PNext = &flagsInfo
 		};
 
@@ -570,7 +574,7 @@ public unsafe class Deferred3DRenderer : RenderChain
 			{
 				ImageLayout = ImageLayout.ShaderReadOnlyOptimal,
 				ImageView = MaterialAttachment.Value.ImageView
-			},
+			}
 		};
 
 		var writes = new WriteDescriptorSet[]
@@ -581,7 +585,7 @@ public unsafe class Deferred3DRenderer : RenderChain
 				DescriptorCount = 1,
 				DstBinding = 0,
 				DescriptorType = DescriptorType.InputAttachment,
-				DstSet = _composeSet,
+				DstSet = _composeAttachmentsSet,
 				PImageInfo = imageInfos[0].AsPointer()
 			},
 			new()
@@ -590,7 +594,7 @@ public unsafe class Deferred3DRenderer : RenderChain
 				DescriptorCount = 1,
 				DstBinding = 1,
 				DescriptorType = DescriptorType.InputAttachment,
-				DstSet = _composeSet,
+				DstSet = _composeAttachmentsSet,
 				PImageInfo = imageInfos[1].AsPointer()
 			},
 			new()
@@ -599,7 +603,7 @@ public unsafe class Deferred3DRenderer : RenderChain
 				DescriptorCount = 1,
 				DstBinding = 2,
 				DescriptorType = DescriptorType.InputAttachment,
-				DstSet = _composeSet,
+				DstSet = _composeAttachmentsSet,
 				PImageInfo = imageInfos[2].AsPointer()
 			},
 			new()
@@ -608,7 +612,7 @@ public unsafe class Deferred3DRenderer : RenderChain
 				DescriptorCount = 1,
 				DstBinding = 3,
 				DescriptorType = DescriptorType.InputAttachment,
-				DstSet = _composeSet,
+				DstSet = _composeAttachmentsSet,
 				PImageInfo = imageInfos[3].AsPointer()
 			}
 		};
@@ -668,7 +672,7 @@ public unsafe class Deferred3DRenderer : RenderChain
 				state[0].DepthWriteEnable = true;
 				state[0].DepthCompareOp = CompareOp.LessOrEqual;
 			})
-			.With(FillGBuffersPipelineLayout, RenderPass)
+			.With(_fillGBuffersPipelineLayout, RenderPass)
 			.AutoPipeline("FillGBuffer");
 
 	private AutoPipeline CreateDeferredComposePipeline() =>
@@ -682,7 +686,7 @@ public unsafe class Deferred3DRenderer : RenderChain
 				// state[0].DepthTestEnable = true;
 				// state[0].DepthCompareOp = CompareOp.Always;
 			})
-			.With(DeferredComposePipelineLayout, RenderPass, 1)
+			.With(_deferredComposePipelineLayout, RenderPass, 1)
 			.AutoPipeline("DeferredCompose");
 
 	public override void Dispose() { }

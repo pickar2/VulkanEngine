@@ -3,6 +3,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
+using System.Text.RegularExpressions;
 using Core.Native.Shaderc;
 using Core.Native.SpirvReflect;
 using Core.Native.VMA;
@@ -362,10 +364,60 @@ public static unsafe class VulkanUtils
 
 		throw new TimeoutException($"Failed to get a read handle to {path} within {timeoutTicks / 10000f}ms.");
 	}
-	
-	private static string FixShaderErrorMessageString(string path, string errorMessage)
+
+	private static readonly Regex PathRegex =
+		new(@$"\w\{Path.VolumeSeparatorChar}\{Path.DirectorySeparatorChar}([\w]*\{Path.DirectorySeparatorChar})*?([\w]*\.[\w]*)");
+
+	private static readonly Regex VirtualShaderRegex = new("(@[@\\w_\\.]+?):(\\d+): (.*)");
+
+	private static string ImproveShaderErrorMessageString(string errorMessage, int codeLineCount = 1)
 	{
-		return errorMessage.Replace(path, Path.GetFileName(path));
+		var sb = new StringBuilder();
+		var match = PathRegex.Match(errorMessage);
+		var span = (ReadOnlySpan<char>) errorMessage;
+		int index = 0;
+		while (match.Success)
+		{
+			sb.Append(span.Slice(index, match.Index - index));
+			sb.Append(Path.GetFileName(match.Value));
+			index = match.Index + match.Length;
+			match = match.NextMatch();
+		}
+
+		sb.Append(span[index..]);
+		errorMessage = sb.ToString();
+
+		sb = sb.Clear();
+		match = VirtualShaderRegex.Match(errorMessage);
+		span = (ReadOnlySpan<char>) errorMessage;
+		index = 0;
+		while (match.Success)
+		{
+			sb.Append(span.Slice(index, match.Index - index));
+			if (ShaderManager.TryGetVirtualShaderContent(match.Groups[1].Value, out string? content))
+			{
+				string[]? lines = content.Split("\n");
+				int errorLine = Convert.ToInt32(match.Groups[2].Value) - 1;
+				for (int i = errorLine - codeLineCount; i <= Math.Min(errorLine + codeLineCount, lines.Length + 1); i++)
+				{
+					sb.Append($"{i}   ").Append(lines[i].Trim());
+					if (i == errorLine) sb.Append(@$" \\ {match.Groups[3].Value}");
+					sb.Append("\r\n");
+				}
+			}
+			else
+			{
+				sb.Append(match.Value);
+			}
+
+			index = match.Index + match.Length;
+			match = match.NextMatch();
+		}
+
+		sb.Append(span[index..]);
+		errorMessage = sb.ToString();
+
+		return errorMessage;
 	}
 
 	public static VulkanShader CreateShader(string path, ShaderKind shaderKind, string entryPoint = "main")
@@ -389,22 +441,23 @@ public static unsafe class VulkanUtils
 
 		var result = Context.Compiler.Compile(source, path, shaderKind, entryPoint);
 
-		if (result.ErrorCount > 0 || result.WarningCount > 0)
+		if (result.ErrorCount == 0 && result.WarningCount > 0)
 		{
-			App.Logger.Warn.Message($"Shader `{path}` compilation finished with {result.WarningCount} warnings and {result.ErrorCount} errors:");
-			if (result.ErrorCount > 0 && result.Status == Status.Success) App.Logger.Error.Message($"{FixShaderErrorMessageString(path, result.ErrorMessage!)}");
+			App.Logger.Warn.Message($"Shader `{path}` ({Path.GetFileName(path)}) compilation finished with {result.WarningCount} " +
+			                        $"warning{(result.WarningCount > 0 ? "s" : "")}: {result.Status}\r\n{ImproveShaderErrorMessageString(result.ErrorMessage!)}");
 		}
 
 		if (result.Status != Status.Success)
 		{
 			if (State.AllowShaderCompileErrors && ShaderManager.TryGetShader(path, out var oldShader))
 			{
-				App.Logger.Error.Message($"{FixShaderErrorMessageString(path, result.ErrorMessage!)}");
+				App.Logger.Error.Message($"{ImproveShaderErrorMessageString(result.ErrorMessage!)}");
 				result.Dispose();
 				return oldShader;
 			}
 
-			throw new Exception($"Shader `{path}` was not compiled: {result.Status}\r\n{FixShaderErrorMessageString(path, result.ErrorMessage!)}").AsExpectedException();
+			throw new Exception($"Shader `{path}` ({Path.GetFileName(path)}) was not compiled: {result.Status}\r\n" +
+			                    $"{ImproveShaderErrorMessageString(result.ErrorMessage!)}").AsExpectedException();
 		}
 
 		var spirvShaderModule = new ReflectShaderModule(result.CodePointer, result.CodeLength);
@@ -415,7 +468,7 @@ public static unsafe class VulkanUtils
 			CodeSize = result.CodeLength
 		};
 
-		Check(Context.Vk.CreateShaderModule(Context.Device, createInfo, null, out var vulkanShaderModule), $"Failed to create shader module {path}");
+		Check(Context.Vk.CreateShaderModule(Context.Device, createInfo, null, out var vulkanShaderModule), $"Failed to create shader module `{path}`.");
 		result.Dispose();
 
 		Debug.SetObjectName(vulkanShaderModule.Handle, ObjectType.ShaderModule, $"Shader {path}");
@@ -442,7 +495,7 @@ public static unsafe class VulkanUtils
 			_ => 0
 		};
 
-	public static void VmaCreateBuffer(ulong size, BufferUsageFlags usage, VmaMemoryUsage memoryUsage, out Buffer buffer, out nint allocation)
+	public static void VmaCreateBuffer(ulong size, BufferUsageFlags usage, VmaMemoryUsage memoryUsage, out Buffer buffer, out IntPtr allocation)
 	{
 		size.ThrowIfEquals(0u); // Cannot create buffer with size = 0
 

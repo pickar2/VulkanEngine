@@ -68,6 +68,9 @@ public static unsafe class ContextUtils
 	public static void CopyBuffer(this CommandBuffer cb, Buffer src, Buffer dst, BufferCopy[] copyRegions) =>
 		Context.Vk.CmdCopyBuffer(cb, src, dst, copyRegions);
 
+	public static void CopyBuffer(this CommandBuffer cb, Buffer src, Buffer dst, Span<BufferCopy> copyRegions) =>
+		Context.Vk.CmdCopyBuffer(cb, src, dst, copyRegions);
+
 	public static void PipelineBarrier2(this CommandBuffer cb, DependencyInfo dependencyInfo) =>
 		Context.KhrSynchronization2.CmdPipelineBarrier2(cb, dependencyInfo);
 

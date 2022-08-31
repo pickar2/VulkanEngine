@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Silk.NET.Core.Native;
 
@@ -15,9 +16,9 @@ public static unsafe class StringManager
 			CachedStrings.Clear();
 		};
 
-	public static nint GetStringPtr(string str)
+	public static IntPtr GetStringPtr(string str)
 	{
-		if (str.Length == 0) return 0;
+		if (str.Length == 0) return IntPtr.Zero;
 		if (CachedStrings.TryGetValue(str, out var ptr)) return ptr;
 		return CachedStrings[str] = SilkMarshal.StringToPtr(str);
 	}

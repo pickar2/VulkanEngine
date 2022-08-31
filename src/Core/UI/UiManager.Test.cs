@@ -69,7 +69,7 @@ public static partial class UiManager
 		var frag = MainRoot.MaterialManager.GetFactory("texture_material").Create();
 		box1.FragMaterial = frag;
 
-		*frag.GetMemPtr<int>() = (int) TextureManager.GetTextureId("DeferredOutput");
+		*frag.GetMemPtr<int>() = (int) TextureManager.GetTextureId("VoxelOutput");
 		frag.MarkForGPUUpdate();
 
 		parent.AddChild(box1);

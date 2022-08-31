@@ -62,7 +62,7 @@ public unsafe partial class MaterialManager
 			Context.Vk.ResetDescriptorPool(Context.Device, VertexDescriptorPool.Value, 0);
 			VertexDescriptorSet.ReCreate();
 
-			foreach ((string? _, var factory) in _materials)
+			foreach ((string? _, var factory) in Materials)
 				if ((factory.StageFlag & ShaderStageFlags.VertexBit) != 0)
 					factory.BufferChanged = true;
 		}
@@ -73,7 +73,7 @@ public unsafe partial class MaterialManager
 			Context.Vk.ResetDescriptorPool(Context.Device, FragmentDescriptorPool.Value, 0);
 			FragmentDescriptorSet.ReCreate();
 
-			foreach ((string? _, var factory) in _materials)
+			foreach ((string? _, var factory) in Materials)
 				if ((factory.StageFlag & ShaderStageFlags.FragmentBit) != 0)
 					factory.BufferChanged = true;
 		}
@@ -82,7 +82,7 @@ public unsafe partial class MaterialManager
 	private void UpdateDescriptorSets()
 	{
 		int changedCount = 0;
-		foreach ((string? _, var factory) in _materials)
+		foreach ((string? _, var factory) in Materials)
 			if (factory.BufferChanged)
 				changedCount++;
 
@@ -91,7 +91,7 @@ public unsafe partial class MaterialManager
 		var bufferInfos = stackalloc DescriptorBufferInfo[changedCount];
 		var writes = stackalloc WriteDescriptorSet[changedCount];
 		int index = 0;
-		foreach ((string? _, var factory) in _materials)
+		foreach ((string? _, var factory) in Materials)
 		{
 			if (!factory.BufferChanged) continue;
 			factory.BufferChanged = false;
@@ -122,7 +122,7 @@ public unsafe partial class MaterialManager
 	{
 		bool copying = false;
 		OneTimeCommand command = null!;
-		foreach ((string? _, var factory) in _materials)
+		foreach ((string? _, var factory) in Materials)
 		{
 			factory.GetCopyRegions(out uint copyCount, out var regions);
 			if (copyCount <= 0) continue;

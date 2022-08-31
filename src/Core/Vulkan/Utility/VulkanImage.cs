@@ -6,7 +6,7 @@ namespace Core.Vulkan.Utility;
 
 public class VulkanImage : IDisposable
 {
-	public nint Allocation;
+	public IntPtr Allocation;
 	public Format Format;
 	public uint Height;
 	public Image Image;

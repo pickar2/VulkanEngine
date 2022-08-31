@@ -1,31 +1,43 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Core.Native.VMA;
-using Core.Registries.API;
-using Core.Registries.CoreTypes;
-using Core.Registries.Entities;
-using Core.Registries.EventManagerTypes;
 using Core.Vulkan;
 using Core.Vulkan.Api;
 using Core.Vulkan.Utility;
 using Silk.NET.Vulkan;
-using static Core.Native.VMA.VulkanMemoryAllocator;
 using static Core.Vulkan.ContextUtils;
 
 namespace Core.VulkanData;
 
-public unsafe class MultipleStructDataFactory : SimpleRegistry<NoneEventManager<StructHolder>, StructHolder>
+public unsafe class MultipleStructDataFactory
 {
+	public readonly string Name;
+	public readonly Dictionary<string, StructHolder> Holders = new();
+
 	private int _minAlignment;
 	private int _oldMinAlignment;
 
 	private readonly IntPtr[] _ptr = new IntPtr[1];
 	private int _offset;
 
-	private nint _dataBackup;
+	private IntPtr _dataBackup;
 
-	public MultipleStructDataFactory(NamespacedName identifier, bool cpuToGpuMemory = false) : base(identifier)
+	public byte* Pointer { get; private set; }
+	public int Count { get; private set; }
+
+	public bool CpuToGpuMemory { get; }
+
+	public VulkanBuffer DataBufferCpu { get; private set; }
+	public VulkanBuffer DataBufferGpu { get; private set; }
+	public bool BufferChanged { get; set; } = true;
+
+	public ulong BufferSize { get; private set; } = 2048;
+
+	public MultipleStructDataFactory(string name, bool cpuToGpuMemory = false)
 	{
+		Name = name;
+
 		Context.Vk.GetPhysicalDeviceProperties(Context.PhysicalDevice, out var properties);
 		_oldMinAlignment = _minAlignment = (int) properties.Limits.MinStorageBufferOffsetAlignment;
 
@@ -33,14 +45,14 @@ public unsafe class MultipleStructDataFactory : SimpleRegistry<NoneEventManager<
 
 		if (Context.IsIntegratedGpu || CpuToGpuMemory)
 		{
-			DataBufferCpu = new VulkanBuffer(BufferSize, BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU);
+			DataBufferCpu = new VulkanBuffer(BufferSize, BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU, $"{Name} Buffer");
 			DataBufferGpu = DataBufferCpu;
 		}
 		else
 		{
-			DataBufferCpu = new VulkanBuffer(BufferSize, BufferUsageFlags.TransferSrcBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_ONLY);
+			DataBufferCpu = new VulkanBuffer(BufferSize, BufferUsageFlags.TransferSrcBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_ONLY, $"{Name} Buffer CPU");
 			DataBufferGpu = new VulkanBuffer(BufferSize, BufferUsageFlags.StorageBufferBit | BufferUsageFlags.TransferDstBit,
-				VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
+				VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY, $"{Name} Buffer GPU");
 		}
 
 		VmaMapMemory(DataBufferCpu.Allocation, _ptr);
@@ -71,14 +83,14 @@ public unsafe class MultipleStructDataFactory : SimpleRegistry<NoneEventManager<
 			BufferChanged = true;
 			if (Context.IsIntegratedGpu || CpuToGpuMemory)
 			{
-				DataBufferCpu = new VulkanBuffer(BufferSize, BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU);
+				DataBufferCpu = new VulkanBuffer(BufferSize, BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU, $"{Name} Buffer");
 				DataBufferGpu = DataBufferCpu;
 			}
 			else
 			{
-				DataBufferCpu = new VulkanBuffer(BufferSize, BufferUsageFlags.TransferSrcBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_ONLY);
+				DataBufferCpu = new VulkanBuffer(BufferSize, BufferUsageFlags.TransferSrcBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_ONLY, $"{Name} Buffer CPU");
 				DataBufferGpu = new VulkanBuffer(BufferSize, BufferUsageFlags.StorageBufferBit | BufferUsageFlags.TransferDstBit,
-					VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
+					VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY, $"{Name} Buffer GPU");
 			}
 
 			VmaMapMemory(DataBufferCpu.Allocation, _ptr);
@@ -93,24 +105,13 @@ public unsafe class MultipleStructDataFactory : SimpleRegistry<NoneEventManager<
 		};
 	}
 
-	public byte* Pointer { get; private set; }
-	public int Count { get; private set; }
-
-	public bool CpuToGpuMemory { get; }
-
-	public VulkanBuffer DataBufferCpu { get; private set; }
-	public VulkanBuffer DataBufferGpu { get; private set; }
-	public bool BufferChanged { get; set; } = true;
-
-	public ulong BufferSize { get; private set; } = 2048;
-
 	private void DoubleBufferSize()
 	{
 		ulong newBufferSize = BufferSize * 2;
 
 		var newDataBuffer = Context.IsIntegratedGpu || CpuToGpuMemory
-			? new VulkanBuffer(newBufferSize, BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU)
-			: new VulkanBuffer(newBufferSize, BufferUsageFlags.TransferSrcBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_ONLY);
+			? new VulkanBuffer(newBufferSize, BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU, $"{Name} Buffer")
+			: new VulkanBuffer(newBufferSize, BufferUsageFlags.TransferSrcBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_ONLY, $"{Name} Buffer CPU");
 
 		VmaMapMemory(newDataBuffer.Allocation, _ptr);
 
@@ -131,7 +132,7 @@ public unsafe class MultipleStructDataFactory : SimpleRegistry<NoneEventManager<
 		{
 			ExecuteOnce.AtNextFrameEnd(() => DataBufferGpu.Dispose());
 			DataBufferGpu = new VulkanBuffer(newBufferSize, BufferUsageFlags.StorageBufferBit | BufferUsageFlags.TransferDstBit,
-				VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
+				VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY, $"{Name} Buffer GPU");
 
 			DataBufferCpu.CopyTo(DataBufferGpu, BufferSize);
 		}
@@ -146,7 +147,7 @@ public unsafe class MultipleStructDataFactory : SimpleRegistry<NoneEventManager<
 	private void MinAlignmentChanged()
 	{
 		_offset = 0;
-		foreach ((string? _, var holder) in this)
+		foreach ((string? _, var holder) in Holders)
 		{
 			int size = holder.BufferSize;
 			int padding = (_minAlignment - ((_offset + size) % _minAlignment)) % _minAlignment;
@@ -161,7 +162,7 @@ public unsafe class MultipleStructDataFactory : SimpleRegistry<NoneEventManager<
 		_oldMinAlignment = _minAlignment;
 	}
 
-	public StructHolder CreateHolder(int size, NamespacedName identifier)
+	public StructHolder CreateHolder(int size, string identifier)
 	{
 		int padding = (_minAlignment - ((_offset + size) % _minAlignment)) % _minAlignment;
 		while (_offset + size + padding >= (int) BufferSize) DoubleBufferSize();
@@ -175,7 +176,7 @@ public unsafe class MultipleStructDataFactory : SimpleRegistry<NoneEventManager<
 			Offset = _offset
 		};
 
-		if (!Register(holder)) throw new ArgumentException("Already registered!").AsExpectedException();
+		if (!Holders.TryAdd(identifier, holder)) throw new ArgumentException("Already registered!").AsExpectedException();
 
 		_offset += size + padding;
 		Count++;
@@ -185,14 +186,14 @@ public unsafe class MultipleStructDataFactory : SimpleRegistry<NoneEventManager<
 	}
 }
 
-public unsafe class StructHolder : IEntry
+public unsafe class StructHolder
 {
-	public MultipleStructDataFactory Factory { get; init; } = default!;
+	public required MultipleStructDataFactory Factory { get; init; }
+	public required string Identifier { get; init; }
 
 	public int Size { get; init; }
 	public int BufferSize { get; set; }
 	public int Offset { get; set; }
-	public NamespacedName Identifier { get; init; } = default!;
 
 	public T* Get<T>() where T : unmanaged => Factory.GetStruct<T>(Offset);
 }

@@ -24,5 +24,5 @@ public abstract class RootPanel : AbsolutePanel
 
 	public UiComponent CreateComponent() => ComponentManager.Factory.Create();
 	public MaterialDataFactory GetMaterial(string name) => MaterialManager.GetFactory(name);
-	public StructHolder GetGlobalData(NamespacedName identifier) => GlobalDataManager.Factory.GetOrDefault(identifier.FullName);
+	public StructHolder GetGlobalData(NamespacedName identifier) => GlobalDataManager.Factory.Holders[identifier.FullName];
 }

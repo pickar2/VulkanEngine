@@ -9,23 +9,22 @@ namespace Core.UI;
 
 public partial class MaterialManager
 {
-	private readonly Dictionary<string, MaterialDataFactory> _materials = new();
+	protected readonly Dictionary<string, MaterialDataFactory> Materials = new();
 
-	private readonly Dictionary<string, StringBuilder> _fragmentIncludeBuilders = new();
-	private readonly Dictionary<string, StringBuilder> _fragmentSwitchBuilders = new();
+	protected readonly Dictionary<string, StringBuilder> FragmentIncludeBuilders = new();
+	protected readonly Dictionary<string, StringBuilder> FragmentSwitchBuilders = new();
 
-	private readonly Dictionary<string, StringBuilder> _vertexIncludeBuilders = new();
-	private readonly Dictionary<string, StringBuilder> _vertexSwitchBuilders = new();
+	protected readonly Dictionary<string, StringBuilder> VertexIncludeBuilders = new();
+	protected readonly Dictionary<string, StringBuilder> VertexSwitchBuilders = new();
 
-	public int MaterialCount { get; private set; }
-	public short VertexMaterialCount { get; private set; }
-	public short FragmentMaterialCount { get; private set; }
+	public short VertexMaterialCount { get; protected set; }
+	public short FragmentMaterialCount { get; protected set; }
 
 	public string Name { get; }
 
 	public MaterialDataFactory GetFactory(string name)
 	{
-		if (!_materials.TryGetValue(name, out var factory))
+		if (!Materials.TryGetValue(name, out var factory))
 			throw new ArgumentException($"Tried to get unknown material factory `{name}`.").AsExpectedException();
 		return factory;
 	}
@@ -45,10 +44,10 @@ public partial class MaterialManager
 		RegisterOrUpdateMaterial(identifier, path, shaderKind, size);
 	}
 
-	public void RegisterOrUpdateMaterial(string identifier, string shaderPath, ShaderKind shaderKind, int dataSize)
+	public virtual void RegisterOrUpdateMaterial(string identifier, string shaderPath, ShaderKind shaderKind, int dataSize)
 	{
 		short index;
-		if (_materials.TryGetValue(identifier, out var factory))
+		if (Materials.TryGetValue(identifier, out var factory))
 			index = factory.Index;
 		else
 			index = shaderKind == ShaderKind.VertexShader ? VertexMaterialCount++ : FragmentMaterialCount++;
@@ -56,41 +55,41 @@ public partial class MaterialManager
 		var sb = new StringBuilder();
 		sb.Append($"#define {identifier}_binding {index}").AppendLine();
 		sb.Append($"#include \"{shaderPath}\"").AppendLine().AppendLine();
-		(shaderKind == ShaderKind.VertexShader ? _vertexIncludeBuilders : _fragmentIncludeBuilders)[identifier] = sb;
+		(shaderKind == ShaderKind.VertexShader ? VertexIncludeBuilders : FragmentIncludeBuilders)[identifier] = sb;
 
 		sb = new StringBuilder();
 		sb.Append($"\t\tcase {identifier}_binding:").AppendLine();
 		sb.Append($"\t\t\t{identifier}(data);").AppendLine();
 		sb.Append("\t\t\tbreak;").AppendLine();
-		(shaderKind == ShaderKind.VertexShader ? _vertexSwitchBuilders : _fragmentSwitchBuilders)[identifier] = sb;
+		(shaderKind == ShaderKind.VertexShader ? VertexSwitchBuilders : FragmentSwitchBuilders)[identifier] = sb;
 
-		_materials[identifier] = new MaterialDataFactory(dataSize, shaderKind.ToStageFlags(), identifier, index);
+		Materials[identifier] = new MaterialDataFactory(dataSize, shaderKind.ToStageFlags(), identifier, index);
 	}
 
-	public string GenerateVertexShader()
+	public virtual string GenerateVertexShader()
 	{
 		var vertexSb = new StringBuilder();
-		foreach ((string? _, var builder) in _vertexIncludeBuilders) vertexSb.Append(builder);
+		foreach ((string? _, var builder) in VertexIncludeBuilders) vertexSb.Append(builder);
 		vertexSb.Append(@"void vertexSwitch(UiElementData data) {
 	int id = int(data.vertexMaterialType);
 	switch (id) {
 ");
-		foreach ((string? _, var builder) in _vertexSwitchBuilders) vertexSb.Append(builder);
+		foreach ((string? _, var builder) in VertexSwitchBuilders) vertexSb.Append(builder);
 		vertexSb.Append(@"	}
 }");
 
 		return vertexSb.ToString();
 	}
 
-	public string GenerateFragmentShader()
+	public virtual string GenerateFragmentShader()
 	{
 		var fragmentSb = new StringBuilder();
-		foreach ((string? _, var builder) in _fragmentIncludeBuilders) fragmentSb.Append(builder);
+		foreach ((string? _, var builder) in FragmentIncludeBuilders) fragmentSb.Append(builder);
 		fragmentSb.Append(@"void fragmentSwitch(UiElementData data) {
 	int id = int(data.fragmentMaterialType);
 	switch (id) {
 ");
-		foreach ((string? _, var builder) in _fragmentSwitchBuilders) fragmentSb.Append(builder);
+		foreach ((string? _, var builder) in FragmentSwitchBuilders) fragmentSb.Append(builder);
 		fragmentSb.Append(@"	}
 }");
 

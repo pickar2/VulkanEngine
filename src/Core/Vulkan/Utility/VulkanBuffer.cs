@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Core.Native.VMA;
 using Core.Vulkan.Api;
 using Silk.NET.Vulkan;
@@ -13,22 +15,25 @@ public unsafe class VulkanBuffer : IDisposable
 	public readonly BufferUsageFlags BufferUsage;
 	public readonly VmaMemoryUsage MemoryUsage;
 
-	public readonly nint Allocation;
+	public readonly IntPtr Allocation;
 	public readonly Buffer Buffer;
 
-	private readonly nint[] _ptr = new nint[1];
-	public nint HostMemoryPtr => _ptr[0];
+	private readonly IntPtr[] _ptr = new IntPtr[1];
+	public IntPtr HostMemoryPtr => _ptr[0];
+	public bool HasHostSpan => MemoryUsage is not (VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY or VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_LAZILY_ALLOCATED);
 
-	public VulkanBuffer(ulong bufferSize, BufferUsageFlags bufferUsage, VmaMemoryUsage memoryUsage)
+	public VulkanBuffer(ulong bufferSize, BufferUsageFlags bufferUsage, VmaMemoryUsage memoryUsage, string? debugName = null)
 	{
 		BufferSize = bufferSize;
 		BufferUsage = bufferUsage;
 		MemoryUsage = memoryUsage;
 
 		VmaCreateBuffer(bufferSize, bufferUsage, memoryUsage, out Buffer, out Allocation);
+		if (debugName is not null)
+			Debug.SetObjectName(Buffer.Handle, ObjectType.Buffer, debugName);
 	}
 
-	public VulkanBuffer(ulong bufferSize, BufferUsageFlags bufferUsage, VmaMemoryUsage memoryUsage, nint allocation, Buffer buffer)
+	public VulkanBuffer(ulong bufferSize, BufferUsageFlags bufferUsage, VmaMemoryUsage memoryUsage, IntPtr allocation, Buffer buffer)
 	{
 		BufferSize = bufferSize;
 		BufferUsage = bufferUsage;
@@ -37,16 +42,16 @@ public unsafe class VulkanBuffer : IDisposable
 		Buffer = buffer;
 	}
 
-	public nint Map()
+	public IntPtr Map()
 	{
-		if (_ptr[0] == 0) ContextUtils.VmaMapMemory(Allocation, _ptr);
+		if (_ptr[0] == IntPtr.Zero) ContextUtils.VmaMapMemory(Allocation, _ptr);
 		return _ptr[0];
 	}
 
 	public void UnMap()
 	{
-		if (_ptr[0] != 0) ContextUtils.VmaUnmapMemory(Allocation);
-		_ptr[0] = 0;
+		if (_ptr[0] != IntPtr.Zero) ContextUtils.VmaUnmapMemory(Allocation);
+		_ptr[0] = IntPtr.Zero;
 	}
 
 	public Span<byte> GetHostSpan() => new((void*) Map(), (int) BufferSize);
@@ -62,10 +67,10 @@ public unsafe class VulkanBuffer : IDisposable
 			DstOffset = dstOffset
 		};
 
-		CopyTo(other, new[] {copy});
+		CopyTo(other, copy.AsSpan());
 	}
 
-	public void CopyTo(VulkanBuffer other, BufferCopy[] regions)
+	public void CopyTo(VulkanBuffer other, Span<BufferCopy> regions)
 	{
 		if (Buffer.Handle == other.Buffer.Handle) return;
 
@@ -76,7 +81,7 @@ public unsafe class VulkanBuffer : IDisposable
 		if (MemoryUsage == VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_ONLY)
 		{
 			if (other.MemoryUsage is VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_ONLY or VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU)
-				CopyMemoryWithMapping(other, regions);
+				GetHostSpan().CopyTo(other.GetHostSpan(), regions);
 			else
 				CopyMemoryDirectToDevice(other, regions);
 		}
@@ -89,23 +94,7 @@ public unsafe class VulkanBuffer : IDisposable
 		}
 	}
 
-	public void CopyMemoryWithMapping(VulkanBuffer other, BufferCopy[] regions)
-	{
-		if (regions.Length == 0) return;
-
-		var span = new Span<byte>((void*) Map(), (int) BufferSize);
-		var otherSpan = new Span<byte>((void*) other.Map(), (int) other.BufferSize);
-
-		foreach (var region in regions)
-		{
-			span = span.Slice((int) region.SrcOffset, (int) region.Size);
-			otherSpan = otherSpan.Slice((int) region.DstOffset, (int) region.Size);
-
-			span.CopyTo(otherSpan);
-		}
-	}
-
-	public void CopyMemoryDirectToDevice(VulkanBuffer other, BufferCopy[] regions)
+	public void CopyMemoryDirectToDevice(VulkanBuffer other, Span<BufferCopy> regions)
 	{
 		if (regions.Length == 0) return;
 
@@ -114,7 +103,7 @@ public unsafe class VulkanBuffer : IDisposable
 		cmd.SubmitAndWait();
 	}
 
-	public void CopyMemoryDirectToHost(VulkanBuffer other, BufferCopy[] regions)
+	public void CopyMemoryDirectToHost(VulkanBuffer other, Span<BufferCopy> regions)
 	{
 		if (regions.Length == 0) return;
 
@@ -125,7 +114,7 @@ public unsafe class VulkanBuffer : IDisposable
 
 	public void Dispose()
 	{
-		if (HostMemoryPtr != 0) UnMap();
+		if (HostMemoryPtr != IntPtr.Zero) UnMap();
 		vmaDestroyBuffer(Context.VmaAllocator, Buffer.Handle, Allocation);
 		GC.SuppressFinalize(this);
 	}

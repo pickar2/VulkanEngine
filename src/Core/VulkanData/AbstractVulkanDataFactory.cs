@@ -6,7 +6,6 @@ using Core.Vulkan;
 using Core.Vulkan.Api;
 using Core.Vulkan.Utility;
 using Silk.NET.Vulkan;
-using static Core.Native.VMA.VulkanMemoryAllocator;
 
 namespace Core.VulkanData;
 
@@ -22,7 +21,7 @@ public abstract unsafe class AbstractVulkanDataFactory<TDataHolder> : IVulkanDat
 	private int[] _gaps = new int[512];
 
 	private byte* _data;
-	private nint _dataBackup;
+	private IntPtr _dataBackup;
 	private int _backupSize;
 
 	public VulkanBuffer DataBufferCpu { get; private set; }
@@ -135,7 +134,7 @@ public abstract unsafe class AbstractVulkanDataFactory<TDataHolder> : IVulkanDat
 			? new VulkanBuffer(BufferSize, BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU)
 			: new VulkanBuffer(BufferSize, BufferUsageFlags.TransferSrcBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_ONLY);
 
-		nint newPtr = Context.IsIntegratedGpu ? Marshal.AllocHGlobal((int) BufferSize) : newDataBuffer.Map();
+		var newPtr = Context.IsIntegratedGpu ? Marshal.AllocHGlobal((int) BufferSize) : newDataBuffer.Map();
 
 		var oldSpan = new Span<byte>(_data, MaxComponents * ComponentSize);
 		var newSpan = new Span<byte>((void*) newPtr, (int) BufferSize);

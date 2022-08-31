@@ -15,6 +15,10 @@ public class StagedVulkanBuffer : IDisposable
 
 	private readonly BufferUsageFlags _usageFlags;
 
+	public Span<byte> GetHostSpan() => _stagingBuffer.GetHostSpan();
+	public Span<T> GetHostSpan<T>() where T : unmanaged => _stagingBuffer.GetHostSpan<T>();
+	public IntPtr GetHostPointer() => _stagingBuffer.HostMemoryPtr;
+
 	public StagedVulkanBuffer(ulong initialSize, BufferUsageFlags usageFlags)
 	{
 		BufferSize = initialSize;
@@ -27,14 +31,9 @@ public class StagedVulkanBuffer : IDisposable
 		else
 		{
 			_stagingBuffer = new VulkanBuffer(initialSize, BufferUsageFlags.TransferSrcBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_ONLY);
-			Buffer = new VulkanBuffer(initialSize, BufferUsageFlags.TransferDstBit | _usageFlags,
-				VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
+			Buffer = new VulkanBuffer(initialSize, BufferUsageFlags.TransferDstBit | _usageFlags, VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY);
 		}
 	}
-
-	public Span<byte> GetHostSpan() => _stagingBuffer.GetHostSpan();
-	public Span<T> GetHostSpan<T>() where T : unmanaged => _stagingBuffer.GetHostSpan<T>();
-	public nint GetHostPointer() => _stagingBuffer.HostMemoryPtr;
 
 	public void UpdateGpuBuffer()
 	{
@@ -48,8 +47,9 @@ public class StagedVulkanBuffer : IDisposable
 		if (Context.IsIntegratedGpu)
 		{
 			var newBuffer = new VulkanBuffer(newBufferSize, _usageFlags, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU);
+
 			if (copyPreviousContents)
-				Buffer.CopyTo(newBuffer, Math.Min(newBufferSize, BufferSize), 0, copyOffset);
+				Buffer.GetHostSpan().CopyTo(newBuffer.GetHostSpan());
 
 			var oldBuffer = Buffer;
 			ExecuteOnce.AtCurrentFrameStart(() => oldBuffer.Dispose());
@@ -81,14 +81,15 @@ public class StagedVulkanBuffer : IDisposable
 		}
 	}
 
-	public static implicit operator VulkanBuffer(StagedVulkanBuffer stagedBuffer) => stagedBuffer.Buffer;
-	public static implicit operator Buffer(StagedVulkanBuffer stagedBuffer) => stagedBuffer.Buffer.Buffer;
-
 	public void Dispose()
 	{
-		_stagingBuffer.Dispose();
 		Buffer.Dispose();
+		if (_stagingBuffer.Buffer.Handle != Buffer.Buffer.Handle)
+			_stagingBuffer.Dispose();
 
 		GC.SuppressFinalize(this);
 	}
+
+	public static implicit operator VulkanBuffer(StagedVulkanBuffer stagedBuffer) => stagedBuffer.Buffer;
+	public static implicit operator Buffer(StagedVulkanBuffer stagedBuffer) => stagedBuffer.Buffer.Buffer;
 }

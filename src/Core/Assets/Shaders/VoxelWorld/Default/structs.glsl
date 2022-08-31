@@ -1,20 +1,20 @@
-﻿struct FragmentData {
-	vec3 pos;
-	float linearDepth;
-	vec3 normal;
-//    float null;
-	vec4 fragCoord;
-};
-
-struct MaterialData { // 20 bytes (aligned for 4 bytes)
-	uint modelId;
-
-	uint vertexMaterialType;// can be uint16_t
-	uint fragmentMaterialType;// can be uint16_t
-
-	uint vertexDataIndex;
-	uint fragmentDataIndex;
-};
+﻿//struct FragmentData {
+//    vec3 pos;
+//    float linearDepth;
+//    vec3 normal;
+////    float null;
+//    vec4 fragCoord;
+//};
+//
+//struct MaterialData { // 20 bytes (aligned for 4 bytes)
+//    uint modelId;
+//
+//    uint vertexMaterialType;// can be uint16_t
+//    uint fragmentMaterialType;// can be uint16_t
+//
+//    uint vertexDataIndex;
+//    uint fragmentDataIndex;
+//};
 
 // flags:
 // 	int16_t rectangleBit   = 0x0001;

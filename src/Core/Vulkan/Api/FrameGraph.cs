@@ -280,14 +280,15 @@ public class SubpassDependencyNode { }
 public class VulkanImage2
 {
 	public Image Image { get; init; }
-	public nint Allocation { get; init; }
+	public IntPtr Allocation { get; init; }
 	public ImageView ImageView { get; init; }
 	public Format Format { get; init; }
 	public ImageLayout CurrentLayout { get; set; }
 	public uint MipLevels { get; init; }
 	public ImageAspectFlags AspectFlags { get; init; }
 
-	public VulkanImage2(Image image, nint allocation, ImageView imageView, Format format, uint mipLevels = 1, ImageLayout currentLayout = ImageLayout.Undefined,
+	public VulkanImage2(Image image, IntPtr allocation, ImageView imageView, Format format, uint mipLevels = 1,
+		ImageLayout currentLayout = ImageLayout.Undefined,
 		ImageAspectFlags aspectFlags = ImageAspectFlags.ColorBit)
 	{
 		Image = image;
