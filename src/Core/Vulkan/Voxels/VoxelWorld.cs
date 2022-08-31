@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using Core.Utils;
 using SimpleMath.Vectors;
 
 namespace Core.Vulkan.Voxels;
@@ -21,7 +22,9 @@ public class VoxelWorld
 
 		for (int x = 0; x < VoxelChunk.ChunkSize; x++)
 		for (int z = 0; z < VoxelChunk.ChunkSize; z++)
+		{
 			testChunkl.SetVoxel(redBlock, x, 2, z);
+		}
 		
 		for (int x = 5; x < 10; x++)
 		for (int z = 5; z < 10; z++)
@@ -38,6 +41,11 @@ public class VoxelWorld
 
 			testChunkl.SetVoxel(redBlock, x, 10, z);
 		}
+
+		// foreach (var t in testChunkl.Mask)
+		// {
+		// 	App.Logger.Info.Message($"{t}");
+		// }
 
 
 		AddChunk(testChunkl);
@@ -56,13 +64,32 @@ public struct VoxelChunk
 	public const int IntBitCount = 32;
 	public const int MaskCompressionLevel = IntBitCount / VoxelMaskBitCount;
 	public const int MaskCompressionLevelLog2 = 3;
+	public const uint BitMask = ((1 << VoxelMaskBitCount) - 1);
 
 	public VoxelChunkFlags Flags = 0;
 	public Vector3<int> ChunkPos;
-	public int[] Mask = new int[ChunkVoxelCount / MaskCompressionLevel];
+	public uint[] Mask = new uint[ChunkVoxelCount / MaskCompressionLevel];
 	public VoxelData[] Voxels = new VoxelData[ChunkVoxelCount];
 
-	public VoxelChunk(Vector3<int> chunkPos) => ChunkPos = chunkPos;
+	public VoxelChunk(Vector3<int> chunkPos)
+	{
+		ChunkPos = chunkPos;
+		Mask.Fill(uint.MaxValue);
+		// SpreadMask(ChunkSize / 2, ChunkSize / 2, ChunkSize / 2, ChunkSize / 2);
+
+		// for (int x = 0; x < ChunkSize; x++)
+		// {
+		// 	for (int y = 0; y < ChunkSize; y++)
+		// 	{
+		// 		for (int z = 0; z < ChunkSize; z++)
+		// 		{
+		// 			int minBorderDistance = Math.Abs((int) Math.Floor(SdfBox(new Vector3<float>(x, y, z))));
+		// 			SetMask(GetVoxelIndex(x, y, z), minBorderDistance);
+		// 			// App.Logger.Info.Message($"{x}, {y}, {z} : {minBorderDistance}");
+		// 		}
+		// 	}
+		// }
+	}
 
 	public static int GetVoxelIndex(int x, int y, int z) => (z << (ChunkSizeLog2 * 2)) | (y << ChunkSizeLog2) | x;
 
@@ -70,9 +97,59 @@ public struct VoxelChunk
 
 	public VoxelData GetVoxel(int index) => Voxels[index];
 
-	public void SetVoxel(VoxelData data, int x, int y, int z) => Voxels[GetVoxelIndex(x, y, z)] = data;
+	public void SetVoxel(VoxelData data, int x, int y, int z)
+	{
+		Voxels[GetVoxelIndex(x, y, z)] = data;
+		SpreadMask(x, y, z, 0);
+	}
+	
+	private static float SdfBox(Vector3<float> p)
+	{
+	  var d = new Vector3<float>(Math.Abs(p.X), Math.Abs(p.Y), Math.Abs(p.Z)) - new Vector3<int>(ChunkSize);
+	  return (float) (Math.Min(Math.Max(d.X, Math.Max(d.Y, d.Z)), 0.0) +
+	                  new Vector3<float>(Math.Max(d.X, 0.0f), Math.Max(d.Y, 0.0f), Math.Max(d.Z, 0.0f)).Length);
+	}
 
-	public void SetVoxel(VoxelData data, int index) => Voxels[index] = data;
+	private void SpreadMask(int x, int y, int z, int value)
+	{
+		if (x < 0 || y < 0 || z < 0 || x >= ChunkSize || y >= ChunkSize || z >= ChunkSize) return;
+
+		int minBorderDistance = Math.Abs((int) Math.Ceiling(SdfBox(new Vector3<float>(x, y, z))));
+		value = Math.Min(minBorderDistance, value);
+
+		int index = GetVoxelIndex(x, y, z);
+		if (GetMask(index) <= value) return;
+		SetMask(index, value);
+		// App.Logger.Info.Message($"Setting mask {value}");
+
+		SpreadMask(x-1, y, z, value+1);
+		SpreadMask(x+1, y, z, value+1);
+		SpreadMask(x, y-1, z, value+1);
+		SpreadMask(x, y+1, z, value+1);
+		SpreadMask(x, y, z-1, value+1);
+		SpreadMask(x, y, z+1, value+1);
+	}
+
+	// public void SetVoxel(VoxelData data, int index)
+	// {
+	// 	Voxels[index] = data;
+	// }
+
+	private void SetMask(int index, int value)
+	{
+		int maskIndex = index / MaskCompressionLevel;
+		int bitIndex = (index & (MaskCompressionLevel - 1)) * VoxelMaskBitCount;
+		Mask[maskIndex] = (uint) ((Mask[maskIndex] & ~(BitMask << bitIndex)) | ((value & BitMask) << bitIndex));
+	}
+
+	public uint GetMask(int x, int y, int z) => GetMask(GetVoxelIndex(x, y, z));
+
+	public uint GetMask(int index)
+	{
+		int maskIndex = index / MaskCompressionLevel;
+		int bitIndex = (index & (MaskCompressionLevel - 1)) * VoxelMaskBitCount;
+		return (Mask[maskIndex] >> bitIndex) & BitMask;
+	}
 }
 
 public struct VoxelData

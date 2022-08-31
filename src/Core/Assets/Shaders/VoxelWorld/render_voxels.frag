@@ -32,14 +32,14 @@ struct VoxelType {
 
 #define VOXEL_MASK_BITCOUNT CHUNK_SIZE_LOG2
 #define INT_BITCOUNT 32
-#define MASK_COMPRESSION_LEVEL INT_BITCOUNT / VOXEL_MASK_BITCOUNT
-#define MASK_COMPRESSION_LEVEL_LOG2 3// log2(8)
+#define MASK_COMPRESSION_LEVEL (INT_BITCOUNT / VOXEL_MASK_BITCOUNT)
+#define MASK_COMPRESSION_LEVEL_LOG2 3
 
 // 4 + 3 * 4 + CHUNK_VOXEL_COUNT / MASK_COMPRESSION_LEVEL * 4 + CHUNK_VOXEL_COUNT * 8 = 34832 bytes
 struct ChunkData {
 	int flags;// size: 4, offset: 0
 	ivec3 chunkPos;// size: 12, offset: 4
-	int[CHUNK_VOXEL_COUNT / MASK_COMPRESSION_LEVEL] mask;// size: 2048, offset: 16
+//	uint[CHUNK_VOXEL_COUNT / MASK_COMPRESSION_LEVEL] mask;// size: 2048, offset: 16
 //	VoxelData[CHUNK_VOXEL_COUNT] voxels;// size: 32768, offset: 2064
 };
 
@@ -49,10 +49,6 @@ int GetVoxelIndex(int x, int y, int z) {
 
 int GetVoxelIndex(ivec3 pos) {
 	return (pos.z << (CHUNK_SIZE_LOG2 * 2)) | (pos.y << CHUNK_SIZE_LOG2) | pos.x;
-}
-
-int GetVoxelMask(ChunkData chunk, int voxelIndex) {
-	return (chunk.mask[voxelIndex >> MASK_COMPRESSION_LEVEL_LOG2] >> (VOXEL_MASK_BITCOUNT * (voxelIndex & (MASK_COMPRESSION_LEVEL - 1)))) & 0xF;
 }
 
 //#define SECTOR_SIZE 32
@@ -92,11 +88,15 @@ readonly layout(std430, set = SCENE_DATA_SET, binding = 2) buffer chunkVoxelData
 	VoxelData[CHUNK_VOXEL_COUNT] voxels;
 } voxelsArray[];
 
-readonly layout(std430, set = SCENE_DATA_SET, binding = 3) buffer voxelTypeDescriptor {
+readonly layout(std430, set = SCENE_DATA_SET, binding = 3) buffer chunkMaskDescriptor {
+	uint[CHUNK_VOXEL_COUNT / MASK_COMPRESSION_LEVEL] mask;
+} maskArray[];
+
+readonly layout(std430, set = SCENE_DATA_SET, binding = 4) buffer voxelTypeDescriptor {
 	VoxelType[] voxelTypes;
 };
 
-readonly layout(std430, set = SCENE_DATA_SET, binding = 4) buffer sceneDataDescriptor {
+readonly layout(std430, set = SCENE_DATA_SET, binding = 5) buffer sceneDataDescriptor {
 	vec3 localCameraPos;
 	float pad0;
 	ivec3 cameraChunkPos;
@@ -112,6 +112,12 @@ VoxelData GetVoxel(int chunkIndex, int x, int y, int z) {
 
 VoxelData GetVoxel(int chunkIndex, ivec3 pos) {
 	return voxelsArray[chunkIndex].voxels[GetVoxelIndex(pos)];
+}
+
+uint GetVoxelMask(int chunkIndex, int voxelIndex) {
+	int maskIndex = voxelIndex / MASK_COMPRESSION_LEVEL;
+	int bitIndex = (voxelIndex & (MASK_COMPRESSION_LEVEL - 1)) * VOXEL_MASK_BITCOUNT;
+	return (maskArray[chunkIndex].mask[maskIndex] >> bitIndex) & 0xFu;
 }
 
 //#define VOXEL_COLOR_MATERIAL_BINDING 0
@@ -158,7 +164,6 @@ struct RayResult
 	VoxelData voxel;
 	bool hit;
 	bvec3 mask;
-//	vec3 color;
 };
 
 float sdSphere(vec3 p, float d) { return length(p) - d; } 
@@ -177,8 +182,8 @@ bool test(ivec3 c) {
 }
 
 #define CHUNK_DRAW_DISTANCE 16
-#define MAX_RAY_STEPS CHUNK_DRAW_DISTANCE * CHUNK_SIZE * CHUNK_SIZE
-#define MAX_DIST 1000.0
+#define MAX_RAY_STEPS CHUNK_DRAW_DISTANCE * CHUNK_SIZE
+#define MAX_DIST 500.0
 RayResult VoxelRay(vec3 rayPos, vec3 rayDir)
 {
 	RayResult res;
@@ -190,11 +195,29 @@ RayResult VoxelRay(vec3 rayPos, vec3 rayDir)
 	res.hit = false;
 
 	vec3 sideDist = (sign(rayDir) * (vec3(res.cell) - rayPos) + (sign(rayDir) * 0.5) + 0.5) * deltaDist;
-	for (int i = min(0, int(res.hit)); i < MAX_RAY_STEPS; i++)
+	int i = 0;
+	while (i < MAX_RAY_STEPS)
 	{
-//		res.voxel = test(res.cell);
-		if (test(res.cell)) {
-//			res.dist = length(vec3(mask) * (sideDist - deltaDist));
+		ivec3 chunkPos = res.cell >> CHUNK_SIZE_LOG2;
+		int chunkIndex = chunkIndices[Morton(chunkPos)];
+//		ChunkData chunk = chunkDataArray[chunkIndex];
+		int voxelIndex = GetVoxelIndex(res.cell & (CHUNK_SIZE - 1));
+		uint voxelMask = GetVoxelMask(0, voxelIndex);
+
+		if (voxelMask > 0) {
+			for (int j = 0; j < voxelMask; j++) {
+				res.mask = lessThanEqual(sideDist.xyz, min(sideDist.yzx, sideDist.zxy));
+				sideDist += vec3(res.mask) * deltaDist;
+				res.cell += ivec3(vec3(res.mask)) * rayStep;
+				i++;
+			}
+
+			continue;
+		}
+
+		res.voxel = GetVoxel(res.cell);
+		if (voxelMask == 0 && i != 0) {
+			res.dist = length(vec3(res.mask) * (sideDist - deltaDist));
 			res.hit = true;
 
 			return res;
@@ -203,6 +226,7 @@ RayResult VoxelRay(vec3 rayPos, vec3 rayDir)
 		res.mask = lessThanEqual(sideDist.xyz, min(sideDist.yzx, sideDist.zxy));
 		sideDist += vec3(res.mask) * deltaDist;
 		res.cell += ivec3(vec3(res.mask)) * rayStep;
+		i++;
 	}
 
 	return res;
@@ -238,18 +262,23 @@ void main() {
 
 	if (!result.hit) return;
 
-	outColor.xyz = vec3(result.mask); // draw normals
+	float dist = 1 - result.dist / MAX_DIST;
+	dist *= dist;
+	dist *= dist;
+
+//	outColor.xyz = vec3(result.mask); // draw normals
 //	outColor.xyz = uv.xxx;
 
-//	if (result.mask.x) {
-//		outColor.xyz = vec3(0.5);
-//	}
-//	if (result.mask.y) {
-//		outColor.xyz = vec3(1.0);
-//	}
-//	if (result.mask.z) {
-//		outColor.xyz = vec3(0.75);
-//	}
+	if (result.mask.x) {
+		outColor.xyz = vec3(0.5);
+	}
+	if (result.mask.y) {
+		outColor.xyz = vec3(1.0);
+	}
+	if (result.mask.z) {
+		outColor.xyz = vec3(0.75);
+	}
+	outColor.xyz *= vec3(dist);
 
 	VoxelType voxelType = voxelTypes[int(result.voxel.voxelTypeIndex)];
 	switch (int(result.voxel.voxelMaterialType)) {

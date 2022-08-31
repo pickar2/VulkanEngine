@@ -32,6 +32,7 @@ public unsafe class VoxelRenderer : RenderChain
 	private readonly ReCreator<VulkanBuffer> _chunkIndices;
 	private readonly ReCreator<StagedVulkanBuffer> _chunksData;
 	private readonly ReCreator<StagedVulkanBuffer> _chunksVoxelData;
+	private readonly ReCreator<StagedVulkanBuffer> _chunksMaskData;
 	private readonly ReCreator<VulkanBuffer> _voxelTypes;
 	private readonly ReCreator<VulkanBuffer> _sceneData;
 
@@ -61,16 +62,22 @@ public unsafe class VoxelRenderer : RenderChain
 
 		Pipeline = CreatePipeline();
 
+		const int chunkCount = 32;
+
 		_chunkIndices = ReCreate.InDevice.Auto(
-			() => new VulkanBuffer(256 * 4, BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU),
+			() => new VulkanBuffer(chunkCount * 4, BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU),
 			buffer => buffer.Dispose());
 
 		_chunksData = ReCreate.InDevice.Auto(
-			() => new StagedVulkanBuffer(((2048 + 16) * 16), BufferUsageFlags.StorageBufferBit),
+			() => new StagedVulkanBuffer((16 * chunkCount), BufferUsageFlags.StorageBufferBit),
 			buffer => buffer.Dispose());
 
 		_chunksVoxelData = ReCreate.InDevice.Auto(
-			() => new StagedVulkanBuffer((ulong) (VoxelChunk.ChunkVoxelCount * sizeof(VoxelData) * 256), BufferUsageFlags.StorageBufferBit),
+			() => new StagedVulkanBuffer((ulong) (VoxelChunk.ChunkVoxelCount * sizeof(VoxelData) * chunkCount), BufferUsageFlags.StorageBufferBit),
+			buffer => buffer.Dispose());
+
+		_chunksMaskData = ReCreate.InDevice.Auto(
+			() => new StagedVulkanBuffer(((VoxelChunk.ChunkVoxelCount / VoxelChunk.MaskCompressionLevel) * sizeof(uint) * chunkCount), BufferUsageFlags.StorageBufferBit),
 			buffer => buffer.Dispose());
 
 		_voxelTypes = ReCreate.InDevice.Auto(
@@ -119,17 +126,22 @@ public unsafe class VoxelRenderer : RenderChain
 	public void UpdateChunks()
 	{
 		var indices = _chunkIndices.Value.GetHostSpan<int>();
-		var chunks = _chunksData.Value.GetHostSpan();
+		var chunks = _chunksData.Value.GetHostSpan<VoxelChunkData>();
 		chunks.Fill(default);
 
 		var voxels = _chunksVoxelData.Value.GetHostSpan<VoxelData>();
 		voxels.Fill(default);
 
+		var masks = _chunksMaskData.Value.GetHostSpan<uint>();
+		masks.Fill(default);
+
 		int index = 0;
 		foreach (var (pos, chunk) in World.Chunks)
 		{
-			indices[VoxelUtils.Morton(pos)] = index;
+			int morton = VoxelUtils.Morton(pos);
+			indices[morton] = index;
 
+			chunk.Mask.CopyTo(masks);
 			chunk.Voxels.CopyTo(voxels);
 
 			index++;
@@ -137,6 +149,7 @@ public unsafe class VoxelRenderer : RenderChain
 
 		_chunksData.Value.UpdateGpuBuffer();
 		_chunksVoxelData.Value.UpdateGpuBuffer();
+		_chunksMaskData.Value.UpdateGpuBuffer();
 	}
 
 	private CommandBuffer CreateCommandBuffer(FrameInfo frameInfo)
@@ -183,13 +196,14 @@ public unsafe class VoxelRenderer : RenderChain
 			DescriptorBindingFlags.UpdateAfterBindBit,
 			DescriptorBindingFlags.UpdateAfterBindBit,
 			DescriptorBindingFlags.UpdateAfterBindBit,
+			DescriptorBindingFlags.UpdateAfterBindBit,
 			DescriptorBindingFlags.UpdateAfterBindBit
 		};
 
 		var flagsInfo = new DescriptorSetLayoutBindingFlagsCreateInfoEXT
 		{
 			SType = StructureType.DescriptorSetLayoutBindingFlagsCreateInfoExt,
-			BindingCount = 5,
+			BindingCount = 6,
 			PBindingFlags = bindingFlags
 		};
 
@@ -229,6 +243,13 @@ public unsafe class VoxelRenderer : RenderChain
 				DescriptorCount = 1,
 				DescriptorType = DescriptorType.StorageBuffer,
 				StageFlags = ShaderStageFlags.FragmentBit
+			},
+			new()
+			{
+				Binding = 5,
+				DescriptorCount = 1,
+				DescriptorType = DescriptorType.StorageBuffer,
+				StageFlags = ShaderStageFlags.FragmentBit
 			}
 		};
 
@@ -254,7 +275,7 @@ public unsafe class VoxelRenderer : RenderChain
 			new()
 			{
 				Type = DescriptorType.StorageBuffer,
-				DescriptorCount = 5
+				DescriptorCount = 6
 			}
 		};
 
@@ -294,6 +315,12 @@ public unsafe class VoxelRenderer : RenderChain
 				Offset = 0,
 				Range = Vk.WholeSize,
 				Buffer = _chunksVoxelData.Value
+			},
+			new()
+			{
+				Offset = 0,
+				Range = Vk.WholeSize,
+				Buffer = _chunksMaskData.Value
 			},
 			new()
 			{
@@ -355,6 +382,15 @@ public unsafe class VoxelRenderer : RenderChain
 				DescriptorType = DescriptorType.StorageBuffer,
 				DstSet = _sceneDataSet,
 				PBufferInfo = bufferInfos[4].AsPointer()
+			},
+			new()
+			{
+				SType = StructureType.WriteDescriptorSet,
+				DescriptorCount = 1,
+				DstBinding = 5,
+				DescriptorType = DescriptorType.StorageBuffer,
+				DstSet = _sceneDataSet,
+				PBufferInfo = bufferInfos[5].AsPointer()
 			}
 		};
 
@@ -446,4 +482,10 @@ public struct VoxelSceneData
 	public Vector3<float> ViewDirection;
 	public float Pad2;
 	public Matrix4X4<float> ViewMatrix;
+}
+
+public struct VoxelChunkData
+{
+	public int Flags;
+	public Vector3<int> ChunkPos;
 }
