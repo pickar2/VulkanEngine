@@ -26,14 +26,14 @@ struct VoxelType {
 //	vec2 textureUv;
 };
 
-#define CHUNK_SIZE 16
-#define CHUNK_SIZE_LOG2 4
+#define CHUNK_SIZE 8
+#define CHUNK_SIZE_LOG2 3
 #define CHUNK_VOXEL_COUNT CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE
 
-#define VOXEL_MASK_BITCOUNT CHUNK_SIZE_LOG2
+#define VOXEL_MASK_BITCOUNT 4
 #define INT_BITCOUNT 32
 #define MASK_COMPRESSION_LEVEL (INT_BITCOUNT / VOXEL_MASK_BITCOUNT)
-#define MASK_COMPRESSION_LEVEL_LOG2 3
+//#define MASK_COMPRESSION_LEVEL_LOG2 3
 
 // 4 + 3 * 4 + CHUNK_VOXEL_COUNT / MASK_COMPRESSION_LEVEL * 4 + CHUNK_VOXEL_COUNT * 8 = 34832 bytes
 struct ChunkData {
@@ -49,6 +49,14 @@ int GetVoxelIndex(int x, int y, int z) {
 
 int GetVoxelIndex(ivec3 pos) {
 	return (pos.z << (CHUNK_SIZE_LOG2 * 2)) | (pos.y << CHUNK_SIZE_LOG2) | pos.x;
+}
+
+int GetChunkVoxelOffset(int chunkIndex) {
+	return chunkIndex * CHUNK_VOXEL_COUNT;
+}
+
+int GetChunkMaskOffset(int chunkIndex) {
+	return chunkIndex * (CHUNK_VOXEL_COUNT / MASK_COMPRESSION_LEVEL);
 }
 
 //#define SECTOR_SIZE 32
@@ -77,7 +85,7 @@ int GetVoxelIndex(ivec3 pos) {
 //};
 
 readonly layout(std430, set = SCENE_DATA_SET, binding = 0) buffer chunkInfoDescriptor {
-	int[] chunkIndices; // max array size = (chunk_render_distance)^3
+	int[] chunkIndices;// max array size = (chunk_render_distance)^3
 };
 
 readonly layout(std430, set = SCENE_DATA_SET, binding = 1) buffer chunkDataDescriptor {
@@ -85,12 +93,12 @@ readonly layout(std430, set = SCENE_DATA_SET, binding = 1) buffer chunkDataDescr
 };
 
 readonly layout(std430, set = SCENE_DATA_SET, binding = 2) buffer chunkVoxelDataDescriptor {
-	VoxelData[CHUNK_VOXEL_COUNT] voxels;
-} voxelsArray[];
+	VoxelData[] voxels;
+};
 
 readonly layout(std430, set = SCENE_DATA_SET, binding = 3) buffer chunkMaskDescriptor {
-	uint[CHUNK_VOXEL_COUNT / MASK_COMPRESSION_LEVEL] mask;
-} maskArray[];
+	uint[] mask;
+};
 
 readonly layout(std430, set = SCENE_DATA_SET, binding = 4) buffer voxelTypeDescriptor {
 	VoxelType[] voxelTypes;
@@ -107,17 +115,21 @@ readonly layout(std430, set = SCENE_DATA_SET, binding = 5) buffer sceneDataDescr
 };
 
 VoxelData GetVoxel(int chunkIndex, int x, int y, int z) {
-	return voxelsArray[chunkIndex].voxels[GetVoxelIndex(x, y, z)];
+	return voxels[GetChunkVoxelOffset(chunkIndex) + GetVoxelIndex(x, y, z)];
 }
 
 VoxelData GetVoxel(int chunkIndex, ivec3 pos) {
-	return voxelsArray[chunkIndex].voxels[GetVoxelIndex(pos)];
+	return voxels[GetChunkVoxelOffset(chunkIndex) + GetVoxelIndex(pos)];
+}
+
+VoxelData GetVoxel(int chunkIndex, int voxelIndex) {
+	return voxels[GetChunkVoxelOffset(chunkIndex) + voxelIndex];
 }
 
 uint GetVoxelMask(int chunkIndex, int voxelIndex) {
 	int maskIndex = voxelIndex / MASK_COMPRESSION_LEVEL;
 	int bitIndex = (voxelIndex & (MASK_COMPRESSION_LEVEL - 1)) * VOXEL_MASK_BITCOUNT;
-	return (maskArray[chunkIndex].mask[maskIndex] >> bitIndex) & 0xFu;
+	return (mask[GetChunkMaskOffset(chunkIndex) + maskIndex] >> bitIndex) & 0xFu;
 }
 
 //#define VOXEL_COLOR_MATERIAL_BINDING 0
@@ -141,18 +153,18 @@ int PrepareMortonValue(int value) {
 	return value;
 }
 
-int Morton(int x, int y, int z) {
-	return PrepareMortonValue(x) | PrepareMortonValue(y) << 1 | PrepareMortonValue(z) << 2;
-}
+//int Morton(int x, int y, int z) {
+//	return PrepareMortonValue(x) | PrepareMortonValue(y) << 1 | PrepareMortonValue(z) << 2;
+//}
 
 int Morton(ivec3 pos) {
+//	if (pos.x < 0 || pos.y < 0 || pos.z < 0) return 0;
 	return PrepareMortonValue(pos.x) | PrepareMortonValue(pos.y) << 1 | PrepareMortonValue(pos.z) << 2;
 }
 
 VoxelData GetVoxel(ivec3 cell) {
 	ivec3 chunkPos = cell >> CHUNK_SIZE_LOG2;
 	int chunkIndex = chunkIndices[Morton(chunkPos)];
-//	ChunkData chunk = chunkDataArray[chunkIndex];
 
 	return GetVoxel(chunkIndex, cell & (CHUNK_SIZE - 1));
 }
@@ -164,26 +176,18 @@ struct RayResult
 	VoxelData voxel;
 	bool hit;
 	bvec3 mask;
+	vec3 sideDist;
 };
-
-float sdSphere(vec3 p, float d) { return length(p) - d; } 
 
 float sdBox( vec3 p, vec3 b )
 {
   vec3 d = abs(p) - b;
-  return min(max(d.x,max(d.y,d.z)),0.0) +
-         length(max(d,0.0));
+  return min(max(d.x,max(d.y,d.z)),0.0) + length(max(d,0.0));
 }
 
-bool test(ivec3 c) {
-	vec3 p = vec3(c) + vec3(0.5);
-	float d = min(max(-sdSphere(p, 7.5), sdBox(p, vec3(6.0))), -sdSphere(p, 25.0));
-	return d < 0.0;
-}
-
-#define CHUNK_DRAW_DISTANCE 16
-#define MAX_RAY_STEPS CHUNK_DRAW_DISTANCE * CHUNK_SIZE
-#define MAX_DIST 500.0
+#define CHUNK_DRAW_DISTANCE 64
+#define MAX_RAY_STEPS (CHUNK_DRAW_DISTANCE * CHUNK_SIZE)
+#define MAX_DIST (MAX_RAY_STEPS / 1.4422)
 RayResult VoxelRay(vec3 rayPos, vec3 rayDir)
 {
 	RayResult res;
@@ -199,26 +203,35 @@ RayResult VoxelRay(vec3 rayPos, vec3 rayDir)
 	while (i < MAX_RAY_STEPS)
 	{
 		ivec3 chunkPos = res.cell >> CHUNK_SIZE_LOG2;
-		int chunkIndex = chunkIndices[Morton(chunkPos)];
-//		ChunkData chunk = chunkDataArray[chunkIndex];
-		int voxelIndex = GetVoxelIndex(res.cell & (CHUNK_SIZE - 1));
-		uint voxelMask = GetVoxelMask(0, voxelIndex);
-
-		if (voxelMask > 0) {
-			for (int j = 0; j < voxelMask; j++) {
-				res.mask = lessThanEqual(sideDist.xyz, min(sideDist.yzx, sideDist.zxy));
-				sideDist += vec3(res.mask) * deltaDist;
-				res.cell += ivec3(vec3(res.mask)) * rayStep;
-				i++;
-			}
+		if (chunkPos.x < 0 || chunkPos.y < 0 || chunkPos.z < 0) {
+			res.mask = lessThanEqual(sideDist.xyz, min(sideDist.yzx, sideDist.zxy));
+			sideDist += vec3(res.mask) * deltaDist;
+			res.cell += ivec3(vec3(res.mask)) * rayStep;
+			i+=1;
 
 			continue;
 		}
 
-		res.voxel = GetVoxel(res.cell);
+		int chunkIndex = chunkIndices[Morton(chunkPos)];
+		int voxelIndex = GetVoxelIndex(res.cell & (CHUNK_SIZE - 1));
+		uint voxelMask = GetVoxelMask(0, voxelIndex);
+
+//		if (voxelMask > 0) {
+//			for (int j = 0; j < voxelMask; j++) {
+//				res.mask = lessThanEqual(sideDist.xyz, min(sideDist.yzx, sideDist.zxy));
+//				sideDist += vec3(res.mask) * deltaDist;
+//				res.cell += ivec3(vec3(res.mask)) * rayStep;
+//				i++;
+//			}
+//
+//			continue;
+//		}
+
 		if (voxelMask == 0 && i != 0) {
+			res.voxel = GetVoxel(chunkIndex, voxelIndex);
 			res.dist = length(vec3(res.mask) * (sideDist - deltaDist));
 			res.hit = true;
+			res.sideDist = sideDist;
 
 			return res;
 		}
@@ -234,58 +247,70 @@ RayResult VoxelRay(vec3 rayPos, vec3 rayDir)
 
 #include "Default/functions.glsl"
 
-mat2 rotate(float t)
-{
-    return mat2(vec2(cos(t), sin(t)), vec2(-sin(t), cos(t)));
+float Checker(vec3 p) {
+    return step(0.0, sin(PI * p.x + PI/2.0)*sin(PI *p.y + PI/2.0)*sin(PI *p.z + PI/2.0));
 }
 
 void main() {
-	outColor = vec4(0.55, 0.55, 0.77, 1.0);
+	outColor = vec4(0.44, 0.44, 0.88, 1.0);
 
 	vec2 uv = vec2(2 * inUV.x - 1, 1 - 2 * inUV.y);
-	
+
 	float width = 1280;
 	float height = 720;
 	float aspect = width/height;
-	
+
 	const float fov = 90;
 	const float mult = tan(fov / 2 * PI / 180);
-	vec3 cameraDir = vec3(viewDirection.xy, -1);
+//	vec3 cameraDir = vec3(viewDirection.xy, -1);
 
 	float Px = uv.x * mult * aspect;
 	float Py = uv.y * mult;
 
-    vec3 rayPos = localCameraPos;//vec3(0.0, 0.0, -12.0);
+	vec3 rayPos = localCameraPos + cameraChunkPos * CHUNK_SIZE;
+//	mat4 newView = viewMatrix;
+//	newView[0][0] = 2;
+//	newView[1][1] = 2;
+//	newView[2][2] = 2;
+//	newView[3][3] = 2;
 	vec3 rayDir = (viewMatrix * vec4(Px, Py, -1, 1)).xyz - rayPos;
+	vec3 rayDirNorm = normalize(rayDir);
 
-	RayResult result = VoxelRay(rayPos, normalize(rayDir));
+	RayResult result = VoxelRay(rayPos, rayDirNorm);
 
 	if (!result.hit) return;
 
 	float dist = 1 - result.dist / MAX_DIST;
 	dist *= dist;
-	dist *= dist;
 
 //	outColor.xyz = vec3(result.mask); // draw normals
 //	outColor.xyz = uv.xxx;
 
-	if (result.mask.x) {
-		outColor.xyz = vec3(0.5);
-	}
-	if (result.mask.y) {
-		outColor.xyz = vec3(1.0);
-	}
-	if (result.mask.z) {
-		outColor.xyz = vec3(0.75);
-	}
-	outColor.xyz *= vec3(dist);
+	vec3 hitPos = rayPos + rayDirNorm * result.dist;
+	vec3 sideUv = fract(hitPos);
+	outColor.xyz = mix(vec3(0), vec3(not(result.mask)), sideUv);
+//	if (result.mask.x) {
+//		outColor.xyz = vec3(0.5);
+//	}
+//	if (result.mask.y) {
+//		outColor.xyz = vec3(1.0);
+//	}
+//	if (result.mask.z) {
+//		outColor.xyz = vec3(0.75);
+//	}
+//	outColor.xyz *= vec3(dist);
+//    outColor.xyz *= vec3(0.5 + 0.5 * Checker(rayPos + normalize(rayDir) * result.dist));
+//	outColor.a *= dist;
+//	outColor.rgb = vec3(dist);
 
 	VoxelType voxelType = voxelTypes[int(result.voxel.voxelTypeIndex)];
 	switch (int(result.voxel.voxelMaterialType)) {
 		case -1: break;
 		case 0: {
 //			outColor.xyz = intToRGBA(result.voxel.voxelMaterialIndex).xyz;
-//			outColor.xyz = result.color;
+			break;
+		}
+		case 1: {
 			break;
 		}
 	}

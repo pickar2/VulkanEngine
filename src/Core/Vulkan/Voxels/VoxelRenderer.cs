@@ -16,7 +16,7 @@ namespace Core.Vulkan.Voxels;
 public unsafe class VoxelRenderer : RenderChain
 {
 	public readonly VoxelWorld World = new();
-	public readonly Camera Camera = new();
+	public readonly VoxelCamera Camera = new();
 
 	public readonly ReCreator<VulkanImage2> ColorAttachment;
 	public readonly ReCreator<Framebuffer> Framebuffer;
@@ -43,7 +43,9 @@ public unsafe class VoxelRenderer : RenderChain
 		Size = (1280, 720);
 
 		ColorAttachment = ReCreate.InDevice.Auto(() =>
-			FrameGraph.CreateAttachment(Format.R8G8B8A8Unorm, ImageAspectFlags.ColorBit, Size, ImageUsageFlags.SampledBit | ImageUsageFlags.ColorAttachmentBit), image => image.Dispose());
+				FrameGraph.CreateAttachment(Format.R8G8B8A8Unorm, ImageAspectFlags.ColorBit, Size,
+					ImageUsageFlags.SampledBit | ImageUsageFlags.ColorAttachmentBit),
+			image => image.Dispose());
 
 		RenderPass = ReCreate.InDevice.Auto(() => CreateRenderPass(), pass => pass.Dispose());
 		Framebuffer = ReCreate.InDevice.Auto(() => CreateFramebuffer(), framebuffer => framebuffer.Dispose());
@@ -77,7 +79,8 @@ public unsafe class VoxelRenderer : RenderChain
 			buffer => buffer.Dispose());
 
 		_chunksMaskData = ReCreate.InDevice.Auto(
-			() => new StagedVulkanBuffer(((VoxelChunk.ChunkVoxelCount / VoxelChunk.MaskCompressionLevel) * sizeof(uint) * chunkCount), BufferUsageFlags.StorageBufferBit),
+			() => new StagedVulkanBuffer(((VoxelChunk.ChunkVoxelCount / VoxelChunk.MaskCompressionLevel) * sizeof(uint) * chunkCount),
+				BufferUsageFlags.StorageBufferBit),
 			buffer => buffer.Dispose());
 
 		_voxelTypes = ReCreate.InDevice.Auto(
@@ -110,12 +113,13 @@ public unsafe class VoxelRenderer : RenderChain
 	public void UpdateSceneData()
 	{
 		var dir = new Vector3<double>(Camera.Direction.X.ToRadians(), Camera.Direction.Y.ToRadians(), Camera.Direction.Z.ToRadians()).Cast<double, float>();
+		var cameraWorldPos = Camera.Position + Camera.ChunkPos * VoxelChunk.ChunkSize;
 		var view = Matrix4x4.CreateFromYawPitchRoll(dir.X, dir.Y, dir.Z) *
-		           Matrix4x4.CreateTranslation((float) Camera.Position.X, (float) Camera.Position.Y, (float) Camera.Position.Z);
+		           Matrix4x4.CreateTranslation((float) cameraWorldPos.X, (float) cameraWorldPos.Y, (float) cameraWorldPos.Z);
 		var scene = _sceneData.Value.GetHostSpan<VoxelSceneData>();
 		scene[0] = new VoxelSceneData
 		{
-			CameraChunkPos = (0, 0, 0),
+			CameraChunkPos = Camera.ChunkPos,
 			LocalCameraPos = Camera.Position.Cast<double, float>(),
 			ViewDirection = dir,
 			FrameIndex = Context.FrameIndex,
