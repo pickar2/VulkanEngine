@@ -305,34 +305,35 @@ public static unsafe partial class Context
 		int selectedGpuIndex = State.SelectedGpuIndex.Value;
 		if (State.SelectedGpuIndex.Value == -1 || State.SelectedGpuIndex.Value >= deviceCount)
 		{
-			var reasons = new Dictionary<PhysicalDevice, string>();
-			var scores = new Dictionary<PhysicalDevice, int>();
+			var reasons = new string[deviceCount];
+			var scores = new int[deviceCount];
+			scores.Fill(-1);
 
 			for (int i = 0; i < deviceCount; i++)
 			{
 				var device = devices[i];
 				Vk.GetPhysicalDeviceProperties2(device, out var props);
-				reasons[device] = $"{GetDeviceString(i, props)}: \r\n";
+				reasons[i] = $"{GetDeviceString(i, props)}: \r\n";
 
 				bool suitable = IsDeviceSuitable(device, out string reason);
-				reasons[device] += reason;
+				reasons[i] += reason;
 
 				if (!suitable) continue;
-				scores[device] = GetDeviceScore(device);
+				scores[i] = GetDeviceScore(device);
 			}
 
-			if (scores.Count == 0)
-				throw new NotSupportedException($"Failed to find suitable GPU: \r\n{string.Join("\r\n", reasons.Values)}").AsExpectedException();
+			if (scores.All(score => score == -1))
+				throw new NotSupportedException($"Failed to find suitable GPU: \r\n{string.Join("\r\n", reasons)}").AsExpectedException();
 
-			int maxScore = scores[devices[0]];
+			int maxScore = scores[0];
 			PhysicalDevice = devices[0];
 			selectedGpuIndex = 0;
 			for (int i = 1; i < deviceCount; i++)
 			{
 				var current = devices[i];
-				if (maxScore >= scores[current]) continue;
+				if (maxScore >= scores[i]) continue;
 
-				maxScore = scores[current];
+				maxScore = scores[i];
 				PhysicalDevice = current;
 				selectedGpuIndex = i;
 			}
