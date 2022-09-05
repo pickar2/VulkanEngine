@@ -155,11 +155,11 @@ public unsafe class Deferred3DRenderer : RenderChain
 		Debug.BeginCmdLabel(cmd, $"FIll G-Buffers");
 
 		cmd.BindGraphicsPipeline(_fillGBuffersPipeline);
-		cmd.BindVertexBuffer(0, Scene.VertexBuffer.Value);
-		cmd.BindVertexBuffer(1, Scene.ModelBuffer.Value);
-		Context.Vk.CmdBindIndexBuffer(cmd, Scene.IndexBuffer.Value, 0, IndexType.Uint32);
+		cmd.BindVertexBuffer(0, Scene.VertexBuffer.Value.Buffer);
+		cmd.BindVertexBuffer(1, Scene.ModelBuffer.Value.Buffer);
+		Context.Vk.CmdBindIndexBuffer(cmd, Scene.IndexBuffer.Value.Buffer, 0, IndexType.Uint32);
 
-		Context.Vk.CmdDrawIndexedIndirect(cmd, Scene.IndirectCommandBuffer.Value, 0, Scene.IndirectCommandCount, (uint) sizeof(DrawIndexedIndirectCommand));
+		Context.Vk.CmdDrawIndexedIndirect(cmd, Scene.IndirectCommandBuffer.Value.Buffer, 0, Scene.IndirectCommandCount, (uint) sizeof(DrawIndexedIndirectCommand));
 
 		Debug.EndCmdLabel(cmd);
 		Debug.BeginCmdLabel(cmd, $"Compose Deferred Lighting");

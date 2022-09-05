@@ -17,15 +17,25 @@ public class VoxelCamera
 	private double _speedMultiplier = DefaultSpeedMultiplier;
 
 	public Vector3<double> Position;
-	public Vector3<double> Direction;
+	public Vector3<double> YawPitchRoll;
 	public Vector3<int> ChunkPos;
 
 	public void MoveDirection(double yaw, double pitch, double roll)
 	{
-		Direction.X = (Direction.X + yaw) % 360d;
-		Direction.Y = Math.Clamp(Direction.Y + pitch, -89, 89);
-		Direction.Z = (Direction.Z + roll) % 360d;
+		YawPitchRoll.X = (YawPitchRoll.X + yaw) % 360d;
+		YawPitchRoll.Y = Math.Clamp(YawPitchRoll.Y + pitch, -89, 89);
+		YawPitchRoll.Z = (YawPitchRoll.Z + roll) % 360d;
+
+		// App.Logger.Info.Message($"({yaw}, {pitch}, {roll}) : {YawPitchRoll}");
 	}
+
+	public Vector3<double> Direction =>
+		new()
+		{
+			X = Math.Cos(YawPitchRoll.X.ToRadians()) * Math.Sin(YawPitchRoll.Y.ToRadians()),
+			Y = Math.Sin(YawPitchRoll.X.ToRadians()) * Math.Sin(YawPitchRoll.Y.ToRadians()),
+			Z = Math.Cos(YawPitchRoll.Y.ToRadians())
+		};
 
 	public void UpdatePosition()
 	{
@@ -51,7 +61,7 @@ public class VoxelCamera
 	{
 		Position = new Vector3<double>(8, 8, 8);
 
-		MouseInput.OnMouseDragMove += (_, motion, _) => MoveDirection(-motion.X * MouseSensitivity, -motion.Y * MouseSensitivity, 0);
+		MouseInput.OnMouseDragMove += (_, motion, _) => MoveDirection(motion.X * MouseSensitivity, motion.Y * MouseSensitivity, 0);
 
 		KeyboardInput.OnKeyDown += (key) =>
 		{
@@ -70,32 +80,32 @@ public class VoxelCamera
 
 		UiManager.BeforeUpdate += () =>
 		{
-			var moveDirection = new Vector3<int>();
+			var relativeMoveVector = new Vector3<int>();
 
-			if (KeyboardInput.IsKeyPressed(SDL.SDL_Keycode.SDLK_w)) moveDirection.Z = 1;
-			else if (KeyboardInput.IsKeyPressed(SDL.SDL_Keycode.SDLK_s)) moveDirection.Z = -1;
+			if (KeyboardInput.IsKeyPressed(SDL.SDL_Keycode.SDLK_w)) relativeMoveVector.Z = -1;
+			else if (KeyboardInput.IsKeyPressed(SDL.SDL_Keycode.SDLK_s)) relativeMoveVector.Z = 1;
 
-			if (KeyboardInput.IsKeyPressed(SDL.SDL_Keycode.SDLK_a)) moveDirection.X = -1;
-			else if (KeyboardInput.IsKeyPressed(SDL.SDL_Keycode.SDLK_d)) moveDirection.X = 1;
+			if (KeyboardInput.IsKeyPressed(SDL.SDL_Keycode.SDLK_a)) relativeMoveVector.X = -1;
+			else if (KeyboardInput.IsKeyPressed(SDL.SDL_Keycode.SDLK_d)) relativeMoveVector.X = 1;
 
-			if (KeyboardInput.IsKeyPressed(SDL.SDL_Keycode.SDLK_z)) moveDirection.Y = -1;
-			else if (KeyboardInput.IsKeyPressed(SDL.SDL_Keycode.SDLK_SPACE)) moveDirection.Y = 1;
+			if (KeyboardInput.IsKeyPressed(SDL.SDL_Keycode.SDLK_z)) relativeMoveVector.Y = -1;
+			else if (KeyboardInput.IsKeyPressed(SDL.SDL_Keycode.SDLK_SPACE)) relativeMoveVector.Y = 1;
 
-			double yaw = Math.PI - Direction.X.ToRadians();
+			double yaw = YawPitchRoll.X.ToRadians();
 
-			if (moveDirection.Z != 0)
+			if (relativeMoveVector.Z != 0)
 			{
-				Position.X -= Math.Sin(yaw) * moveDirection.Z * _speedMultiplier * HorizontalSpeed;
-				Position.Z += Math.Cos(yaw) * moveDirection.Z * _speedMultiplier * HorizontalSpeed;
+				Position.X -= Math.Sin(yaw) * relativeMoveVector.Z * _speedMultiplier * HorizontalSpeed;
+				Position.Z += Math.Cos(yaw) * relativeMoveVector.Z * _speedMultiplier * HorizontalSpeed;
 			}
 
-			if (moveDirection.X != 0)
+			if (relativeMoveVector.X != 0)
 			{
-				Position.X -= Math.Cos(yaw) * moveDirection.X * _speedMultiplier * HorizontalSpeed;
-				Position.Z -= Math.Sin(yaw) * moveDirection.X * _speedMultiplier * HorizontalSpeed;
+				Position.X += Math.Cos(yaw) * relativeMoveVector.X * _speedMultiplier * HorizontalSpeed;
+				Position.Z += Math.Sin(yaw) * relativeMoveVector.X * _speedMultiplier * HorizontalSpeed;
 			}
 
-			Position.Y += moveDirection.Y * _speedMultiplier * VerticalSpeed;
+			Position.Y += relativeMoveVector.Y * _speedMultiplier * VerticalSpeed;
 
 			UpdatePosition();
 		};

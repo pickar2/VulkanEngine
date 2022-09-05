@@ -6,7 +6,7 @@
 #include "Default/constants.glsl"
 #include "Default/structs.glsl"
 
-layout (location = 0) in vec2 inUV;
+layout (location = 0) in vec3 inPos;
 
 layout (location = 0) out vec4 outColor;
 
@@ -112,6 +112,7 @@ readonly layout(std430, set = SCENE_DATA_SET, binding = 5) buffer sceneDataDescr
 	vec3 viewDirection;
 	float pad2;
 	mat4 viewMatrix;
+	mat4 projMatrix;
 };
 
 VoxelData GetVoxel(int chunkIndex, int x, int y, int z) {
@@ -185,7 +186,7 @@ float sdBox( vec3 p, vec3 b )
   return min(max(d.x,max(d.y,d.z)),0.0) + length(max(d,0.0));
 }
 
-#define CHUNK_DRAW_DISTANCE 64
+#define CHUNK_DRAW_DISTANCE 3
 #define MAX_RAY_STEPS (CHUNK_DRAW_DISTANCE * CHUNK_SIZE)
 #define MAX_DIST (MAX_RAY_STEPS / 1.4422)
 RayResult RayMarchVoxelWorld(vec3 rayPos, vec3 rayDir)
@@ -262,12 +263,13 @@ RayResult RayMarchVoxelChunk(vec3 rayPos, vec3 rayDir)
 
 	vec3 sideDist = (sign(rayDir) * (vec3(res.cell) - rayPos) + (sign(rayDir) * 0.5) + 0.5) * deltaDist;
 	int i = 0;
-	ivec3 startChunk = res.cell >> CHUNK_SIZE_LOG2;
-	if (startChunk.x < 0 || startChunk.y < 0 || startChunk.z < 0) return res;
-
+	
 	res.mask = lessThanEqual(sideDist.xyz, min(sideDist.yzx, sideDist.zxy));
 	sideDist += vec3(res.mask) * deltaDist;
 	res.cell += ivec3(vec3(res.mask)) * rayStep;
+
+	ivec3 startChunk = res.cell >> CHUNK_SIZE_LOG2;
+	if (startChunk.x < 0 || startChunk.y < 0 || startChunk.z < 0) return res;
 
 	while (i < MAX_RAY_STEPS)
 	{
@@ -280,19 +282,30 @@ RayResult RayMarchVoxelChunk(vec3 rayPos, vec3 rayDir)
 		int voxelIndex = GetVoxelIndex(res.cell & (CHUNK_SIZE - 1));
 		uint voxelMask = GetVoxelMask(0, voxelIndex);
 
-		if (voxelMask == 0) {
+		if (voxelMask > 0) {
+			for (int j = 0; j < voxelMask; j++) {
+				res.mask = lessThanEqual(sideDist.xyz, min(sideDist.yzx, sideDist.zxy));
+				sideDist += vec3(res.mask) * deltaDist;
+				res.cell += ivec3(vec3(res.mask)) * rayStep;
+				i++;
+			}
+
+			continue;
+		}
+
+//		if (voxelMask == 0) {
 			res.voxel = GetVoxel(chunkIndex, voxelIndex);
 			res.dist = length(vec3(res.mask) * (sideDist - deltaDist));
 			res.hit = true;
 			res.sideDist = sideDist;
 
 			return res;
-		}
+//		}
 
-		res.mask = lessThanEqual(sideDist.xyz, min(sideDist.yzx, sideDist.zxy));
-		sideDist += vec3(res.mask) * deltaDist;
-		res.cell += ivec3(vec3(res.mask)) * rayStep;
-		i++;
+//		res.mask = lessThanEqual(sideDist.xyz, min(sideDist.yzx, sideDist.zxy));
+//		sideDist += vec3(res.mask) * deltaDist;
+//		res.cell += ivec3(vec3(res.mask)) * rayStep;
+//		i++;
 	}
 
 	return res;
@@ -304,68 +317,29 @@ float Checker(vec3 p) {
     return step(0.0, sin(PI * p.x + PI/2.0)*sin(PI *p.y + PI/2.0)*sin(PI *p.z + PI/2.0));
 }
 
-float fcos( in float x )
-{
-    float w = fwidth(x);
-    return cos(x) * sin(0.5*w)/(0.5*w);
-}
-
 void main() {
 	outColor = vec4(0.44, 0.44, 0.88, 1.0);
 
-	vec2 uv = vec2(2 * inUV.x - 1, 1 - 2 * inUV.y);
+	vec3 cameraPos = localCameraPos + cameraChunkPos * CHUNK_SIZE;
+	
+//	mat4 pvMatrix = projMatrix * viewMatrix;
 
-	float width = 1280;
-	float height = 720;
-	float aspect = width/height;
-
-	const float fov = 90;
-	const float mult = tan(fov / 2 * PI / 180);
-
-	float Px = uv.x * mult * aspect;
-	float Py = uv.y * mult;
-
-	vec3 rayPos = localCameraPos + cameraChunkPos * CHUNK_SIZE;
-	vec3 rayDir = (viewMatrix * vec4(Px, Py, -1, 1)).xyz - rayPos;
+	vec3 rayPos = inPos;
+	vec3 rayDir = rayPos - cameraPos;
 	vec3 rayDirNorm = normalize(rayDir);
 
-	RayResult result = RayMarchVoxelWorld(rayPos, rayDirNorm);
+	RayResult result = RayMarchVoxelChunk(rayPos, rayDirNorm);
 
-	if (!result.hit) return;
+	if (!result.hit) discard;
 
 	float dist = 1 - result.dist / MAX_DIST;
 	dist *= dist;
 
-//	outColor.xyz = vec3(result.mask); // draw normals
-//	outColor.xyz = uv.xxx;
-
 	vec3 hitPos = rayPos + rayDirNorm * result.dist;
-
-//	vec3 w = fwidth(gl_FragCoord.xyz);
-//	vec3 band1 = sin(0.5 * w) / (0.5 * w);
-//	vec3 band2 = smoothstep(1.0, 0.5, w);
-
-//	float fw = max(fwidth(inUV.x * 640 * 1.5 + 250), fwidth(inUV.y * 360 * 1.5 + 50));
-//	float fw = max(fwidth(gl_FragCoord.x), fwidth(gl_FragCoord.y));
 	vec3 sideUv = fract(hitPos);
-//	sideUv *= sin(0.5 * fw) / (0.5 * fw);
-//	vec3 sideUv = fract(hitPos);
 
 	float spread = 0.05;
 	outColor.xyz = mix(vec3(0), vec3(not(result.mask)), smoothstep(-spread, 1 + spread, sideUv + spread * 2));
-//	if (result.mask.x) {
-//		outColor.xyz = vec3(0.5);
-//	}
-//	if (result.mask.y) {
-//		outColor.xyz = vec3(1.0);
-//	}
-//	if (result.mask.z) {
-//		outColor.xyz = vec3(0.75);
-//	}
-//	outColor.xyz *= vec3(dist);
-//    outColor.xyz *= vec3(0.5 + 0.5 * Checker(rayPos + normalize(rayDir) * result.dist));
-//	outColor.a *= dist;
-//	outColor.rgb = vec3(dist);
 
 	VoxelType voxelType = voxelTypes[int(result.voxel.voxelTypeIndex)];
 	switch (int(result.voxel.voxelMaterialType)) {

@@ -26,7 +26,8 @@ public class StagedVulkanBuffer : IDisposable
 
 		if (Context.IsIntegratedGpu)
 		{
-			_stagingBuffer = Buffer = new VulkanBuffer(initialSize, _usageFlags, VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_TO_CPU);
+			_stagingBuffer = new VulkanBuffer(initialSize, _usageFlags, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU);
+			Buffer = _stagingBuffer;
 		}
 		else
 		{
@@ -90,6 +91,6 @@ public class StagedVulkanBuffer : IDisposable
 		GC.SuppressFinalize(this);
 	}
 
-	public static implicit operator VulkanBuffer(StagedVulkanBuffer stagedBuffer) => stagedBuffer.Buffer;
-	public static implicit operator Buffer(StagedVulkanBuffer stagedBuffer) => stagedBuffer.Buffer.Buffer;
+	// public static implicit operator VulkanBuffer(StagedVulkanBuffer stagedBuffer) => stagedBuffer.Buffer;
+	// public static implicit operator Buffer(StagedVulkanBuffer stagedBuffer) => stagedBuffer.Buffer.Buffer;
 }
