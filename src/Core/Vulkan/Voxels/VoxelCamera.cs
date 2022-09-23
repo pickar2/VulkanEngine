@@ -1,6 +1,8 @@
 ﻿using System;
 using Core.UI;
+using Core.UI.Controls;
 using Core.Utils;
+using Core.Vulkan.Renderers;
 using Core.Window;
 using SDL2;
 using SimpleMath.Vectors;
@@ -19,6 +21,8 @@ public class VoxelCamera
 	public Vector3<double> Position;
 	public Vector3<double> YawPitchRoll;
 	public Vector3<int> ChunkPos;
+
+	private readonly Label _label;
 
 	public void MoveDirection(double yaw, double pitch, double roll)
 	{
@@ -48,18 +52,26 @@ public class VoxelCamera
 		ChunkPos.Z += (int) Math.Floor(Position.Z / VoxelChunk.ChunkSize);
 		Position.Z = (Position.Z + VoxelChunk.ChunkSize) % VoxelChunk.ChunkSize;
 
-		// App.Logger.Info.Message($"{ChunkPos} | {Position}");
+		var pos = Position + ChunkPos * VoxelChunk.ChunkSize;
+		_label.Text = $"({Maths.FixedPrecision(pos.X, 2)}, {Maths.FixedPrecision(pos.Y, 2)}, {Maths.FixedPrecision(pos.Z, 2)})";
 	}
 
 	public void SetPosition(double x, double y, double z)
 	{
 		Position = new Vector3<double>(x, y, z);
+		ChunkPos = new Vector3<int>(0, 0, 0);
 		UpdatePosition();
 	}
 
 	public VoxelCamera()
 	{
+		_label = new Label(GeneralRenderer.MainRoot);
+		_label.OffsetZ = 1000;
+		_label.MarginLT = (265, 60);
+		GeneralRenderer.MainRoot.AddChild(_label);
+
 		Position = new Vector3<double>(8, 8, 8);
+		UpdatePosition();
 
 		MouseInput.OnMouseDragMove += (_, motion, _) => MoveDirection(motion.X * MouseSensitivity, motion.Y * MouseSensitivity, 0);
 

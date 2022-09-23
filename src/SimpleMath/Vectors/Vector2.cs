@@ -35,7 +35,7 @@ public static class Vector2Extensions
 
 		return new Vector2<T>(vector.X < otherX ? vector.X : otherX, vector.Y < otherY ? vector.Y : otherY);
 	}
-	
+
 	public static Vector2<T> MinV<T, TOther>(this Vector2<T> vector, Vector2<TOther> other)
 		where T : struct, INumber<T> where TOther : struct, INumber<TOther>
 	{
@@ -44,7 +44,7 @@ public static class Vector2Extensions
 
 		return new Vector2<T>(vector.X < otherX ? vector.X : otherX, vector.Y < otherY ? vector.Y : otherY);
 	}
-	
+
 	public static Vector2<T> MinV<T, TOther>(this Vector2<T> vector, TOther value)
 		where T : struct, INumber<T> where TOther : struct, INumber<TOther>
 	{
@@ -52,7 +52,7 @@ public static class Vector2Extensions
 
 		return new Vector2<T>(vector.X < otherValue ? vector.X : otherValue, vector.Y < otherValue ? vector.Y : otherValue);
 	}
-	
+
 	public static Vector2<T> MaxV<T, TOther>(this Vector2<T> vector, Vector2<TOther> other)
 		where T : struct, INumber<T> where TOther : struct, INumber<TOther>
 	{
@@ -61,7 +61,7 @@ public static class Vector2Extensions
 
 		return new Vector2<T>(vector.X > otherX ? vector.X : otherX, vector.Y > otherY ? vector.Y : otherY);
 	}
-	
+
 	public static Vector2<T> MaxV<T, TOther>(this Vector2<T> vector, TOther value)
 		where T : struct, INumber<T> where TOther : struct, INumber<TOther>
 	{

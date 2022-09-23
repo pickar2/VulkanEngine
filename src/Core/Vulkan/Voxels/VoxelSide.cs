@@ -18,9 +18,14 @@ public sealed class VoxelSide
 	public static readonly VoxelSide Left = new(5, nameof(Left), new Vector3<int>(0, 0, -1), 2);
 
 	private static readonly VoxelSide[] SideArray;
+	private static readonly VoxelSide[] Opposites;
 	public static IReadOnlyCollection<VoxelSide> Sides => SideArray;
 
-	static VoxelSide() => SideArray = new[] {Front, Back, Top, Bottom, Right, Left};
+	static VoxelSide()
+	{
+		SideArray = new[] {Front, Back, Top, Bottom, Right, Left};
+		Opposites = new[] {Back, Front, Bottom, Top, Left, Right};
+	}
 
 	private VoxelSide(int ordinal, string name, Vector3<int> normal, int component)
 	{
@@ -29,6 +34,8 @@ public sealed class VoxelSide
 		Normal = normal;
 		Component = component;
 	}
+
+	public VoxelSide Opposite() => Opposites[Ordinal];
 
 	public override string ToString() => Name;
 	public static implicit operator int(VoxelSide side) => side.Ordinal;

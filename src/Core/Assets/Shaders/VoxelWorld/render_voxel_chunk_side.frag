@@ -186,8 +186,8 @@ float sdBox( vec3 p, vec3 b )
   return min(max(d.x,max(d.y,d.z)),0.0) + length(max(d,0.0));
 }
 
-#define CHUNK_DRAW_DISTANCE 3
-#define MAX_RAY_STEPS (CHUNK_DRAW_DISTANCE * CHUNK_SIZE)
+#define CHUNK_DRAW_DISTANCE 1
+#define MAX_RAY_STEPS (CHUNK_DRAW_DISTANCE * CHUNK_SIZE * 3)
 #define MAX_DIST (MAX_RAY_STEPS / 1.4422)
 RayResult RayMarchVoxelWorld(vec3 rayPos, vec3 rayDir)
 {
@@ -263,49 +263,49 @@ RayResult RayMarchVoxelChunk(vec3 rayPos, vec3 rayDir)
 
 	vec3 sideDist = (sign(rayDir) * (vec3(res.cell) - rayPos) + (sign(rayDir) * 0.5) + 0.5) * deltaDist;
 	int i = 0;
-	
+
 	res.mask = lessThanEqual(sideDist.xyz, min(sideDist.yzx, sideDist.zxy));
 	sideDist += vec3(res.mask) * deltaDist;
 	res.cell += ivec3(vec3(res.mask)) * rayStep;
 
 	ivec3 startChunk = res.cell >> CHUNK_SIZE_LOG2;
-	if (startChunk.x < 0 || startChunk.y < 0 || startChunk.z < 0) return res;
+//	if (startChunk.x < 0 || startChunk.y < 0 || startChunk.z < 0) return res;
 
 	while (i < MAX_RAY_STEPS)
 	{
 		ivec3 chunkPos = res.cell >> CHUNK_SIZE_LOG2;
-		if (chunkPos.x != startChunk.x || chunkPos.y != startChunk.y || chunkPos.z != startChunk.z) {
-			break;
-		}
+//		if (chunkPos.x != startChunk.x || chunkPos.y != startChunk.y || chunkPos.z != startChunk.z) {
+//			break;
+//		}
 
 		int chunkIndex = chunkIndices[Morton(chunkPos)];
 		int voxelIndex = GetVoxelIndex(res.cell & (CHUNK_SIZE - 1));
 		uint voxelMask = GetVoxelMask(0, voxelIndex);
 
-		if (voxelMask > 0) {
-			for (int j = 0; j < voxelMask; j++) {
-				res.mask = lessThanEqual(sideDist.xyz, min(sideDist.yzx, sideDist.zxy));
-				sideDist += vec3(res.mask) * deltaDist;
-				res.cell += ivec3(vec3(res.mask)) * rayStep;
-				i++;
-			}
+//		if (voxelMask > 0) {
+//			for (int j = 0; j < voxelMask; j++) {
+//				res.mask = lessThanEqual(sideDist.xyz, min(sideDist.yzx, sideDist.zxy));
+//				sideDist += vec3(res.mask) * deltaDist;
+//				res.cell += ivec3(vec3(res.mask)) * rayStep;
+//				i++;
+//			}
+//
+//			continue;
+//		}
 
-			continue;
-		}
-
-//		if (voxelMask == 0) {
+		if (voxelMask == 0) {
 			res.voxel = GetVoxel(chunkIndex, voxelIndex);
 			res.dist = length(vec3(res.mask) * (sideDist - deltaDist));
 			res.hit = true;
 			res.sideDist = sideDist;
 
 			return res;
-//		}
+		}
 
-//		res.mask = lessThanEqual(sideDist.xyz, min(sideDist.yzx, sideDist.zxy));
-//		sideDist += vec3(res.mask) * deltaDist;
-//		res.cell += ivec3(vec3(res.mask)) * rayStep;
-//		i++;
+		res.mask = lessThanEqual(sideDist.xyz, min(sideDist.yzx, sideDist.zxy));
+		sideDist += vec3(res.mask) * deltaDist;
+		res.cell += ivec3(vec3(res.mask)) * rayStep;
+		i++;
 	}
 
 	return res;
@@ -353,5 +353,5 @@ void main() {
 		}
 	}
 
-	outColor.a = 1.0;
+//	outColor.a = 1.0;
 }

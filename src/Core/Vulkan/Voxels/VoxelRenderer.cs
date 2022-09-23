@@ -35,14 +35,15 @@ public unsafe class VoxelRenderer : RenderChain
 	private readonly ReCreator<DescriptorPool> _sceneDataPool;
 	private readonly ReCreator<DescriptorSet> _sceneDataSet;
 
-	private readonly ReCreator<VulkanBuffer> _chunkIndices;
+	private readonly ReCreator<StagedVulkanBuffer> _chunkIndices;
 	private readonly ReCreator<StagedVulkanBuffer> _chunksData;
 	private readonly ReCreator<StagedVulkanBuffer> _chunksVoxelData;
 	private readonly ReCreator<StagedVulkanBuffer> _chunksMaskData;
-	private readonly ReCreator<VulkanBuffer> _voxelTypes;
-	private readonly ReCreator<VulkanBuffer> _sceneData;
+	private readonly ReCreator<StagedVulkanBuffer> _voxelTypes;
+	private readonly ReCreator<StagedVulkanBuffer> _sceneData;
 
 	private readonly ReCreator<StagedVulkanBuffer> _indexBuffer;
+
 	private readonly ReCreator<VulkanBuffer> _indirectCommandBuffer;
 	// private readonly ReCreator<VulkanBuffer> _indexBufferGeneratorInfoBuffer;
 	//
@@ -53,15 +54,17 @@ public unsafe class VoxelRenderer : RenderChain
 
 	public Vector2<uint> Size;
 
-	private readonly int[] _indices1 = {0, 2, 1, 1, 2, 3};
-	private readonly int[] _indices2 = {0, 1, 2, 2, 1, 3};
-	private readonly Vector3<float>[] _positions = new Vector3<float>[4];
+	// private readonly int[] _indices1 = {0, 2, 1, 1, 2, 3};
+	// private readonly int[] _indices2 = {0, 1, 2, 2, 1, 3};
 
-	private int _renderDistance = 40;
+	private readonly int[][] _indices = {new[] {0, 2, 1, 1, 2, 3}, new[] {0, 1, 2, 2, 1, 3}};
+
+	private int _renderDistance = 20;
 
 	public VoxelRenderer(string name) : base(name)
 	{
-		Size = (1280, 720);
+		Size = (1920, 1080);
+		// Size /= 2;
 
 		ColorAttachment = ReCreate.InDevice.Auto(() =>
 				FrameGraph.CreateAttachment(Format.R8G8B8A8Unorm, ImageAspectFlags.ColorBit, Size,
@@ -95,7 +98,7 @@ public unsafe class VoxelRenderer : RenderChain
 		chunkCount = chunkCount * chunkCount * chunkCount;
 
 		_chunkIndices = ReCreate.InDevice.Auto(
-			() => new VulkanBuffer(chunkCount * 4, BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU),
+			() => new StagedVulkanBuffer(chunkCount * 4, BufferUsageFlags.StorageBufferBit),
 			buffer => buffer.Dispose());
 
 		_chunksData = ReCreate.InDevice.Auto(
@@ -112,21 +115,21 @@ public unsafe class VoxelRenderer : RenderChain
 			buffer => buffer.Dispose());
 
 		_voxelTypes = ReCreate.InDevice.Auto(
-			() => new VulkanBuffer((ulong) (sizeof(VoxelType) * 16), BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU),
+			() => new StagedVulkanBuffer((ulong) (sizeof(VoxelType) * 16), BufferUsageFlags.StorageBufferBit),
 			buffer => buffer.Dispose());
 
 		_sceneData = ReCreate.InDevice.Auto(
-			() => new VulkanBuffer((ulong) sizeof(VoxelSceneData), BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU),
+			() => new StagedVulkanBuffer((ulong) sizeof(VoxelSceneData), BufferUsageFlags.StorageBufferBit),
 			buffer => buffer.Dispose());
 
 		_indexBuffer = ReCreate.InDevice.Auto(
-			() => new StagedVulkanBuffer((ulong) ((sizeof(uint)) * 6 * 3 * (int) chunkCount), BufferUsageFlags.IndexBufferBit),
+			() => new StagedVulkanBuffer((ulong) ((sizeof(uint)) * 6 * 3 * chunkCount), BufferUsageFlags.IndexBufferBit),
 			buffer => buffer.Dispose());
 
 		_indirectCommandBuffer = ReCreate.InDevice.Auto(() =>
 				new VulkanBuffer((ulong) sizeof(DrawIndexedIndirectCommand), BufferUsageFlags.IndirectBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU),
 			buffer => buffer.Dispose());
-		
+
 		// _indexBufferGeneratorLayout = ReCreate.InDevice.Auto(() => CreateSceneDataLayout(), layout => layout.Dispose());
 		// _indexBufferGeneratorPool = ReCreate.InDevice.Auto(() => CreateSceneDataPool(), pool => pool.Dispose());
 		// _indexBufferGeneratorSet = ReCreate.InDevice.Auto(() => AllocateDescriptorSet(_indexBufferGeneratorLayout, _indexBufferGeneratorPool));
@@ -135,7 +138,7 @@ public unsafe class VoxelRenderer : RenderChain
 		// 	PipelineManager.CreateComputePipeline(ShaderManager.GetOrCreate("Assets/Shaders/VoxelWorld/generate_index_buffer.comp", ShaderKind.ComputeShader),
 		// 		new[] {_sceneDataLayout.Value, _indexBufferGeneratorLayout.Value}), pipeline => pipeline.Dispose());
 
-		Camera.SetPosition(100, 100, 100);
+		Camera.SetPosition((_renderDistance + 1) * VoxelChunk.ChunkSize, 9, (_renderDistance + 1) * VoxelChunk.ChunkSize);
 
 		var cmds = ReCreate.InSwapchain.AutoArrayFrameOverlap(_ => CreateCommandBuffer(default),
 			buffer => Context.Vk.FreeCommandBuffers(Context.Device, RenderPool, 1, buffer));
@@ -146,7 +149,6 @@ public unsafe class VoxelRenderer : RenderChain
 			sw.Start();
 
 			UpdateSceneDataSet();
-
 			UpdateVoxelTypes();
 			UpdateChunks();
 			UpdateSceneData();
@@ -213,39 +215,56 @@ public unsafe class VoxelRenderer : RenderChain
 
 		var checker = new FrustumChecker();
 		checker.SetFromMatrix(view * proj.ToSystem());
-		
-		var chunksToRender = new SortedSet<Vector3<int>>(new CameraDistanceComparer());
-		for (int cx = 0; cx < chunkCountX; cx++)
+
+		var chunksToRender = new List<Vector3<int>>();
+		var processed = new HashSet<Vector3<int>>();
+		var queue = new Queue<Vector3<int>>();
+
+		// var offset = new Vector3<int>(0, 0, 0);
+		var offset = Camera.ChunkPos;
+		offset.Y = 0;
+		queue.Enqueue(offset);
+
+		var renderDistance = new Vector3<int>(_renderDistance, 2, _renderDistance);
+		while (queue.Count > 0)
 		{
-			for (int cy = 0; cy < chunkCountY; cy++)
+			var chunkPos = queue.Dequeue();
+
+			if (processed.Contains(chunkPos)) continue;
+			processed.Add(chunkPos);
+
+			var chunkVoxelPos = chunkPos * VoxelChunk.ChunkSize;
+			if (checker.TestAabb(chunkVoxelPos.Cast<int, float>(), (chunkVoxelPos + VoxelChunk.ChunkSize).Cast<int, float>()))
+				chunksToRender.Add(chunkVoxelPos);
+
+			foreach (var side in VoxelSide.Sides)
 			{
-				for (int cz = 0; cz < chunkCountZ; cz++)
+				if (Math.Abs((chunkPos - offset + side.Normal)[side.Component]) < renderDistance[side.Component])
 				{
-					var chunkPos = new Vector3<int>(cx, cy, cz);
-					var chunkVoxelPos = chunkPos * VoxelChunk.ChunkSize;
-		
-					if (!checker.TestAabb(chunkVoxelPos.Cast<int, float>(), (chunkVoxelPos + VoxelChunk.ChunkSize).Cast<int, float>()))
-						continue;
-		
-					CameraDistanceComparer.Distances[chunkVoxelPos] = (cameraWorldPos - chunkVoxelPos).Length;
-					chunksToRender.Add(chunkVoxelPos);
+					queue.Enqueue(chunkPos + side.Normal);
 				}
 			}
 		}
-		
-		// sw.Stop();
-		// App.Logger.Info.Message($"Cull chunks {StopwatchExtensions.Ms(sw)}ms");
-		// sw.Restart();
-		//
+
+		App.Logger.Info.Message($"{chunksToRender.Count}");
+
+		sw.Stop();
+		App.Logger.Info.Message($"Sort chunks {StopwatchExtensions.Ms(sw)}ms");
+		sw.Restart();
+
 		foreach (var chunkOffset in chunksToRender)
 		{
 			AddChunk(indices, chunkOffset / VoxelChunk.ChunkSize, chunkOffset, cameraWorldPos);
 		}
-		
+
+		sw.Stop();
+		App.Logger.Info.Message($"Create Indices {StopwatchExtensions.Ms(sw)}ms");
+		sw.Restart();
+
 		_indexBuffer.Value.UpdateGpuBuffer();
 
-		// sw.Stop();
-		// App.Logger.Info.Message($"Update vertices {StopwatchExtensions.Ms(sw)}ms");
+		sw.Stop();
+		App.Logger.Info.Message($"Update index buffer {StopwatchExtensions.Ms(sw)}ms");
 
 		var command = _indirectCommandBuffer.Value.GetHostSpan<DrawIndexedIndirectCommand>();
 		command[0] = new DrawIndexedIndirectCommand
@@ -256,17 +275,10 @@ public unsafe class VoxelRenderer : RenderChain
 			FirstIndex = 0,
 			VertexOffset = 0
 		};
-	}
 
-	private class CameraDistanceComparer : IComparer<Vector3<int>>
-	{
-		public static readonly Dictionary<Vector3<int>, double> Distances = new();
-
-		public int Compare(Vector3<int> x, Vector3<int> y)
-		{
-			int result = (int) (Distances[x] - Distances[y]);
-			return result == 0 ? 1 : result;
-		}
+		_sceneData.Value.UpdateGpuBuffer();
+		_voxelTypes.Value.UpdateGpuBuffer();
+		_chunkIndices.Value.UpdateGpuBuffer();
 	}
 
 	private uint PackIndex(Vector3<int> chunkPos, int index) =>
@@ -276,28 +288,14 @@ public unsafe class VoxelRenderer : RenderChain
 	{
 		foreach (var side in VoxelSide.Sides)
 		{
-			var n = (side.Normal.X > 0 || side.Normal.Y > 0 || side.Normal.Z > 0)
+			var n = ((side.Ordinal & 1) == 1)
 				? side.Normal.Dot(chunkOffset + new Vector3<double>(VoxelChunk.ChunkSize, VoxelChunk.ChunkSize, VoxelChunk.ChunkSize))
-				: side.Normal.Dot(chunkOffset + new Vector3<double>(0, 0, 0));
-			var dot1 = (cameraWorldPos - (0, 1, 0)).Dot(side.Normal);
+				: side.Normal.Dot(chunkOffset);
+			var dot1 = cameraWorldPos.Dot(side.Normal);
 			if (n < dot1) continue;
 
-			if ((side.Ordinal & 1) == 1)
-			{
-				for (var i = 0; i < _indices1.Length; i++)
-				{
-					indices[_indexCount + i] = PackIndex(chunkPos, side.Ordinal * 4 + _indices1[i]);
-				}
-			}
-			else
-			{
-				for (var i = 0; i < _indices2.Length; i++)
-				{
-					indices[_indexCount + i] = PackIndex(chunkPos, side.Ordinal * 4 + _indices2[i]);
-				}
-			}
-
-			_indexCount += 6;
+			int flip = 1 - (side.Ordinal & 1);
+			for (var i = 0; i < 6; i++) indices[_indexCount++] = PackIndex(chunkPos, side.Ordinal * 4 + _indices[flip][i]);
 		}
 	}
 
@@ -371,7 +369,8 @@ public unsafe class VoxelRenderer : RenderChain
 
 		return cmd;
 	}
-		private DescriptorSetLayout CreateSceneDataLayout()
+
+	private DescriptorSetLayout CreateSceneDataLayout()
 	{
 		var bindingFlags = stackalloc DescriptorBindingFlags[]
 		{
@@ -485,7 +484,7 @@ public unsafe class VoxelRenderer : RenderChain
 			{
 				Offset = 0,
 				Range = Vk.WholeSize,
-				Buffer = _chunkIndices.Value
+				Buffer = _chunkIndices.Value.Buffer
 			},
 			new()
 			{
@@ -670,7 +669,7 @@ public unsafe class VoxelRenderer : RenderChain
 			{
 				Offset = 0,
 				Range = Vk.WholeSize,
-				Buffer = _chunkIndices.Value
+				Buffer = _chunkIndices.Value.Buffer
 			},
 			new()
 			{

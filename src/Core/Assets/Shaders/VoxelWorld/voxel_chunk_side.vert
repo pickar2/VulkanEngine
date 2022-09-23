@@ -19,7 +19,7 @@ readonly layout(std430, set = SCENE_DATA_SET, binding = 5) buffer sceneDataDescr
 #define CHUNK_SIZE 8
 
 const int[] components = {0, 0, 1, 1, 2, 2};
-const float spread = +0.0001f;
+const float spread = +0.0000f;
 const float[] moves = {CHUNK_SIZE + spread, -spread};
 
 void main() {
@@ -30,9 +30,9 @@ void main() {
 
 	vec3 pos = vec3(x, y, z) * CHUNK_SIZE;
 
-	int sideId = id / 4;
+	int sideId = id >> 2;
 
-	int comp0 = components[sideId];
+	int comp0 = sideId >> 1;
 	int comp1 = (comp0 + 1) % 3;
 	int comp2 = (comp0 + 2) % 3;
 
@@ -41,7 +41,7 @@ void main() {
 
 	pos[comp0] += flip * (CHUNK_SIZE + spread) + (1 - flip) * (-spread);
 
-	int move1 = vertexId / 2;
+	int move1 = vertexId >> 1;
 	int move2 = vertexId & 1;
 
 	pos[comp1] += moves[move1];
