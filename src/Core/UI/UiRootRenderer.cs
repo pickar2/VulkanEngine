@@ -7,6 +7,7 @@ using Core.UI.Controls.Panels;
 using Core.Utils;
 using Core.Vulkan;
 using Core.Vulkan.Api;
+using Core.Vulkan.Descriptors;
 using Core.Vulkan.Renderers;
 using Core.Vulkan.Utility;
 using Core.Window;
@@ -157,15 +158,15 @@ public unsafe partial class UiRootRenderer : RenderChain
 
 		_sortCountPipeline = ReCreate.InDevice.Auto(() =>
 			PipelineManager.CreateComputePipeline(ShaderManager.GetOrCreate("Assets/Shaders/Ui2/Compute/sort_count_pass.comp", ShaderKind.ComputeShader),
-				new[] {ComponentManager.DescriptorSetLayout.Value, _sortCountersLayout.Value}), pipeline => pipeline.Dispose());
+				new[] {ComponentManager.DescriptorSetLayout.Value, _sortCountersLayout.Value}));
 
 		_sortOffsetPipeline = ReCreate.InDevice.Auto(() =>
 			PipelineManager.CreateComputePipeline(ShaderManager.GetOrCreate("Assets/Shaders/Ui2/Compute/sort_offsets_pass.comp", ShaderKind.ComputeShader),
-				new[] {_sortCountersLayout.Value}), pipeline => pipeline.Dispose());
+				new[] {_sortCountersLayout.Value}));
 
 		_sortMainPipeline = ReCreate.InDevice.Auto(() =>
 			PipelineManager.CreateComputePipeline(ShaderManager.GetOrCreate("Assets/Shaders/Ui2/Compute/sort_main_pass.comp", ShaderKind.ComputeShader),
-				new[] {ComponentManager.DescriptorSetLayout.Value, _sortCountersLayout.Value, _sortIndicesLayout.Value}), pipeline => pipeline.Dispose());
+				new[] {ComponentManager.DescriptorSetLayout.Value, _sortCountersLayout.Value, _sortIndicesLayout.Value}));
 
 		UpdateCountersDescriptorSets();
 		Context.DeviceEvents.AfterCreate += () => UpdateCountersDescriptorSets();
@@ -412,103 +413,18 @@ public unsafe partial class UiRootRenderer : RenderChain
 		};
 	}
 
-	private DescriptorSetLayout CreateSortCountersLayout()
-	{
-		var bindingFlags = stackalloc DescriptorBindingFlags[]
-		{
-			DescriptorBindingFlags.UpdateAfterBindBit,
-			DescriptorBindingFlags.UpdateAfterBindBit,
-			DescriptorBindingFlags.UpdateAfterBindBit,
-			DescriptorBindingFlags.UpdateAfterBindBit
-		};
-		var flagsInfo = new DescriptorSetLayoutBindingFlagsCreateInfoEXT
-		{
-			SType = StructureType.DescriptorSetLayoutBindingFlagsCreateInfoExt,
-			BindingCount = 4,
-			PBindingFlags = bindingFlags
-		};
-		var countersLayoutBindings = new DescriptorSetLayoutBinding[]
-		{
-			new()
-			{
-				Binding = 0,
-				DescriptorCount = 1,
-				DescriptorType = DescriptorType.StorageBuffer,
-				StageFlags = ShaderStageFlags.ComputeBit
-			},
-			new()
-			{
-				Binding = 1,
-				DescriptorCount = 1,
-				DescriptorType = DescriptorType.StorageBuffer,
-				StageFlags = ShaderStageFlags.ComputeBit
-			},
-			new()
-			{
-				Binding = 2,
-				DescriptorCount = 1,
-				DescriptorType = DescriptorType.StorageBuffer,
-				StageFlags = ShaderStageFlags.ComputeBit
-			},
-			new()
-			{
-				Binding = 3,
-				DescriptorCount = 1,
-				DescriptorType = DescriptorType.StorageBuffer,
-				StageFlags = ShaderStageFlags.ComputeBit
-			}
-		};
+	private DescriptorSetLayout CreateSortCountersLayout() =>
+		VulkanDescriptorSetLayout.Builder(DescriptorSetLayoutCreateFlags.UpdateAfterBindPoolBit)
+			.AddBinding(0, DescriptorType.StorageBuffer, 1, ShaderStageFlags.ComputeBit, DescriptorBindingFlags.UpdateAfterBindBit)
+			.AddBinding(1, DescriptorType.StorageBuffer, 1, ShaderStageFlags.ComputeBit, DescriptorBindingFlags.UpdateAfterBindBit)
+			.AddBinding(2, DescriptorType.StorageBuffer, 1, ShaderStageFlags.ComputeBit, DescriptorBindingFlags.UpdateAfterBindBit)
+			.AddBinding(3, DescriptorType.StorageBuffer, 1, ShaderStageFlags.ComputeBit, DescriptorBindingFlags.UpdateAfterBindBit)
+			.Build();
 
-		var countersLayoutCreateInfo = new DescriptorSetLayoutCreateInfo
-		{
-			SType = StructureType.DescriptorSetLayoutCreateInfo,
-			BindingCount = (uint) countersLayoutBindings.Length,
-			PBindings = countersLayoutBindings[0].AsPointer(),
-			Flags = DescriptorSetLayoutCreateFlags.UpdateAfterBindPoolBit,
-			PNext = &flagsInfo
-		};
-
-		Check(Context.Vk.CreateDescriptorSetLayout(Context.Device, &countersLayoutCreateInfo, null, out var layout),
-			"Failed to create ui sort counters descriptor set layout.");
-
-		return layout;
-	}
-
-	private DescriptorSetLayout CreateSortIndicesLayout()
-	{
-		var bindingFlags = stackalloc DescriptorBindingFlags[]
-		{
-			DescriptorBindingFlags.UpdateAfterBindBit
-		};
-		var flagsInfo = new DescriptorSetLayoutBindingFlagsCreateInfoEXT
-		{
-			SType = StructureType.DescriptorSetLayoutBindingFlagsCreateInfoExt,
-			BindingCount = 1,
-			PBindingFlags = bindingFlags
-		};
-
-		var indicesLayoutBindings = new DescriptorSetLayoutBinding
-		{
-			Binding = 0,
-			DescriptorCount = 1,
-			DescriptorType = DescriptorType.StorageBuffer,
-			StageFlags = ShaderStageFlags.ComputeBit
-		};
-
-		var indicesLayoutCreateInfo = new DescriptorSetLayoutCreateInfo
-		{
-			SType = StructureType.DescriptorSetLayoutCreateInfo,
-			BindingCount = 1,
-			PBindings = &indicesLayoutBindings,
-			Flags = DescriptorSetLayoutCreateFlags.UpdateAfterBindPoolBit,
-			PNext = &flagsInfo
-		};
-
-		Check(Context.Vk.CreateDescriptorSetLayout(Context.Device, &indicesLayoutCreateInfo, null, out var layout),
-			"Failed to create ui sort indices descriptor set layout.");
-
-		return layout;
-	}
+	private DescriptorSetLayout CreateSortIndicesLayout() =>
+		VulkanDescriptorSetLayout.Builder(DescriptorSetLayoutCreateFlags.UpdateAfterBindPoolBit)
+			.AddBinding(0, DescriptorType.StorageBuffer, 1, ShaderStageFlags.ComputeBit, DescriptorBindingFlags.UpdateAfterBindBit)
+			.Build();
 
 	private DescriptorPool CreateSortCountersPool()
 	{
@@ -563,102 +479,20 @@ public unsafe partial class UiRootRenderer : RenderChain
 	{
 		for (int i = 0; i < Context.State.FrameOverlap; i++)
 		{
-			var bufferInfos = new DescriptorBufferInfo[]
-			{
-				new()
-				{
-					Offset = 0,
-					Range = ZCount * 4,
-					Buffer = _counters1Buffer[i]
-				},
-				new()
-				{
-					Offset = 0,
-					Range = ZCount * 4,
-					Buffer = _counters2Buffer[i]
-				},
-				new()
-				{
-					Offset = 0,
-					Range = ZCount * 4,
-					Buffer = _offsetsBuffer[i]
-				},
-				new()
-				{
-					Offset = 0,
-					Range = CountDataSize,
-					Buffer = _countBuffer[i]
-				}
-			};
-
-			var writes = new WriteDescriptorSet[]
-			{
-				new()
-				{
-					SType = StructureType.WriteDescriptorSet,
-					DescriptorCount = 1,
-					DstBinding = 0,
-					DescriptorType = DescriptorType.StorageBuffer,
-					DstSet = _sortCountersSets[i],
-					PBufferInfo = bufferInfos[0].AsPointer()
-				},
-				new()
-				{
-					SType = StructureType.WriteDescriptorSet,
-					DescriptorCount = 1,
-					DstBinding = 1,
-					DescriptorType = DescriptorType.StorageBuffer,
-					DstSet = _sortCountersSets[i],
-					PBufferInfo = bufferInfos[1].AsPointer()
-				},
-				new()
-				{
-					SType = StructureType.WriteDescriptorSet,
-					DescriptorCount = 1,
-					DstBinding = 2,
-					DescriptorType = DescriptorType.StorageBuffer,
-					DstSet = _sortCountersSets[i],
-					PBufferInfo = bufferInfos[2].AsPointer()
-				},
-				new()
-				{
-					SType = StructureType.WriteDescriptorSet,
-					DescriptorCount = 1,
-					DstBinding = 3,
-					DescriptorType = DescriptorType.StorageBuffer,
-					DstSet = _sortCountersSets[i],
-					PBufferInfo = bufferInfos[3].AsPointer()
-				}
-			};
-
-			Context.Vk.UpdateDescriptorSets(Context.Device, (uint) writes.Length, writes[0], 0, null);
+			VulkanDescriptorSet.UpdateBuilder()
+				.WriteBuffer(_sortCountersSets[i], 0, 0, 1, DescriptorType.StorageBuffer, _counters1Buffer[i], 0, ZCount * 4)
+				.WriteBuffer(_sortCountersSets[i], 1, 0, 1, DescriptorType.StorageBuffer, _counters2Buffer[i], 0, ZCount * 4)
+				.WriteBuffer(_sortCountersSets[i], 2, 0, 1, DescriptorType.StorageBuffer, _offsetsBuffer[i], 0, ZCount * 4)
+				.WriteBuffer(_sortCountersSets[i], 3, 0, 1, DescriptorType.StorageBuffer, _countBuffer[i], 0, CountDataSize)
+				.Update();
 		}
 	}
 
-	private void UpdateIndicesDescriptorSet(FrameInfo frameInfo)
-	{
-		// for (int i = 0; i < Context.State.FrameOverlap; i++)
-		{
-			var bufferInfo = new DescriptorBufferInfo
-			{
-				Offset = 0,
-				Range = Vk.WholeSize,
-				Buffer = ComponentManager.IndexBuffers[frameInfo.FrameId]
-			};
-
-			var write = new WriteDescriptorSet
-			{
-				SType = StructureType.WriteDescriptorSet,
-				DescriptorCount = 1,
-				DstBinding = 0,
-				DescriptorType = DescriptorType.StorageBuffer,
-				DstSet = _sortIndicesSets[frameInfo.FrameId],
-				PBufferInfo = &bufferInfo
-			};
-
-			Context.Vk.UpdateDescriptorSets(Context.Device, 1, write, 0, null);
-		}
-	}
+	private void UpdateIndicesDescriptorSet(FrameInfo frameInfo) =>
+		VulkanDescriptorSet.UpdateBuilder()
+			.WriteBuffer(_sortIndicesSets[frameInfo.FrameId], 0, 0, 1, DescriptorType.StorageBuffer,
+				ComponentManager.IndexBuffers[frameInfo.FrameId], 0, Vk.WholeSize)
+			.Update();
 
 	public override void Dispose() => GC.SuppressFinalize(this);
 }

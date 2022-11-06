@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.CompilerServices;
 using Core.Serializer.Entities.QoiSharp;
 using Core.UI;
 using Core.UI.Controls.Panels;
@@ -73,7 +74,7 @@ public static class GeneralRenderer
 		var voxel = new VoxelRenderer("TestVoxel");
 		Root = new UiRootRenderer("Root1", MainRoot);
 
-		// for (int i = 0; i < 2; i++) Root.AddChild(new TestToTextureRenderer($"ChildRenderer{i}"));
+		for (int i = 0; i < 2; i++) Root.AddChild(new TestToTextureRenderer($"ChildRenderer{i}"));
 
 		Root.AddChild(voxel);
 
@@ -108,8 +109,8 @@ public abstract unsafe class RenderChain : IDisposable
 	public event Func<FrameInfo, SemaphoreWithStage>? RenderSignalSemaphores;
 
 	protected Delegate[]? RenderCommandBufferDelegates => RenderCommandBuffers?.GetInvocationList();
-	protected Delegate[]? RenderSignalSemaphoresDelegates => RenderSignalSemaphores?.GetInvocationList();
 	protected Delegate[]? RenderWaitSemaphoresDelegates => RenderWaitSemaphores?.GetInvocationList();
+	protected Delegate[]? RenderSignalSemaphoresDelegates => RenderSignalSemaphores?.GetInvocationList();
 
 	protected readonly ReCreator<Semaphore> RenderFinishedSemaphore;
 
@@ -118,7 +119,7 @@ public abstract unsafe class RenderChain : IDisposable
 		Name = name;
 
 		RenderFinishedSemaphore = ReCreate.InDevice.Auto(() => CreateSemaphore(), semaphore => semaphore.Dispose());
-		RenderSignalSemaphores += frameInfo => new SemaphoreWithStage(RenderFinishedSemaphore, PipelineStageFlags.ColorAttachmentOutputBit);
+		// RenderSignalSemaphores += _ => new SemaphoreWithStage(RenderFinishedSemaphore, PipelineStageFlags.ColorAttachmentOutputBit);
 	}
 
 	public void AddChild(RenderChain child)
@@ -133,8 +134,12 @@ public abstract unsafe class RenderChain : IDisposable
 		Debug.BeginQueueLabel(Context.GraphicsQueue, Name);
 
 		// get signal semaphores
-		signalSemaphores = new List<SemaphoreWithStage>();
-		var signalSemaphoreDelegates = RenderSignalSemaphores?.GetInvocationList();
+		signalSemaphores = new List<SemaphoreWithStage>
+		{
+			new(RenderFinishedSemaphore, PipelineStageFlags.ColorAttachmentOutputBit)
+		};
+
+		var signalSemaphoreDelegates = RenderSignalSemaphoresDelegates;
 		if (signalSemaphoreDelegates is not null)
 		{
 			foreach (var @delegate in signalSemaphoreDelegates)
@@ -145,17 +150,14 @@ public abstract unsafe class RenderChain : IDisposable
 		for (int i = 0; i < signalSemaphores.Count; i++) pSignalSemaphores[i] = signalSemaphores[i].Semaphore;
 
 		// get command buffers
-		var commandBufferDelegates = RenderCommandBuffers?.GetInvocationList();
+		var commandBufferDelegates = RenderCommandBufferDelegates;
 		int commandBufferCount = commandBufferDelegates?.Length ?? 0;
 
 		if (commandBufferCount == 0) return;
 
 		var pCommandBuffers = stackalloc CommandBuffer[commandBufferCount];
-		if (commandBufferDelegates is not null)
-		{
-			for (int i = 0; i < commandBufferDelegates.Length; i++)
-				pCommandBuffers[i] = ((Func<FrameInfo, CommandBuffer>) commandBufferDelegates[i]).Invoke(frameInfo);
-		}
+		for (int i = 0; i < commandBufferDelegates!.Length; i++)
+			pCommandBuffers[i] = ((Func<FrameInfo, CommandBuffer>) commandBufferDelegates[i]).Invoke(frameInfo);
 
 		// start rendering children and get wait semaphores
 		var childrenWaitSemaphores = new List<SemaphoreWithStage>();
@@ -165,7 +167,7 @@ public abstract unsafe class RenderChain : IDisposable
 			childrenWaitSemaphores.AddRange(childWaitSemaphores);
 		}
 
-		var waitSemaphoreDelegates = RenderWaitSemaphores?.GetInvocationList();
+		var waitSemaphoreDelegates = RenderWaitSemaphoresDelegates;
 		var waitSemaphoresFromDelegates = new SemaphoreWithStage[waitSemaphoreDelegates?.Length ?? 0];
 		int waitSemaphoresFromDelegatesCount = 0;
 

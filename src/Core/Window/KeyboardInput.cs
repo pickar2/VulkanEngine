@@ -65,6 +65,7 @@ public static class KeyboardInput
 					if (_contextChanged) goto NextLoop;
 				}
 			}
+
 			if (GlobalContext.KeyBinds.TryGetValue(keySym, out var generalSet))
 			{
 				foreach (var namedFunc in generalSet)
@@ -73,8 +74,10 @@ public static class KeyboardInput
 					if (_contextChanged) goto NextLoop;
 				}
 			}
+
 			NextLoop: ;
 		} while (_contextChanged);
+
 		KeyHandled: ;
 	}
 
@@ -113,13 +116,14 @@ public class NamedFunc
 	public override string ToString() => Identifier.ToString();
 }
 
-public class InputContext {
+public class InputContext
+{
 	public NamespacedName Identifier { get; }
 	public readonly Dictionary<SDL_Keysym, HashSet<NamedFunc>> KeyBinds = new();
 
 	public InputContext(NamespacedName identifier) => Identifier = identifier;
 	public InputContext(string name) => Identifier = NamespacedName.CreateWithName(name);
-	
+
 	public void AddKeyBind(NamedFunc namedFunc, SDL_Keysym keySym)
 	{
 		if (!KeyBinds.ContainsKey(keySym)) KeyBinds[keySym] = new HashSet<NamedFunc>();

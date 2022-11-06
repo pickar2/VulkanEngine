@@ -63,8 +63,6 @@ public static unsafe class ReflectUtils
 			bindingDescriptions[desc.Binding].Stride += (uint) desc.Format.SizeOfFormat();
 		}
 
-		var arr = attributeDescriptions.ToArray();
-
 		var createInfo = new PipelineVertexInputStateCreateInfo
 		{
 			SType = StructureType.PipelineVertexInputStateCreateInfo
@@ -76,7 +74,7 @@ public static unsafe class ReflectUtils
 		createInfo.VertexBindingDescriptionCount = (uint) bindingDescriptions.Length;
 		createInfo.PVertexBindingDescriptions = bindingDescriptions[0].AsPointer();
 		createInfo.VertexAttributeDescriptionCount = (uint) attributeDescriptions.Count;
-		createInfo.PVertexAttributeDescriptions = arr[0].AsPointer();
+		createInfo.PVertexAttributeDescriptions = attributeDescriptions.AsPointer();
 
 		return createInfo;
 	}

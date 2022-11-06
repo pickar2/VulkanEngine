@@ -13,7 +13,7 @@ public abstract class RootPanel : AbsolutePanel
 	public readonly MaterialManager MaterialManager;
 	public readonly GlobalDataManager GlobalDataManager;
 
-	protected RootPanel(UiComponentManager componentManager, MaterialManager materialManager, GlobalDataManager globalDataManager)
+	protected RootPanel(UiComponentManager componentManager, MaterialManager materialManager, GlobalDataManager globalDataManager) : base(null)
 	{
 		ComponentManager = componentManager;
 		MaterialManager = materialManager;

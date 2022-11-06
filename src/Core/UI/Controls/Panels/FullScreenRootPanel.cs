@@ -1,5 +1,4 @@
-﻿using CommandLine;
-using Core.Vulkan;
+﻿using Core.Vulkan;
 using SimpleMath.Vectors;
 
 namespace Core.UI.Controls.Panels;

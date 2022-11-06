@@ -17,10 +17,15 @@ public unsafe class UiComponent : VulkanDataHolder
 		set
 		{
 			_vertMaterial = value;
-			var data = GetData();
-			data->VertexMaterialType = value.MaterialId;
-			data->VertexDataIndex = value.VulkanDataIndex;
+			UpdateVertexData();
 		}
+	}
+
+	public void UpdateVertexData()
+	{
+		var data = GetData();
+		data->VertexMaterialType = _vertMaterial.MaterialId;
+		data->VertexDataIndex = _vertMaterial.VulkanDataIndex;
 	}
 
 	public MaterialDataHolder FragMaterial
@@ -29,10 +34,15 @@ public unsafe class UiComponent : VulkanDataHolder
 		set
 		{
 			_fragMaterial = value;
-			var data = GetData();
-			data->FragmentMaterialType = value.MaterialId;
-			data->FragmentDataIndex = value.VulkanDataIndex;
+			UpdateFragmentData();
 		}
+	}
+
+	public void UpdateFragmentData()
+	{
+		var data = GetData();
+		data->FragmentMaterialType = _fragMaterial.MaterialId;
+		data->FragmentDataIndex = _fragMaterial.VulkanDataIndex;
 	}
 
 	public UiComponentData* GetData() => VulkanDataFactory.GetPointerToData<UiComponentData>(VulkanDataIndex);

@@ -9,8 +9,7 @@ public abstract class UiControl : IDisposable
 {
 	public RootPanel? RootPanel { get; init; }
 
-	protected UiControl(RootPanel rootPanel) => RootPanel = rootPanel;
-	protected UiControl() => RootPanel = default!;
+	protected UiControl(RootPanel? rootPanel) => RootPanel = rootPanel;
 
 	protected List<UiControl> ChildrenList = new();
 

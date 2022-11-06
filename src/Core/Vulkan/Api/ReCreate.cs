@@ -18,6 +18,8 @@ public class ReCreateLevel
 
 	public ReCreator<T> Auto<T>(Func<T> createFunc, Action<T>? disposeFunc = null) => new(_level, createFunc, disposeFunc);
 
+	public ReCreator<T> Auto<T>(Func<T> createFunc) where T : IDisposable => new(_level, createFunc, t => t.Dispose());
+
 	public ArrayReCreator<T> AutoArray<T>(Func<int, T> createFunc, int count, Action<T>? disposeFunc = null) =>
 		new(_level, createFunc, () => count, disposeFunc);
 

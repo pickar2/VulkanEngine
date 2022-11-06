@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Core.Vulkan.Descriptors;
 using Silk.NET.Vulkan;
 
 namespace Core.Vulkan.Api;
@@ -54,28 +55,11 @@ public static unsafe class TextureManager
 
 	public static uint GetTextureId(string name) => RegisteredTextures.TryGetValue(name, out var texture) ? texture.Id : 0;
 
-	private static void UpdateTextureBinding(Texture texture)
-	{
-		var imageInfo = new DescriptorImageInfo
-		{
-			ImageLayout = ImageLayout.ShaderReadOnlyOptimal,
-			Sampler = Sampler,
-			ImageView = texture.ImageView
-		};
-
-		var write = new WriteDescriptorSet
-		{
-			SType = StructureType.WriteDescriptorSet,
-			DescriptorType = DescriptorType.CombinedImageSampler,
-			DstSet = DescriptorSet,
-			DstBinding = 0,
-			DstArrayElement = texture.Id,
-			DescriptorCount = 1,
-			PImageInfo = &imageInfo
-		};
-
-		Context.Vk.UpdateDescriptorSets(Context.Device, 1, write, 0, null);
-	}
+	private static void UpdateTextureBinding(Texture texture) =>
+		VulkanDescriptorSet.UpdateBuilder()
+			.WriteImage(DescriptorSet, 0, texture.Id, 1, DescriptorType.CombinedImageSampler,
+				ImageLayout.ShaderReadOnlyOptimal, texture.ImageView, Sampler)
+			.Update();
 
 	private static void FullSetUpdate()
 	{
@@ -108,44 +92,11 @@ public static unsafe class TextureManager
 		Context.Vk.UpdateDescriptorSets(Context.Device, 1, write, 0, null);
 	}
 
-	private static DescriptorSetLayout CreateDescriptorSetLayout()
-	{
-		var textureFlags = stackalloc DescriptorBindingFlags[1];
-		textureFlags[0] = DescriptorBindingFlags.VariableDescriptorCountBit | DescriptorBindingFlags.UpdateAfterBindBit |
-		                  DescriptorBindingFlags.PartiallyBoundBit;
-
-		var textureFlagsCreateInfo = new DescriptorSetLayoutBindingFlagsCreateInfoEXT
-		{
-			SType = StructureType.DescriptorSetLayoutBindingFlagsCreateInfoExt,
-			BindingCount = 1,
-			PBindingFlags = textureFlags
-		};
-
-		var texturesBindings = new DescriptorSetLayoutBinding[]
-		{
-			new()
-			{
-				Binding = 0,
-				DescriptorCount = CurrentDescriptorPoolSize,
-				DescriptorType = DescriptorType.CombinedImageSampler,
-				StageFlags = ShaderStageFlags.FragmentBit | ShaderStageFlags.ComputeBit
-			}
-		};
-
-		var texturesCreateInfo = new DescriptorSetLayoutCreateInfo
-		{
-			SType = StructureType.DescriptorSetLayoutCreateInfo,
-			BindingCount = 1,
-			PBindings = texturesBindings[0].AsPointer(),
-			PNext = &textureFlagsCreateInfo,
-			Flags = DescriptorSetLayoutCreateFlags.UpdateAfterBindPoolBitExt
-		};
-
-		Check(Context.Vk.CreateDescriptorSetLayout(Context.Device, &texturesCreateInfo, null, out var layout),
-			"Failed to create descriptor set layout.");
-
-		return layout;
-	}
+	private static DescriptorSetLayout CreateDescriptorSetLayout() =>
+		VulkanDescriptorSetLayout.Builder(DescriptorSetLayoutCreateFlags.UpdateAfterBindPoolBit)
+			.AddBinding(0, DescriptorType.CombinedImageSampler, CurrentDescriptorPoolSize, ShaderStageFlags.FragmentBit | ShaderStageFlags.ComputeBit,
+				DescriptorBindingFlags.PartiallyBoundBit | DescriptorBindingFlags.UpdateAfterBindBit | DescriptorBindingFlags.VariableDescriptorCountBit)
+			.Build();
 
 	private static DescriptorPool CreateDescriptorPool()
 	{

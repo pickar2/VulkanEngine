@@ -1,5 +1,6 @@
 ﻿using Core.Vulkan;
 using Core.Vulkan.Api;
+using Core.Vulkan.Descriptors;
 using Core.VulkanData;
 using Silk.NET.Vulkan;
 
@@ -33,7 +34,7 @@ public unsafe class GlobalDataManager
 
 		DescriptorSetLayout = ReCreate.InDevice.Auto(() => CreateSetLayout(), layout => layout.Dispose());
 		DescriptorPool = ReCreate.InDevice.Auto(() => CreateDescriptorPool(), pool => pool.Dispose());
-		DescriptorSet = ReCreate.InDevice.Auto(() => CreateDescriptorSet());
+		DescriptorSet = ReCreate.InDevice.Auto(() => AllocateDescriptorSet(DescriptorSetLayout, DescriptorPool));
 	}
 
 	public void AfterUpdate()
@@ -47,62 +48,23 @@ public unsafe class GlobalDataManager
 
 	private void UpdateSet()
 	{
-		var bufferInfos = stackalloc DescriptorBufferInfo[Factory.Count];
-		var writes = stackalloc WriteDescriptorSet[Factory.Count];
+		var builder = VulkanDescriptorSet.UpdateBuilder();
+
 		uint index = 0;
 		foreach ((string _, var holder) in Factory.Holders)
 		{
-			bufferInfos[index] = new DescriptorBufferInfo
-			{
-				Offset = (ulong) holder.Offset,
-				Range = (ulong) holder.BufferSize,
-				Buffer = Factory.DataBufferGpu.Buffer
-			};
-
-			writes[index] = new WriteDescriptorSet
-			{
-				SType = StructureType.WriteDescriptorSet,
-				DescriptorCount = 1,
-				DstBinding = index,
-				DescriptorType = DescriptorType.StorageBuffer,
-				DstSet = DescriptorSet,
-				PBufferInfo = bufferInfos[index].AsPointer()
-			};
+			builder.WriteBuffer(DescriptorSet, index, 0, 1, DescriptorType.StorageBuffer,
+				Factory.DataBufferGpu.Buffer, (ulong) holder.Offset, (ulong) holder.BufferSize);
 			index++;
 		}
 
-		Context.Vk.UpdateDescriptorSets(Context.Device, index, writes, 0, null);
+		builder.Update();
 	}
 
-	private DescriptorSetLayout CreateSetLayout()
-	{
-		var bindings = stackalloc DescriptorSetLayoutBinding[Factory.Count];
-		uint index = 0;
-		for (int i = 0; i < Factory.Count; i++)
-		{
-			bindings[index] = new DescriptorSetLayoutBinding
-			{
-				Binding = index,
-				DescriptorCount = 1,
-				DescriptorType = DescriptorType.StorageBuffer,
-				StageFlags = ShaderStageFlags.VertexBit | ShaderStageFlags.FragmentBit
-			};
-			index++;
-		}
-
-		var globalDataLayoutCreateInfo = new DescriptorSetLayoutCreateInfo
-		{
-			SType = StructureType.DescriptorSetLayoutCreateInfo,
-			BindingCount = index,
-			PBindings = bindings,
-			Flags = DescriptorSetLayoutCreateFlags.UpdateAfterBindPoolBitExt
-		};
-
-		Check(Context.Vk.CreateDescriptorSetLayout(Context.Device, &globalDataLayoutCreateInfo, null, out var layout),
-			"Failed to create ui global data descriptor set layout.");
-
-		return layout;
-	}
+	private DescriptorSetLayout CreateSetLayout() =>
+		VulkanDescriptorSetLayout.Builder(DescriptorSetLayoutCreateFlags.UpdateAfterBindPoolBit)
+			.AddMultipleBindings(0, Factory.Count, DescriptorType.StorageBuffer, 1, ShaderStageFlags.VertexBit | ShaderStageFlags.FragmentBit)
+			.Build();
 
 	private DescriptorPool CreateDescriptorPool()
 	{
@@ -125,22 +87,5 @@ public unsafe class GlobalDataManager
 			"Failed to create ui global data descriptor pool.");
 
 		return pool;
-	}
-
-	private DescriptorSet CreateDescriptorSet()
-	{
-		var globalLayouts = stackalloc DescriptorSetLayout[] {DescriptorSetLayout};
-
-		var globalAllocInfo = new DescriptorSetAllocateInfo
-		{
-			SType = StructureType.DescriptorSetAllocateInfo,
-			DescriptorPool = DescriptorPool,
-			DescriptorSetCount = 1,
-			PSetLayouts = globalLayouts
-		};
-
-		Check(Context.Vk.AllocateDescriptorSets(Context.Device, &globalAllocInfo, out var set), "Failed to allocate ui global data descriptor set.");
-
-		return set;
 	}
 }

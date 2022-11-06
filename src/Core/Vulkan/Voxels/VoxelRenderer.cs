@@ -8,6 +8,7 @@ using Core.Native.VMA;
 using Core.TemporaryMath;
 using Core.Utils;
 using Core.Vulkan.Api;
+using Core.Vulkan.Descriptors;
 using Core.Vulkan.Renderers;
 using Core.Vulkan.Utility;
 using Silk.NET.Maths;
@@ -370,85 +371,16 @@ public unsafe class VoxelRenderer : RenderChain
 		return cmd;
 	}
 
-	private DescriptorSetLayout CreateSceneDataLayout()
-	{
-		var bindingFlags = stackalloc DescriptorBindingFlags[]
-		{
-			DescriptorBindingFlags.UpdateAfterBindBit,
-			DescriptorBindingFlags.UpdateAfterBindBit,
-			DescriptorBindingFlags.UpdateAfterBindBit,
-			DescriptorBindingFlags.UpdateAfterBindBit,
-			DescriptorBindingFlags.UpdateAfterBindBit,
-			DescriptorBindingFlags.UpdateAfterBindBit
-		};
-
-		var flagsInfo = new DescriptorSetLayoutBindingFlagsCreateInfoEXT
-		{
-			SType = StructureType.DescriptorSetLayoutBindingFlagsCreateInfoExt,
-			BindingCount = 6,
-			PBindingFlags = bindingFlags
-		};
-
-		var layoutBindings = new DescriptorSetLayoutBinding[]
-		{
-			new()
-			{
-				Binding = 0,
-				DescriptorCount = 1,
-				DescriptorType = DescriptorType.StorageBuffer,
-				StageFlags = ShaderStageFlags.FragmentBit
-			},
-			new()
-			{
-				Binding = 1,
-				DescriptorCount = 1,
-				DescriptorType = DescriptorType.StorageBuffer,
-				StageFlags = ShaderStageFlags.FragmentBit
-			},
-			new()
-			{
-				Binding = 2,
-				DescriptorCount = 1,
-				DescriptorType = DescriptorType.StorageBuffer,
-				StageFlags = ShaderStageFlags.FragmentBit
-			},
-			new()
-			{
-				Binding = 3,
-				DescriptorCount = 1,
-				DescriptorType = DescriptorType.StorageBuffer,
-				StageFlags = ShaderStageFlags.FragmentBit
-			},
-			new()
-			{
-				Binding = 4,
-				DescriptorCount = 1,
-				DescriptorType = DescriptorType.StorageBuffer,
-				StageFlags = ShaderStageFlags.FragmentBit
-			},
-			new()
-			{
-				Binding = 5,
-				DescriptorCount = 1,
-				DescriptorType = DescriptorType.StorageBuffer,
-				StageFlags = ShaderStageFlags.FragmentBit | ShaderStageFlags.VertexBit
-			}
-		};
-
-		var layoutCreateInfo = new DescriptorSetLayoutCreateInfo
-		{
-			SType = StructureType.DescriptorSetLayoutCreateInfo,
-			BindingCount = (uint) layoutBindings.Length,
-			PBindings = layoutBindings[0].AsPointer(),
-			Flags = DescriptorSetLayoutCreateFlags.UpdateAfterBindPoolBit,
-			PNext = &flagsInfo
-		};
-
-		Check(Context.Vk.CreateDescriptorSetLayout(Context.Device, &layoutCreateInfo, null, out var layout),
-			"Failed to create descriptor set layout.");
-
-		return layout;
-	}
+	private DescriptorSetLayout CreateSceneDataLayout() =>
+		VulkanDescriptorSetLayout.Builder(DescriptorSetLayoutCreateFlags.UpdateAfterBindPoolBit)
+			.AddBinding(0, DescriptorType.StorageBuffer, 1, ShaderStageFlags.FragmentBit, DescriptorBindingFlags.UpdateAfterBindBit)
+			.AddBinding(1, DescriptorType.StorageBuffer, 1, ShaderStageFlags.FragmentBit, DescriptorBindingFlags.UpdateAfterBindBit)
+			.AddBinding(2, DescriptorType.StorageBuffer, 1, ShaderStageFlags.FragmentBit, DescriptorBindingFlags.UpdateAfterBindBit)
+			.AddBinding(3, DescriptorType.StorageBuffer, 1, ShaderStageFlags.FragmentBit, DescriptorBindingFlags.UpdateAfterBindBit)
+			.AddBinding(4, DescriptorType.StorageBuffer, 1, ShaderStageFlags.FragmentBit, DescriptorBindingFlags.UpdateAfterBindBit)
+			.AddBinding(5, DescriptorType.StorageBuffer, 1, ShaderStageFlags.FragmentBit | ShaderStageFlags.VertexBit,
+				DescriptorBindingFlags.UpdateAfterBindBit)
+			.Build();
 
 	private DescriptorPool CreateSceneDataPool()
 	{
@@ -476,108 +408,15 @@ public unsafe class VoxelRenderer : RenderChain
 		return pool;
 	}
 
-	public void UpdateSceneDataSet()
-	{
-		var bufferInfos = new DescriptorBufferInfo[]
-		{
-			new()
-			{
-				Offset = 0,
-				Range = Vk.WholeSize,
-				Buffer = _chunkIndices.Value.Buffer
-			},
-			new()
-			{
-				Offset = 0,
-				Range = Vk.WholeSize,
-				Buffer = _chunksData.Value.Buffer
-			},
-			new()
-			{
-				Offset = 0,
-				Range = Vk.WholeSize,
-				Buffer = _chunksVoxelData.Value.Buffer
-			},
-			new()
-			{
-				Offset = 0,
-				Range = Vk.WholeSize,
-				Buffer = _chunksMaskData.Value.Buffer
-			},
-			new()
-			{
-				Offset = 0,
-				Range = Vk.WholeSize,
-				Buffer = _voxelTypes.Value.Buffer
-			},
-			new()
-			{
-				Offset = 0,
-				Range = Vk.WholeSize,
-				Buffer = _sceneData.Value.Buffer
-			}
-		};
-
-		var writes = new WriteDescriptorSet[]
-		{
-			new()
-			{
-				SType = StructureType.WriteDescriptorSet,
-				DescriptorCount = 1,
-				DstBinding = 0,
-				DescriptorType = DescriptorType.StorageBuffer,
-				DstSet = _sceneDataSet,
-				PBufferInfo = bufferInfos[0].AsPointer()
-			},
-			new()
-			{
-				SType = StructureType.WriteDescriptorSet,
-				DescriptorCount = 1,
-				DstBinding = 1,
-				DescriptorType = DescriptorType.StorageBuffer,
-				DstSet = _sceneDataSet,
-				PBufferInfo = bufferInfos[1].AsPointer()
-			},
-			new()
-			{
-				SType = StructureType.WriteDescriptorSet,
-				DescriptorCount = 1,
-				DstBinding = 2,
-				DescriptorType = DescriptorType.StorageBuffer,
-				DstSet = _sceneDataSet,
-				PBufferInfo = bufferInfos[2].AsPointer()
-			},
-			new()
-			{
-				SType = StructureType.WriteDescriptorSet,
-				DescriptorCount = 1,
-				DstBinding = 3,
-				DescriptorType = DescriptorType.StorageBuffer,
-				DstSet = _sceneDataSet,
-				PBufferInfo = bufferInfos[3].AsPointer()
-			},
-			new()
-			{
-				SType = StructureType.WriteDescriptorSet,
-				DescriptorCount = 1,
-				DstBinding = 4,
-				DescriptorType = DescriptorType.StorageBuffer,
-				DstSet = _sceneDataSet,
-				PBufferInfo = bufferInfos[4].AsPointer()
-			},
-			new()
-			{
-				SType = StructureType.WriteDescriptorSet,
-				DescriptorCount = 1,
-				DstBinding = 5,
-				DescriptorType = DescriptorType.StorageBuffer,
-				DstSet = _sceneDataSet,
-				PBufferInfo = bufferInfos[5].AsPointer()
-			}
-		};
-
-		Context.Vk.UpdateDescriptorSets(Context.Device, (uint) writes.Length, writes[0], 0, null);
-	}
+	public void UpdateSceneDataSet() =>
+		VulkanDescriptorSet.UpdateBuilder()
+			.WriteBuffer(_sceneDataSet, 0, 0, 1, DescriptorType.StorageBuffer, _chunkIndices.Value.Buffer, 0, Vk.WholeSize)
+			.WriteBuffer(_sceneDataSet, 1, 0, 1, DescriptorType.StorageBuffer, _chunksData.Value.Buffer, 0, Vk.WholeSize)
+			.WriteBuffer(_sceneDataSet, 2, 0, 1, DescriptorType.StorageBuffer, _chunksVoxelData.Value.Buffer, 0, Vk.WholeSize)
+			.WriteBuffer(_sceneDataSet, 3, 0, 1, DescriptorType.StorageBuffer, _chunksMaskData.Value.Buffer, 0, Vk.WholeSize)
+			.WriteBuffer(_sceneDataSet, 4, 0, 1, DescriptorType.StorageBuffer, _voxelTypes.Value.Buffer, 0, Vk.WholeSize)
+			.WriteBuffer(_sceneDataSet, 5, 0, 1, DescriptorType.StorageBuffer, _sceneData.Value.Buffer, 0, Vk.WholeSize)
+			.Update();
 
 	private DescriptorSetLayout CreateIndexGeneratorLayout()
 	{

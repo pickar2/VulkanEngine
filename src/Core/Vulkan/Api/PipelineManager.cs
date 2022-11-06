@@ -185,9 +185,8 @@ public unsafe class GraphicsPipelineBuilder
 			PScissors = _scissor.AsPointer()
 		};
 
-		var colorBlendAttachmentStatesArr = _colorBlendAttachmentStates.ToArray();
-		_colorBlendState.AttachmentCount = (uint) colorBlendAttachmentStatesArr.Length;
-		_colorBlendState.PAttachments = colorBlendAttachmentStatesArr[0].AsPointer();
+		_colorBlendState.AttachmentCount = (uint) _colorBlendAttachmentStates.Count;
+		_colorBlendState.PAttachments = _colorBlendAttachmentStates.AsPointer();
 
 		var createInfo = new GraphicsPipelineCreateInfo
 		{

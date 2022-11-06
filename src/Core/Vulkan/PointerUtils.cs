@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Core.Vulkan.Utility;
@@ -60,5 +61,8 @@ public static unsafe class PointerUtils
 	public static T* AsPointer<T>(this ref T value) where T : unmanaged => (T*) Unsafe.AsPointer(ref value);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static T* AsPointer<T>(this T[] value) where T : unmanaged => (T*) Unsafe.AsPointer(ref value[0]);
+	public static T* AsPointer<T>(this T[] array) where T : unmanaged => (T*) Unsafe.AsPointer(ref array[0]);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static T* AsPointer<T>(this List<T> list) where T : unmanaged => (T*) Unsafe.AsPointer(ref CollectionsMarshal.AsSpan(list)[0]);
 }
