@@ -155,7 +155,7 @@ public unsafe class VoxelRenderer : RenderChain
 			UpdateSceneData();
 
 			sw.Stop();
-			App.Logger.Info.Message($"Full update {StopwatchExtensions.Ms(sw)}ms");
+			App.Logger.Info.Message($"Full update {sw.Ms()}ms");
 
 			return cmds[frameInfo.SwapchainImageId];
 		};
@@ -250,7 +250,7 @@ public unsafe class VoxelRenderer : RenderChain
 		App.Logger.Info.Message($"{chunksToRender.Count}");
 
 		sw.Stop();
-		App.Logger.Info.Message($"Sort chunks {StopwatchExtensions.Ms(sw)}ms");
+		App.Logger.Info.Message($"Sort chunks {sw.Ms()}ms");
 		sw.Restart();
 
 		foreach (var chunkOffset in chunksToRender)
@@ -259,13 +259,13 @@ public unsafe class VoxelRenderer : RenderChain
 		}
 
 		sw.Stop();
-		App.Logger.Info.Message($"Create Indices {StopwatchExtensions.Ms(sw)}ms");
+		App.Logger.Info.Message($"Create Indices {sw.Ms()}ms");
 		sw.Restart();
 
 		_indexBuffer.Value.UpdateGpuBuffer();
 
 		sw.Stop();
-		App.Logger.Info.Message($"Update index buffer {StopwatchExtensions.Ms(sw)}ms");
+		App.Logger.Info.Message($"Update index buffer {sw.Ms()}ms");
 
 		var command = _indirectCommandBuffer.Value.GetHostSpan<DrawIndexedIndirectCommand>();
 		command[0] = new DrawIndexedIndirectCommand
@@ -338,7 +338,7 @@ public unsafe class VoxelRenderer : RenderChain
 		};
 
 
-		var cmd = CommandBuffers.CreateCommandBuffer(CommandBufferLevel.Primary, RenderPool);
+		var cmd = CommandBuffers.CreateCommandBuffer(RenderPool, CommandBufferLevel.Primary);
 
 		Check(cmd.Begin(), "Failed to begin command buffer.");
 

@@ -91,7 +91,7 @@ public unsafe class TestToTextureRenderer : RenderChain
 			Color = new ClearColorValue(clearColor, 0, 0, 1)
 		};
 
-		var cmd = CommandBuffers.CreateCommandBuffer(CommandBufferLevel.Primary, _commandPool);
+		var cmd = CommandBuffers.CreateCommandBuffer(_commandPool, CommandBufferLevel.Primary);
 
 		Check(cmd.Begin(), "Failed to begin command buffer.");
 

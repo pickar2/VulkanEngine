@@ -122,7 +122,7 @@ public unsafe class ClearScreenRenderer : RenderChain
 			Color = new ClearColorValue(0, 0, color, 1)
 		};
 
-		var cmd = CommandBuffers.CreateCommandBuffer(CommandBufferLevel.Primary, _commandPool);
+		var cmd = CommandBuffers.CreateCommandBuffer(_commandPool, CommandBufferLevel.Primary);
 
 		Check(cmd.Begin(CommandBufferUsageFlags.OneTimeSubmitBit), "Failed to begin command buffer.");
 

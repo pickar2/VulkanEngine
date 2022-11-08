@@ -53,6 +53,8 @@ public unsafe partial class UiRootRenderer : RenderChain
 	private readonly ArrayReCreator<VulkanBuffer> _countBufferCpu;
 	private readonly ArrayReCreator<VulkanBuffer> _countBuffer;
 
+	private readonly ReCreator<VulkanDescriptorSet.DescriptorSetUpdateTemplateBuilder> _countersUpdateTemplate;
+
 	// private readonly ArrayReCreator<Semaphore> _sortSemaphores;
 
 	public readonly RootPanel RootPanel;
@@ -168,6 +170,13 @@ public unsafe partial class UiRootRenderer : RenderChain
 			PipelineManager.CreateComputePipeline(ShaderManager.GetOrCreate("Assets/Shaders/Ui2/Compute/sort_main_pass.comp", ShaderKind.ComputeShader),
 				new[] {ComponentManager.DescriptorSetLayout.Value, _sortCountersLayout.Value, _sortIndicesLayout.Value}));
 
+		_countersUpdateTemplate = ReCreate.InDevice.Auto(() => VulkanDescriptorSet.UpdateTemplateBuilder()
+				.WriteBuffer( 0, 0, 1, DescriptorType.StorageBuffer)
+				.WriteBuffer( 1, 0, 1, DescriptorType.StorageBuffer)
+				.WriteBuffer( 2, 0, 1, DescriptorType.StorageBuffer)
+				.WriteBuffer( 3, 0, 1, DescriptorType.StorageBuffer)
+				.Compile(_sortCountersLayout), builder => builder.Dispose());
+
 		UpdateCountersDescriptorSets();
 		Context.DeviceEvents.AfterCreate += () => UpdateCountersDescriptorSets();
 	}
@@ -176,7 +185,7 @@ public unsafe partial class UiRootRenderer : RenderChain
 	{
 		var clearValues = stackalloc ClearValue[] {new(new ClearColorValue(0.66f, 0.66f, 0.66f, 1))};
 
-		var cmd = CommandBuffers.CreateCommandBuffer(CommandBufferLevel.Primary, CommandBuffers.GraphicsPool);
+		var cmd = CommandBuffers.GraphicsPool.Value.CreateCommandBuffer(CommandBufferLevel.Primary);
 
 		Check(cmd.Begin(CommandBufferUsageFlags.OneTimeSubmitBit), "Failed to begin command buffer.");
 
@@ -477,15 +486,20 @@ public unsafe partial class UiRootRenderer : RenderChain
 
 	private void UpdateCountersDescriptorSets()
 	{
+		var data = VulkanDescriptorSet.UpdateTemplateData();
+
 		for (int i = 0; i < Context.State.FrameOverlap; i++)
 		{
-			VulkanDescriptorSet.UpdateBuilder()
-				.WriteBuffer(_sortCountersSets[i], 0, 0, 1, DescriptorType.StorageBuffer, _counters1Buffer[i], 0, ZCount * 4)
-				.WriteBuffer(_sortCountersSets[i], 1, 0, 1, DescriptorType.StorageBuffer, _counters2Buffer[i], 0, ZCount * 4)
-				.WriteBuffer(_sortCountersSets[i], 2, 0, 1, DescriptorType.StorageBuffer, _offsetsBuffer[i], 0, ZCount * 4)
-				.WriteBuffer(_sortCountersSets[i], 3, 0, 1, DescriptorType.StorageBuffer, _countBuffer[i], 0, CountDataSize)
-				.Update();
+			data.Clear()
+				.AddBuffer(_counters1Buffer[i], 0, ZCount * 4)
+				.AddBuffer(_counters2Buffer[i], 0, ZCount * 4)
+				.AddBuffer(_offsetsBuffer[i], 0, ZCount * 4)
+				.AddBuffer(_countBuffer[i], 0, CountDataSize);
+
+			_countersUpdateTemplate.Value.ExecuteUpdate(_sortCountersSets[i], data);
 		}
+
+		data.Dispose();
 	}
 
 	private void UpdateIndicesDescriptorSet(FrameInfo frameInfo) =>

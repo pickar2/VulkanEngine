@@ -136,7 +136,7 @@ public unsafe class Deferred3DRenderer : RenderChain
 		var clearValues = stackalloc ClearValue[]
 			{colorClearValue, depthClearValue, gBufferClearValue, gBufferClearValue, gBufferClearValue, gBufferClearValue};
 
-		var cmd = CommandBuffers.CreateCommandBuffer(CommandBufferLevel.Primary, CommandBuffers.GraphicsPool);
+		var cmd = CommandBuffers.CreateCommandBuffer(CommandBuffers.GraphicsPool, CommandBufferLevel.Primary);
 
 		Check(cmd.Begin(CommandBufferUsageFlags.OneTimeSubmitBit), "Failed to begin command buffer.");
 
@@ -159,7 +159,8 @@ public unsafe class Deferred3DRenderer : RenderChain
 		cmd.BindVertexBuffer(1, Scene.ModelBuffer.Value.Buffer);
 		Context.Vk.CmdBindIndexBuffer(cmd, Scene.IndexBuffer.Value.Buffer, 0, IndexType.Uint32);
 
-		Context.Vk.CmdDrawIndexedIndirect(cmd, Scene.IndirectCommandBuffer.Value.Buffer, 0, Scene.IndirectCommandCount, (uint) sizeof(DrawIndexedIndirectCommand));
+		Context.Vk.CmdDrawIndexedIndirect(cmd, Scene.IndirectCommandBuffer.Value.Buffer, 0, Scene.IndirectCommandCount,
+			(uint) sizeof(DrawIndexedIndirectCommand));
 
 		Debug.EndCmdLabel(cmd);
 		Debug.BeginCmdLabel(cmd, $"Compose Deferred Lighting");

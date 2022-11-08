@@ -69,7 +69,7 @@ public unsafe class TestChildTextureRenderer : RenderChain
 			Color = new ClearColorValue(0.66f, 0.66f, 0.66f, 1)
 		};
 
-		var cmd = CommandBuffers.CreateCommandBuffer(CommandBufferLevel.Primary, _commandPool);
+		var cmd = CommandBuffers.CreateCommandBuffer(_commandPool, CommandBufferLevel.Primary);
 
 		Check(cmd.Begin(CommandBufferUsageFlags.OneTimeSubmitBit), "Failed to begin command buffer.");
 
@@ -87,7 +87,7 @@ public unsafe class TestChildTextureRenderer : RenderChain
 
 		cmd.BindGraphicsPipeline(_pipeline);
 		cmd.BindGraphicsDescriptorSets(_pipelineLayout, 0, 1, TextureManager.DescriptorSet);
-		cmd.BindVertexBuffer(0,_vertexBuffer.Value.Buffer);
+		cmd.BindVertexBuffer(0, _vertexBuffer.Value.Buffer);
 
 		uint id1 = TextureManager.GetTextureId($"ChildRenderer1 0");
 		uint id2 = TextureManager.GetTextureId($"ChildRenderer2 0");

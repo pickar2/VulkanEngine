@@ -41,9 +41,22 @@ public static class CommandBuffers
 		};
 	}
 
-	public static CommandBuffer CreateCommandBuffer(CommandBufferLevel level, CommandPool commandPool) => CreateCommandBuffers(level, commandPool, 1)[0];
+	public static CommandBuffer CreateCommandBuffer(this CommandPool commandPool, CommandBufferLevel level)
+	{
+		var allocateInfo = new CommandBufferAllocateInfo
+		{
+			SType = StructureType.CommandBufferAllocateInfo,
+			CommandPool = commandPool,
+			Level = level,
+			CommandBufferCount = 1
+		};
 
-	public static CommandBuffer[] CreateCommandBuffers(CommandBufferLevel level, CommandPool commandPool, int count)
+		Check(Context.Vk.AllocateCommandBuffers(Context.Device, allocateInfo, out var commandBuffer), "Failed to allocate command buffers");
+
+		return commandBuffer;
+	}
+
+	public static CommandBuffer[] CreateCommandBuffers(this CommandPool commandPool, CommandBufferLevel level, int count)
 	{
 		var allocateInfo = new CommandBufferAllocateInfo
 		{
@@ -81,7 +94,7 @@ public unsafe class OneTimeCommand
 	public OneTimeCommand(CommandPool pool, VulkanQueue queue, string? name = null)
 	{
 		_pool = pool;
-		_cmd = CommandBuffers.CreateCommandBuffer(CommandBufferLevel.Primary, _pool);
+		_cmd = _pool.CreateCommandBuffer(CommandBufferLevel.Primary);
 		_queue = queue;
 		_name = name;
 
