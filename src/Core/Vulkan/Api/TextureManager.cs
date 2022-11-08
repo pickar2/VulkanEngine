@@ -56,7 +56,7 @@ public static unsafe class TextureManager
 	public static uint GetTextureId(string name) => RegisteredTextures.TryGetValue(name, out var texture) ? texture.Id : 0;
 
 	private static void UpdateTextureBinding(Texture texture) =>
-		VulkanDescriptorSet.UpdateBuilder()
+		DescriptorSetUtils.UpdateBuilder()
 			.WriteImage(DescriptorSet, 0, texture.Id, 1, DescriptorType.CombinedImageSampler,
 				ImageLayout.ShaderReadOnlyOptimal, texture.ImageView, Sampler)
 			.Update();

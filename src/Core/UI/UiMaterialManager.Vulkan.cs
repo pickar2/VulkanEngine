@@ -1,5 +1,6 @@
 ﻿using Core.Vulkan;
 using Core.Vulkan.Api;
+using Core.Vulkan.Descriptors;
 using Silk.NET.Vulkan;
 
 namespace Core.UI;
@@ -88,34 +89,16 @@ public unsafe partial class MaterialManager
 
 		if (changedCount == 0) return;
 
-		var bufferInfos = stackalloc DescriptorBufferInfo[changedCount];
-		var writes = stackalloc WriteDescriptorSet[changedCount];
-		int index = 0;
+		var builder = DescriptorSetUtils.UpdateBuilder(writeCount: changedCount, bufferInfoCount: changedCount);
 		foreach ((string? _, var factory) in Materials)
 		{
 			if (!factory.BufferChanged) continue;
 			factory.BufferChanged = false;
 
-			bufferInfos[index] = new DescriptorBufferInfo
-			{
-				Buffer = factory.DataBufferGpu.Buffer,
-				Range = Vk.WholeSize
-			};
-
-			writes[index] = new WriteDescriptorSet
-			{
-				SType = StructureType.WriteDescriptorSet,
-				DescriptorCount = 1,
-				DescriptorType = DescriptorType.StorageBuffer,
-				DstBinding = (uint) factory.Index,
-				DstSet = factory.StageFlag == ShaderStageFlags.VertexBit ? VertexDescriptorSet : FragmentDescriptorSet,
-				PBufferInfo = &bufferInfos[index]
-			};
-
-			index++;
+			builder.WriteBuffer(factory.StageFlag == ShaderStageFlags.VertexBit ? VertexDescriptorSet : FragmentDescriptorSet, (uint) factory.Index, 0, 1,
+				DescriptorType.StorageBuffer, factory.DataBufferGpu.Buffer, 0, Vk.WholeSize);
 		}
-
-		Context.Vk.UpdateDescriptorSets(Context.Device, (uint) changedCount, writes, 0, null);
+		builder.Update();
 	}
 
 	private void UpdateBuffers()
@@ -146,44 +129,10 @@ public unsafe partial class MaterialManager
 		WaitSemaphore = command.Semaphore;
 	}
 
-	private static DescriptorSetLayout CreateSetLayout(ShaderStageFlags flags, uint bindingCount)
-	{
-		var bindingFlags = stackalloc DescriptorBindingFlags[(int) bindingCount];
-
-		var bindingFlagsCreateInfo = new DescriptorSetLayoutBindingFlagsCreateInfoEXT
-		{
-			SType = StructureType.DescriptorSetLayoutBindingFlagsCreateInfoExt,
-			BindingCount = bindingCount,
-			PBindingFlags = bindingFlags
-		};
-
-		var bindings = stackalloc DescriptorSetLayoutBinding[(int) bindingCount];
-		for (uint i = 0; i < bindingCount; i++)
-		{
-			bindingFlags[i] = DescriptorBindingFlags.UpdateAfterBindBit;
-			bindings[i] = new DescriptorSetLayoutBinding
-			{
-				Binding = i,
-				DescriptorCount = 1,
-				DescriptorType = DescriptorType.StorageBuffer,
-				StageFlags = flags
-			};
-		}
-
-		var layoutCreateInfo = new DescriptorSetLayoutCreateInfo
-		{
-			SType = StructureType.DescriptorSetLayoutCreateInfo,
-			BindingCount = bindingCount,
-			PBindings = bindings,
-			PNext = &bindingFlagsCreateInfo,
-			Flags = DescriptorSetLayoutCreateFlags.UpdateAfterBindPoolBitExt
-		};
-
-		Check(Context.Vk.CreateDescriptorSetLayout(Context.Device, &layoutCreateInfo, null, out var layout),
-			"Failed to create descriptor set layout.");
-
-		return layout;
-	}
+	private static DescriptorSetLayout CreateSetLayout(ShaderStageFlags flags, uint bindingCount) =>
+		VulkanDescriptorSetLayout.Builder(DescriptorSetLayoutCreateFlags.UpdateAfterBindPoolBit)
+			.AddMultipleBindings(0, (int) bindingCount, DescriptorType.StorageBuffer, 1, flags, DescriptorBindingFlags.UpdateAfterBindBit)
+			.Build();
 
 	private static DescriptorPool CreateDescriptorPool()
 	{

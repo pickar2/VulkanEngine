@@ -409,7 +409,7 @@ public unsafe class VoxelRenderer : RenderChain
 	}
 
 	public void UpdateSceneDataSet() =>
-		VulkanDescriptorSet.UpdateBuilder()
+		DescriptorSetUtils.UpdateBuilder()
 			.WriteBuffer(_sceneDataSet, 0, 0, 1, DescriptorType.StorageBuffer, _chunkIndices.Value.Buffer, 0, Vk.WholeSize)
 			.WriteBuffer(_sceneDataSet, 1, 0, 1, DescriptorType.StorageBuffer, _chunksData.Value.Buffer, 0, Vk.WholeSize)
 			.WriteBuffer(_sceneDataSet, 2, 0, 1, DescriptorType.StorageBuffer, _chunksVoxelData.Value.Buffer, 0, Vk.WholeSize)

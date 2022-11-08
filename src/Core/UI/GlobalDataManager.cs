@@ -48,7 +48,7 @@ public unsafe class GlobalDataManager
 
 	private void UpdateSet()
 	{
-		var builder = VulkanDescriptorSet.UpdateBuilder();
+		var builder = DescriptorSetUtils.UpdateBuilder();
 
 		uint index = 0;
 		foreach ((string _, var holder) in Factory.Holders)

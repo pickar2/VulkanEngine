@@ -1,6 +1,7 @@
 ﻿using System.Runtime.InteropServices;
 using Core.Vulkan;
 using Core.Vulkan.Api;
+using Core.Vulkan.Descriptors;
 using Core.Vulkan.Utility;
 using Silk.NET.Vulkan;
 
@@ -29,7 +30,7 @@ public unsafe class UiComponentManager
 
 		DescriptorSetLayout = ReCreate.InDevice.Auto(() => CreateSetLayout(), layout => layout.Dispose());
 		DescriptorPool = ReCreate.InDevice.Auto(() => CreateDescriptorPool(), pool => pool.Dispose());
-		DescriptorSet = ReCreate.InDevice.Auto(() => CreateDescriptorSet());
+		DescriptorSet = ReCreate.InDevice.Auto(() => AllocateDescriptorSet(DescriptorSetLayout, DescriptorPool));
 
 		IndexBuffers = ReCreate.InDevice.AutoArray(_ => CreateAndFillIndexBuffer(), () => Context.State.FrameOverlap, buffer => buffer.Dispose());
 	}
@@ -100,35 +101,10 @@ public unsafe class UiComponentManager
 
 	private DescriptorSetLayout CreateSetLayout()
 	{
-		var componentFlags = stackalloc DescriptorBindingFlags[] {DescriptorBindingFlags.UpdateAfterBindBit};
-		var componentFlagsInfo = new DescriptorSetLayoutBindingFlagsCreateInfoEXT
-		{
-			SType = StructureType.DescriptorSetLayoutBindingFlagsCreateInfoExt,
-			BindingCount = 1,
-			PBindingFlags = componentFlags
-		};
-
-		var componentDataBindings = new DescriptorSetLayoutBinding
-		{
-			Binding = 0,
-			DescriptorCount = 1,
-			DescriptorType = DescriptorType.StorageBuffer,
-			StageFlags = ShaderStageFlags.VertexBit | ShaderStageFlags.FragmentBit | ShaderStageFlags.ComputeBit
-		};
-
-		var componentDataCreateInfo = new DescriptorSetLayoutCreateInfo
-		{
-			SType = StructureType.DescriptorSetLayoutCreateInfo,
-			BindingCount = 1,
-			PBindings = componentDataBindings.AsPointer(),
-			Flags = DescriptorSetLayoutCreateFlags.UpdateAfterBindPoolBitExt,
-			PNext = componentFlagsInfo.AsPointer()
-		};
-
-		Check(Context.Vk.CreateDescriptorSetLayout(Context.Device, &componentDataCreateInfo, null, out var layout),
-			"Failed to create ui data descriptor set layout.");
-
-		return layout;
+		return VulkanDescriptorSetLayout.Builder(DescriptorSetLayoutCreateFlags.UpdateAfterBindPoolBit)
+			.AddBinding(0, DescriptorType.StorageBuffer, 1, ShaderStageFlags.VertexBit | ShaderStageFlags.FragmentBit | ShaderStageFlags.ComputeBit,
+				DescriptorBindingFlags.UpdateAfterBindBit)
+			.Build();
 	}
 
 	private DescriptorPool CreateDescriptorPool()
@@ -151,24 +127,5 @@ public unsafe class UiComponentManager
 		Check(Context.Vk.CreateDescriptorPool(Context.Device, &componentDataCreateInfo, null, out var pool), "Failed to create ui data descriptor pool.");
 
 		return pool;
-	}
-
-	private DescriptorSet CreateDescriptorSet()
-	{
-		Context.Vk.ResetDescriptorPool(Context.Device, DescriptorPool, 0);
-
-		var dataLayouts = stackalloc DescriptorSetLayout[] {DescriptorSetLayout};
-
-		var dataAllocInfo = new DescriptorSetAllocateInfo
-		{
-			SType = StructureType.DescriptorSetAllocateInfo,
-			DescriptorPool = DescriptorPool,
-			DescriptorSetCount = 1,
-			PSetLayouts = dataLayouts
-		};
-
-		Check(Context.Vk.AllocateDescriptorSets(Context.Device, dataAllocInfo, out var set), "Failed to allocate ui data descriptor sets.");
-
-		return set;
 	}
 }

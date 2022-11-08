@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Numerics;
+using System.Runtime.InteropServices;
 using Core.Native.Shaderc;
 using Core.Native.VMA;
 using Core.TemporaryMath;
@@ -53,7 +54,8 @@ public unsafe partial class UiRootRenderer : RenderChain
 	private readonly ArrayReCreator<VulkanBuffer> _countBufferCpu;
 	private readonly ArrayReCreator<VulkanBuffer> _countBuffer;
 
-	private readonly ReCreator<VulkanDescriptorSet.DescriptorSetUpdateTemplateBuilder> _countersUpdateTemplate;
+	private readonly ReCreator<DescriptorSetUpdateTemplateBuilder> _countersUpdateTemplate;
+	private readonly ReCreator<DescriptorSetUpdateTemplateBuilder> _indicesUpdateTemplate;
 
 	// private readonly ArrayReCreator<Semaphore> _sortSemaphores;
 
@@ -170,12 +172,16 @@ public unsafe partial class UiRootRenderer : RenderChain
 			PipelineManager.CreateComputePipeline(ShaderManager.GetOrCreate("Assets/Shaders/Ui2/Compute/sort_main_pass.comp", ShaderKind.ComputeShader),
 				new[] {ComponentManager.DescriptorSetLayout.Value, _sortCountersLayout.Value, _sortIndicesLayout.Value}));
 
-		_countersUpdateTemplate = ReCreate.InDevice.Auto(() => VulkanDescriptorSet.UpdateTemplateBuilder()
-				.WriteBuffer( 0, 0, 1, DescriptorType.StorageBuffer)
-				.WriteBuffer( 1, 0, 1, DescriptorType.StorageBuffer)
-				.WriteBuffer( 2, 0, 1, DescriptorType.StorageBuffer)
-				.WriteBuffer( 3, 0, 1, DescriptorType.StorageBuffer)
-				.Compile(_sortCountersLayout), builder => builder.Dispose());
+		_countersUpdateTemplate = ReCreate.InDevice.Auto(() => DescriptorSetUtils.UpdateTemplateBuilder()
+			.WriteBuffer(0, 0, 1, DescriptorType.StorageBuffer)
+			.WriteBuffer(1, 0, 1, DescriptorType.StorageBuffer)
+			.WriteBuffer(2, 0, 1, DescriptorType.StorageBuffer)
+			.WriteBuffer(3, 0, 1, DescriptorType.StorageBuffer)
+			.Compile(_sortCountersLayout), builder => builder.Dispose());
+
+		_indicesUpdateTemplate = ReCreate.InDevice.Auto(() => DescriptorSetUtils.UpdateTemplateBuilder()
+			.WriteBuffer(0, 0, 1, DescriptorType.StorageBuffer)
+			.Compile(_sortIndicesLayout), builder => builder.Dispose());
 
 		UpdateCountersDescriptorSets();
 		Context.DeviceEvents.AfterCreate += () => UpdateCountersDescriptorSets();
@@ -486,27 +492,26 @@ public unsafe partial class UiRootRenderer : RenderChain
 
 	private void UpdateCountersDescriptorSets()
 	{
-		var data = VulkanDescriptorSet.UpdateTemplateData();
+		var dataPtr = stackalloc DescriptorBufferInfo[4];
+		var dataSpan = new Span<byte>(dataPtr, sizeof(DescriptorBufferInfo) * 4);
 
 		for (int i = 0; i < Context.State.FrameOverlap; i++)
 		{
-			data.Clear()
-				.AddBuffer(_counters1Buffer[i], 0, ZCount * 4)
-				.AddBuffer(_counters2Buffer[i], 0, ZCount * 4)
-				.AddBuffer(_offsetsBuffer[i], 0, ZCount * 4)
-				.AddBuffer(_countBuffer[i], 0, CountDataSize);
+			dataSpan
+				.AddBuffer(sizeof(DescriptorBufferInfo) * 0, _counters1Buffer[i], 0, ZCount * 4)
+				.AddBuffer(sizeof(DescriptorBufferInfo) * 1, _counters2Buffer[i], 0, ZCount * 4)
+				.AddBuffer(sizeof(DescriptorBufferInfo) * 2, _offsetsBuffer[i], 0, ZCount * 4)
+				.AddBuffer(sizeof(DescriptorBufferInfo) * 3, _countBuffer[i], 0, CountDataSize);
 
-			_countersUpdateTemplate.Value.ExecuteUpdate(_sortCountersSets[i], data);
+			_countersUpdateTemplate.Value.ExecuteUpdate(_sortCountersSets[i], dataPtr);
 		}
-
-		data.Dispose();
 	}
 
-	private void UpdateIndicesDescriptorSet(FrameInfo frameInfo) =>
-		VulkanDescriptorSet.UpdateBuilder()
-			.WriteBuffer(_sortIndicesSets[frameInfo.FrameId], 0, 0, 1, DescriptorType.StorageBuffer,
-				ComponentManager.IndexBuffers[frameInfo.FrameId], 0, Vk.WholeSize)
-			.Update();
+	private void UpdateIndicesDescriptorSet(FrameInfo frameInfo)
+	{
+		var bufferInfo = new DescriptorBufferInfo(ComponentManager.IndexBuffers[frameInfo.FrameId], 0, Vk.WholeSize);
+		_indicesUpdateTemplate.Value.ExecuteUpdate(_sortIndicesSets[frameInfo.FrameId], &bufferInfo);
+	}
 
 	public override void Dispose() => GC.SuppressFinalize(this);
 }
