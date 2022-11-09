@@ -347,13 +347,13 @@ public static partial class TextInput
 
 	private const string NonLetters = @"\.,|\-\:;\<\>\^\(\)\{\}\[\]""'\!\@\#\$\%\&\+\*\\\/";
 
-	[GeneratedRegex(@"\s")]
+	[GeneratedRegex(@"\s", RegexOptions.NonBacktracking)]
 	private static partial Regex WhitespacesRegex();
 
-	[GeneratedRegex($"[{NonLetters}]")]
+	[GeneratedRegex($"[{NonLetters}]", RegexOptions.NonBacktracking)]
 	private static partial Regex NonLettersRegex();
 
-	[GeneratedRegex($@"[{NonLetters}\s]")]
+	[GeneratedRegex($@"[{NonLetters}\s]", RegexOptions.NonBacktracking)]
 	private static partial Regex NonLetterNonWhitespaceRegex();
 
 	private static int FindWordEndLeft()

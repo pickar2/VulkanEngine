@@ -10,6 +10,7 @@ public static unsafe class DescriptorSetUtils
 {
 	public static DescriptorSetUpdateBuilder UpdateBuilder(int writeCount = 0, int bufferInfoCount = 0, int imageInfoCount = 0, int copyCount = 0) =>
 		new(writeCount, bufferInfoCount, imageInfoCount, copyCount);
+
 	public static DescriptorSetUpdateTemplateBuilder UpdateTemplateBuilder() => new();
 	public static DescriptorSetUpdateTemplateData UpdateTemplateData() => new();
 }
@@ -300,33 +301,61 @@ public unsafe class DescriptorSetUpdateTemplateData : IDisposable
 	}
 }
 
-public static unsafe class DescriptorSetUpdateTemplateStackData
-{
-	public static Span<byte> AddBuffer(this Span<byte> span, int spanOffset, Buffer buffer, ulong offset, ulong range)
-	{
-		var bufferInfo = new DescriptorBufferInfo
-		{
-			Buffer = buffer,
-			Offset = offset,
-			Range = range
-		};
-
-		bufferInfo.WriteToSpan(span, spanOffset);
-
-		return span;
-	}
-
-	public static Span<byte> AddImage(this Span<byte> span, int spanOffset, ImageLayout imageLayout, ImageView imageView, Sampler sampler)
-	{
-		var imageInfo = new DescriptorImageInfo
-		{
-			ImageLayout = imageLayout,
-			ImageView = imageView,
-			Sampler = sampler
-		};
-
-		imageInfo.WriteToSpan(span, spanOffset);
-
-		return span;
-	}
-}
+// public static unsafe class DescriptorSetUpdateTemplateStackData
+// {
+// 	public static Span<byte> AddBuffer(this Span<byte> span, int spanOffset, Buffer buffer, ulong offset, ulong range)
+// 	{
+// 		var bufferInfo = new DescriptorBufferInfo
+// 		{
+// 			Buffer = buffer,
+// 			Offset = offset,
+// 			Range = range
+// 		};
+//
+// 		bufferInfo.WriteToSpan(span, spanOffset);
+//
+// 		return span;
+// 	}
+//
+// 	public static Span<byte> AddImage(this Span<byte> span, int spanOffset, ImageLayout imageLayout, ImageView imageView, Sampler sampler)
+// 	{
+// 		var imageInfo = new DescriptorImageInfo
+// 		{
+// 			ImageLayout = imageLayout,
+// 			ImageView = imageView,
+// 			Sampler = sampler
+// 		};
+//
+// 		imageInfo.WriteToSpan(span, spanOffset);
+//
+// 		return span;
+// 	}
+//
+// 	public static SpanWithPosition<byte> AddBuffer(this SpanWithPosition<byte> span, Buffer buffer, ulong offset, ulong range)
+// 	{
+// 		var bufferInfo = new DescriptorBufferInfo
+// 		{
+// 			Buffer = buffer,
+// 			Offset = offset,
+// 			Range = range
+// 		};
+//
+// 		span.WriteValue(bufferInfo);
+//
+// 		return span;
+// 	}
+//
+// 	public static SpanWithPosition<byte> AddImage(this SpanWithPosition<byte> span, ImageLayout imageLayout, ImageView imageView, Sampler sampler)
+// 	{
+// 		var imageInfo = new DescriptorImageInfo
+// 		{
+// 			ImageLayout = imageLayout,
+// 			ImageView = imageView,
+// 			Sampler = sampler
+// 		};
+//
+// 		span.WriteValue(imageInfo);
+//
+// 		return span;
+// 	}
+// }

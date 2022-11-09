@@ -441,67 +441,26 @@ public unsafe partial class UiRootRenderer : RenderChain
 			.AddBinding(0, DescriptorType.StorageBuffer, 1, ShaderStageFlags.ComputeBit, DescriptorBindingFlags.UpdateAfterBindBit)
 			.Build();
 
-	private DescriptorPool CreateSortCountersPool()
-	{
-		var countersPoolSizes = new DescriptorPoolSize[]
-		{
-			new()
-			{
-				Type = DescriptorType.StorageBuffer,
-				DescriptorCount = (uint) (4 * Context.State.FrameOverlap)
-			}
-		};
+	private DescriptorPool CreateSortCountersPool()=>
+		VulkanDescriptorPool.Builder(Context.State.FrameOverlap, DescriptorPoolCreateFlags.UpdateAfterBindBit)
+			.AddType(DescriptorType.StorageBuffer, 4 * Context.State.FrameOverlap).Build();
 
-		var countersCreateInfo = new DescriptorPoolCreateInfo
-		{
-			SType = StructureType.DescriptorPoolCreateInfo,
-			MaxSets = (uint) Context.State.FrameOverlap.Value,
-			PoolSizeCount = (uint) countersPoolSizes.Length,
-			PPoolSizes = countersPoolSizes[0].AsPointer(),
-			Flags = DescriptorPoolCreateFlags.UpdateAfterBindBit
-		};
-
-		Check(Context.Vk.CreateDescriptorPool(Context.Device, &countersCreateInfo, null, out var pool),
-			"Failed to create ui counters descriptor pool.");
-
-		return pool;
-	}
-
-	private DescriptorPool CreateSortIndicesPool()
-	{
-		var indicesPoolSizes = new DescriptorPoolSize
-		{
-			DescriptorCount = (uint) Context.State.FrameOverlap.Value,
-			Type = DescriptorType.StorageBuffer
-		};
-
-		var indicesCreateInfo = new DescriptorPoolCreateInfo
-		{
-			SType = StructureType.DescriptorPoolCreateInfo,
-			MaxSets = (uint) Context.State.FrameOverlap.Value,
-			PoolSizeCount = 1,
-			PPoolSizes = &indicesPoolSizes,
-			Flags = DescriptorPoolCreateFlags.UpdateAfterBindBit
-		};
-
-		Check(Context.Vk.CreateDescriptorPool(Context.Device, &indicesCreateInfo, null, out var pool),
-			"Failed to create ui indices descriptor pool.");
-
-		return pool;
-	}
+	private DescriptorPool CreateSortIndicesPool() =>
+		VulkanDescriptorPool.Builder(Context.State.FrameOverlap, DescriptorPoolCreateFlags.UpdateAfterBindBit)
+			.AddType(DescriptorType.StorageBuffer, Context.State.FrameOverlap).Build();
 
 	private void UpdateCountersDescriptorSets()
 	{
 		var dataPtr = stackalloc DescriptorBufferInfo[4];
-		var dataSpan = new Span<byte>(dataPtr, sizeof(DescriptorBufferInfo) * 4);
+		var dataSpan = new Span<byte>(dataPtr, sizeof(DescriptorBufferInfo) * 4).WithPosition();
 
 		for (int i = 0; i < Context.State.FrameOverlap; i++)
 		{
-			dataSpan
-				.AddBuffer(sizeof(DescriptorBufferInfo) * 0, _counters1Buffer[i], 0, ZCount * 4)
-				.AddBuffer(sizeof(DescriptorBufferInfo) * 1, _counters2Buffer[i], 0, ZCount * 4)
-				.AddBuffer(sizeof(DescriptorBufferInfo) * 2, _offsetsBuffer[i], 0, ZCount * 4)
-				.AddBuffer(sizeof(DescriptorBufferInfo) * 3, _countBuffer[i], 0, CountDataSize);
+			dataSpan.Reset()
+				.WriteValue(new DescriptorBufferInfo(_counters1Buffer[i], 0, ZCount * 4))
+				.WriteValue(new DescriptorBufferInfo(_counters2Buffer[i], 0, ZCount * 4))
+				.WriteValue(new DescriptorBufferInfo(_offsetsBuffer[i], 0, ZCount * 4))
+				.WriteValue(new DescriptorBufferInfo(_countBuffer[i], 0, CountDataSize));
 
 			_countersUpdateTemplate.Value.ExecuteUpdate(_sortCountersSets[i], dataPtr);
 		}
