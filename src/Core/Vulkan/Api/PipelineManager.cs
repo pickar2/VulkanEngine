@@ -29,7 +29,8 @@ public static unsafe class PipelineManager
 		return cache;
 	}
 
-	public static VulkanPipeline CreateComputePipeline(VulkanShader shader, DescriptorSetLayout[] layouts, PushConstantRange[]? pushConstantRanges = null)
+	public static VulkanPipeline CreateComputePipeline(VulkanShader shader, DescriptorSetLayout[] layouts, PipelineCreateFlags pipelineFlags = 0,
+		PushConstantRange[]? pushConstantRanges = null)
 	{
 		pushConstantRanges ??= Array.Empty<PushConstantRange>();
 
@@ -56,10 +57,11 @@ public static unsafe class PipelineManager
 		{
 			SType = StructureType.ComputePipelineCreateInfo,
 			Stage = shaderStage,
-			Layout = layout
+			Layout = layout,
+			Flags = pipelineFlags
 		};
 
-		Context.Vk.CreateComputePipelines(Context.Device, PipelineManager.PipelineCache, 1, &createInfo, null, out var pipeline);
+		Context.Vk.CreateComputePipelines(Context.Device, PipelineCache, 1, &createInfo, null, out var pipeline);
 
 		return new VulkanPipeline
 		{

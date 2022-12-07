@@ -34,7 +34,7 @@ public unsafe partial class UiRootRenderer : RenderChain
 
 	// Compute
 	private const int ZCount = 2048;
-	private const int CountDataSize = 16;
+	private const int CountDataSize = 12;
 
 	private readonly ReCreator<DescriptorSetLayout> _sortCountersLayout;
 	private readonly ReCreator<DescriptorPool> _sortCountersPool;
@@ -170,7 +170,8 @@ public unsafe partial class UiRootRenderer : RenderChain
 
 		_sortMainPipeline = ReCreate.InDevice.Auto(() =>
 			PipelineManager.CreateComputePipeline(ShaderManager.GetOrCreate("Assets/Shaders/Ui2/Compute/sort_main_pass.comp", ShaderKind.ComputeShader),
-				new[] {ComponentManager.DescriptorSetLayout.Value, _sortCountersLayout.Value, _sortIndicesLayout.Value}));
+				new[] {ComponentManager.DescriptorSetLayout.Value, _sortCountersLayout.Value, _sortIndicesLayout.Value},
+				PipelineCreateFlags.CreateDispatchBase));
 
 		_countersUpdateTemplate = ReCreate.InDevice.Auto(() => DescriptorSetUtils.UpdateTemplateBuilder()
 			.WriteBuffer(0, 0, 1, DescriptorType.StorageBuffer)
@@ -260,6 +261,7 @@ public unsafe partial class UiRootRenderer : RenderChain
 		var intSpan = _countBufferCpu[frameInfo.FrameId].GetHostSpan<int>();
 		intSpan[0] = ComponentManager.Factory.ComponentCount;
 		intSpan[1] = ZCount;
+		intSpan[2] = 0;
 		// intSpan[2] = (int) SwapchainHelper.Extent.Width;
 		// intSpan[3] = (int) SwapchainHelper.Extent.Height;
 
@@ -330,6 +332,13 @@ public unsafe partial class UiRootRenderer : RenderChain
 		cmd.Cmd.BindComputeDescriptorSets(_sortMainPipeline.Value.PipelineLayout, 0, 1, &componentSet);
 		cmd.Cmd.BindComputeDescriptorSets(_sortMainPipeline.Value.PipelineLayout, 1, 1, &countersSet);
 		cmd.Cmd.BindComputeDescriptorSets(_sortMainPipeline.Value.PipelineLayout, 2, 1, &indicesSet);
+
+		// var count = (uint) Math.Ceiling((float) ComponentManager.Factory.MaxComponents / 32);
+		// for (int i = 0; i < count; i++)
+		// {
+		// 	Context.Vk.CmdDispatchBase(cmd, (uint) i, 0, 0, 1, 1, 1);
+		// 	cmd.Cmd.PipelineBarrier2(&dependencyInfoStorage);
+		// }
 		cmd.Cmd.Dispatch((uint) Math.Ceiling((float) ComponentManager.Factory.MaxComponents / 32), 1, 1);
 
 		// App.Logger.Info.Message($"{ComponentManager.Factory.MaxComponents}");

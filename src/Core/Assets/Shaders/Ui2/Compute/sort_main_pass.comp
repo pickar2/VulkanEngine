@@ -32,9 +32,10 @@ readonly layout(set = 1, binding = 2) buffer offsetsBuffer {
 	int offsets[];
 };
 
-readonly layout(set = 1, binding = 3) buffer count_const {
-	int count;
+layout(set = 1, binding = 3) buffer count_const {
+	int elementCount;
 	int z_count;
+	int subgroupCounter;
 };
 
 writeonly layout(std430, set = 2, binding = 0) buffer indicesArray {
@@ -44,29 +45,26 @@ writeonly layout(std430, set = 2, binding = 0) buffer indicesArray {
 #include "../Default/functions.glsl"
 
 void main() {
-	if (gl_GlobalInvocationID.x >= count) return;
+	int subgroupIndex;
+	if (subgroupElect()) { subgroupIndex = atomicAdd(subgroupCounter, 1); }
+	subgroupIndex = subgroupBroadcastFirst(subgroupIndex);
 
-	UiElementData d = data[gl_GlobalInvocationID.x];
+	int elementIndex = subgroupIndex * int(gl_SubgroupSize) + int(gl_SubgroupInvocationID);
 
-	if ((d.flags & DISABLED) != ZERO || (d.flags & OFFSCREEN) != ZERO) {
-		return;
-	}
+	UiElementData d = data[elementIndex];
+	const bool willBeRendered = (d.flags & DISABLED) == ZERO && (d.flags & OFFSCREEN) == ZERO && elementIndex < elementCount;
+
 	Pos pos = calcFullPos(d);
-
-	int id4 = int(gl_GlobalInvocationID.x * 4);
+	int id4 = int(elementIndex * 4);
 	int z = int(pos.z);
 
-	uvec4 activeInvocations = subgroupBallot(true);
-
-	uint firstInvocationWithSameZ = gl_SubgroupInvocationID;
-	uint totalAmountOfInvocationsWithZ = 0;
+	uint firstInvocationWithSameZ;
+	uint totalAmountOfInvocationsWithZ;
 	int offsetAtSubgroupStart;
-	int currentInvocationOffset = 0;
+	int currentInvocationOffset;
 	for (uint i = 0; i < gl_SubgroupSize; i++) {
-//		if (!subgroupBallotBitExtract(activeInvocations, i)) continue;
-
-		int zOfInvocationI = subgroupShuffle(z, i);
-		uvec4 invocationsWithSameZ = subgroupBallot(z == zOfInvocationI);
+		int zOfInvocationI = subgroupBroadcast(z, i);
+		uvec4 invocationsWithSameZ = subgroupBallot(willBeRendered && z == zOfInvocationI);
 
 		if (i == gl_SubgroupInvocationID) {
 			firstInvocationWithSameZ = subgroupBallotFindLSB(invocationsWithSameZ);
@@ -80,9 +78,11 @@ void main() {
 	}
 	offsetAtSubgroupStart = subgroupShuffle(offsetAtSubgroupStart, firstInvocationWithSameZ);
 
+	if (!willBeRendered) { return; }
+
 	int index = offsets[z] * 6 + offsetAtSubgroupStart + currentInvocationOffset;
 
-	indices[index] = 0 + id4;
+	indices[index+0] = 0 + id4;
 	indices[index+1] = 1 + id4;
 	indices[index+2] = 2 + id4;
 	indices[index+3] = 3 + id4;
