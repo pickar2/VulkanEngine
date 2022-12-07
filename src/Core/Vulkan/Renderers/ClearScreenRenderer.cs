@@ -136,7 +136,7 @@ public unsafe class ClearScreenRenderer : RenderChain
 			PClearValues = clearValues
 		};
 
-		cmd.BeginRenderPass(renderPassBeginInfo, SubpassContents.SecondaryCommandBuffers);
+		cmd.BeginRenderPass(&renderPassBeginInfo, SubpassContents.SecondaryCommandBuffers);
 
 		cmd.EndRenderPass();
 

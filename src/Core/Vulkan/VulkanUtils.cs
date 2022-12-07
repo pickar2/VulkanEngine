@@ -396,7 +396,7 @@ public static unsafe class VulkanUtils
 			sb.Append(span.Slice(index, match.Index - index));
 			if (ShaderManager.TryGetVirtualShaderContent(match.Groups[1].Value, out string? content))
 			{
-				string[]? lines = content.Split("\n");
+				var lines = content.Split("\n");
 				int errorLine = Convert.ToInt32(match.Groups[2].Value) - 1;
 				for (int i = errorLine - codeLineCount; i <= Math.Min(errorLine + codeLineCount, lines.Length + 1); i++)
 				{
@@ -449,15 +449,15 @@ public static unsafe class VulkanUtils
 
 		if (result.Status != Status.Success)
 		{
-			if (State.AllowShaderCompileErrors && ShaderManager.TryGetShader(path, out var oldShader))
+			if (State.CrashOnShaderCompileErrors || !ShaderManager.TryGetShader(path, out var oldShader))
 			{
-				App.Logger.Error.Message($"{ImproveShaderErrorMessageString(result.ErrorMessage!)}");
-				result.Dispose();
-				return oldShader;
+				throw new Exception($"Shader `{path}` ({Path.GetFileName(path)}) was not compiled: {result.Status}\r\n" +
+				                    $"{ImproveShaderErrorMessageString(result.ErrorMessage!)}").AsExpectedException();
 			}
 
-			throw new Exception($"Shader `{path}` ({Path.GetFileName(path)}) was not compiled: {result.Status}\r\n" +
-			                    $"{ImproveShaderErrorMessageString(result.ErrorMessage!)}").AsExpectedException();
+			App.Logger.Error.Message($"{ImproveShaderErrorMessageString(result.ErrorMessage!)}");
+			result.Dispose();
+			return oldShader;
 		}
 
 		var spirvShaderModule = new ReflectShaderModule(result.CodePointer, result.CodeLength);

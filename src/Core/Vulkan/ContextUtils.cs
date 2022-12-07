@@ -33,7 +33,7 @@ public static unsafe class ContextUtils
 
 	public static Result End(this ref CommandBuffer cb) => Context.Vk.EndCommandBuffer(cb);
 
-	public static void BeginRenderPass(this ref CommandBuffer cb, in RenderPassBeginInfo beginInfo, SubpassContents subpassContents) =>
+	public static void BeginRenderPass(this ref CommandBuffer cb, RenderPassBeginInfo* beginInfo, SubpassContents subpassContents) =>
 		Context.Vk.CmdBeginRenderPass(cb, beginInfo, subpassContents);
 
 	public static void EndRenderPass(this ref CommandBuffer cb) => Context.Vk.CmdEndRenderPass(cb);
@@ -71,7 +71,13 @@ public static unsafe class ContextUtils
 	public static void CopyBuffer(this CommandBuffer cb, Buffer src, Buffer dst, Span<BufferCopy> copyRegions) =>
 		Context.Vk.CmdCopyBuffer(cb, src, dst, copyRegions);
 
-	public static void PipelineBarrier2(this CommandBuffer cb, DependencyInfo dependencyInfo) =>
+	public static void CopyBuffer(this CommandBuffer cb, Buffer src, Buffer dst, BufferCopy copyRegion) =>
+		Context.Vk.CmdCopyBuffer(cb, src, dst, 1, copyRegion);
+
+	public static void FillBuffer(this CommandBuffer cb, Buffer src, ulong dstOffset, ulong size, uint data) =>
+		Context.Vk.CmdFillBuffer(cb, src, dstOffset, size, data);
+
+	public static void PipelineBarrier2(this CommandBuffer cb, DependencyInfo* dependencyInfo) =>
 		Context.KhrSynchronization2.CmdPipelineBarrier2(cb, dependencyInfo);
 
 	public static void BindPipeline(this CommandBuffer cb, PipelineBindPoint bindPoint, Pipeline pipeline) =>
@@ -97,6 +103,9 @@ public static unsafe class ContextUtils
 
 	public static void Draw(this CommandBuffer cb, uint vertexCount, uint instanceCount, uint firstVertex, uint firstInstance) =>
 		Context.Vk.CmdDraw(cb, vertexCount, instanceCount, firstVertex, firstInstance);
+
+	public static void Dispatch(this CommandBuffer cb, uint groupCountX, uint groupCountY, uint groupCountZ) =>
+		Context.Vk.CmdDispatch(cb, groupCountX, groupCountY, groupCountZ);
 
 	#endregion
 

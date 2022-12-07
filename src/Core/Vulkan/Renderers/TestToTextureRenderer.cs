@@ -105,7 +105,7 @@ public unsafe class TestToTextureRenderer : RenderChain
 			PClearValues = clearValues
 		};
 
-		cmd.BeginRenderPass(renderPassBeginInfo, SubpassContents.Inline);
+		cmd.BeginRenderPass(&renderPassBeginInfo, SubpassContents.Inline);
 
 		cmd.BindGraphicsPipeline(_pipeline);
 		cmd.Draw(3, 1, 0, (uint) _color.ToArgb());

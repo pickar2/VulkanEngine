@@ -150,7 +150,7 @@ public unsafe class Deferred3DRenderer : RenderChain
 			PClearValues = clearValues
 		};
 
-		cmd.BeginRenderPass(renderPassBeginInfo, SubpassContents.Inline);
+		cmd.BeginRenderPass(&renderPassBeginInfo, SubpassContents.Inline);
 
 		Debug.BeginCmdLabel(cmd, $"FIll G-Buffers");
 

@@ -85,7 +85,7 @@ public class DeviceMemory : IMemory // Vulkan buffer
 	public static implicit operator VulkanBuffer(DeviceMemory deviceMemory) => deviceMemory.Buffer;
 }
 
-public unsafe class HostMemory : IMemory // RAM memory
+public unsafe class HostMemory : IMemory // RAM
 {
 	public ulong Size { get; protected set; }
 	public IntPtr Pointer { get; protected set; }
@@ -99,8 +99,11 @@ public unsafe class HostMemory : IMemory // RAM memory
 		Pointer = Marshal.AllocHGlobal((int) Size);
 	}
 
-	public void Resize(ulong newSize, bool copyPreviousContents = true, bool disposePreviousBuffer = false) =>
+	public void Resize(ulong newSize, bool copyPreviousContents = true, bool disposePreviousBuffer = false)
+	{
 		Pointer = Marshal.ReAllocHGlobal(Pointer, (nint) newSize);
+		Size = newSize;
+	}
 
 	public void CopyToDevice(DeviceMemory other, Span<BufferCopy> regions)
 	{

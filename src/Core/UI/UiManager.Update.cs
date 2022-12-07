@@ -12,16 +12,19 @@ public static partial class UiManager
 {
 	public static readonly HashSet<RootPanel> Roots = new();
 	public static readonly IComparer<UiControl> ZComparer = new ZComparer();
+	public static bool IsReady { get; private set; }
 
 	public static void Init()
 	{
 		InitEvents();
 		InitTestScene();
 		Roots.Add(GeneralRenderer.MainRoot);
+		IsReady = true;
 	}
 
 	public static void Update()
 	{
+		if (!IsReady) return;
 		EventsPreUpdate();
 
 		foreach (var root in Roots) root.Update();
@@ -33,9 +36,9 @@ public static partial class UiManager
 	{
 		if (startControl is null) return list;
 
-		// if (startControl.Selectable && IsControlPartVisible(startControl, point) && IsInsideControl(startControl, point))
-			// list.BinaryInsert(startControl, ZComparer);
-		// foreach (var child in startControl.Children) ControlsOnPos(point, child, list);
+		if (startControl.Selectable && IsControlPartVisible(startControl, point) && IsInsideControl(startControl, point))
+			list.BinaryInsert(startControl, ZComparer);
+		foreach (var child in startControl.Children) ControlsOnPos(point, child, list);
 
 		return list;
 	}

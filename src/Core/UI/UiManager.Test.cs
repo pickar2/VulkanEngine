@@ -25,14 +25,14 @@ public static partial class UiManager
 	{
 		Consolas = FontLoader.LoadFromText("Assets/Fonts/consolas.fnt");
 		// off main root control example:
-		// var infoBoxRoot = new FullScreenRootPanel();
-		// var infoBox = new ControlInfoBox(infoBoxRoot);
-		// infoBoxRoot.AddChild(infoBox);
-		// AfterUpdate += () =>
-		// {
-		// 	infoBox.Control = KeyboardInput.IsKeyPressed(SDL.SDL_Keycode.SDLK_LALT) && TopControl is not null && TopControl.Selectable ? TopControl : null;
-		// 	infoBoxRoot.Update();
-		// };
+		var infoBoxRoot = new FullScreenRootPanel(MainRoot.ComponentManager, MainRoot.MaterialManager, MainRoot.GlobalDataManager);
+		var infoBox = new ControlInfoBox(infoBoxRoot);
+		infoBoxRoot.AddChild(infoBox);
+		AfterUpdate += () =>
+		{
+			infoBox.Control = KeyboardInput.IsKeyPressed(SDL.SDL_Keycode.SDLK_LALT) && TopControl is not null && TopControl.Selectable ? TopControl : null;
+			infoBoxRoot.Update();
+		};
 
 		var mainControl = new AbsolutePanel(MainRoot);
 		// mainControl.Selectable = false;
@@ -56,7 +56,7 @@ public static partial class UiManager
 		AnimationTest(mainControl);
 		TextInputTest(mainControl);
 		AlignPanelTest(mainControl);
-		VulkanPanelTest(mainControl);
+		// VulkanPanelTest(mainControl);
 	}
 
 	private static unsafe void VulkanPanelTest(AbsolutePanel parent)

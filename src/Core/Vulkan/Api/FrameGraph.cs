@@ -227,7 +227,7 @@ public static unsafe class FrameGraph
 
 		// TODO: waiting on every image is bad, should at least add bulk methods of attachment creation.
 		var cmd = CommandBuffers.OneTimeGraphics();
-		cmd.Cmd.PipelineBarrier2(dependencyInfo);
+		cmd.Cmd.PipelineBarrier2(&dependencyInfo);
 		cmd.SubmitAndWait();
 
 		vulkanImage.CurrentLayout = ImageLayout.AttachmentOptimal;

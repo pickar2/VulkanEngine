@@ -22,7 +22,7 @@ public static unsafe class PointerUtils
 		var valueSpan = MemoryMarshal.Cast<byte, T>(span.Span[span.Position..]);
 		valueSpan[0] = value;
 	}
-	
+
 	public static SpanWithPosition<T> WriteValue<T, TValue>(this SpanWithPosition<T> span, TValue value) where TValue : unmanaged where T : unmanaged
 	{
 		MemoryMarshal.Cast<T, TValue>(span.Span[span.Position..])[0] = value;
@@ -49,14 +49,14 @@ public static unsafe class PointerUtils
 	{
 		foreach (var region in regions)
 		{
-			span = span.Slice((int) region.SrcOffset, (int) region.Size);
-			otherSpan = otherSpan.Slice((int) region.DstOffset, (int) region.Size);
+			var from = span.Slice((int) region.SrcOffset, (int) region.Size);
+			var to = otherSpan.Slice((int) region.DstOffset, (int) region.Size);
 
-			span.CopyTo(otherSpan);
+			from.CopyTo(to);
 		}
 	}
 
-	public static T[] ToArray<T>(T* ptr, int length) where T : unmanaged
+	public static T[] CopyToArray<T>(T* ptr, int length) where T : unmanaged
 	{
 		var array = new T[length];
 		for (int i = 0; i < length; i++)
@@ -65,7 +65,7 @@ public static unsafe class PointerUtils
 		return array;
 	}
 
-	public static T[] ToArray<T>(T** ptr, int length) where T : unmanaged
+	public static T[] CopyToArray<T>(T** ptr, int length) where T : unmanaged
 	{
 		var array = new T[length];
 		for (int i = 0; i < length; i++)
@@ -81,7 +81,11 @@ public static unsafe class PointerUtils
 	public static T* AsPointer<T>(this T[] array) where T : unmanaged => (T*) Unsafe.AsPointer(ref array[0]);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static T* AsPointer<T>(this List<T> list) where T : unmanaged => (T*) Unsafe.AsPointer(ref CollectionsMarshal.AsSpan(list)[0]);
+	public static T* AsPointer<T>(this Span<T> span) where T : unmanaged => (T*) Unsafe.AsPointer(ref MemoryMarshal.GetReference(span));
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static T* AsPointer<T>(this List<T> list) where T : unmanaged =>
+		(T*) Unsafe.AsPointer(ref MemoryMarshal.GetReference(CollectionsMarshal.AsSpan(list)));
 }
 
 public unsafe ref struct SpanWithPosition<T>
@@ -95,11 +99,13 @@ public unsafe ref struct SpanWithPosition<T>
 		Position = position;
 	}
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public SpanWithPosition<T> Reset()
 	{
 		Position = 0;
 		return this;
 	}
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static implicit operator SpanWithPosition<T>(Span<T> span) => new(span);
 }

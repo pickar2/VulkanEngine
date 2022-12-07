@@ -1,7 +1,8 @@
 ﻿#version 460
 
 #extension GL_EXT_nonuniform_qualifier : enable
-#extension GL_AMD_gpu_shader_int16 : enable
+//#extension GL_AMD_gpu_shader_int16 : enable
+#extension GL_EXT_shader_explicit_arithmetic_types : enable
 
 #include "Default/constants.glsl"
 #include "Default/structs.glsl"

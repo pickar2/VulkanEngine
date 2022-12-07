@@ -14,7 +14,7 @@ public unsafe class VulkanDescriptorPoolBuilder
 	public int MaxSets { get; private set; }
 	public DescriptorPoolCreateFlags PoolFlags { get; private set; }
 
-	private List<DescriptorPoolSize> _sizes = new();
+	private readonly List<DescriptorPoolSize> _sizes = new();
 
 	public VulkanDescriptorPoolBuilder(int maxSets, DescriptorPoolCreateFlags poolFlags = DescriptorPoolCreateFlags.None)
 	{

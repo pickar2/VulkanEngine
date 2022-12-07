@@ -71,12 +71,12 @@ public static class GeneralRenderer
 		materialManager.UpdateShaders();
 
 		// var deferred = new Deferred3DRenderer((1280, 720), "TestDeferred");
-		var voxel = new VoxelRenderer("TestVoxel");
+		// var voxel = new VoxelRenderer("TestVoxel");
 		Root = new UiRootRenderer("Root1", MainRoot);
 
-		for (int i = 0; i < 2; i++) Root.AddChild(new TestToTextureRenderer($"ChildRenderer{i}"));
+		// for (int i = 0; i < 2; i++) Root.AddChild(new TestToTextureRenderer($"ChildRenderer{i}"));
 
-		Root.AddChild(voxel);
+		// Root.AddChild(voxel);
 
 		byte[] bytes = File.ReadAllBytes($"Assets/Textures/{UiManager.Consolas.Pages[0].TextureName}");
 		var qoiImage = QoiDecoder.Decode(bytes);

@@ -3,7 +3,7 @@ using Silk.NET.Vulkan;
 
 namespace Core.Vulkan.Descriptors;
 
-public unsafe class VulkanDescriptorSetLayout
+public static unsafe class VulkanDescriptorSetLayout
 {
 	public static DescriptorSetLayoutBuilder Builder(DescriptorSetLayoutCreateFlags flags) => new(flags);
 

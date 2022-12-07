@@ -19,11 +19,11 @@ public unsafe class ReflectShaderModule : IDisposable
 
 	public SpvReflectDescriptorSet[] GetDescriptorSets() => Module.descriptor_sets[..(int) Module.descriptor_set_count].ToArray();
 
-	public SpvReflectDescriptorBinding[] GetDescriptorBindings() => ToArray(Module.descriptor_bindings, (int) Module.descriptor_binding_count);
+	public SpvReflectDescriptorBinding[] GetDescriptorBindings() => CopyToArray(Module.descriptor_bindings, (int) Module.descriptor_binding_count);
 
-	public SpvReflectInterfaceVariable[] GetInterfaceVariables() => ToArray(Module.interface_variables, (int) Module.interface_variable_count);
+	public SpvReflectInterfaceVariable[] GetInterfaceVariables() => CopyToArray(Module.interface_variables, (int) Module.interface_variable_count);
 
-	public SpvReflectInterfaceVariable[] GetInputVariables() => ToArray(Module.input_variables, (int) Module.input_variable_count);
+	public SpvReflectInterfaceVariable[] GetInputVariables() => CopyToArray(Module.input_variables, (int) Module.input_variable_count);
 
-	public SpvReflectInterfaceVariable[] GetOutputVariables() => ToArray(Module.output_variables, (int) Module.output_variable_count);
+	public SpvReflectInterfaceVariable[] GetOutputVariables() => CopyToArray(Module.output_variables, (int) Module.output_variable_count);
 }

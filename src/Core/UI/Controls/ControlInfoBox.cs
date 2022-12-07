@@ -62,13 +62,20 @@ public class ControlInfoBox : AbsolutePanel
 			controlBg.Size = _control.ComputedSize;
 		}
 
+		var stackBg = new Rectangle(RootPanel)
+		{
+			Color = Color.Brown.ToArgb() & (127 << 24),
+			MarginLT = _control.CombinedPos + (_control.ComputedSize.X, 0),
+			OffsetZ = 1,
+			TightBox = true
+		};
+		AddChild(stackBg);
 		var stackPanel = new StackPanel(RootPanel)
 		{
 			Orientation = Orientation.Vertical,
-			MarginLT = _control.CombinedPos + (_control.ComputedSize.X, 0),
 			OffsetZ = 1
 		};
-		AddChild(stackPanel);
+		stackBg.AddChild(stackPanel);
 
 		stackPanel.AddChild(new Label(RootPanel) {Text = $"ControlType: {_control.GetType().Name}"});
 

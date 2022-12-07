@@ -83,7 +83,7 @@ public unsafe class TestChildTextureRenderer : RenderChain
 			PClearValues = clearValues
 		};
 
-		cmd.BeginRenderPass(renderPassBeginInfo, SubpassContents.Inline);
+		cmd.BeginRenderPass(&renderPassBeginInfo, SubpassContents.Inline);
 
 		cmd.BindGraphicsPipeline(_pipeline);
 		cmd.BindGraphicsDescriptorSets(_pipelineLayout, 0, 1, TextureManager.DescriptorSet);

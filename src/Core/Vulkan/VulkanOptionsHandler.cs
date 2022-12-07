@@ -18,7 +18,7 @@ public class VulkanState
 	public readonly VulkanOption<bool> UseValidation = new(false, VulkanLevel.Instance);
 	public readonly VulkanOption<bool> LoadShadersFromSrc = new(false, VulkanLevel.Context);
 	public readonly VulkanOption<bool> AllowShaderWatchers = new(false, VulkanLevel.Context);
-	public readonly VulkanOption<bool> AllowShaderCompileErrors = new(true);
+	public readonly VulkanOption<bool> CrashOnShaderCompileErrors = new(false);
 
 	public readonly VulkanOption<SdlWindow> Window = new(default!, VulkanLevel.Instance);
 
@@ -41,7 +41,9 @@ public class VulkanState
 	public readonly VulkanOption<string[]> DeviceExtensions = new(new string[]
 	{
 		"VK_KHR_swapchain",
-		"VK_KHR_synchronization2" // layer needs to be precompiled and added for mobile and vulkan < 1.2
+		"VK_KHR_synchronization2", // layer needs to be precompiled and added for mobile and vulkan < 1.2
+		// "VK_KHR_shader_subgroup_uniform_control_flow",
+		// "VK_EXT_shader_subgroup_ballot"
 		// "VK_KHR_separate_depth_stencil_layouts", // was promoted to vulkan 1.2 core
 		// "VK_KHR_create_renderpass2", // was promoted to vulkan 1.2 core
 		// "VK_KHR_uniform_buffer_standard_layout", // was promoted to vulkan 1.2 core
@@ -57,33 +59,67 @@ public class VulkanState
 		{
 			Synchronization2 = true
 		},
-		new PhysicalDeviceDescriptorIndexingFeaturesEXT
+		// new PhysicalDeviceDescriptorIndexingFeaturesEXT
+		// {
+		// 	RuntimeDescriptorArray = true,
+		// 	DescriptorBindingVariableDescriptorCount = true,
+		// 	DescriptorBindingPartiallyBound = true,
+		// 	ShaderSampledImageArrayNonUniformIndexing = true,
+		// 	ShaderStorageBufferArrayNonUniformIndexing = true,
+		// 	DescriptorBindingStorageBufferUpdateAfterBind = true,
+		// 	DescriptorBindingSampledImageUpdateAfterBind = true
+		// },
+		// new PhysicalDeviceShaderAtomicFloatFeaturesEXT
+		// {
+		// 	// ShaderBufferFloat32AtomicAdd = true,
+		// 	ShaderBufferFloat32Atomics = false
+		// },
+		// new PhysicalDeviceUniformBufferStandardLayoutFeaturesKHR
+		// {
+		// 	UniformBufferStandardLayout = true
+		// },
+		// new PhysicalDevice16BitStorageFeaturesKHR
+		// {
+		// 	StorageBuffer16BitAccess = true
+		// 	// StorageInputOutput16 = true
+		// },
+		// new PhysicalDeviceSeparateDepthStencilLayoutsFeatures
+		// {
+		// 	SeparateDepthStencilLayouts = true
+		// },
+		// new PhysicalDeviceBufferDeviceAddressFeatures
+		// {
+		// 	BufferDeviceAddress = true
+		// },
+		// new PhysicalDeviceVariablePointerFeatures
+		// {
+		// 	VariablePointers = true,
+		// 	VariablePointersStorageBuffer = true
+		// },
+		// new PhysicalDeviceShaderSubgroupUniformControlFlowFeaturesKHR {
+		// 	ShaderSubgroupUniformControlFlow = true
+		// },
+		new PhysicalDeviceVulkan11Features
 		{
+			VariablePointers = true,
+			VariablePointersStorageBuffer = true,
+			StorageBuffer16BitAccess = true
+		},
+		new PhysicalDeviceVulkan12Features {
 			RuntimeDescriptorArray = true,
 			DescriptorBindingVariableDescriptorCount = true,
 			DescriptorBindingPartiallyBound = true,
 			ShaderSampledImageArrayNonUniformIndexing = true,
 			ShaderStorageBufferArrayNonUniformIndexing = true,
 			DescriptorBindingStorageBufferUpdateAfterBind = true,
-			DescriptorBindingSampledImageUpdateAfterBind = true
-		},
-		new PhysicalDeviceShaderAtomicFloatFeaturesEXT
-		{
-			// ShaderBufferFloat32AtomicAdd = true,
-			ShaderBufferFloat32Atomics = false
-		},
-		new PhysicalDeviceUniformBufferStandardLayoutFeaturesKHR
-		{
-			UniformBufferStandardLayout = true
-		},
-		new PhysicalDevice16BitStorageFeaturesKHR
-		{
-			StorageBuffer16BitAccess = true
-			// StorageInputOutput16 = true
-		},
-		new PhysicalDeviceSeparateDepthStencilLayoutsFeatures
-		{
-			SeparateDepthStencilLayouts = true
+			DescriptorBindingSampledImageUpdateAfterBind = true,
+			UniformBufferStandardLayout = true,
+			SeparateDepthStencilLayouts = true,
+			BufferDeviceAddress = true,
+			ShaderInt8 = true,
+			StorageBuffer8BitAccess = true,
+			// SubgroupBroadcastDynamicId = true,
+			// ShaderSubgroupExtendedTypes = true
 		}
 	}, VulkanLevel.Device);
 
@@ -99,7 +135,8 @@ public class VulkanState
 		DrawIndirectFirstInstance = true,
 		IndependentBlend = true,
 		MultiDrawIndirect = true,
-		RobustBufferAccess = true
+		RobustBufferAccess = true,
+		ShaderInt64 = true
 		// TextureCompressionEtc2 = true,
 		// TextureCompressionAstcLdr = true,
 		// DepthBounds = true,
@@ -137,7 +174,7 @@ public class VulkanState
 		Options["ValidationLayers"] = ValidationLayers;
 		Options["AllowShaderWatchers"] = AllowShaderWatchers;
 		Options["LoadShadersFromSrc"] = LoadShadersFromSrc;
-		Options["AllowShaderCompileErrors"] = AllowShaderCompileErrors;
+		Options["CrashOnShaderCompileErrors"] = CrashOnShaderCompileErrors;
 
 		Options["InstanceExtensions"] = InstanceExtensions;
 		Options["ProgramLayers"] = ProgramLayers;

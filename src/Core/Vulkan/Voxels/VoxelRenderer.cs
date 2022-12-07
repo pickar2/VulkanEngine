@@ -352,7 +352,7 @@ public unsafe class VoxelRenderer : RenderChain
 			PClearValues = clearValues
 		};
 
-		cmd.BeginRenderPass(renderPassBeginInfo, SubpassContents.Inline);
+		cmd.BeginRenderPass(&renderPassBeginInfo, SubpassContents.Inline);
 
 		cmd.BindGraphicsPipeline(Pipeline);
 

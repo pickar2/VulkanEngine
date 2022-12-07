@@ -60,14 +60,17 @@ public unsafe class VulkanBuffer : IDisposable
 
 	public void CopyTo(VulkanBuffer other, ulong bufferSize = Vk.WholeSize, ulong srcOffset = 0, ulong dstOffset = 0)
 	{
-		var copy = new BufferCopy
+		Span<BufferCopy> copy = stackalloc BufferCopy[]
 		{
-			Size = bufferSize,
-			SrcOffset = srcOffset,
-			DstOffset = dstOffset
+			new BufferCopy
+			{
+				Size = bufferSize,
+				SrcOffset = srcOffset,
+				DstOffset = dstOffset
+			}
 		};
 
-		CopyTo(other, copy.AsSpan());
+		CopyTo(other, copy);
 	}
 
 	public void CopyTo(VulkanBuffer other, Span<BufferCopy> regions)
