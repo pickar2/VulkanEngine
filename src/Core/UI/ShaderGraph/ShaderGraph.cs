@@ -1,12 +1,16 @@
 ﻿using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Text;
+using Core.Native.Shaderc;
 using Core.UI.Controls;
 using Core.UI.Controls.Panels;
+using Core.Vulkan.Api;
 using Core.Vulkan.Renderers;
 using Core.Window;
 using SDL2;
 using SimpleMath.Vectors;
+using Rectangle = Core.UI.Controls.Rectangle;
 
 namespace Core.UI.ShaderGraph;
 
@@ -28,7 +32,7 @@ public class ShaderGraph
 	public string Identifier { get; set; } = default!;
 	public string Type { get; set; } = default!;
 
-	public string CompileGraph()
+	public string GetGraphCode()
 	{
 		_alreadyCompiled.Clear();
 
@@ -52,7 +56,7 @@ public class ShaderGraph
 			header.Append($"\t{Identifier}_struct {Identifier}_data[];\r\n");
 			header.Append("};\r\n");
 
-			body.Append($"\t{Identifier}_struct mat = {Identifier}_data[data.fragmentElementIndex];\r\n");
+			body.Append($"\t{Identifier}_struct mat = {Identifier}_data[data.fragmentDataIndex];\r\n");
 		}
 
 		var endNodes = _shaderNodes.Where(shaderNode => shaderNode.InputConnectors.Length > 0 && shaderNode.OutputConnectors.Length == 0).ToList();
@@ -145,8 +149,7 @@ public class ShaderGraph
 	{
 		var graph = new ShaderGraph
 		{
-			Identifier = "color_material",
-			Type = "fragment"
+			Type = "FragmentShader"
 		};
 
 		graph.StructFields.Add((ShaderResourceType.Int, "color"));
@@ -301,5 +304,45 @@ public class ShaderGraph
 
 			return true;
 		}, SDL.SDL_Keycode.SDLK_DELETE);
+
+		var compileButton = new Rectangle(mainControl.Context)
+		{
+			Color = Color.DarkRed.ToArgb(),
+			Size = (100, 30),
+			MarginLT = (155, 5),
+			OffsetZ = 100
+		};
+		mainControl.AddChild(compileButton);
+
+		CustomBox? graphGeneratedBox = null;
+		compileButton.OnClick((control, button, pos, clicks, type) =>
+		{
+			if (button != MouseButton.Left) return false;
+			if (type != ClickType.End) return false;
+
+			graph.Identifier = "graph_generated";
+
+			var code = graph.GetGraphCode();
+			App.Logger.Debug.Message($"{code}");
+			ShaderManager.SetVirtualShader("@graph_generated", code);
+			GeneralRenderer.UiContext.MaterialManager.RegisterMaterial(code, "@graph_generated");
+			GeneralRenderer.UiContext.MaterialManager.UpdateShaders();
+
+			if (graphGeneratedBox is null)
+			{
+				graphGeneratedBox = new CustomBox(mainControl.Context)
+				{
+					VertMaterial = GeneralRenderer.UiContext.MaterialManager.GetFactory("default_vertex_material").Create(),
+					FragMaterial = GeneralRenderer.UiContext.MaterialManager.GetFactory("graph_generated").Create(),
+					Size = (200, 200),
+					MarginLT = (300, 5)
+				};
+				graphGeneratedBox.Component.MarkForGPUUpdate();
+				
+				mainControl.AddChild(graphGeneratedBox);
+			}
+
+			return true;
+		});
 	}
 }

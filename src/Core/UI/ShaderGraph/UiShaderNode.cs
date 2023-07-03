@@ -273,6 +273,8 @@ public class UiShaderNode
 					return true;
 				}));
 			}
+
+			UpdateOutputCurves();
 		});
 	}
 
@@ -343,15 +345,53 @@ public class UiShaderOutputNode : UiShaderNode
 		typeSelector.OffsetZ = 15;
 		typeSelector.Current = (_outputNode.Type.DisplayName, _outputNode.Type);
 
-		Container.Context.CreateEffect(() => _outputNode.Type = typeSelector.Current.Value);
-
+		typeSelector.Context.CreateEffect(() => _outputNode.Type = typeSelector.Current.Value);
 		typeSelector.Draw();
+
+	}
+}
+
+public class UiShaderInputNode : UiShaderNode
+{
+	private readonly ConstInputNode _inputNode;
+	public UiShaderInputNode(UiContext context, ShaderGraph graph, ConstInputNode node, int id) : base(context, graph, node, id) => _inputNode = node;
+
+	public override void Draw(Vector2<float> pos)
+	{
+		base.Draw(pos);
+
+		var typeSelector = new ComboBox<ShaderResourceType>(Container.Context, 25, 200)
+		{
+			Values = ShaderResourceType.AllTypes.ToDictionary(t => t.DisplayName, t => t)
+		};
+
+		Container.AddChild(typeSelector);
+
+		typeSelector.MarginLT.Y = 50;
+		typeSelector.Size.X = Container.Size.X;
+		typeSelector.Size.Y = 30;
+		typeSelector.OffsetZ = 15;
+		typeSelector.Current = (_inputNode.Type.DisplayName, _inputNode.Type);
+
+		typeSelector.Context.CreateEffect(() => _inputNode.Type = typeSelector.Current.Value);
+		typeSelector.Draw();
+
+		var valueInput = new TextInputBox(Container.Context);
+		valueInput.Text = _inputNode.Value;
+		valueInput.MarginLT = new Vector2<float>(5, 90);
+		Container.AddChild(valueInput);
+
+		valueInput.OnTextChange += s => _inputNode.Value = s;
 	}
 }
 
 public static class UiShaderNodeFactories
 {
-	static UiShaderNodeFactories() => AddFactory<OutputNode>(((context, graph, node, id) => new UiShaderOutputNode(context, graph, (OutputNode) node, id)));
+	static UiShaderNodeFactories()
+	{
+		AddFactory<OutputNode>(((context, graph, node, id) => new UiShaderOutputNode(context, graph, (OutputNode) node, id)));
+		AddFactory<ConstInputNode>(((context, graph, node, id) => new UiShaderInputNode(context, graph, (ConstInputNode) node, id)));
+	}
 
 	public delegate UiShaderNode UiShaderNodeFactoryDelegate(UiContext context, ShaderGraph graph, ShaderNode node, int id);
 	private static readonly Dictionary<Type, UiShaderNodeFactoryDelegate> Factories = new();

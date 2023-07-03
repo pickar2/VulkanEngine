@@ -30,7 +30,7 @@ public static class ExpectedExceptionExtensions
 		[CallerArgumentExpression("value")] string? memberName = null) where T : struct
 	{
 		if (!value.HasValue)
-			throw new NullReferenceException($"{memberName} is nullable").AsExpectedException();
+			throw new NullReferenceException($"{memberName} is null").AsExpectedException();
 		return value.Value;
 	}
 
@@ -38,7 +38,7 @@ public static class ExpectedExceptionExtensions
 		[CallerArgumentExpression("value")] string? memberName = null) where T : class
 	{
 		if (value is null)
-			throw new NullReferenceException($"{memberName} is nullable").AsExpectedException();
+			throw new NullReferenceException($"{memberName} is null").AsExpectedException();
 		return value;
 	}
 

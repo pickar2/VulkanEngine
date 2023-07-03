@@ -18,7 +18,8 @@ public class NodeSelectorUi : AbsolutePanel
 	{
 		("Output", graph => new OutputNode($"OutputNode{graph.Id}", ShaderResourceType.Vec3F)),
 		("Const input", graph => new ConstInputNode($"ConstInputNode{graph.Id}", ShaderResourceType.Vec3F, "vec3(0.0)")),
-		("Vector decompose", graph => new VectorDecomposeNode($"VectorDecomposeNode{graph.Id}"))
+		("Vector decompose", graph => new VectorDecomposeNode($"VectorDecomposeNode{graph.Id}")),
+		("Dot function", graph => new DotFunctionNode($"DotFunctionNode{graph.Id}"))
 	};
 
 	public NodeSelectorUi(UiContext context, ShaderGraph shaderGraph) : base(context)

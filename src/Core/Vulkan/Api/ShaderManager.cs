@@ -28,6 +28,7 @@ public static class ShaderManager
 	{
 		if (!name.StartsWith("@")) throw new ArgumentException("Virtual shader name must start with `@`.").AsExpectedException();
 		VirtualShaderNameToContent[name] = content;
+		ShaderWatchers.ForceUpdate(name);
 	}
 
 	public static bool TryGetVirtualShaderContent(string name, [MaybeNullWhen(false)] out string content) =>

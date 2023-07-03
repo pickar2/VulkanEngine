@@ -1,6 +1,7 @@
 ﻿using Core.Vulkan;
 using Core.Vulkan.Api;
 using Core.Vulkan.Descriptors;
+using Core.Vulkan.Renderers;
 using Silk.NET.Vulkan;
 
 namespace Core.UI;
@@ -57,10 +58,14 @@ public unsafe partial class MaterialManager
 
 	private void CheckMaterialCounts()
 	{
+		bool changed = false;
 		if (_lastVertexMaterialCount != VertexMaterialCount)
 		{
+			changed = true;
 			_lastVertexMaterialCount = VertexMaterialCount;
-			Context.Vk.ResetDescriptorPool(Context.Device, VertexDescriptorPool.Value, 0);
+			VertexDescriptorSetLayout.DisposeAndReCreate();
+			VertexDescriptorPool.DisposeAndReCreate();
+			// Context.Vk.ResetDescriptorPool(Context.Device, VertexDescriptorPool.Value, 0);
 			VertexDescriptorSet.ReCreate();
 
 			foreach ((string? _, var factory) in Materials)
@@ -70,13 +75,22 @@ public unsafe partial class MaterialManager
 
 		if (_lastFragmentMaterialCount != FragmentMaterialCount)
 		{
+			changed = true;
 			_lastFragmentMaterialCount = FragmentMaterialCount;
-			Context.Vk.ResetDescriptorPool(Context.Device, FragmentDescriptorPool.Value, 0);
+			FragmentDescriptorSetLayout.DisposeAndReCreate();
+			FragmentDescriptorPool.DisposeAndReCreate();
+			// Context.Vk.ResetDescriptorPool(Context.Device, FragmentDescriptorPool.Value, 0);
 			FragmentDescriptorSet.ReCreate();
 
 			foreach ((string? _, var factory) in Materials)
 				if ((factory.StageFlag & ShaderStageFlags.FragmentBit) != 0)
 					factory.BufferChanged = true;
+		}
+
+		if (changed)
+		{
+			var renderer = (UiRootRenderer) GeneralRenderer.Root;
+			renderer.RecreatePipelineLayoutAndPipeline();
 		}
 	}
 

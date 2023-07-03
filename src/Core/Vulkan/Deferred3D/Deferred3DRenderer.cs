@@ -189,11 +189,11 @@ public unsafe class Deferred3DRenderer : RenderChain
 
 	private void InitMaterials()
 	{
-		_materialManager.RegisterMaterialFile($"./Assets/Shaders/Deferred/Materials/Vertex/model_id_transform.glsl");
+		_materialManager.RegisterMaterialFromFile($"./Assets/Shaders/Deferred/Materials/Vertex/model_id_transform.glsl");
 
-		_materialManager.RegisterMaterialFile($"./Assets/Shaders/Deferred/Materials/Fragment/no_material.glsl");
-		_materialManager.RegisterMaterialFile($"./Assets/Shaders/Deferred/Materials/Fragment/diffuse_color.glsl");
-		_materialManager.RegisterMaterialFile($"./Assets/Shaders/Deferred/Materials/Fragment/cool_material.glsl");
+		_materialManager.RegisterMaterialFromFile($"./Assets/Shaders/Deferred/Materials/Fragment/no_material.glsl");
+		_materialManager.RegisterMaterialFromFile($"./Assets/Shaders/Deferred/Materials/Fragment/diffuse_color.glsl");
+		_materialManager.RegisterMaterialFromFile($"./Assets/Shaders/Deferred/Materials/Fragment/cool_material.glsl");
 
 		_materialManager.UpdateShaders();
 	}

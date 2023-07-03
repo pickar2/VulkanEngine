@@ -29,17 +29,18 @@ public partial class MaterialManager
 		return factory;
 	}
 
-	public void RegisterMaterialFile(string path)
+	public void RegisterMaterialFromFile(string path) => RegisterMaterial(File.ReadAllText(path), path);
+
+	public void RegisterMaterial(string code, string path)
 	{
-		string[] lines = File.ReadAllLines(path);
+		string[] lines = code.Split("\n");
+		string identifier = lines[0].Split("=")[1].Trim();
 
-		string identifier = lines[0].Split("=")[1];
-
-		string shaderKindString = lines[1].Split("=")[1];
+		string shaderKindString = lines[1].Split("=")[1].Trim();
 		if (!Enum.TryParse<ShaderKind>(shaderKindString, out var shaderKind))
 			throw new Exception($"Unknown material shader type: `{shaderKindString}`.").AsExpectedException();
 
-		int size = int.Parse(lines[2].Split("=")[1]);
+		int size = int.Parse(lines[2].Split("=")[1].Trim());
 
 		RegisterOrUpdateMaterial(identifier, path, shaderKind, size);
 	}

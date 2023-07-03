@@ -144,12 +144,33 @@ public class ConstInputNode : ShaderNode
 	{
 		Name = name;
 		Value = value;
+		Type = type;
 		OutputConnectors = new IOutputConnector[] {new DefaultOutputConnector {Type = type, Name = name}};
 	}
 
+	private ShaderResourceType _type = default!;
+	public ShaderResourceType Type
+	{
+		get => _type;
+		set
+		{
+			if (value.Equals(_type)) return;
+			if (OutputConnectors.Length > 0)
+			{
+				foreach (var connection in OutputConnectors[0].Connections) 
+					connection.ConnectedInputNode?.UnsetInput(connection.InputConnectorIndex);
+			}
+
+			_type = value;
+			OutputConnectors = new IOutputConnector[] {new DefaultOutputConnector {Type = Type, Name = Name}};
+		}
+	}
+
+	// private readonly Signal<string> ValueSignal = new(string.Empty);
+	// public string Value { get => ValueSignal; set => ValueSignal.Set(value); }
 	public string Value { get; set; }
 
-	public override string GetHeaderCode() => "";
+	public override string GetHeaderCode() => string.Empty;
 	public override string GetBodyCode() => $"const {OutputConnectors[0].Type?.CompileName} {Name} = {Value};";
 }
 
@@ -175,7 +196,7 @@ public class MaterialDataNode : ShaderNode
 		}
 	}
 
-	public override string GetHeaderCode() => "";
+	public override string GetHeaderCode() => string.Empty;
 	public override string GetBodyCode() => $"{_materialIdentifier}_struct {Name} = {_materialIdentifier}_data[data.{_shaderType}ElementIndex];";
 }
 
@@ -247,8 +268,8 @@ public class VectorDecomposeNode : ShaderNode
 		};
 	}
 
-	public override string GetHeaderCode() => "";
-	public override string GetBodyCode() => "";
+	public override string GetHeaderCode() => string.Empty;
+	public override string GetBodyCode() => string.Empty;
 }
 
 public abstract class FunctionNode : ShaderNode
@@ -256,7 +277,7 @@ public abstract class FunctionNode : ShaderNode
 	protected ShaderResourceType? OutputType;
 	public abstract string FunctionName { get; }
 
-	public override string GetHeaderCode() => "";
+	public override string GetHeaderCode() => string.Empty;
 
 	public override string GetBodyCode() =>
 		$"{OutputType?.CompileName} {Name} = {FunctionName}({string.Join(", ", InputConnectors.Select(connector => connector.OutputConnector?.Name))});";
@@ -278,29 +299,40 @@ public class DotFunctionNode : FunctionNode
 	{
 		Name = name;
 		InputConnectors = new IInputConnector[] {new DefaultInputConnector(_acceptedTypes), new DefaultInputConnector(_acceptedTypes)};
-		OutputConnectors = new IOutputConnector[]
-		{
-			new DelegateOutputConnector
-			{
-				TypeFunc = () => OutputType.ThrowIfNull(),
-				NameFunc = () => Name
-			}
-		};
+		OutputConnectors = Array.Empty<IOutputConnector>();
 
 		OnSetInput += (_, outputNode, outputIndex) =>
 		{
-			var type = outputNode.OutputConnectors[outputIndex].Type;
+			var type = outputNode.OutputConnectors[outputIndex].Type.ThrowIfNull();
+			if(type.Equals(OutputType)) return;
+
 			_acceptedTypes.Clear();
-			_acceptedTypes.Add(type.ThrowIfNull());
+			_acceptedTypes.Add(type);
 			OutputType = type;
+
+#pragma warning disable CA2245
+			// triggering signal update on _acceptedTypes change
+			InputConnectors = InputConnectors;
+#pragma warning restore CA2245
+
+			OutputConnectors = new IOutputConnector[]
+			{
+				new DelegateOutputConnector
+				{
+					TypeFunc = () => OutputType,
+					NameFunc = () => Name
+				}
+			};
 		};
 
 		OnUnsetInput += _ =>
 		{
 			if (InputConnectors[0].ConnectedOutputNode is not null || InputConnectors[1].ConnectedOutputNode is not null) return;
+			foreach (var connection in OutputConnectors[0].Connections) connection.ConnectedInputNode?.UnsetInput(connection.InputConnectorIndex);
 			_acceptedTypes.Clear();
 			_acceptedTypes.AddRange(DefaultAcceptedTypes);
 			OutputType = null;
+			OutputConnectors = Array.Empty<IOutputConnector>();
 		};
 	}
 
@@ -384,6 +416,6 @@ public class OutputNode : ShaderNode
 		}
 	}
 
-	public override string GetHeaderCode() => "";
+	public override string GetHeaderCode() => string.Empty;
 	public override string GetBodyCode() => $"{Name} = {InputConnectors[0].OutputConnector?.Name};";
 }

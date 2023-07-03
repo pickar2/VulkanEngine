@@ -650,7 +650,6 @@ public static unsafe partial class Context
 	private static void CreateLogicalDevice()
 	{
 		uint[] indices = QueueFamilies.Select(f => f.Index).Distinct().ToArray();
-		Console.WriteLine($"Indices count: {indices.Length}");
 		uint[] queueCounts = new uint[indices.Length];
 		float[][] priorities = new float[indices.Length][];
 

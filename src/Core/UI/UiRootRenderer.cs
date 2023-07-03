@@ -185,6 +185,12 @@ public unsafe partial class UiRootRenderer : RenderChain
 		Context.DeviceEvents.AfterCreate += () => UpdateCountersDescriptorSets();
 	}
 
+	public void RecreatePipelineLayoutAndPipeline()
+	{
+		_pipelineLayout.DisposeAndReCreate();
+		_pipeline.IsChanged = true;
+	}
+
 	private CommandBuffer CreateCommandBuffer(FrameInfo frameInfo)
 	{
 		var clearValues = stackalloc ClearValue[] {new(new ClearColorValue(0.66f, 0.66f, 0.66f, 1))};

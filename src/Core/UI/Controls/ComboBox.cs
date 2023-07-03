@@ -4,6 +4,7 @@ using System.Drawing;
 using Core.UI.Controls.Panels;
 using Core.UI.Reactive;
 using Core.Window;
+using SimpleMath.Vectors;
 
 namespace Core.UI.Controls;
 
@@ -67,13 +68,14 @@ public class ComboBox<T> : UiControl
 			OffsetZ = 1
 		};
 
+		ScrollView? scrollView = null;
 		if (float.IsPositiveInfinity(_maxHeight))
 		{
 			stack.AddChild(valuesContainer);
 		}
 		else
 		{
-			var scrollView = new ScrollView(Context)
+			scrollView = new ScrollView(Context)
 			{
 				Size = (Size.X, _maxHeight),
 				OffsetZ = 1,
@@ -88,6 +90,7 @@ public class ComboBox<T> : UiControl
 		{
 			// ReSharper disable once AccessToModifiedClosure
 			if (!open) return;
+			if (scrollView is not null) scrollView.ScrollOffset = new Vector2<float>(0f, 0f);
 			open = false;
 			foreach (var child in valuesContainer.Children) child.Dispose();
 			valuesContainer.ClearChildren();

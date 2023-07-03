@@ -59,29 +59,29 @@ internal static class Program
 		Context.Init();
 		UiManager.Init();
 
-		int gpu = Context.SelectedDeviceIndex;
-		UiManager.InputContext.KeyboardInputHandler.AddKeyBind(() =>
-		{
-			gpu = (gpu + 1) % 2;
-			Context.State.SelectedGpuIndex.Value = gpu;
-			return true;
-		}, SDL.SDL_Keycode.SDLK_g);
+		// int gpu = Context.SelectedDeviceIndex;
+		// UiManager.InputContext.KeyboardInputHandler.AddKeyBind(() =>
+		// {
+		// 	gpu = (gpu + 1) % 2;
+		// 	Context.State.SelectedGpuIndex.Value = gpu;
+		// 	return true;
+		// }, SDL.SDL_Keycode.SDLK_g);
 
-		bool wireframe = false;
-		UiManager.InputContext.KeyboardInputHandler.AddKeyBind(() =>
-		{
-			wireframe = !wireframe;
-			var mode = wireframe ? PolygonMode.Line : PolygonMode.Fill;
-			if (PipelineManager.AutoPipelines.TryGetValue("RenderUiRoot", out var pipeline))
-				pipeline.Builder.RasterizationState(span => span[0].PolygonMode = mode);
-			return true;
-		}, SDL.SDL_Keycode.SDLK_p);
+		// bool wireframe = false;
+		// UiManager.InputContext.KeyboardInputHandler.AddKeyBind(() =>
+		// {
+		// 	wireframe = !wireframe;
+		// 	var mode = wireframe ? PolygonMode.Line : PolygonMode.Fill;
+		// 	if (PipelineManager.AutoPipelines.TryGetValue("RenderUiRoot", out var pipeline))
+		// 		pipeline.Builder.RasterizationState(span => span[0].PolygonMode = mode);
+		// 	return true;
+		// }, SDL.SDL_Keycode.SDLK_p);
 
-		UiManager.InputContext.KeyboardInputHandler.AddKeyBind(() =>
-		{
-			Context.State.DebugMode.Value = !Context.State.DebugMode.Value;
-			return true;
-		}, SDL.SDL_Keycode.SDLK_t);
+		// UiManager.InputContext.KeyboardInputHandler.AddKeyBind(() =>
+		// {
+		// 	Context.State.DebugMode.Value = !Context.State.DebugMode.Value;
+		// 	return true;
+		// }, SDL.SDL_Keycode.SDLK_t);
 
 		windowThread.Join();
 		UiManager.UiThread.Join();
