@@ -650,24 +650,30 @@ public static unsafe partial class Context
 	private static void CreateLogicalDevice()
 	{
 		uint[] indices = QueueFamilies.Select(f => f.Index).Distinct().ToArray();
+		Console.WriteLine($"Indices count: {indices.Length}");
 		uint[] queueCounts = new uint[indices.Length];
 		float[][] priorities = new float[indices.Length][];
 
 		var queues = new[] {GraphicsQueue, ComputeQueue, TransferToDeviceQueue, TransferToHostQueue};
 		foreach (var q in queues) queueCounts[q.Family.Index] = Math.Min(queueCounts[q.Family.Index] + 1, q.Family.QueueCount);
 
+		int queueIndex = 0;
 		var queueCreateInfos = stackalloc DeviceQueueCreateInfo[indices.Length];
 		for (int i = 0; i < indices.Length; i++)
 		{
-			priorities[i] = new float[queueCounts[i]];
-			priorities[i].Fill(1);
-			queueCreateInfos[i] = new DeviceQueueCreateInfo
+			uint queueCount = queueCounts[i];
+			if (queueCount == 0) continue;
+
+			priorities[queueIndex] = new float[queueCount];
+			priorities[queueIndex].Fill(1);
+			queueCreateInfos[queueIndex] = new DeviceQueueCreateInfo
 			{
 				SType = StructureType.DeviceQueueCreateInfo,
 				QueueFamilyIndex = indices[i],
-				QueueCount = queueCounts[i], // high queue counts increase load times up to 8x
-				PQueuePriorities = priorities[i].AsPointer()
+				QueueCount = queueCount, // high queue counts increase load times up to 8x
+				PQueuePriorities = priorities[queueIndex].AsPointer()
 			};
+			queueIndex++;
 		}
 
 		PhysicalDeviceFeatures2.Chain(out var chain);
@@ -687,7 +693,7 @@ public static unsafe partial class Context
 		var deviceCreateInfo = new DeviceCreateInfo
 		{
 			SType = StructureType.DeviceCreateInfo,
-			QueueCreateInfoCount = (uint) indices.Length,
+			QueueCreateInfoCount = (uint) queueIndex,
 			PQueueCreateInfos = queueCreateInfos,
 			EnabledExtensionCount = (uint) State.DeviceExtensions.Value.Length,
 			PpEnabledExtensionNames = (byte**) SilkMarshal.StringArrayToPtr(State.DeviceExtensions.Value),

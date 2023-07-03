@@ -342,7 +342,7 @@ public class MDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictionary,
 			if (key is not TKey tKey)
 				throw new ArgumentException($"Can't cast {key.GetType()} to {typeof(TKey)}")
 					.AsExpectedException();
-			if (value.ThrowIfNullable() is not TValue tValue)
+			if (value.ThrowIfNull() is not TValue tValue)
 				throw new ArgumentException($"Can't cast {value!.GetType()} to {typeof(TValue)}")
 					.AsExpectedException();
 
@@ -356,7 +356,7 @@ public class MDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictionary,
 			throw new ArgumentException($"Can't cast {nameof(key)} {key.GetType()} to {typeof(TKey)}")
 				.AsExpectedException();
 
-		if (value.ThrowIfNullable() is not TValue castedValue)
+		if (value.ThrowIfNull() is not TValue castedValue)
 			throw new ArgumentException($"Can't cast {nameof(value)} {value!.GetType()} to {typeof(TValue)}")
 				.AsExpectedException();
 
@@ -938,7 +938,7 @@ public class MDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictionary,
 		int newSize = HashHelpers.GetPrime(capacity.ThrowIfLessThan(Count));
 
 		var oldEntries = _entries;
-		int[] oldBuckets = _buckets.ThrowIfNullable();
+		int[] oldBuckets = _buckets.ThrowIfNull();
 		int currentCapacity = oldEntries?.Length ?? 0;
 		if (newSize >= currentCapacity)
 			return;

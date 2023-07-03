@@ -1,4 +1,5 @@
 ﻿using System;
+using Core.UI.Reactive;
 using SimpleMath.Vectors;
 
 namespace Core.UI.Controls.Panels;
@@ -95,5 +96,5 @@ public class WrapPanel : UiControl
 		}
 	}
 
-	public WrapPanel(RootPanel rootPanel) : base(rootPanel) { }
+	public WrapPanel(UiContext context) : base(context) { }
 }

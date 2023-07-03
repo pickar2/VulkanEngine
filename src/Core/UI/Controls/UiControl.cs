@@ -1,17 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
-using Core.UI.Controls.Panels;
+using Core.UI.Reactive;
 using SimpleMath.Vectors;
 
 namespace Core.UI.Controls;
 
 public abstract class UiControl : IDisposable
 {
-	public RootPanel? RootPanel { get; init; }
+	public UiContext Context { get; protected set; }
+	protected UiControl(UiContext context) => Context = context;
 
-	protected UiControl(RootPanel? rootPanel) => RootPanel = rootPanel;
+	public void UseSubContext() => Context = Context.CreateSubContext();
 
 	protected List<UiControl> ChildrenList = new();
+	public UiControl? Parent;
 
 	// set by user
 	public Vector2<float> MarginLT;
@@ -39,13 +41,13 @@ public abstract class UiControl : IDisposable
 	public virtual Vector2<float> ComputedArea { get; set; }
 	public virtual Vector2<float> ComputedSize { get; set; }
 
-	public virtual Vector2<float> ParentScale { get; set; }
+	public virtual Vector2<float> ParentScale { get; set; } = new(1);
 	public Vector2<float> CombinedScale => Scale * ParentScale;
 
 	public virtual Vector2<float> MaskStart { get; set; } = new(float.NegativeInfinity);
 	public virtual Vector2<float> MaskEnd { get; set; } = new(float.PositiveInfinity);
 
-	public virtual IReadOnlyCollection<UiControl> Children => ChildrenList;
+	public virtual List<UiControl> Children => ChildrenList;
 
 	public virtual void Dispose()
 	{
@@ -55,9 +57,24 @@ public abstract class UiControl : IDisposable
 		GC.SuppressFinalize(this);
 	}
 
-	public virtual void AddChild(UiControl control) => ChildrenList.Add(control);
-	public virtual void RemoveChild(UiControl control) => ChildrenList.Remove(control);
-	public virtual void ClearChildren() => ChildrenList.Clear();
+	public virtual void AddChild(UiControl control)
+	{
+		ChildrenList.Add(control);
+		control.Parent = this;
+		control.ParentScale = CombinedScale;
+	}
+
+	public virtual bool RemoveChild(UiControl control)
+	{
+		control.Parent = null;
+		return ChildrenList.Remove(control);
+	}
+
+	public virtual void ClearChildren()
+	{
+		foreach (var uiControl in ChildrenList) uiControl.Parent = null;
+		ChildrenList.Clear();
+	}
 
 	public virtual void Update()
 	{

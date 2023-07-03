@@ -1,4 +1,5 @@
-﻿using SimpleMath.Vectors;
+﻿using Core.UI.Reactive;
+using SimpleMath.Vectors;
 
 namespace Core.UI.Controls.Panels;
 
@@ -48,7 +49,7 @@ public class AlignPanel : UiControl
 		}
 	}
 
-	public AlignPanel(RootPanel rootPanel) : base(rootPanel) { }
+	public AlignPanel(UiContext context) : base(context) { }
 }
 
 public enum Alignment

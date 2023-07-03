@@ -10,7 +10,7 @@ internal sealed class TypeDefaultConverter : IDefaultConverter
 	{
 		var assembly = ModRegistry.Instance.GetAssembly(swh.Header[swh.ReadStruct<int>(BaseTypes.Int)].Namespace);
 		string typeName = swh.ReadClass<string>(BaseTypes.String)!;
-		var type = (assembly is null ? Type.GetType(typeName) : assembly.GetType(typeName)).ThrowIfNullable();
+		var type = (assembly is null ? Type.GetType(typeName) : assembly.GetType(typeName)).ThrowIfNull();
 
 		return Unsafe.As<Type, T>(ref type);
 	}
@@ -19,7 +19,7 @@ internal sealed class TypeDefaultConverter : IDefaultConverter
 	{
 		var assembly = ModRegistry.Instance.GetAssembly(swh.Header[swh.ReadStruct<int>(BaseTypes.Int)].Namespace);
 		string typeName = swh.ReadClass<string>(BaseTypes.String)!;
-		var type = (assembly is null ? Type.GetType(typeName, false) : assembly.GetType(typeName, false) ?? Type.GetType(typeName, false)).ThrowIfNullable();
+		var type = (assembly is null ? Type.GetType(typeName, false) : assembly.GetType(typeName, false) ?? Type.GetType(typeName, false)).ThrowIfNull();
 
 		return type;
 	}

@@ -1,19 +1,27 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Core.Vulkan;
+using Core.UI.Controls;
+using Core.UI.Controls.Panels;
+using Core.Vulkan.Renderers;
+using Core.Window;
+using SDL2;
+using SimpleMath.Vectors;
 
 namespace Core.UI.ShaderGraph;
 
 public class ShaderGraph
 {
-	private readonly HashSet<IShaderNode> _alreadyCompiled = new();
-	private readonly HashSet<IShaderNode> _shaderNodes = new();
+	private readonly HashSet<ShaderNode> _alreadyCompiled = new();
+	private readonly HashSet<ShaderNode> _shaderNodes = new();
 
-	public readonly Dictionary<IShaderNode, UiShaderNode> UiShaderNodes = new();
+	public readonly Dictionary<ShaderNode, UiShaderNode> UiShaderNodes = new();
+	public readonly Dictionary<UiControl, ShaderNode> UiControlToShaderNode = new();
+	public readonly AbsolutePanel GraphPanel = new(GeneralRenderer.UiContext);
+	public ShaderNode? DraggingFrom = null;
+	public int DraggingFromIndex = -1;
 
-	private int _id;
+	public int Id { get; private set; }
 
 	public List<(ShaderResourceType, string)> StructFields = new();
 
@@ -40,14 +48,14 @@ public class ShaderGraph
 			foreach ((var type, string name) in StructFields) header.Append($"\t{type.CompileName} {name};\r\n");
 			header.Append("};\r\n\r\n");
 
-			header.Append($"readonly layout(std430, set = 5, binding = {Identifier}_binding) buffer {Identifier}_buffer {{\r\n");
+			header.Append($"readonly layout(std430, set = FRAGMENT_MATERIAL_SET, binding = {Identifier}_binding) buffer {Identifier}_buffer {{\r\n");
 			header.Append($"\t{Identifier}_struct {Identifier}_data[];\r\n");
 			header.Append("};\r\n");
 
 			body.Append($"\t{Identifier}_struct mat = {Identifier}_data[data.fragmentElementIndex];\r\n");
 		}
 
-		var endNodes = _shaderNodes.Where(shaderNode => shaderNode is IHasInputs and not IHasOutputs).ToList();
+		var endNodes = _shaderNodes.Where(shaderNode => shaderNode.InputConnectors.Length > 0 && shaderNode.OutputConnectors.Length == 0).ToList();
 		foreach (var shaderNode in endNodes) CompileNode(shaderNode, header, body);
 
 		body.Append('}');
@@ -55,17 +63,15 @@ public class ShaderGraph
 		return header.Append(body).ToString();
 	}
 
-	private void CompileNode(IShaderNode node, StringBuilder header, StringBuilder body)
+	private void CompileNode(ShaderNode node, StringBuilder header, StringBuilder body)
 	{
 		if (_alreadyCompiled.Contains(node)) return;
-		if (node is IHasInputs nodeWithInput)
+		foreach (var inputNodeConnector in node.InputConnectors)
 		{
-			foreach (var inputNodeConnector in nodeWithInput.InputConnectors)
-			{
-				if (inputNodeConnector.ConnectedNode is null) continue;
-				CompileNode(inputNodeConnector.ConnectedNode, header, body);
-			}
+			if (inputNodeConnector.ConnectedOutputNode is null) continue;
+			CompileNode(inputNodeConnector.ConnectedOutputNode, header, body);
 		}
+
 
 		string headerCode = node.GetHeaderCode();
 		if (headerCode.Length > 0) header.Append(node.GetHeaderCode());
@@ -76,16 +82,63 @@ public class ShaderGraph
 		_alreadyCompiled.Add(node);
 	}
 
-	public void AddNode(IShaderNode node)
+	public void AddNode<TNode>(TNode node) where TNode : ShaderNode
 	{
 		_shaderNodes.Add(node);
-		UiShaderNodes[node] = new UiShaderNode(this, node, _id++);
+		UiShaderNodes[node] = UiShaderNodeFactories.CreateNode(GeneralRenderer.UiContext, this, node, Id++);
 	}
 
-	public static void Link(IHasOutputs outputNode, int outputIndex, IHasInputs inputNode, int inputIndex)
+	public void AddNode<TNode>(TNode node, Vector2<float> pos) where TNode : ShaderNode
+	{
+		_shaderNodes.Add(node);
+		UiShaderNodes[node] = UiShaderNodeFactories.CreateNode(GeneralRenderer.UiContext, this, node, Id++);
+
+		UiShaderNodes[node].Draw(pos);
+		GraphPanel.AddChild(UiShaderNodes[node].Container);
+	}
+
+	public void RemoveNode(ShaderNode node)
+	{
+		for (int i = 0; i < node.OutputConnectors.Length; i++)
+		{
+			var outputConnector = node.OutputConnectors[i];
+			foreach (var connection in outputConnector.Connections)
+			{
+				if (connection.ConnectedInputNode is null) continue;
+
+				connection.ConnectedInputNode.UnsetInput(connection.InputConnectorIndex);
+			}
+		}
+
+		for (int i = 0; i < node.InputConnectors.Length; i++)
+		{
+			var inputConnector = node.InputConnectors[i];
+			if (inputConnector.ConnectedOutputNode is null) continue;
+
+			inputConnector.ConnectedOutputNode.RemoveOutput(inputConnector.OutputConnectorIndex, inputConnector);
+			UiShaderNodes[inputConnector.ConnectedOutputNode].UpdateOutputCurves();
+		}
+
+		var uiNode = UiShaderNodes[node];
+
+		_shaderNodes.Remove(node);
+		UiControlToShaderNode.Remove(uiNode.Container);
+		UiShaderNodes.Remove(node);
+
+		uiNode.Container.Parent?.RemoveChild(uiNode.Container);
+		uiNode.Container.Dispose();
+	}
+
+	public static void Link(ShaderNode outputNode, int outputIndex, ShaderNode inputNode, int inputIndex)
 	{
 		outputNode.AddOutput(outputIndex, inputNode, inputIndex);
 		inputNode.SetInput(inputIndex, outputNode, outputIndex);
+	}
+
+	public static void Unlink(ShaderNode outputNode, int outputIndex, ShaderNode inputNode, int inputIndex)
+	{
+		outputNode.RemoveOutput(outputIndex, inputNode.InputConnectors[inputIndex]);
+		inputNode.UnsetInput(inputIndex);
 	}
 
 	public static unsafe void Test()
@@ -128,243 +181,125 @@ public class ShaderGraph
 
 		// Console.Out.WriteLine(graph.CompileGraph());
 
-		// var dotsBgMaterialFactory = UiMaterialManager.GetFactory("core:dots_background_material");
-		// var bgFragMat = dotsBgMaterialFactory.Create();
-		// bgFragMat.MarkForGPUUpdate();
+		var mainControl = new AbsolutePanel(GeneralRenderer.UiContext);
+		mainControl.Overflow = Overflow.Shown;
+		// mainControl.Selectable = false;
+		GeneralRenderer.UiContext.Root.AddChild(mainControl);
 
-		var bg = UiComponentFactory.CreateComponent();
-		// bg.FragMaterial = bgFragMat;
-		var bgData = bg.GetData();
-		bgData->Size = (Context.Window.WindowWidth, Context.Window.WindowHeight);
-		bg.MarkForGPUUpdate();
+		var bg = new CustomBox(GeneralRenderer.UiContext);
+		bg.VertMaterial = GeneralRenderer.UiContext.MaterialManager.GetFactory("default_vertex_material").Create();
+		bg.FragMaterial = GeneralRenderer.UiContext.MaterialManager.GetFactory("dots_background_material").Create();
+		*bg.FragMaterial.GetMemPtr<float>() = 1f;
+		bg.FragMaterial.MarkForGPUUpdate();
+		bg.Selectable = false;
+		mainControl.AddChild(bg);
+
+		// var graphPanel = new AbsolutePanel(GeneralRenderer.UiContext);
+		// graphPanel.Selectable = false;
+		graph.GraphPanel.Overflow = Overflow.Shown;
+		graph.GraphPanel.TightBox = true;
+		mainControl.AddChild(graph.GraphPanel);
+
+		mainControl.OnDrag(((control, _, motion, button, type) =>
+		{
+			if (button != MouseButton.Middle) return false;
+
+			if (type == DragType.Move)
+			{
+				var scaledMotion = motion.Cast<int, float>() / control.CombinedScale;
+				graph.GraphPanel.MarginLT += scaledMotion;
+
+				var ptr = bg.FragMaterial.GetMemPtr<(float scale, float offsetX, float offsetY)>();
+				ptr->offsetX -= scaledMotion.X;
+				ptr->offsetY -= scaledMotion.Y;
+				bg.FragMaterial.MarkForGPUUpdate();
+			}
+
+			return true;
+		}));
+
+		NodeSelectorUi? nodeSelector = null;
+		bool selectingNode = false;
+
+		mainControl.OnClick(((control, button, pos, _, type) =>
+		{
+			if (button != MouseButton.Right) return false;
+			if (type != ClickType.End) return false;
+
+			if (!selectingNode)
+			{
+				nodeSelector = new NodeSelectorUi(GeneralRenderer.UiContext, graph);
+				nodeSelector.OffsetZ = 20;
+
+				nodeSelector.OnClickOutsideOnce(((_, _) =>
+				{
+					mainControl.RemoveChild(nodeSelector);
+					nodeSelector.Dispose();
+					selectingNode = false;
+					nodeSelector = null;
+				}));
+				mainControl.AddChild(nodeSelector);
+				selectingNode = true;
+			}
+
+			nodeSelector!.MarginLT = pos.Cast<int, float>() / control.CombinedScale;
+
+			return true;
+		}));
+
+		// TODO: UiControl.onScroll()
+		// TODO: scroll relative to position
+		UiManager.InputContext.MouseInputHandler.OnScroll += amount =>
+		{
+			var top = UiManager.ControlsOnMousePos[0];
+			if (top == mainControl || top == graph.GraphPanel)
+			{
+				graph.GraphPanel.Scale += new Vector2<float>(amount.Y / 10f);
+				*bg.FragMaterial.GetMemPtr<float>() = graph.GraphPanel.Scale.X;
+				bg.FragMaterial.MarkForGPUUpdate();
+			}
+		};
+
+		const int maxNodesPerRow = 5;
+		int posX = 50;
+		int posY = 75;
+
+		int index = 0;
+		foreach (var node in graph._shaderNodes)
+		{
+			var uiNode = graph.UiShaderNodes[node];
+			uiNode.Draw(new Vector2<float>(posX, posY));
+			graph.GraphPanel.AddChild(uiNode.Container);
+
+			if (++index != maxNodesPerRow)
+			{
+				posX += 230;
+			}
+			else
+			{
+				posX = 50;
+				posY += 330;
+			}
+		}
+
+		foreach (var node in graph._shaderNodes) graph.UiShaderNodes[node].UpdateOutputCurves();
+
+		UiManager.InputContext.KeyboardInputHandler.AddKeyBind(() =>
+		{
+			var list = UiManager.ControlsOnPos(UiManager.InputContext.MouseInputHandler.MousePos.Cast<int, float>(), mainControl, new List<UiControl>());
+
+			ShaderNode? node = null;
+			foreach (var uiControl in list)
+			{
+				if (graph.UiControlToShaderNode.TryGetValue(uiControl, out node))
+					break;
+			}
+
+			if (node is null) return false;
+
+			graph.RemoveNode(node);
+
+			return true;
+		}, SDL.SDL_Keycode.SDLK_DELETE);
 	}
-}
-
-public class UiShaderNode
-{
-	public readonly List<UiComponent> Components = new();
-
-	public UiShaderNode(ShaderGraph graph, IShaderNode node, int id)
-	{
-		ShaderGraph = graph;
-		Node = node;
-		Id = id;
-		// UpdateUi();
-	}
-
-	public ShaderGraph ShaderGraph { get; }
-	public IShaderNode Node { get; }
-	public int Id { get; }
-
-	// [SuppressMessage("ReSharper", "PossibleLossOfFraction")]
-	// public void UpdateUi()
-	// {
-	// 	Dispose();
-	// 	// _pos = RelativeCoordinatesFactory.Instance.Create();
-	// 	// Coordinates->X = 100 + (185 * Id) - (Id % 2 == 0 ? 0 : 100);
-	// 	// Coordinates->Y = Id % 2 == 0 ? 100 : 400;
-	// 	// Coordinates->Z = (short) (10 + (Id * 3));
-	// 	// _pos.MarkForUpdate();
-	//
-	// 	var fragColorFactory = UiMaterialManager.GetFactory("core:color_material");
-	// 	var vertMaterialFactory = UiMaterialManager.GetFactory("core:default_vertex_material");
-	// 	var lineMaterialFactory = UiMaterialManager.GetFactory("core:pixel_coordinates_material");
-	// 	var borderMaterialFactory = UiMaterialManager.GetFactory("core:dynamic_border_material");
-	//
-	// 	var vertMaterial = vertMaterialFactory.Create();
-	// 	vertMaterial.MarkForUpdate();
-	//
-	// 	var blackColorMaterial = fragColorFactory.Create();
-	// 	{
-	// 		*blackColorMaterial.GetData<int>() = Color.Black.ToArgb();
-	// 	}
-	// 	blackColorMaterial.MarkForUpdate();
-	//
-	// 	// {
-	// 	// 	var bgColor = fragColorFactory.Create();
-	// 	// 	*bgColor.GetData<int>() = Color.Red.ToArgb();
-	// 	// 	bgColor.MarkForUpdate();
-	// 	//
-	// 	// 	var background = UiComponentFactory.CreateComponent();
-	// 	// 	{
-	// 	// 		background.Coordinates = _pos;
-	// 	// 		background.VertMaterial = vertMaterial;
-	// 	// 		background.FragMaterial = bgColor;
-	// 	// 	
-	// 	// 		var bgData = background.GetData();
-	// 	// 		bgData->Width = 150;
-	// 	// 		bgData->Height = 175;
-	// 	// 	}
-	// 	// 	background.MarkForUpdate();
-	// 	// 	Components.Add(background);
-	// 	// }
-	//
-	// 	{
-	// 		var border = borderMaterialFactory.Create();
-	// 		{
-	// 			var borderData = border.GetData<DynamicBorderMaterial>();
-	// 			borderData->BorderColor = Color.Blue.ToArgb();
-	// 			borderData->SelectColor = Color.Purple.ToArgb();
-	// 			borderData->SelectRadius = 40;
-	// 			borderData->BorderThickness = 2;
-	// 			borderData->Rounding = 0;
-	// 		}
-	// 		border.MarkForUpdate();
-	//
-	// 		var borderComponent = UiComponentFactory.CreateComponent();
-	// 		{
-	// 			borderComponent.Coordinates = _pos;
-	// 			borderComponent.VertMaterial = vertMaterial;
-	// 			borderComponent.FragMaterial = border;
-	//
-	// 			var borderData = borderComponent.GetData();
-	// 			borderData->Width = 150;
-	// 			borderData->Height = 175;
-	// 		}
-	// 		borderComponent.MarkForUpdate();
-	// 		Components.Add(borderComponent);
-	// 	}
-	//
-	// 	var label = new Label(Node.Name, Coordinates->X, Coordinates->Y, (short) (Coordinates->Z + 1));
-	//
-	// 	if (Node is IHasInputs inputsNode)
-	// 	{
-	// 		var colorHolders = new MaterialDataHolder[inputsNode.InputConnectors.Length];
-	//
-	// 		inputsNode.OnSetInput += (inputIndex, outputNode, outputIndex) =>
-	// 		{
-	// 			var color = colorHolders[inputIndex];
-	// 			*color.GetData<int>() = Color.Green.ToArgb();
-	// 			color.MarkForUpdate();
-	//
-	// 			var otherNode = ShaderGraph.UiShaderNodes[outputNode];
-	//
-	// 			float outputX = otherNode.Coordinates->X + 150 + 10;
-	// 			float outputY = otherNode.Coordinates->Y + 30 + (outputIndex * 45) + 10;
-	//
-	// 			float inputX = Coordinates->X - 10;
-	// 			float inputY = Coordinates->Y + 30 + (inputIndex * 45) + 10;
-	//
-	// 			var bezier = new UiCubicBezier(
-	// 				(outputX, outputY),
-	// 				((outputX + inputX) / 2.0, outputY),
-	// 				((outputX + inputX) / 2.0, inputY),
-	// 				(inputX, inputY)
-	// 			);
-	// 		};
-	//
-	// 		for (int i = 0; i < inputsNode.InputConnectors.Length; i++)
-	// 		{
-	// 			var inputColor = fragColorFactory.Create();
-	// 			{
-	// 				inputColor.GetData<int>()[0] = Color.Red.ToArgb();
-	// 			}
-	// 			inputColor.MarkForUpdate();
-	// 			colorHolders[i] = inputColor;
-	//
-	// 			var inputComponent = UiComponentFactory.CreateComponent();
-	// 			{
-	// 				inputComponent.Coordinates = _pos;
-	// 				inputComponent.VertMaterial = vertMaterial;
-	// 				inputComponent.FragMaterial = inputColor;
-	//
-	// 				var inputData = inputComponent.GetData();
-	// 				inputData->X = -10;
-	// 				inputData->Y = (short) (30 + (i * 45));
-	// 				inputData->Z = 1;
-	// 				inputData->Width = 20;
-	// 				inputData->Height = 20;
-	// 			}
-	// 			inputComponent.MarkForUpdate();
-	// 		}
-	// 	}
-	//
-	// 	if (Node is IHasOutputs outputsNode)
-	// 	{
-	// 		var colorHolders = new MaterialDataHolder[outputsNode.OutputConnectors.Length];
-	//
-	// 		outputsNode.OnAddOutput += (outputIndex, _, _) =>
-	// 		{
-	// 			var color = colorHolders[outputIndex];
-	// 			*color.GetData<int>() = Color.Green.ToArgb();
-	// 			color.MarkForUpdate();
-	// 		};
-	//
-	// 		for (int i = 0; i < outputsNode.OutputConnectors.Length; i++)
-	// 		{
-	// 			var outputColor = fragColorFactory.Create();
-	// 			*outputColor.GetData<int>() = Color.Red.ToArgb();
-	// 			outputColor.MarkForUpdate();
-	// 			colorHolders[i] = outputColor;
-	//
-	// 			var outputComponent = UiComponentFactory.CreateComponent();
-	// 			{
-	// 				outputComponent.Coordinates = _pos;
-	// 				outputComponent.VertMaterial = vertMaterial;
-	// 				outputComponent.FragMaterial = outputColor;
-	//
-	// 				var outputData = outputComponent.GetData();
-	// 				outputData->X = 150 - 10;
-	// 				outputData->Y = (short) (30 + (i * 45));
-	// 				outputData->Z = 1;
-	// 				outputData->Width = 20;
-	// 				outputData->Height = 20;
-	// 			}
-	// 			outputComponent.MarkForUpdate();
-	// 		}
-	// 	}
-	// }
-	//
-	// public void Dispose()
-	// {
-	// 	_pos?.Dispose();
-	// 	foreach (var uiComponent in Components)
-	// 	{
-	// 		uiComponent.FragMaterial.Dispose();
-	// 		uiComponent.VertMaterial.Dispose();
-	// 		uiComponent.Dispose();
-	// 	}
-	// }
-}
-
-public struct PixelCoordinatesMaterial
-{
-	public Vector4F V1;
-	public Vector4F V2;
-	public Vector4F V3;
-	public Vector4F V4;
-}
-
-public struct Vector2F
-{
-	public float X, Y;
-
-	public Vector2F(float x, float y)
-	{
-		X = x;
-		Y = y;
-	}
-}
-
-public struct Vector4F
-{
-	public float X, Y, Z, W;
-
-	public Vector4F(float x, float y, float z, float w)
-	{
-		X = x;
-		Y = y;
-		Z = z;
-		W = w;
-	}
-}
-
-public struct DynamicBorderMaterial
-{
-	public int BorderColor;
-	public int SelectColor;
-	public Int16 SelectRadius;
-	public Int16 Rounding;
-	public Int16 BorderThickness;
-	public Int16 Null;
 }

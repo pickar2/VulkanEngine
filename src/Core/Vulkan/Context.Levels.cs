@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using Core.Utils;
 
 namespace Core.Vulkan;
 
@@ -20,7 +18,7 @@ public static partial class Context
 			VulkanLevel.Instance => InstanceEvents,
 			VulkanLevel.Device => DeviceEvents,
 			VulkanLevel.Swapchain => SwapchainEvents,
-			_ => throw new ArgumentOutOfRangeException(nameof(level), level, null)
+			_ or VulkanLevel.None => throw new ArgumentOutOfRangeException(nameof(level), level, null)
 		};
 
 	[SuppressMessage("ReSharper", "ConvertClosureToMethodGroup")]

@@ -1,4 +1,4 @@
-﻿using Core.UI.Controls.Panels;
+﻿using Core.UI.Reactive;
 
 namespace Core.UI.Controls;
 
@@ -24,5 +24,5 @@ public class CustomBox : UiControlOneComponent
 		}
 	}
 
-	public CustomBox(RootPanel rootPanel) : base(rootPanel) { }
+	public CustomBox(UiContext context) : base(context) { }
 }

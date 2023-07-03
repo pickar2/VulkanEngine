@@ -11,7 +11,7 @@ public static class PropertyCachedAccessor
 
 	public static Action<IEntry, TValue>? CreateSetter<TValue>(this PropertyInfo propertyInfo)
 	{
-		var setMethod = propertyInfo.GetSetMethod(true).ThrowIfNullable();
+		var setMethod = propertyInfo.GetSetMethod(true).ThrowIfNull();
 		if (!propertyInfo.CanWrite) return null;
 
 		var dynamicSetter = CreateDynamicSetter(propertyInfo, out var targetType);

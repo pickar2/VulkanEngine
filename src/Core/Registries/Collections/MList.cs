@@ -122,7 +122,7 @@ public class MList<T> : IList<T>, IReadOnlyMList<T>, IList, IDisposable
 		get => this[index];
 		set
 		{
-			if (value.ThrowIfNullable() is not T castedValue)
+			if (value.ThrowIfNull() is not T castedValue)
 				throw new ArgumentException($"Can't cast {value!.GetType()} to {typeof(T)}").AsExpectedException();
 			this[index] = castedValue;
 		}
@@ -130,7 +130,7 @@ public class MList<T> : IList<T>, IReadOnlyMList<T>, IList, IDisposable
 
 	int IList.Add(object? item)
 	{
-		if (item.ThrowIfNullable() is not T castedValue)
+		if (item.ThrowIfNull() is not T castedValue)
 			throw new ArgumentException($"Can't cast {item!.GetType()} to {typeof(T)}").AsExpectedException();
 
 		Add(castedValue);
@@ -160,7 +160,7 @@ public class MList<T> : IList<T>, IReadOnlyMList<T>, IList, IDisposable
 
 	void IList.Insert(int index, object? item)
 	{
-		if (item.ThrowIfNullable() is not T castedValue)
+		if (item.ThrowIfNull() is not T castedValue)
 			throw new ArgumentException($"Can't cast {item!.GetType()} to {typeof(T)}").AsExpectedException();
 
 		Insert(index, castedValue);

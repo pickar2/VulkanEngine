@@ -2,13 +2,13 @@
 
     <PropertyGroup>
         <TargetFramework>net7.0</TargetFramework>
+        <LangVersion>11</LangVersion>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <EnablePreviewFeatures>true</EnablePreviewFeatures>
         <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
         <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)\GeneratedFiles</CompilerGeneratedFilesOutputPath>
-        <LangVersion>preview</LangVersion>
         <OutputType>Exe</OutputType>
         <Platforms>x64</Platforms>
     </PropertyGroup>
@@ -19,7 +19,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\SimpleMath.Generators\SimpleMath.Generators.csproj" ReferenceOutputAssembly="true" OutputItemType="Analyzer" />
+        <ProjectReference Include="..\SimpleMath.Generators\SimpleMath.Generators.csproj" ReferenceOutputAssembly="true" OutputItemType="Analyzer"/>
     </ItemGroup>
 
 </Project>

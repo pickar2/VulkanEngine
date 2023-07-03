@@ -6,28 +6,28 @@
 layout (local_size_x = WORKGROUP_SIZE, local_size_y = 1, local_size_z = 1) in;
 
 readonly layout(set = 0, binding = 0) buffer counters1Buffer {
-    int counters1[];
+	int counters1[];
 };
 
 readonly layout(set = 0, binding = 1) buffer counters2Buffer {
-    int counters2[];
+	int counters2[];
 };
 
 layout(set = 0, binding = 2) buffer offsetsBuffer {
-    int offsets[];
+	int offsets[];
 };
 
 layout(set = 0, binding = 3) buffer count_const {
-    int count;
-    int z_count;
+	int count;
+	int z_count;
 };
 
 void main() {
-    if (gl_GlobalInvocationID.x >= 1) return;
+	if (gl_GlobalInvocationID.x >= 1) return;
 
-    int offset = 0;
-    for (int i = 0; i < z_count; i++) {
-        offsets[i] = offset;
-        offset += counters1[i];
-    }
+	int offset = 0;
+	for (int i = 0; i < z_count; i++) {
+		offsets[i] = offset;
+		offset += counters1[i];
+	}
 }

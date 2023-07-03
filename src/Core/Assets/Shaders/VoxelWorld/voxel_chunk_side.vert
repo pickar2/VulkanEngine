@@ -18,9 +18,9 @@ readonly layout(std430, set = SCENE_DATA_SET, binding = 5) buffer sceneDataDescr
 
 #define CHUNK_SIZE 8
 
-const int[] components = {0, 0, 1, 1, 2, 2};
+const int[] components = { 0, 0, 1, 1, 2, 2 };
 const float spread = +0.0000f;
-const float[] moves = {CHUNK_SIZE + spread, -spread};
+const float[] moves = { CHUNK_SIZE + spread, -spread };
 
 void main() {
 	int x = gl_VertexIndex & 0xff;
@@ -47,6 +47,6 @@ void main() {
 	pos[comp1] += moves[move1];
 	pos[comp2] += moves[move2];
 
-    gl_Position = projMatrix * viewMatrix * vec4(pos, 1.0);
+	gl_Position = projMatrix * viewMatrix * vec4(pos, 1.0);
 	outPos = pos;
 }

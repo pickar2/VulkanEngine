@@ -1,5 +1,6 @@
-﻿using System.Drawing;
-using Core.UI.Controls.Panels;
+﻿using System;
+using System.Drawing;
+using Core.UI.Reactive;
 using Core.Window;
 using SimpleMath.Vectors;
 
@@ -7,20 +8,20 @@ namespace Core.UI.Controls;
 
 public class ScrollView : UiControl
 {
-	private readonly UiControl _horizontalSlider;
-	private readonly UiControl _verticalSlider;
+	private readonly Rectangle _horizontalSlider;
+	private readonly Rectangle _verticalSlider;
 	private Vector2<float> _maxAreaInside;
 
 	public Vector2<float> ScrollOffset;
 
-	public ScrollView(RootPanel rootPanel) : base(rootPanel)
+	public ScrollView(UiContext context) : base(context)
 	{
-		_horizontalSlider = new Rectangle(RootPanel)
+		_horizontalSlider = new Rectangle(Context)
 		{
 			Color = Color.Cornsilk.ToArgb(),
-			Size = new Vector2<float>(50, 10),
-			OffsetZ = 1
+			Size = new Vector2<float>(50, 10)
 		};
+		_horizontalSlider.OnClick(((_, button, _, _, _) => button == MouseButton.Left));
 		_horizontalSlider.OnDrag((control, newPos, motion, button, dragType) =>
 		{
 			if (button != MouseButton.Left) return false;
@@ -35,12 +36,12 @@ public class ScrollView : UiControl
 		});
 		AddChild(_horizontalSlider);
 
-		_verticalSlider = new Rectangle(RootPanel)
+		_verticalSlider = new Rectangle(Context)
 		{
 			Color = Color.Cornsilk.ToArgb(),
-			Size = new Vector2<float>(10, 50),
-			OffsetZ = 1
+			Size = new Vector2<float>(10, 50)
 		};
+		_verticalSlider.OnClick(((_, button, _, _, _) => button == MouseButton.Left));
 		_verticalSlider.OnDrag((control, newPos, motion, button, dragType) =>
 		{
 			if (button != MouseButton.Left) return false;
@@ -73,6 +74,7 @@ public class ScrollView : UiControl
 
 	public override void ArrangeChildren(Vector2<float> area)
 	{
+		short maxChildZ = CombinedZ;
 		foreach (var child in Children)
 		{
 			child.BasePos = CombinedPos;
@@ -82,16 +84,26 @@ public class ScrollView : UiControl
 			child.LocalZ = child.OffsetZ;
 
 			child.ArrangeChildren(area);
+
+			maxChildZ = Math.Max(child.CombinedZ, maxChildZ);
 		}
+
+		maxChildZ += 1;
 
 		_horizontalSlider.MarginLT.X = (Size.X - _horizontalSlider.Size.X) * ScrollOffset.X;
 		_horizontalSlider.MarginLT.Y = Size.Y - _horizontalSlider.Size.Y;
 
+		_horizontalSlider.BaseZ = maxChildZ;
 		_horizontalSlider.LocalPos = _horizontalSlider.MarginLT * CombinedScale;
+
+		// _horizontalSlider.Size.Y = (_maxAreaInside.X - 10) <= Size.X ? 0 : 10;
 
 		_verticalSlider.MarginLT.X = Size.X - _verticalSlider.Size.X;
 		_verticalSlider.MarginLT.Y = (Size.Y - _verticalSlider.Size.Y) * ScrollOffset.Y;
 
+		_verticalSlider.BaseZ = maxChildZ;
 		_verticalSlider.LocalPos = _verticalSlider.MarginLT * CombinedScale;
+
+		// _verticalSlider.Size.X = (_maxAreaInside.Y - 10) <= Size.Y ? 0 : 10;
 	}
 }

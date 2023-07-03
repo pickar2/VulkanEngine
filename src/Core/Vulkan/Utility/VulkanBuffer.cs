@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using Core.Native.VMA;
 using Core.Vulkan.Api;
 using Silk.NET.Vulkan;

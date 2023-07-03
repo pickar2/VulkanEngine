@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Drawing;
-using Core.UI.ShaderGraph;
 using SimpleMath.Vectors;
 
 namespace Core.UI.Test;

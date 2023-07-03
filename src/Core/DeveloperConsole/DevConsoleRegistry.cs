@@ -96,7 +96,7 @@ public sealed class DevConsoleRegistry : SimpleRegistry<DefaultEventManager<ICon
 			parameters = rawString[(whiteSpaceIndex + 1)..].Split(' ');
 		}
 
-		var binder = Instance.GetOrDefault(command).ThrowIfNullable();
+		var binder = Instance.GetOrDefault(command).ThrowIfNull();
 
 		// Check for help symbols in parameters
 		if (parameters?.Length == 1 && parameters[0] == "/?")

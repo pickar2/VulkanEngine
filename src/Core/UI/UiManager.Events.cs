@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using Core.UI.Controls;
+using Core.Vulkan;
 using Core.Vulkan.Renderers;
 using Core.Window;
+using SDL2;
 using SimpleMath.Vectors;
 
 namespace Core.UI;
@@ -11,7 +13,7 @@ public static partial class UiManager
 {
 	public delegate void OnCursorMoveDelegate(UiControl control, Vector2<int> newPos, Vector2<int> motion);
 	public delegate void OnHoverDelegate(UiControl control, Vector2<int> pos, HoverType hoverType);
-	public delegate bool OnClickDelegate(UiControl control, MouseButton button, Vector2<int> pos, ClickType clickType);
+	public delegate bool OnClickDelegate(UiControl control, MouseButton button, Vector2<int> pos, byte clicks, ClickType clickType);
 	public delegate bool OnDragDelegate(UiControl control, Vector2<int> newPos, Vector2<int> motion, MouseButton button, DragType dragType);
 
 	private static readonly Dictionary<UiControl, OnCursorMoveDelegate> OnCursorMoveDelegates = new();
@@ -28,19 +30,27 @@ public static partial class UiManager
 	public static List<UiControl> ControlsOnMousePos { get; private set; } = new();
 	public static UiControl? TopControl => ControlsOnMousePos.Count > 0 ? ControlsOnMousePos[0] : null;
 
+	private static Queue<SDL.SDL_Event> _events = new();
+	private static Queue<SDL.SDL_Event> _nextEvents = new();
+
 	private static void InitEvents()
 	{
+		Context.State.Window.Value.OnEvents += (eventCount, events) =>
+		{
+			for (int i = 0; i < eventCount; i++) _nextEvents.Enqueue(events[i]);
+		};
+
 		var values = Enum.GetValues<MouseButton>();
 		foreach (var button in values) DraggedControls[button] = new HashSet<UiControl>();
 
-		MouseInput.OnMouseMotion += HandleCursorMove;
+		InputContext.MouseInputHandler.OnMouseMotion += HandleCursorMove;
 
-		MouseInput.OnMouseDragStart += HandleDragStart;
-		MouseInput.OnMouseDragMove += HandleDragMove;
-		MouseInput.OnMouseDragEnd += HandleDragEnd;
+		InputContext.MouseInputHandler.OnMouseDragStart += HandleDragStart;
+		InputContext.MouseInputHandler.OnMouseDragMove += HandleDragMove;
+		InputContext.MouseInputHandler.OnMouseDragEnd += HandleDragEnd;
 
-		MouseInput.OnMouseButtonUp += HandleClickEnd;
-		MouseInput.OnMouseButtonDown += HandleClickStart;
+		InputContext.MouseInputHandler.OnMouseButtonDown += (button, clicks) => HandleClickStart(button, clicks);
+		InputContext.MouseInputHandler.OnMouseButtonUp += (button, clicks) => HandleClickEnd(button, clicks);
 	}
 
 	private static void HandleCursorMove(Vector2<int> newPos, Vector2<int> motion) { }
@@ -83,27 +93,29 @@ public static partial class UiManager
 		}
 	}
 
-	private static void HandleClickEnd(MouseButton button)
+	private static void HandleClickEnd(MouseButton button, byte clicks)
 	{
 		foreach (var control in ControlsOnMousePos)
 		{
 			if (!OnMouseClickDelegates.TryGetValue(control, out var onMouseClick)) continue;
-			if (onMouseClick.Invoke(control, button, MouseInput.MousePos, ClickType.End)) break;
+			if (onMouseClick.Invoke(control, button, InputContext.MouseInputHandler.MousePos, clicks, ClickType.End)) return;
 		}
 	}
 
-	private static void HandleClickStart(MouseButton button)
+	private static void HandleClickStart(MouseButton button, byte clicks)
 	{
 		foreach (var control in ControlsOnMousePos)
 		{
 			if (!OnMouseClickDelegates.TryGetValue(control, out var onMouseClick)) continue;
-			if (onMouseClick.Invoke(control, button, MouseInput.MousePos, ClickType.Start)) break;
+			if (onMouseClick.Invoke(control, button, InputContext.MouseInputHandler.MousePos, clicks, ClickType.Start)) return;
 		}
 	}
 
 	private static void EventsPreUpdate()
 	{
 		BeforeUpdate?.Invoke();
+
+		while (_events.TryDequeue(out var e)) InputHandler.ProcessEvent(e);
 
 		// hover start
 		foreach (var control in ControlsOnMousePos)
@@ -112,7 +124,7 @@ public static partial class UiManager
 			HoveredControls.Add(control);
 
 			if (!OnHoverDelegates.TryGetValue(control, out var onHover)) continue;
-			onHover.Invoke(control, MouseInput.MousePos, HoverType.Start);
+			onHover.Invoke(control, InputContext.MouseInputHandler.MousePos, HoverType.Start);
 		}
 
 		// hover end
@@ -122,13 +134,13 @@ public static partial class UiManager
 			HoveredControls.Remove(control);
 
 			if (!OnHoverDelegates.TryGetValue(control, out var onHover)) continue;
-			onHover.Invoke(control, MouseInput.MousePos, HoverType.End);
+			onHover.Invoke(control, InputContext.MouseInputHandler.MousePos, HoverType.End);
 		}
 	}
 
 	private static void EventsPostUpdate()
 	{
-		ControlsOnMousePos = ControlsOnPos(MouseInput.MousePos.Cast<int, float>(), GeneralRenderer.MainRoot, new List<UiControl>());
+		ControlsOnMousePos = ControlsOnPos(InputContext.MouseInputHandler.MousePos.Cast<int, float>(), GeneralRenderer.MainRoot, new List<UiControl>());
 
 		AfterUpdate?.Invoke();
 	}

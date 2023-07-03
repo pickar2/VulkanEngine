@@ -25,6 +25,9 @@ public class SdlWindow : IDisposable
 	public uint WindowWidth => Context.State.WindowSize.Value.X;
 	public uint WindowHeight => Context.State.WindowSize.Value.Y;
 
+	public readonly InputHandler InputHandler = new();
+	public readonly WindowInputContext InputContext = new();
+
 	public void Init()
 	{
 		_stopwatch.Start();
@@ -53,8 +56,9 @@ public class SdlWindow : IDisposable
 		Context.State.WindowSize.Value = new Vector2<uint>((uint) width, (uint) height);
 
 		SDL_AddEventWatch(WindowResizeEventFilter, IntPtr.Zero);
-		IsInitialized = true;
+		InputHandler.EnableContext(InputContext);
 
+		IsInitialized = true;
 		App.Logger.Info.Message($"Created SDL window. Ticks: {_stopwatch.ElapsedTicks}. Time: {_stopwatch.ElapsedMilliseconds}ms.");
 	}
 
@@ -90,75 +94,42 @@ public class SdlWindow : IDisposable
 		return strings;
 	}
 
-	public void Close() {
+	public void Close()
+	{
 		IsRunning = false;
 		IsClosing = true;
 	}
+
 	public void SetTitle(string title) => SDL_SetWindowTitle(WindowHandle, Title = title);
 	public void Hide() => SDL_HideWindow(WindowHandle);
 	public void Show() => SDL_ShowWindow(WindowHandle);
 	public bool IsShown => ((SDL_WindowFlags) SDL_GetWindowFlags(WindowHandle) & SDL_WindowFlags.SDL_WINDOW_SHOWN) != 0;
 
+	public event Action<int, SDL_Event[]>? OnEvents;
+
 	public void MainLoop()
 	{
 		var handle = new EventWaitHandle(false, EventResetMode.AutoReset);
 
-		const int maxNumEvents = 4;
+		const int maxNumEvents = 10;
 		var events = new SDL_Event[maxNumEvents];
 		IsRunning = true;
 		while (IsRunning)
 		{
 			SDL_PumpEvents();
-			int result = SDL_PeepEvents(events,
+			int eventCount = SDL_PeepEvents(events,
 				maxNumEvents,
 				SDL_eventaction.SDL_GETEVENT,
 				SDL_EventType.SDL_FIRSTEVENT,
 				SDL_EventType.SDL_LASTEVENT);
 
-			for (int index = 0; index < result; index++) HandleEvent(events[index]);
+			OnEvents?.Invoke(eventCount, events);
+
+			for (int index = 0; index < eventCount; index++) InputHandler.ProcessEvent(events[index]);
 
 			if (Context.IsStateChanged(out var level)) Context.ApplyStateChanges(level);
-			handle.WaitOne(1);
-		}
-	}
 
-	private void HandleEvent(SDL_Event sdlEvent)
-	{
-		switch (sdlEvent.type)
-		{
-			case SDL_EventType.SDL_QUIT:
-				IsRunning = false;
-				break;
-			case SDL_EventType.SDL_KEYDOWN:
-				KeyboardInput.KeyDown(sdlEvent.key);
-				break;
-			case SDL_EventType.SDL_KEYUP:
-				KeyboardInput.KeyUp(sdlEvent.key);
-				break;
-			case SDL_EventType.SDL_MOUSEMOTION:
-				MouseInput.MouseMotion(sdlEvent.motion);
-				break;
-			case SDL_EventType.SDL_MOUSEBUTTONDOWN:
-				MouseInput.MouseButtonDown(sdlEvent.button);
-				break;
-			case SDL_EventType.SDL_MOUSEBUTTONUP:
-				MouseInput.MouseButtonUp(sdlEvent.button);
-				break;
-			case SDL_EventType.SDL_MOUSEWHEEL:
-				MouseInput.Scroll(sdlEvent.wheel);
-				break;
-			case SDL_EventType.SDL_TEXTEDITING:
-				TextInput.ProcessEvent(sdlEvent.edit);
-				break;
-			case SDL_EventType.SDL_TEXTINPUT:
-				TextInput.UpdateText(sdlEvent.text);
-				break;
-			case SDL_EventType.SDL_WINDOWEVENT:
-				HandleWindowEvent(sdlEvent.window);
-				break;
-			// default:
-			// 	App.Logger.Info.Message($"{sdlEvent.type}");
-			// 	break;
+			handle.WaitOne(1);
 		}
 	}
 
@@ -185,5 +156,23 @@ public class SdlWindow : IDisposable
 			throw new Exception("Failed to create vulkan surface").AsExpectedException();
 
 		return new SurfaceKHR(surface);
+	}
+
+	public class WindowInputContext : IInputContext
+	{
+		public bool ProcessEvent(SDL_Event sdlEvent)
+		{
+			switch (sdlEvent.type)
+			{
+				case SDL_EventType.SDL_QUIT:
+					Context.State.Window.Value.Close();
+					return true;
+				case SDL_EventType.SDL_WINDOWEVENT:
+					Context.State.Window.Value.HandleWindowEvent(sdlEvent.window);
+					return true;
+			}
+
+			return false;
+		}
 	}
 }

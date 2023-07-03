@@ -100,10 +100,10 @@ public static class App
 	{
 		if (!TypeKey.TryGetValue(typeof(TRegistry), out string identifier))
 			throw new ArgumentException("Can't find registry with this type").AsExpectedException();
-		return (Registries.GetOrDefault(identifier) as TRegistry).ThrowIfNullable();
+		return (Registries.GetOrDefault(identifier) as TRegistry).ThrowIfNull();
 	}
 
-	internal static IRegistry<IEntry> Get(string key) => Registries.GetOrDefault(key).ThrowIfNullable();
+	internal static IRegistry<IEntry> Get(string key) => Registries.GetOrDefault(key).ThrowIfNull();
 
 	public readonly record struct Config
 	{

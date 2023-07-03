@@ -3,9 +3,7 @@ using System.Drawing;
 using Core.Native.Shaderc;
 using Core.UI;
 using Core.UI.Animations;
-using Core.Utils;
 using Core.Vulkan.Api;
-using Core.Vulkan.Utility;
 using Silk.NET.Vulkan;
 using SimpleMath.Vectors;
 

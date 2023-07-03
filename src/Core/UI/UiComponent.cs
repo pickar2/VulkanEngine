@@ -113,6 +113,10 @@ public struct UiComponentData
 
 	public Int16 RootIndex;
 	public UiComponentFlags Flags;
+
+#pragma warning disable CS0169
+	// private int _padding;
+#pragma warning restore CS0169
 }
 
 [Flags]

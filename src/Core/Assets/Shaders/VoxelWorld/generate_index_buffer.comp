@@ -25,51 +25,51 @@ layout(std430, set = 1, binding = 0) buffer infoDescriptor {
 };
 
 layout(std430, set = 1, binding = 1) buffer indirectCommandDescriptor {
-    uint indexCount;
-    uint indexCount;
-    uint indexCount;
-    uint indexCount;
-    uint indexCount;
+	uint indexCount;
+	uint indexCount;
+	uint indexCount;
+	uint indexCount;
+	uint indexCount;
 };
 
 writeonly layout(std430, set = 1, binding = 1) buffer indicesDescriptor {
-    int indices[];
+	int indices[];
 };
 
 #define CHUNK_SIZE 32
 #include "Default/functions.glsl"
 
-const int[] indices1 = {0, 2, 1, 1, 2, 3};
-const int[] indices2 = {0, 1, 2, 2, 1, 3};
+const int[] indices1 = { 0, 2, 1, 1, 2, 3 };
+const int[] indices2 = { 0, 1, 2, 2, 1, 3 };
 
 const vec3[] normals = {
-    vec3(1, 0, 0),
-    vec3(-1, 0, 0),
-    vec3(0, 1, 0),
-    vec3(0, -1, 0),
-    vec3(0, 0, 1),
-    vec3(0, 0, -1),
+vec3(1, 0, 0),
+vec3(-1, 0, 0),
+vec3(0, 1, 0),
+vec3(0, -1, 0),
+vec3(0, 0, 1),
+vec3(0, 0, -1),
 };
 
 void main() {
-    if (gl_GlobalInvocationID.x >= renderDistanceX) return;
-    if (gl_GlobalInvocationID.y >= renderDistanceY) return;
-    if (gl_GlobalInvocationID.z >= renderDistanceZ) return;
+	if (gl_GlobalInvocationID.x >= renderDistanceX) return;
+	if (gl_GlobalInvocationID.y >= renderDistanceY) return;
+	if (gl_GlobalInvocationID.z >= renderDistanceZ) return;
 
-    ivec3 chunkPos = ivec3(gl_GlobalInvocationID.x, gl_GlobalInvocationID.y, gl_GlobalInvocationID.z);
-    ivec3 chunkVoxelPos = chunkPos * CHUNK_SIZE;
-    
-    // cull chunk
+	ivec3 chunkPos = ivec3(gl_GlobalInvocationID.x, gl_GlobalInvocationID.y, gl_GlobalInvocationID.z);
+	ivec3 chunkVoxelPos = chunkPos * CHUNK_SIZE;
 
-    for (int sideId = 0; sideId < 6; sideId++) {
-        vec3 normal = normals[sideId];
+	// cull chunk
+
+	for (int sideId = 0; sideId < 6; sideId++) {
+		vec3 normal = normals[sideId];
 		float n = (normal.x > 0 || normal.y > 0 || normal.z > 0)
-			? normal.dot(chunkVoxelPos + vec3(CHUNK_SIZE))
-			: normal.dot(chunkVoxelPos);
+		? normal.dot(chunkVoxelPos + vec3(CHUNK_SIZE))
+		: normal.dot(chunkVoxelPos);
 		float dot1 = (cameraWorldPos - (0, 1, 0)).dot(normal);
 		if (n < dot1) continue;
 
-        int offset = atomicAdd(indexCount, 6);
+		int offset = atomicAdd(indexCount, 6);
 		if ((sideId & 1) == 1)
 		{
 			for (int i = 0; i < indices1.Length; i++)
@@ -84,5 +84,5 @@ void main() {
 				indices[offset + i] = PackIndex(chunkPos, sideId * 4 + indices2[i]);
 			}
 		}
-    }
+	}
 }

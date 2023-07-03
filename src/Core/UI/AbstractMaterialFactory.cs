@@ -1,11 +1,10 @@
-﻿using Core.Registries.CoreTypes;
-using Core.Registries.Entities;
+﻿using Core.Vulkan.Api;
 using Core.VulkanData;
 using Silk.NET.Vulkan;
 
 namespace Core.UI;
 
-public class MaterialDataFactory : AbstractVulkanDataFactory<MaterialDataHolder>, IEntry
+public class MaterialDataFactory : AbstractVulkanDataFactory<MaterialDataHolder>
 {
 	public string Name { get; }
 	public ShaderStageFlags StageFlag { get; }
@@ -17,9 +16,9 @@ public class MaterialDataFactory : AbstractVulkanDataFactory<MaterialDataHolder>
 		StageFlag = stageFlags;
 		Name = name;
 		Index = index;
-	}
 
-	public NamespacedName Identifier { get; init; }
+		Debug.SetObjectName(DataBufferGpu.Buffer.Handle, ObjectType.Buffer, name);
+	}
 }
 
 public class MaterialDataHolder : VulkanDataHolder

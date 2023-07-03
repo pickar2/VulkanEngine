@@ -1,13 +1,13 @@
-﻿using Core.UI.Controls.Panels;
+﻿using Core.UI.Reactive;
 
 namespace Core.UI.Controls;
 
 public class Rectangle : CustomBox
 {
-	public Rectangle(RootPanel rootPanel) : base(rootPanel)
+	public Rectangle(UiContext context) : base(context)
 	{
-		Component.VertMaterial = rootPanel.MaterialManager.GetFactory("default_vertex_material").Create();
-		Component.FragMaterial = rootPanel.MaterialManager.GetFactory("color_material").Create();
+		Component.VertMaterial = context.MaterialManager.GetFactory("default_vertex_material").Create();
+		Component.FragMaterial = context.MaterialManager.GetFactory("color_material").Create();
 		Component.MarkForGPUUpdate();
 
 		Color = System.Drawing.Color.White.ToArgb();

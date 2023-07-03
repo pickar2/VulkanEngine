@@ -26,7 +26,7 @@ public static class ExpectedExceptionExtensions
 		return false;
 	}
 
-	public static T ThrowIfNullable<T>(this in T? value,
+	public static T ThrowIfNull<T>(this in T? value,
 		[CallerArgumentExpression("value")] string? memberName = null) where T : struct
 	{
 		if (!value.HasValue)
@@ -34,7 +34,7 @@ public static class ExpectedExceptionExtensions
 		return value.Value;
 	}
 
-	public static T ThrowIfNullable<T>(this T? value,
+	public static T ThrowIfNull<T>(this T? value,
 		[CallerArgumentExpression("value")] string? memberName = null) where T : class
 	{
 		if (value is null)

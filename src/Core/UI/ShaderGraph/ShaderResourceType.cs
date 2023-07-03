@@ -24,6 +24,11 @@ public class ShaderResourceType
 	public static readonly ShaderResourceType Vec4F = new("vec4", "Vector4Float", 16);
 	public static readonly ShaderResourceType Vec4D = new("dvec4", "Vector4Double", 32);
 
+	public static readonly ShaderResourceType[] AllTypes =
+	{
+		Short, Int, Float, Double, Vec2I16, Vec2I, Vec2F, Vec2D, Vec3I16, Vec3I, Vec3F, Vec3D, Vec4I16, Vec4I, Vec4F, Vec4D
+	};
+
 	private static readonly Dictionary<ShaderResourceType, ShaderResourceType> ScalarToVector2Dict = new()
 	{
 		{Short, Vec2I16},

@@ -13,10 +13,12 @@ public static class Maths
 
 	public static int IntPow(int value, int power)
 	{
-		int ret = value;
-		for (int i = 1; i < power; i++)
+		int ret = 1;
+		while (power > 0)
 		{
-			ret *= value;
+			if ((power & 1) > 0) ret *= value;
+			power >>= 1;
+			value *= value;
 		}
 
 		return ret;
@@ -50,19 +52,19 @@ public static class Maths
 		{
 			return number[..(size + 1)];
 		}
-		
+
 		var sb = new StringBuilder();
 		for (int i = 0; i < size - number.Length + 1; i++)
 		{
 			sb.Append('0');
 		}
-		
+
 		return sb.Append(number).ToString();
 	}
 
 	private const double DegToRadians = Math.PI / 180.0d;
-    public static double ToRadians(this double val) => DegToRadians * val;
+	public static double ToRadians(this double val) => DegToRadians * val;
 
 	private const float DegToRadiansF = (float) Math.PI / 180.0f;
-    public static float ToRadians(this float val) => DegToRadiansF * val;
+	public static float ToRadians(this float val) => DegToRadiansF * val;
 }

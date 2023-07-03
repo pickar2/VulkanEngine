@@ -37,6 +37,7 @@ internal static class Program
 			Context.State.Window.UpdateImmediately(new SdlWindow());
 			Context.State.Window.Value.Init();
 			windowReady = true;
+			Context.State.Window.Value.Show();
 			Context.State.Window.Value.MainLoop();
 		})
 		{
@@ -55,40 +56,35 @@ internal static class Program
 		if (cmdArgs.Contains("-gpu1")) Context.State.SelectedGpuIndex.UpdateImmediately(1);
 		if (cmdArgs.Contains("-gpu2")) Context.State.SelectedGpuIndex.UpdateImmediately(2);
 
-		KeyboardInput.GlobalContext.AddKeyBind(new NamedFunc("exit_program", () =>
-		{
-			Context.State.Window.Value.Close();
-			return true;
-		}), SDL.SDL_Keycode.SDLK_ESCAPE);
-
 		Context.Init();
 		UiManager.Init();
 
 		int gpu = Context.SelectedDeviceIndex;
-		KeyboardInput.GlobalContext.AddKeyBind(new NamedFunc("change_gpu", () =>
+		UiManager.InputContext.KeyboardInputHandler.AddKeyBind(() =>
 		{
 			gpu = (gpu + 1) % 2;
 			Context.State.SelectedGpuIndex.Value = gpu;
 			return true;
-		}), SDL.SDL_Keycode.SDLK_g);
+		}, SDL.SDL_Keycode.SDLK_g);
 
 		bool wireframe = false;
-		KeyboardInput.GlobalContext.AddKeyBind(new NamedFunc("toggle_wireframe", () =>
+		UiManager.InputContext.KeyboardInputHandler.AddKeyBind(() =>
 		{
 			wireframe = !wireframe;
 			var mode = wireframe ? PolygonMode.Line : PolygonMode.Fill;
 			if (PipelineManager.AutoPipelines.TryGetValue("RenderUiRoot", out var pipeline))
 				pipeline.Builder.RasterizationState(span => span[0].PolygonMode = mode);
 			return true;
-		}), SDL.SDL_Keycode.SDLK_p);
+		}, SDL.SDL_Keycode.SDLK_p);
 
-		KeyboardInput.GlobalContext.AddKeyBind(new NamedFunc("toggle_debug", () =>
+		UiManager.InputContext.KeyboardInputHandler.AddKeyBind(() =>
 		{
 			Context.State.DebugMode.Value = !Context.State.DebugMode.Value;
 			return true;
-		}), SDL.SDL_Keycode.SDLK_t);
+		}, SDL.SDL_Keycode.SDLK_t);
 
 		windowThread.Join();
+		UiManager.UiThread.Join();
 
 		Context.Dispose();
 

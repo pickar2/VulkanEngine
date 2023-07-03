@@ -65,7 +65,7 @@ public class VoxelCamera
 
 	public VoxelCamera()
 	{
-		_label = new Label(GeneralRenderer.MainRoot);
+		_label = new Label(GeneralRenderer.UiContext);
 		_label.OffsetZ = 1000;
 		_label.MarginLT = (265, 60);
 		GeneralRenderer.MainRoot.AddChild(_label);
@@ -73,9 +73,10 @@ public class VoxelCamera
 		Position = new Vector3<double>(8, 8, 8);
 		UpdatePosition();
 
-		MouseInput.OnMouseDragMove += (_, motion, _) => MoveDirection(motion.X * MouseSensitivity, motion.Y * MouseSensitivity, 0);
+		UiManager.InputContext.MouseInputHandler.OnMouseDragMove +=
+			(_, motion, _) => MoveDirection(motion.X * MouseSensitivity, motion.Y * MouseSensitivity, 0);
 
-		KeyboardInput.OnKeyDown += (key) =>
+		KeyboardInputHandler.OnKeyDown += (key) =>
 		{
 			_speedMultiplier = key.sym switch
 			{
@@ -85,7 +86,7 @@ public class VoxelCamera
 			};
 		};
 
-		KeyboardInput.OnKeyUp += (key) =>
+		KeyboardInputHandler.OnKeyUp += (key) =>
 		{
 			if (key.sym is SDL.SDL_Keycode.SDLK_LCTRL or SDL.SDL_Keycode.SDLK_LSHIFT) _speedMultiplier = DefaultSpeedMultiplier;
 		};
@@ -94,14 +95,14 @@ public class VoxelCamera
 		{
 			var relativeMoveVector = new Vector3<int>();
 
-			if (KeyboardInput.IsKeyPressed(SDL.SDL_Keycode.SDLK_w)) relativeMoveVector.Z = -1;
-			else if (KeyboardInput.IsKeyPressed(SDL.SDL_Keycode.SDLK_s)) relativeMoveVector.Z = 1;
+			if (KeyboardInputHandler.IsKeyPressed(SDL.SDL_Keycode.SDLK_w)) relativeMoveVector.Z = -1;
+			else if (KeyboardInputHandler.IsKeyPressed(SDL.SDL_Keycode.SDLK_s)) relativeMoveVector.Z = 1;
 
-			if (KeyboardInput.IsKeyPressed(SDL.SDL_Keycode.SDLK_a)) relativeMoveVector.X = -1;
-			else if (KeyboardInput.IsKeyPressed(SDL.SDL_Keycode.SDLK_d)) relativeMoveVector.X = 1;
+			if (KeyboardInputHandler.IsKeyPressed(SDL.SDL_Keycode.SDLK_a)) relativeMoveVector.X = -1;
+			else if (KeyboardInputHandler.IsKeyPressed(SDL.SDL_Keycode.SDLK_d)) relativeMoveVector.X = 1;
 
-			if (KeyboardInput.IsKeyPressed(SDL.SDL_Keycode.SDLK_z)) relativeMoveVector.Y = -1;
-			else if (KeyboardInput.IsKeyPressed(SDL.SDL_Keycode.SDLK_SPACE)) relativeMoveVector.Y = 1;
+			if (KeyboardInputHandler.IsKeyPressed(SDL.SDL_Keycode.SDLK_z)) relativeMoveVector.Y = -1;
+			else if (KeyboardInputHandler.IsKeyPressed(SDL.SDL_Keycode.SDLK_SPACE)) relativeMoveVector.Y = 1;
 
 			double yaw = YawPitchRoll.X.ToRadians();
 

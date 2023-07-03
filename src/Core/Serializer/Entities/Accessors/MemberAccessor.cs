@@ -279,9 +279,9 @@ public abstract class MemberAccessor
 		il.Emit(OpCodes.Ret);
 
 
-		var indexer = typeof(MemberAccessor).GetProperty("Item").ThrowIfNullable();
-		MethodInfo baseGetter = indexer.GetGetMethod().ThrowIfNullable(),
-			baseSetter = indexer.GetSetMethod().ThrowIfNullable();
+		var indexer = typeof(MemberAccessor).GetProperty("Item").ThrowIfNull();
+		MethodInfo baseGetter = indexer.GetGetMethod().ThrowIfNull(),
+			baseSetter = indexer.GetSetMethod().ThrowIfNull();
 		var body = tb.DefineMethod(baseGetter.Name,
 			baseGetter.Attributes & ~MethodAttributes.Abstract,
 			BaseTypes.Object,

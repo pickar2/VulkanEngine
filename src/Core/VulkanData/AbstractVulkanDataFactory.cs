@@ -56,7 +56,7 @@ public abstract unsafe class AbstractVulkanDataFactory<TDataHolder> : IVulkanDat
 			_data = (byte*) DataBufferCpu.Map();
 		}
 
-		new Span<byte>(_data, (int) BufferSize).Fill(default);
+		new Span<byte>(_data, (int) BufferSize).Clear();
 
 		Context.DeviceEvents.BeforeDispose += () =>
 		{
@@ -139,7 +139,7 @@ public abstract unsafe class AbstractVulkanDataFactory<TDataHolder> : IVulkanDat
 		var oldSpan = new Span<byte>(_data, MaxComponents * ComponentSize);
 		var newSpan = new Span<byte>((void*) newPtr, (int) BufferSize);
 		oldSpan.CopyTo(newSpan);
-		newSpan.Slice(MaxComponents * ComponentSize, MaxComponents * ComponentSize).Fill(default);
+		newSpan.Slice(MaxComponents * ComponentSize, MaxComponents * ComponentSize).Clear();
 
 		var old = DataBufferCpu;
 		ExecuteOnce.AtCurrentFrameStart(() => old.Dispose());
@@ -258,7 +258,7 @@ public abstract unsafe class AbstractVulkanDataFactory<TDataHolder> : IVulkanDat
 	// Reasoning: for instanced rendering it will be useful to have continuous id range for all instances
 	public void DisposeVulkanDataIndex(int index)
 	{
-		new Span<byte>(_data + (index * ComponentSize), ComponentSize).Fill(default);
+		new Span<byte>(_data + (index * ComponentSize), ComponentSize).Clear();
 		MarkForCopy(index);
 		if (_gapCount >= _gaps.Length)
 		{
@@ -275,14 +275,15 @@ public abstract unsafe class AbstractVulkanDataFactory<TDataHolder> : IVulkanDat
 	public virtual TDataHolder Create()
 	{
 		int index;
-		if (_gapCount > 0) index = _gaps[--_gapCount];
+		if (_gapCount > 0)
+			index = _gaps[--_gapCount];
 		else
 		{
 			if (ComponentCount >= MaxComponents) DoubleBufferSize();
 			index = ComponentCount++;
 		}
 
-		new Span<byte>(_data + (index * ComponentSize), ComponentSize).Fill(0);
+		new Span<byte>(_data + (index * ComponentSize), ComponentSize).Clear();
 
 		return new TDataHolder
 		{

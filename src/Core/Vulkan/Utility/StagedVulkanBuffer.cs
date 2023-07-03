@@ -2,7 +2,6 @@
 using Core.Native.VMA;
 using Core.Vulkan.Api;
 using Silk.NET.Vulkan;
-using Buffer = Silk.NET.Vulkan.Buffer;
 
 namespace Core.Vulkan.Utility;
 

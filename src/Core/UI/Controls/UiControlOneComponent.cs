@@ -1,5 +1,4 @@
-﻿using System;
-using Core.UI.Controls.Panels;
+﻿using Core.UI.Reactive;
 using SimpleMath.Vectors;
 
 namespace Core.UI.Controls;
@@ -8,9 +7,9 @@ public abstract unsafe class UiControlOneComponent : UiControl
 {
 	public readonly UiComponent Component;
 
-	public UiControlOneComponent(RootPanel rootPanel) : base(rootPanel)
+	public UiControlOneComponent(UiContext context) : base(context)
 	{
-		Component = rootPanel.CreateComponent();
+		Component = context.Root.CreateComponent();
 		Component.GetData()->MaskStart = new Vector2<float>(float.NegativeInfinity);
 		Component.GetData()->MaskEnd = new Vector2<float>(float.PositiveInfinity);
 		Component.MarkForGPUUpdate();
@@ -92,7 +91,6 @@ public abstract unsafe class UiControlOneComponent : UiControl
 		Component.VertMaterial.Dispose();
 		Component.Dispose();
 
-		foreach (var child in Children) child.Dispose();
-		GC.SuppressFinalize(this);
+		base.Dispose();
 	}
 }

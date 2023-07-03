@@ -121,7 +121,7 @@ public class MLinkedList<T>
 	{
 		private readonly Node? _firstNode;
 		private Node? _current;
-		public readonly Node Current => _current.ThrowIfNullable();
+		public readonly Node Current => _current.ThrowIfNull();
 		readonly object IEnumerator.Current => Current;
 
 		// ReSharper disable once UnusedMember.Global

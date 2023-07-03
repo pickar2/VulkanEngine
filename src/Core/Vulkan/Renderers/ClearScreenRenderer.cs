@@ -1,6 +1,5 @@
 ﻿using System;
 using Core.UI.Animations;
-using Core.Utils;
 using Core.Vulkan.Api;
 using Core.Vulkan.Utility;
 using Silk.NET.Vulkan;

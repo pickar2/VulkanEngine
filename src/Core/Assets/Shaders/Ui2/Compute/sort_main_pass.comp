@@ -8,7 +8,7 @@
 #extension GL_KHR_shader_subgroup_shuffle : enable
 #extension GL_EXT_control_flow_attributes : enable
 
-#define WORKGROUP_SIZE 32
+#define WORKGROUP_SIZE 1024
 //#include "../Generated/material_constants.glsl"
 
 layout (local_size_x = WORKGROUP_SIZE, local_size_y = 1, local_size_z = 1) in;
@@ -45,17 +45,20 @@ writeonly layout(std430, set = 2, binding = 0) buffer indicesArray {
 #include "../Default/functions.glsl"
 
 void main() {
-	int subgroupIndex;
-	if (subgroupElect()) { subgroupIndex = atomicAdd(subgroupCounter, 1); }
-	subgroupIndex = subgroupBroadcastFirst(subgroupIndex);
+	//	int subgroupIndex;
+	//	if (subgroupElect()) { subgroupIndex = atomicAdd(subgroupCounter, 1); }
+	//	subgroupIndex = subgroupBroadcastFirst(subgroupIndex);
+	//
+	//	int elementIndex = subgroupIndex * int(gl_SubgroupSize) + int(gl_SubgroupInvocationID);
 
-	int elementIndex = subgroupIndex * int(gl_SubgroupSize) + int(gl_SubgroupInvocationID);
+	uint subgroupIndex = gl_LocalInvocationID.x / gl_SubgroupSize;
+	int elementIndex = int(gl_GlobalInvocationID.x);
 
 	UiElementData d = data[elementIndex];
 	const bool willBeRendered = (d.flags & DISABLED) == ZERO && (d.flags & OFFSCREEN) == ZERO && elementIndex < elementCount;
 
 	Pos pos = calcFullPos(d);
-	int id4 = int(elementIndex * 4);
+	int id4 = elementIndex * 4;
 	int z = int(pos.z);
 
 	uint firstInvocationWithSameZ;
@@ -73,9 +76,15 @@ void main() {
 			currentInvocationOffset = int(amountOfPreviousInvocationsWithSameZ) * 6;
 		}
 	}
-	if (gl_SubgroupInvocationID == firstInvocationWithSameZ) {
-		offsetAtSubgroupStart = atomicAdd(counters2[z], int(totalAmountOfInvocationsWithZ) * 6);
+
+	bool isFirstWithSameZ = (gl_SubgroupInvocationID == firstInvocationWithSameZ);
+	for (uint i = 0; i < WORKGROUP_SIZE / gl_SubgroupSize; i++) {
+		if (isFirstWithSameZ && (i == subgroupIndex)) {
+			offsetAtSubgroupStart = atomicAdd(counters2[z], int(totalAmountOfInvocationsWithZ) * 6);
+		}
+		//		barrier();
 	}
+
 	offsetAtSubgroupStart = subgroupShuffle(offsetAtSubgroupStart, firstInvocationWithSameZ);
 
 	if (!willBeRendered) { return; }

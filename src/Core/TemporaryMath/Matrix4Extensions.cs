@@ -40,25 +40,25 @@ public static class Matrix4Extensions
 	public static Matrix4X4<float> RotateXYZ(this Matrix4X4<float> mat, float angleX, float angleY, float angleZ)
 	{
 		mat = Matrix4X4<float>.Identity;
-		
-        double sinX = Math.Sin(angleX);
-        double cosX = Math.Cos(angleX);
-        double sinY = Math.Sin(angleY);
-        double cosY = Math.Cos(angleY);
-        double sinZ = Math.Sin(angleZ);
-        double cosZ = Math.Cos(angleZ);
 
-        double nm01 = -sinX * -sinY, nm02 = cosX * -sinY;
+		double sinX = Math.Sin(angleX);
+		double cosX = Math.Cos(angleX);
+		double sinY = Math.Sin(angleY);
+		double cosY = Math.Cos(angleY);
+		double sinZ = Math.Sin(angleZ);
+		double cosZ = Math.Cos(angleZ);
 
-        mat.M31 = (float) (sinY);
-        mat.M32 = (float) (-sinX * cosY);
-        mat.M33 = (float) (cosX * cosY);
-        mat.M11 = (float) (cosY * cosZ);
-        mat.M12 = (float) (nm01 * cosZ + cosX * sinZ);
-        mat.M13 = (float) (nm02 * cosZ + sinX * sinZ);
-        mat.M21 = (float) (cosY * -sinZ);
-        mat.M22 = (float) (nm01 * -sinZ + cosX * cosZ);
-        mat.M23 = (float) (nm02 * -sinZ + sinX * cosZ);
+		double nm01 = -sinX * -sinY, nm02 = cosX * -sinY;
+
+		mat.M31 = (float) (sinY);
+		mat.M32 = (float) (-sinX * cosY);
+		mat.M33 = (float) (cosX * cosY);
+		mat.M11 = (float) (cosY * cosZ);
+		mat.M12 = (float) (nm01 * cosZ + cosX * sinZ);
+		mat.M13 = (float) (nm02 * cosZ + sinX * sinZ);
+		mat.M21 = (float) (cosY * -sinZ);
+		mat.M22 = (float) (nm01 * -sinZ + cosX * cosZ);
+		mat.M23 = (float) (nm02 * -sinZ + sinX * cosZ);
 
 		return mat;
 	}

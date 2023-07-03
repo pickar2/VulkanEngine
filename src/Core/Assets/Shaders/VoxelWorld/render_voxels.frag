@@ -158,7 +158,7 @@ int PrepareMortonValue(int value) {
 //}
 
 int Morton(ivec3 pos) {
-//	if (pos.x < 0 || pos.y < 0 || pos.z < 0) return 0;
+	//	if (pos.x < 0 || pos.y < 0 || pos.z < 0) return 0;
 	return PrepareMortonValue(pos.x) | PrepareMortonValue(pos.y) << 1 | PrepareMortonValue(pos.z) << 2;
 }
 
@@ -179,10 +179,10 @@ struct RayResult
 	vec3 sideDist;
 };
 
-float sdBox( vec3 p, vec3 b )
+float sdBox(vec3 p, vec3 b)
 {
-  vec3 d = abs(p) - b;
-  return min(max(d.x,max(d.y,d.z)),0.0) + length(max(d,0.0));
+	vec3 d = abs(p) - b;
+	return min(max(d.x, max(d.y, d.z)), 0.0) + length(max(d, 0.0));
 }
 
 #define CHUNK_DRAW_DISTANCE 64
@@ -221,16 +221,16 @@ RayResult RayMarchVoxelWorld(vec3 rayPos, vec3 rayDir)
 		int voxelIndex = GetVoxelIndex(res.cell & (CHUNK_SIZE - 1));
 		uint voxelMask = GetVoxelMask(0, voxelIndex);
 
-//		if (voxelMask > 0) {
-//			for (int j = 0; j < voxelMask; j++) {
-//				res.mask = lessThanEqual(sideDist.xyz, min(sideDist.yzx, sideDist.zxy));
-//				sideDist += vec3(res.mask) * deltaDist;
-//				res.cell += ivec3(vec3(res.mask)) * rayStep;
-//				i++;
-//			}
-//
-//			continue;
-//		}
+		//		if (voxelMask > 0) {
+		//			for (int j = 0; j < voxelMask; j++) {
+		//				res.mask = lessThanEqual(sideDist.xyz, min(sideDist.yzx, sideDist.zxy));
+		//				sideDist += vec3(res.mask) * deltaDist;
+		//				res.cell += ivec3(vec3(res.mask)) * rayStep;
+		//				i++;
+		//			}
+		//
+		//			continue;
+		//		}
 
 		if (voxelMask == 0) {
 			res.voxel = GetVoxel(chunkIndex, voxelIndex);
@@ -301,13 +301,13 @@ RayResult RayMarchVoxelChunk(vec3 rayPos, vec3 rayDir)
 #include "Default/functions.glsl"
 
 float Checker(vec3 p) {
-    return step(0.0, sin(PI * p.x + PI/2.0)*sin(PI *p.y + PI/2.0)*sin(PI *p.z + PI/2.0));
+	return step(0.0, sin(PI * p.x + PI/2.0)*sin(PI *p.y + PI/2.0)*sin(PI *p.z + PI/2.0));
 }
 
-float fcos( in float x )
+float fcos(in float x)
 {
-    float w = fwidth(x);
-    return cos(x) * sin(0.5*w)/(0.5*w);
+	float w = fwidth(x);
+	return cos(x) * sin(0.5*w)/(0.5*w);
 }
 
 void main() {
@@ -336,42 +336,42 @@ void main() {
 	float dist = 1 - result.dist / MAX_DIST;
 	dist *= dist;
 
-//	outColor.xyz = vec3(result.mask); // draw normals
-//	outColor.xyz = uv.xxx;
+	//	outColor.xyz = vec3(result.mask); // draw normals
+	//	outColor.xyz = uv.xxx;
 
 	vec3 hitPos = rayPos + rayDirNorm * result.dist;
 
-//	vec3 w = fwidth(gl_FragCoord.xyz);
-//	vec3 band1 = sin(0.5 * w) / (0.5 * w);
-//	vec3 band2 = smoothstep(1.0, 0.5, w);
+	//	vec3 w = fwidth(gl_FragCoord.xyz);
+	//	vec3 band1 = sin(0.5 * w) / (0.5 * w);
+	//	vec3 band2 = smoothstep(1.0, 0.5, w);
 
-//	float fw = max(fwidth(inUV.x * 640 * 1.5 + 250), fwidth(inUV.y * 360 * 1.5 + 50));
-//	float fw = max(fwidth(gl_FragCoord.x), fwidth(gl_FragCoord.y));
+	//	float fw = max(fwidth(inUV.x * 640 * 1.5 + 250), fwidth(inUV.y * 360 * 1.5 + 50));
+	//	float fw = max(fwidth(gl_FragCoord.x), fwidth(gl_FragCoord.y));
 	vec3 sideUv = fract(hitPos);
-//	sideUv *= sin(0.5 * fw) / (0.5 * fw);
-//	vec3 sideUv = fract(hitPos);
+	//	sideUv *= sin(0.5 * fw) / (0.5 * fw);
+	//	vec3 sideUv = fract(hitPos);
 
 	float spread = 0.05;
 	outColor.xyz = mix(vec3(0), vec3(not(result.mask)), smoothstep(-spread, 1 + spread, sideUv + spread * 2));
-//	if (result.mask.x) {
-//		outColor.xyz = vec3(0.5);
-//	}
-//	if (result.mask.y) {
-//		outColor.xyz = vec3(1.0);
-//	}
-//	if (result.mask.z) {
-//		outColor.xyz = vec3(0.75);
-//	}
-//	outColor.xyz *= vec3(dist);
-//    outColor.xyz *= vec3(0.5 + 0.5 * Checker(rayPos + normalize(rayDir) * result.dist));
-//	outColor.a *= dist;
-//	outColor.rgb = vec3(dist);
+	//	if (result.mask.x) {
+	//		outColor.xyz = vec3(0.5);
+	//	}
+	//	if (result.mask.y) {
+	//		outColor.xyz = vec3(1.0);
+	//	}
+	//	if (result.mask.z) {
+	//		outColor.xyz = vec3(0.75);
+	//	}
+	//	outColor.xyz *= vec3(dist);
+	//    outColor.xyz *= vec3(0.5 + 0.5 * Checker(rayPos + normalize(rayDir) * result.dist));
+	//	outColor.a *= dist;
+	//	outColor.rgb = vec3(dist);
 
 	VoxelType voxelType = voxelTypes[int(result.voxel.voxelTypeIndex)];
 	switch (int(result.voxel.voxelMaterialType)) {
 		case -1: break;
 		case 0: {
-//			outColor.xyz = intToRGBA(result.voxel.voxelMaterialIndex).xyz;
+			//			outColor.xyz = intToRGBA(result.voxel.voxelMaterialIndex).xyz;
 			break;
 		}
 		case 1: {

@@ -105,7 +105,8 @@ public class VulkanState
 			VariablePointersStorageBuffer = true,
 			StorageBuffer16BitAccess = true
 		},
-		new PhysicalDeviceVulkan12Features {
+		new PhysicalDeviceVulkan12Features
+		{
 			RuntimeDescriptorArray = true,
 			DescriptorBindingVariableDescriptorCount = true,
 			DescriptorBindingPartiallyBound = true,

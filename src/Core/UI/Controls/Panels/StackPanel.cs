@@ -1,4 +1,5 @@
 ﻿using System;
+using Core.UI.Reactive;
 using SimpleMath.Vectors;
 
 namespace Core.UI.Controls.Panels;
@@ -57,5 +58,5 @@ public class StackPanel : UiControl
 		}
 	}
 
-	public StackPanel(RootPanel rootPanel) : base(rootPanel) { }
+	public StackPanel(UiContext context) : base(context) { }
 }

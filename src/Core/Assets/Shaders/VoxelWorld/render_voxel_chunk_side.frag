@@ -159,7 +159,7 @@ int PrepareMortonValue(int value) {
 //}
 
 int Morton(ivec3 pos) {
-//	if (pos.x < 0 || pos.y < 0 || pos.z < 0) return 0;
+	//	if (pos.x < 0 || pos.y < 0 || pos.z < 0) return 0;
 	return PrepareMortonValue(pos.x) | PrepareMortonValue(pos.y) << 1 | PrepareMortonValue(pos.z) << 2;
 }
 
@@ -180,10 +180,10 @@ struct RayResult
 	vec3 sideDist;
 };
 
-float sdBox( vec3 p, vec3 b )
+float sdBox(vec3 p, vec3 b)
 {
-  vec3 d = abs(p) - b;
-  return min(max(d.x,max(d.y,d.z)),0.0) + length(max(d,0.0));
+	vec3 d = abs(p) - b;
+	return min(max(d.x, max(d.y, d.z)), 0.0) + length(max(d, 0.0));
 }
 
 #define CHUNK_DRAW_DISTANCE 1
@@ -213,7 +213,7 @@ RayResult RayMarchVoxelWorld(vec3 rayPos, vec3 rayDir)
 			res.mask = lessThanEqual(sideDist.xyz, min(sideDist.yzx, sideDist.zxy));
 			sideDist += vec3(res.mask) * deltaDist;
 			res.cell += ivec3(vec3(res.mask)) * rayStep;
-			i+=1;
+			i++;
 
 			continue;
 		}
@@ -221,17 +221,16 @@ RayResult RayMarchVoxelWorld(vec3 rayPos, vec3 rayDir)
 		int chunkIndex = chunkIndices[Morton(chunkPos)];
 		int voxelIndex = GetVoxelIndex(res.cell & (CHUNK_SIZE - 1));
 		uint voxelMask = GetVoxelMask(0, voxelIndex);
+		VoxelData voxel = GetVoxel(chunkIndex, voxelIndex);
 
-//		if (voxelMask > 0) {
-//			for (int j = 0; j < voxelMask; j++) {
-//				res.mask = lessThanEqual(sideDist.xyz, min(sideDist.yzx, sideDist.zxy));
-//				sideDist += vec3(res.mask) * deltaDist;
-//				res.cell += ivec3(vec3(res.mask)) * rayStep;
-//				i++;
-//			}
-//
-//			continue;
-//		}
+		//		if (voxelMask > 0) {
+		//			for (int j = 0; j < voxelMask; j++) {
+		//				res.mask = lessThanEqual(sideDist.xyz, min(sideDist.yzx, sideDist.zxy));
+		//				sideDist += vec3(res.mask) * deltaDist;
+		//				res.cell += ivec3(vec3(res.mask)) * rayStep;
+		//				i++;
+		//			}
+		//		}
 
 		if (voxelMask == 0) {
 			res.voxel = GetVoxel(chunkIndex, voxelIndex);
@@ -269,29 +268,29 @@ RayResult RayMarchVoxelChunk(vec3 rayPos, vec3 rayDir)
 	res.cell += ivec3(vec3(res.mask)) * rayStep;
 
 	ivec3 startChunk = res.cell >> CHUNK_SIZE_LOG2;
-//	if (startChunk.x < 0 || startChunk.y < 0 || startChunk.z < 0) return res;
+	//	if (startChunk.x < 0 || startChunk.y < 0 || startChunk.z < 0) return res;
 
 	while (i < MAX_RAY_STEPS)
 	{
 		ivec3 chunkPos = res.cell >> CHUNK_SIZE_LOG2;
-//		if (chunkPos.x != startChunk.x || chunkPos.y != startChunk.y || chunkPos.z != startChunk.z) {
-//			break;
-//		}
+		//		if (chunkPos.x != startChunk.x || chunkPos.y != startChunk.y || chunkPos.z != startChunk.z) {
+		//			break;
+		//		}
 
 		int chunkIndex = chunkIndices[Morton(chunkPos)];
 		int voxelIndex = GetVoxelIndex(res.cell & (CHUNK_SIZE - 1));
 		uint voxelMask = GetVoxelMask(0, voxelIndex);
 
-//		if (voxelMask > 0) {
-//			for (int j = 0; j < voxelMask; j++) {
-//				res.mask = lessThanEqual(sideDist.xyz, min(sideDist.yzx, sideDist.zxy));
-//				sideDist += vec3(res.mask) * deltaDist;
-//				res.cell += ivec3(vec3(res.mask)) * rayStep;
-//				i++;
-//			}
-//
-//			continue;
-//		}
+		//		if (voxelMask > 0) {
+		//			for (int j = 0; j < voxelMask; j++) {
+		//				res.mask = lessThanEqual(sideDist.xyz, min(sideDist.yzx, sideDist.zxy));
+		//				sideDist += vec3(res.mask) * deltaDist;
+		//				res.cell += ivec3(vec3(res.mask)) * rayStep;
+		//				i++;
+		//			}
+		//
+		//			continue;
+		//		}
 
 		if (voxelMask == 0) {
 			res.voxel = GetVoxel(chunkIndex, voxelIndex);
@@ -314,19 +313,20 @@ RayResult RayMarchVoxelChunk(vec3 rayPos, vec3 rayDir)
 #include "Default/functions.glsl"
 
 float Checker(vec3 p) {
-    return step(0.0, sin(PI * p.x + PI/2.0)*sin(PI *p.y + PI/2.0)*sin(PI *p.z + PI/2.0));
+	return step(0.0, sin(PI * p.x + PI/2.0)*sin(PI *p.y + PI/2.0)*sin(PI *p.z + PI/2.0));
 }
 
 void main() {
 	outColor = vec4(0.44, 0.44, 0.88, 1.0);
 
 	vec3 cameraPos = localCameraPos + cameraChunkPos * CHUNK_SIZE;
-	
-//	mat4 pvMatrix = projMatrix * viewMatrix;
+
+	//	mat4 pvMatrix = projMatrix * viewMatrix;
 
 	vec3 rayPos = inPos;
 	vec3 rayDir = rayPos - cameraPos;
 	vec3 rayDirNorm = normalize(rayDir);
+	rayPos -= 0.001 * rayDirNorm;
 
 	RayResult result = RayMarchVoxelChunk(rayPos, rayDirNorm);
 
@@ -345,13 +345,14 @@ void main() {
 	switch (int(result.voxel.voxelMaterialType)) {
 		case -1: break;
 		case 0: {
-//			outColor.xyz = intToRGBA(result.voxel.voxelMaterialIndex).xyz;
+			//			outColor.xyz = intToRGBA(result.voxel.voxelMaterialIndex).xyz;
 			break;
 		}
 		case 1: {
 			break;
 		}
 	}
+	//	if (!result.hit) outColor.a = 0.0;
 
-//	outColor.a = 1.0;
+	//	outColor.a = 1.0;
 }

@@ -7,6 +7,7 @@ using Core.UI.Animations;
 using Core.UI.Controls;
 using Core.UI.Controls.Panels;
 using Core.UI.Fonts;
+using Core.UI.Materials.Fragment;
 using Core.UI.Transforms;
 using Core.Vulkan.Api;
 using Core.Window;
@@ -26,43 +27,47 @@ public static partial class UiManager
 		Consolas = FontLoader.LoadFromText("Assets/Fonts/consolas.fnt");
 		// off main root control example:
 		var infoBoxRoot = new FullScreenRootPanel(MainRoot.ComponentManager, MainRoot.MaterialManager, MainRoot.GlobalDataManager);
-		var infoBox = new ControlInfoBox(infoBoxRoot);
+		var infoBox = new ControlInfoBox(infoBoxRoot.Context);
 		infoBoxRoot.AddChild(infoBox);
 		AfterUpdate += () =>
 		{
-			infoBox.Control = KeyboardInput.IsKeyPressed(SDL.SDL_Keycode.SDLK_LALT) && TopControl is not null && TopControl.Selectable ? TopControl : null;
+			infoBox.Control = KeyboardInputHandler.IsKeyPressed(SDL.SDL_Keycode.SDLK_LALT) && TopControl is not null && TopControl.Selectable
+				? TopControl
+				: null;
 			infoBoxRoot.Update();
 		};
 
-		var mainControl = new AbsolutePanel(MainRoot);
-		// mainControl.Selectable = false;
-		// mainControl.MarginLT = new Vector2<float>(300, 100);
-		// mainControl.Scale = new Vector2<float>(0.5f);
-		MainRoot.AddChild(mainControl);
+		ShaderGraph.ShaderGraph.Test();
 
-		var bg = new CustomBox(MainRoot);
-		bg.VertMaterial = MainRoot.MaterialManager.GetFactory("default_vertex_material").Create();
-		bg.FragMaterial = MainRoot.MaterialManager.GetFactory("dots_background_material").Create();
-		*bg.FragMaterial.GetMemPtr<float>() = 1f;
-		bg.FragMaterial.MarkForGPUUpdate();
-		bg.Selectable = false;
-		mainControl.AddChild(bg);
-
-		LabelTest(mainControl);
-		StackPanelTest(mainControl);
-		WrapPanelTest(mainControl);
-		DockPanelTest(mainControl);
-		Transform3DTest(mainControl);
-		AnimationTest(mainControl);
-		TextInputTest(mainControl);
-		AlignPanelTest(mainControl);
+		// var mainControl = new AbsolutePanel(MainRoot.Context);
+		// // mainControl.Selectable = false;
+		// // mainControl.MarginLT = new Vector2<float>(300, 100);
+		// // mainControl.Scale = new Vector2<float>(0.5f);
+		// MainRoot.AddChild(mainControl);
+		//
+		// var bg = new CustomBox(MainRoot.Context);
+		// bg.VertMaterial = MainRoot.MaterialManager.GetFactory("default_vertex_material").Create();
+		// bg.FragMaterial = MainRoot.MaterialManager.GetFactory("dots_background_material").Create();
+		// *bg.FragMaterial.GetMemPtr<float>() = 1f;
+		// bg.FragMaterial.MarkForGPUUpdate();
+		// bg.Selectable = false;
+		// mainControl.AddChild(bg);
+		//
+		// LabelTest(mainControl);
+		// StackPanelTest(mainControl);
+		// WrapPanelTest(mainControl);
+		// DockPanelTest(mainControl);
+		// Transform3DTest(mainControl);
+		// AnimationTest(mainControl);
+		// TextInputTest(mainControl);
+		// AlignPanelTest(mainControl);
 		// VulkanPanelTest(mainControl);
 	}
 
 	private static unsafe void VulkanPanelTest(AbsolutePanel parent)
 	{
 		// TODO: Vulkan panel is just texture which ID can change every frame.
-		var box1 = new CustomBox(MainRoot);
+		var box1 = new CustomBox(MainRoot.Context);
 		box1.MarginLT = (250, 50);
 		box1.Size = new Vector2<float>(640, 360) * 1.5f;
 		box1.OffsetZ = 250;
@@ -73,8 +78,8 @@ public static partial class UiManager
 		frag.MarkForGPUUpdate();
 
 		parent.AddChild(box1);
-		
-		// var box2 = new CustomBox(MainRoot);
+
+		// var box2 = new CustomBox(MainRoot.Context);
 		// box2.MarginLT = (600, 50);
 		// box2.Size = (150, 150);
 		// box2.OffsetZ = 250;
@@ -89,7 +94,7 @@ public static partial class UiManager
 
 	private static void TextInputTest(AbsolutePanel parent)
 	{
-		var input = new TextInputBox(MainRoot);
+		var input = new TextInputBox(MainRoot.Context);
 		input.MarginLT = (10, 110);
 		input.OffsetZ = 150;
 		input.Scale = (2, 2);
@@ -100,7 +105,7 @@ public static partial class UiManager
 
 	private static void AlignPanelTest(AbsolutePanel parent)
 	{
-		var box = new Rectangle(MainRoot)
+		var box = new Rectangle(MainRoot.Context)
 		{
 			Color = ColorUtils.RandomColorInt() & (127 << 24),
 			Size = (150, 150),
@@ -113,19 +118,19 @@ public static partial class UiManager
 
 		foreach (var alignment in values)
 		{
-			var alignPanel = new AlignPanel(MainRoot)
+			var alignPanel = new AlignPanel(MainRoot.Context)
 			{
 				Alignment = alignment
 			};
 			box.AddChild(alignPanel);
 
-			var smallBox = new Rectangle(MainRoot)
+			var smallBox = new Rectangle(MainRoot.Context)
 			{
 				Color = ColorUtils.RandomColorInt(),
 				Size = (30, 30),
 				OffsetZ = 1
 			};
-			var text = new Label(MainRoot)
+			var text = new Label(MainRoot.Context)
 			{
 				Text = Regex.Replace(alignment.Stringify(), "[a-z]*", ""),
 				OffsetZ = 2
@@ -137,25 +142,25 @@ public static partial class UiManager
 
 	private static void LabelTest(UiControl parent)
 	{
-		var testText0 = new Label(MainRoot);
+		var testText0 = new Label(MainRoot.Context);
 		testText0.Text = "Press [Esc] to exit.";
 		testText0.OffsetZ = 34;
 		testText0.MarginLT = new Vector2<float>(10, 42);
 		parent.AddChild(testText0);
 
-		var testText1 = new Label(MainRoot);
+		var testText1 = new Label(MainRoot.Context);
 		testText1.Text = "Press [G] to change GPU.";
 		testText1.OffsetZ = 34;
 		testText1.MarginLT = new Vector2<float>(10, 42 + 16);
 		parent.AddChild(testText1);
-		
-		var testText2 = new Label(MainRoot);
+
+		var testText2 = new Label(MainRoot.Context);
 		testText2.Text = "Press [T] to toggle Debug Mode.";
 		testText2.OffsetZ = 34;
 		testText2.MarginLT = new Vector2<float>(10, 42 + 32);
 		parent.AddChild(testText2);
 
-		var testText3 = new Label(MainRoot);
+		var testText3 = new Label(MainRoot.Context);
 		testText3.Text = "Press [P] to toggle Wireframe.";
 		testText3.OffsetZ = 34;
 		testText3.MarginLT = new Vector2<float>(10, 42 + 48);
@@ -164,28 +169,28 @@ public static partial class UiManager
 
 	private static void StackPanelTest(UiControl parent)
 	{
-		var stackPanel = new StackPanel(MainRoot);
+		var stackPanel = new StackPanel(MainRoot.Context);
 		stackPanel.Spacing = 30;
 		stackPanel.Size = new Vector2<float>(800, 600);
 		stackPanel.MarginLT = new Vector2<float>(150, 150);
 		stackPanel.OffsetZ = 5;
 
-		var box1 = new Rectangle(MainRoot) {Color = ColorUtils.RandomColorInt(), OffsetZ = 1};
+		var box1 = new Rectangle(MainRoot.Context) {Color = ColorUtils.RandomColorInt(), OffsetZ = 1};
 		box1.Size.X = 30;
 		box1.MarginLT = new Vector2<float>(30, 30);
 		stackPanel.AddChild(box1);
 
-		var box2 = new Rectangle(MainRoot) {Color = ColorUtils.RandomColorInt(), OffsetZ = 1};
+		var box2 = new Rectangle(MainRoot.Context) {Color = ColorUtils.RandomColorInt(), OffsetZ = 1};
 		box2.Size.X = 60;
 		box2.MarginLT = new Vector2<float>(30, -30);
 		stackPanel.AddChild(box2);
 
-		var box3 = new Rectangle(MainRoot) {Color = ColorUtils.RandomColorInt(), OffsetZ = 1};
+		var box3 = new Rectangle(MainRoot.Context) {Color = ColorUtils.RandomColorInt(), OffsetZ = 1};
 		box3.Size.X = 10;
 		box3.MarginRB.X = 20;
 		stackPanel.AddChild(box3);
 
-		var box4 = new Rectangle(MainRoot) {Color = ColorUtils.RandomColorInt(), OffsetZ = 1};
+		var box4 = new Rectangle(MainRoot.Context) {Color = ColorUtils.RandomColorInt(), OffsetZ = 1};
 		box4.Size.X = 10;
 		stackPanel.AddChild(box4);
 
@@ -196,7 +201,7 @@ public static partial class UiManager
 
 	private static void WrapPanelTest(UiControl parent)
 	{
-		var wrapPanel = new WrapPanel(MainRoot)
+		var wrapPanel = new WrapPanel(MainRoot.Context)
 		{
 			Orientation = Orientation.Horizontal,
 			Size = new Vector2<float>(450, 150),
@@ -208,9 +213,9 @@ public static partial class UiManager
 		const string text =
 			"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.";
 
-		foreach (var label in text.Split(" ").Select(word => new Label(MainRoot) {Text = word})) wrapPanel.AddChild(label);
+		foreach (var label in text.Split(" ").Select(word => new Label(MainRoot.Context) {Text = word})) wrapPanel.AddChild(label);
 
-		var scrollView = new ScrollView(MainRoot)
+		var scrollView = new ScrollView(MainRoot.Context)
 		{
 			Size = new Vector2<float>(150, 150),
 			MarginLT = new Vector2<float>(600, 150),
@@ -234,7 +239,7 @@ public static partial class UiManager
 
 	private static void DockPanelTest(UiControl parent)
 	{
-		var dockPanel = new DockPanel(MainRoot)
+		var dockPanel = new DockPanel(MainRoot.Context)
 		{
 			Size = (300, 300),
 			MarginLT = (750, 400),
@@ -242,23 +247,23 @@ public static partial class UiManager
 			Overflow = Overflow.Shown
 		};
 
-		var top = new Rectangle(MainRoot) {Color = ColorUtils.RandomColorInt()};
+		var top = new Rectangle(MainRoot.Context) {Color = ColorUtils.RandomColorInt()};
 		top.Size.Y = 30;
-		var top2 = new Rectangle(MainRoot) {Color = ColorUtils.RandomColorInt()};
+		var top2 = new Rectangle(MainRoot.Context) {Color = ColorUtils.RandomColorInt()};
 		top2.Size.Y = 45;
 
-		var left = new Rectangle(MainRoot) {Color = ColorUtils.RandomColorInt()};
+		var left = new Rectangle(MainRoot.Context) {Color = ColorUtils.RandomColorInt()};
 		left.Size.X = 60;
 
-		var bottom = new Rectangle(MainRoot) {Color = ColorUtils.RandomColorInt()};
+		var bottom = new Rectangle(MainRoot.Context) {Color = ColorUtils.RandomColorInt()};
 		bottom.Size.Y = 60;
-		var bottom2 = new Rectangle(MainRoot) {Color = ColorUtils.RandomColorInt()};
+		var bottom2 = new Rectangle(MainRoot.Context) {Color = ColorUtils.RandomColorInt()};
 		bottom2.Size.Y = 15;
 
-		var right = new Rectangle(MainRoot) {Color = ColorUtils.RandomColorInt()};
+		var right = new Rectangle(MainRoot.Context) {Color = ColorUtils.RandomColorInt()};
 		right.Size.X = 30;
 
-		var fill = new Rectangle(MainRoot) {Color = ColorUtils.RandomColorInt()};
+		var fill = new Rectangle(MainRoot.Context) {Color = ColorUtils.RandomColorInt()};
 
 		dockPanel.AddChild(top, Dock.Top);
 		dockPanel.AddChild(top2, Dock.Top);
@@ -273,7 +278,7 @@ public static partial class UiManager
 
 	private static unsafe void Transform3DTest(UiControl parent)
 	{
-		var panel = new AbsolutePanel(MainRoot)
+		var panel = new AbsolutePanel(MainRoot.Context)
 		{
 			Size = (150, 150),
 			MarginLT = (450, 450),
@@ -287,7 +292,7 @@ public static partial class UiManager
 			.RotateY(0.3f)
 			.Translate((0.5f, 0.5f, 0));
 
-		var box = new CustomBox(MainRoot)
+		var box = new CustomBox(MainRoot.Context)
 		{
 			OffsetZ = 0
 		};
@@ -308,7 +313,7 @@ public static partial class UiManager
 			.RotateY(-0.15f)
 			.Translate((0.5f, 0.5f, 0));
 
-		var box2 = new CustomBox(MainRoot)
+		var box2 = new CustomBox(MainRoot.Context)
 		{
 			OffsetZ = 1
 		};
@@ -324,9 +329,9 @@ public static partial class UiManager
 		panel.AddChild(box2);
 	}
 
-	private static void AnimationTest(UiControl parent)
+	private static unsafe void AnimationTest(UiControl parent)
 	{
-		var button = new Rectangle(MainRoot)
+		var button = new Rectangle(MainRoot.Context)
 		{
 			Color = ColorUtils.RandomColorInt(),
 			Size = (100, 50),
@@ -335,26 +340,32 @@ public static partial class UiManager
 		};
 		parent.AddChild(button);
 
-		var alignPanel = new AlignPanel(MainRoot) {Alignment = Alignment.Center};
+		var alignPanel = new AlignPanel(MainRoot.Context) {Alignment = Alignment.Center};
 		button.AddChild(alignPanel);
 
-		var text = new Label(MainRoot)
+		var text = new Label(MainRoot.Context)
 		{
 			Text = "Animate",
 			OffsetZ = 1
 		};
 		alignPanel.AddChild(text);
 
-		var box1 = new Rectangle(MainRoot)
+		var box1 = new CustomBox(MainRoot.Context)
 		{
-			Color = ColorUtils.RandomColorInt(),
+			// Color = ColorUtils.RandomColorInt(),
 			Size = (75, 75),
 			MarginLT = (900, 150),
 			OffsetZ = 10
 		};
+		box1.FragMaterial = MainRoot.MaterialManager.GetFactory("cool_material").Create();
+		var coolData = box1.FragMaterial.GetMemPtr<CoolMaterialData>();
+		coolData->Color1 = Color.Red.ToArgb();
+		coolData->Color2 = Color.Black.ToArgb();
+		box1.FragMaterial.MarkForGPUUpdate();
+
 		parent.AddChild(box1);
 
-		var box2 = new Rectangle(MainRoot)
+		var box2 = new Rectangle(MainRoot.Context)
 		{
 			Color = ColorUtils.RandomColorInt(),
 			Size = (75, 75),
@@ -363,8 +374,11 @@ public static partial class UiManager
 		};
 		parent.AddChild(box2);
 
-		var animation1 = Animation.Of(() => ref box1.MarginLT.X, box1.MarginLT.X, box1.MarginLT.X + 75, 2000, 1,
+		var animation1 = box1.MarginLT.X.Animate(box1.MarginLT, box1.MarginLT.X, box1.MarginLT.X + 75, 2000, 1,
 			type: AnimationType.RepeatAndReverse, curve: DefaultCurves.EaseInOutSine);
+
+		// var animation1 = Animation.Of(() => ref box1.MarginLT.X, box1.MarginLT.X, box1.MarginLT.X + 75, 2000, 1,
+		// 	type: AnimationType.RepeatAndReverse, curve: DefaultCurves.EaseInOutSine);
 
 		var animation2 = Animation.Of(() => ref box1.MarginLT.Y, box1.MarginLT.Y, box1.MarginLT.Y + 75, 1000, startDelay: 500,
 			type: AnimationType.RepeatAndReverse, curve: DefaultCurves.EaseInOutSine);
@@ -395,7 +409,7 @@ public static partial class UiManager
 		// var test2 = Animation.Of(() => ref parent.MarginLT, parent.MarginLT, (-500, -500), 5000);
 		// test2.Start();
 
-		int startColor = box1.Color;
+		int startColor = coolData->Color1;
 		var animationColor = new Animation
 		{
 			Curve = DefaultCurves.EaseInOutSine,
@@ -429,7 +443,7 @@ public static partial class UiManager
 		});
 
 		bool started = false;
-		button.OnClick((_, mouseButton, _, clickType) =>
+		button.OnClick((_, mouseButton, _, _, clickType) =>
 		{
 			if (clickType != ClickType.End || mouseButton != MouseButton.Left) return false;
 			if (!started)

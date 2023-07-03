@@ -22,18 +22,18 @@ const float FAR_PLANE = 256.0f;
 
 float linearDepth(float depth)
 {
-    float z = depth * 2.0f - 1.0f;
-    return (2.0f * NEAR_PLANE * FAR_PLANE) / (FAR_PLANE + NEAR_PLANE - z * (FAR_PLANE - NEAR_PLANE));
+	float z = depth * 2.0f - 1.0f;
+	return (2.0f * NEAR_PLANE * FAR_PLANE) / (FAR_PLANE + NEAR_PLANE - z * (FAR_PLANE - NEAR_PLANE));
 }
 
 void main() {
-    outPosition = vec4(inPos, linearDepth(gl_FragCoord.z));
+	outPosition = vec4(inPos, linearDepth(gl_FragCoord.z));
 
-    vec3 N = normalize(inNormal);
-    N.y = -N.y;
-    outNormal = vec4(N, 1.0);
+	vec3 N = normalize(inNormal);
+	N.y = -N.y;
+	outNormal = vec4(N, 1.0);
 
-    outFragCoord = vec4(inUV, 0, 0);
+	outFragCoord = vec4(inUV, 0, 0);
 
-    outMaterial = uvec4(inModelId, inMaterialType, inMaterialIndex.y, inMaterialOffset);
+	outMaterial = uvec4(inModelId, inMaterialType, inMaterialIndex.y, inMaterialOffset);
 }

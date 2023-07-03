@@ -1,14 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Runtime.CompilerServices;
 using Core.Serializer.Entities.QoiSharp;
 using Core.UI;
 using Core.UI.Controls.Panels;
+using Core.UI.Reactive;
 using Core.Vulkan.Api;
-using Core.Vulkan.Deferred3D;
 using Core.Vulkan.Utility;
-using Core.Vulkan.Voxels;
 using Silk.NET.Vulkan;
 
 namespace Core.Vulkan.Renderers;
@@ -41,6 +39,7 @@ public static class GeneralRenderer
 {
 	public static readonly RenderChain Root;
 	public static readonly RootPanel MainRoot;
+	public static readonly UiContext UiContext;
 
 	static unsafe GeneralRenderer()
 	{
@@ -49,6 +48,7 @@ public static class GeneralRenderer
 		var globalDataManager = new GlobalDataManager("global");
 
 		MainRoot = new FullScreenRootPanel(componentManager, materialManager, globalDataManager);
+		UiContext = MainRoot.Context;
 
 		materialManager.RegisterMaterialFile("Assets/Shaders/Ui2/Materials/Vertex/default_vertex_material.glsl");
 		materialManager.RegisterMaterialFile("Assets/Shaders/Ui2/Materials/Vertex/transform_material.glsl");
@@ -67,6 +67,7 @@ public static class GeneralRenderer
 		materialManager.RegisterMaterialFile("Assets/Shaders/Ui2/Materials/Fragment/dynamic_border_material.glsl");
 		materialManager.RegisterMaterialFile("Assets/Shaders/Ui2/Materials/Fragment/bezier_gradient_material.glsl");
 		materialManager.RegisterMaterialFile("Assets/Shaders/Ui2/Materials/Fragment/dots_background_material.glsl");
+		materialManager.RegisterMaterialFile("Assets/Shaders/Ui2/Materials/Fragment/border_material.glsl");
 
 		materialManager.UpdateShaders();
 

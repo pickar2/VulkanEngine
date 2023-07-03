@@ -52,7 +52,7 @@ public sealed class Locale : IEntry
 				_ => throw new ArgumentOutOfRangeException(nameof(source.SourceType), source.SourceType, "Source type not found").AsExpectedException()
 			};
 
-			FillData(stream.ThrowIfNullable(), dictionary);
+			FillData(stream.ThrowIfNull(), dictionary);
 		}
 	}
 
@@ -70,5 +70,5 @@ public sealed class Locale : IEntry
 	private static Stream GetEmbeddedResourceStream(Assembly assembly, string relativeResourcePath) =>
 		assembly.GetManifestResourceStream(
 				$"{Regex.Replace(assembly.ManifestModule.Name, @"\.(exe|dll)$", string.Empty, RegexOptions.IgnoreCase)}.{relativeResourcePath.ThrowIfEmpty()}")
-			.ThrowIfNullable();
+			.ThrowIfNull();
 }

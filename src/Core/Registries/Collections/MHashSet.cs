@@ -437,8 +437,8 @@ public class MHashSet<T> : ISet<T>, IReadOnlyCollection<T>, IDisposable
 
 			// clear the elements so that the gc can reclaim the references.
 			// clear only up to _lastIndex for _slots 
-			Array.Clear(_slots.ThrowIfNullable(), 0, _lastIndex);
-			Array.Clear(_buckets.ThrowIfNullable(), 0, _buckets!.Length);
+			Array.Clear(_slots.ThrowIfNull(), 0, _lastIndex);
+			Array.Clear(_buckets.ThrowIfNull(), 0, _buckets!.Length);
 			_lastIndex = 0;
 			Count = 0;
 			_freeList = -1;

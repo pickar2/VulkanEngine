@@ -48,7 +48,7 @@ internal static class GenericConvertersHelper
 		}
 
 		var genericTypeArguments = type.GenericTypeArguments;
-		var genericConverterType = genericBaseType.Managed.ThrowIfNullable().MakeGenericType(genericTypeArguments);
+		var genericConverterType = genericBaseType.Managed.ThrowIfNull().MakeGenericType(genericTypeArguments);
 		var genericConverter = (IClassGenericConverter) Activator.CreateInstance(genericConverterType)!;
 		value = genericConverter.ReadObject(swh, type, genericTypeArguments);
 		return true;
@@ -85,7 +85,7 @@ internal static class GenericConvertersHelper
 	{
 		if (!GenericConverters.TryGetValue(type.GetGenericTypeDefinition(), out var genericBaseType)) return false;
 		var genericTypeArguments = type.GenericTypeArguments;
-		var genericConverterType = genericBaseType.Managed.ThrowIfNullable().MakeGenericType(genericTypeArguments);
+		var genericConverterType = genericBaseType.Managed.ThrowIfNull().MakeGenericType(genericTypeArguments);
 		var genericConverter = (IClassGenericConverter) Activator.CreateInstance(genericConverterType)!;
 		genericConverter.WriteObject(swh, value, type, genericTypeArguments);
 		return true;

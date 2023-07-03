@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Numerics;
-using System.Runtime.InteropServices;
 using Core.Native.Shaderc;
 using Core.Native.VMA;
 using Core.TemporaryMath;
@@ -11,11 +10,9 @@ using Core.Vulkan.Api;
 using Core.Vulkan.Descriptors;
 using Core.Vulkan.Renderers;
 using Core.Vulkan.Utility;
-using Core.Window;
 using Silk.NET.Maths;
 using Silk.NET.Vulkan;
 using SimpleMath.Vectors;
-using static Core.Native.VMA.VulkanMemoryAllocator;
 
 namespace Core.UI;
 
@@ -253,7 +250,7 @@ public unsafe partial class UiRootRenderer : RenderChain
 		*GlobalDataManager.ProjectionMatrixHolder.Get<Matrix4X4<float>>() = Matrix4X4<float>.Identity;
 		*GlobalDataManager.OrthoMatrixHolder.Get<Matrix4X4<float>>() = ortho;
 		*GlobalDataManager.FrameIndexHolder.Get<int>() = Context.FrameIndex;
-		*GlobalDataManager.MousePositionHolder.Get<Vector2<int>>() = MouseInput.MousePos;
+		*GlobalDataManager.MousePositionHolder.Get<Vector2<int>>() = UiManager.InputContext.MouseInputHandler.MousePos;
 	}
 
 	private void RunSorting(FrameInfo frameInfo)
@@ -333,13 +330,13 @@ public unsafe partial class UiRootRenderer : RenderChain
 		cmd.Cmd.BindComputeDescriptorSets(_sortMainPipeline.Value.PipelineLayout, 1, 1, &countersSet);
 		cmd.Cmd.BindComputeDescriptorSets(_sortMainPipeline.Value.PipelineLayout, 2, 1, &indicesSet);
 
-		// var count = (uint) Math.Ceiling((float) ComponentManager.Factory.MaxComponents / 32);
-		// for (int i = 0; i < count; i++)
-		// {
-		// 	Context.Vk.CmdDispatchBase(cmd, (uint) i, 0, 0, 1, 1, 1);
-		// 	cmd.Cmd.PipelineBarrier2(&dependencyInfoStorage);
-		// }
-		cmd.Cmd.Dispatch((uint) Math.Ceiling((float) ComponentManager.Factory.MaxComponents / 32), 1, 1);
+		var count = (uint) Math.Ceiling((float) ComponentManager.Factory.MaxComponents / 1024);
+		for (int i = 0; i < count; i++)
+		{
+			Context.Vk.CmdDispatchBase(cmd, (uint) i, 0, 0, 1, 1, 1);
+			cmd.Cmd.PipelineBarrier2(&dependencyInfoStorage);
+		}
+		// cmd.Cmd.Dispatch((uint) Math.Ceiling((float) ComponentManager.Factory.MaxComponents / 32), 1, 1);
 
 		// App.Logger.Info.Message($"{ComponentManager.Factory.MaxComponents}");
 

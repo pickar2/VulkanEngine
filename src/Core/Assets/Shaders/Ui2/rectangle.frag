@@ -19,7 +19,7 @@ layout(location = 0) out vec4 outColor;
 layout(set = TEXTURE_SET, binding = 0) uniform sampler2D textures[];
 
 readonly layout(std430, set = ELEMENT_DATA_SET, binding = 0) buffer dataArray {
-    UiElementData data[];
+	UiElementData data[];
 };
 
 #include "Default/functions.glsl"
@@ -28,20 +28,30 @@ readonly layout(std430, set = ELEMENT_DATA_SET, binding = 0) buffer dataArray {
 
 #include "@Mat1_fragment_includes.glsl"
 
+//float roundedSDF(vec2 CenterPosition, vec2 Size, float Radius) {
+//	vec2 q = abs(CenterPosition-Size)-Size+Radius;
+//	return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - Radius;
+//}
+
 void main() {
-    UiElementData d = data[componentIndex];
+	UiElementData d = data[componentIndex];
 
-    Pos pos = calcFullPos(d);
-    vec2 pixelPos = screenCoord.xy;
-    if (!isPointInside(pixelPos, vec2(d.maskStartX, d.maskStartY), vec2(d.maskEndX, d.maskEndY))) {
-        outColor = vec4(0);
-        return;
-    }
+	Pos pos = calcFullPos(d);
+	vec2 pixelPos = screenCoord.xy;
+	if (!isPointInside(pixelPos, vec2(d.maskStartX, d.maskStartY), vec2(d.maskEndX, d.maskEndY))) {
+		outColor = vec4(0);
+		return;
+	}
 
-    fragmentSwitch(d);
+	//	if (roundedSDF(pixelPos - vec2(pos.x, pos.y), vec2(d.width, d.height) / 2, min(d.width, d.height) / 6) >= 0) {
+	//		outColor = vec4(0);
+	//		return;
+	//	}
 
-    //    outColor.rgb = (gl_SampleMaskIn[0] >> 7) > 0 ? outColor.rgb : vec3(0);
+	fragmentSwitch(d);
 
-    //    const float gamma = 2.2;
-    //    outColor.rgb = pow(outColor.rgb, vec3(1.0/gamma));
+	//    outColor.rgb = (gl_SampleMaskIn[0] >> 7) > 0 ? outColor.rgb : vec3(0);
+
+	//    const float gamma = 2.2;
+	//    outColor.rgb = pow(outColor.rgb, vec3(1.0/gamma));
 }

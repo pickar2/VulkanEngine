@@ -1,5 +1,6 @@
 ﻿using System.Numerics;
 using Core.Registries.Entities;
+using Core.UI.Reactive;
 using Core.VulkanData;
 
 namespace Core.UI.Controls.Panels;
@@ -13,13 +14,13 @@ public abstract class RootPanel : AbsolutePanel
 	public readonly MaterialManager MaterialManager;
 	public readonly GlobalDataManager GlobalDataManager;
 
-	protected RootPanel(UiComponentManager componentManager, MaterialManager materialManager, GlobalDataManager globalDataManager) : base(null)
+	protected RootPanel(UiComponentManager componentManager, MaterialManager materialManager, GlobalDataManager globalDataManager) : base(new UiContext())
 	{
 		ComponentManager = componentManager;
 		MaterialManager = materialManager;
 		GlobalDataManager = globalDataManager;
 
-		RootPanel = this;
+		Context.Root = this;
 	}
 
 	public UiComponent CreateComponent() => ComponentManager.Factory.Create();

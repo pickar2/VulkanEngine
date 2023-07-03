@@ -279,7 +279,7 @@ public class ShadercOptions : IDisposable, ICloneable
 	{
 		if (incType == IncludeType.Relative)
 		{
-			incFile = Path.Combine(Path.GetDirectoryName(sourcePath).ThrowIfNullable(), includePath);
+			incFile = Path.Combine(Path.GetDirectoryName(sourcePath).ThrowIfNull(), includePath);
 			if (File.Exists(incFile))
 			{
 				using var sr = new StreamReader(incFile);

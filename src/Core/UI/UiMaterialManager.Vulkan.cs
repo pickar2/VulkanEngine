@@ -98,6 +98,7 @@ public unsafe partial class MaterialManager
 			builder.WriteBuffer(factory.StageFlag == ShaderStageFlags.VertexBit ? VertexDescriptorSet : FragmentDescriptorSet, (uint) factory.Index, 0, 1,
 				DescriptorType.StorageBuffer, factory.DataBufferGpu.Buffer, 0, Vk.WholeSize);
 		}
+
 		builder.Update();
 	}
 
@@ -122,11 +123,13 @@ public unsafe partial class MaterialManager
 		RequireWait = false;
 		if (!copying) return;
 
-		command.SubmitWithSemaphore();
+		command.SubmitAndWait();
 
-		ExecuteOnce.AtCurrentFrameStart(() => Context.Vk.FreeCommandBuffers(Context.Device, CommandBuffers.TransferToHostPool, 1, command.Cmd));
-		RequireWait = true;
-		WaitSemaphore = command.Semaphore;
+		// command.SubmitWithSemaphore();
+
+		// ExecuteOnce.AtCurrentFrameStart(() => Context.Vk.FreeCommandBuffers(Context.Device, CommandBuffers.TransferToHostPool, 1, command.Cmd));
+		// RequireWait = true;
+		// WaitSemaphore = command.Semaphore;
 	}
 
 	private static DescriptorSetLayout CreateSetLayout(ShaderStageFlags flags, uint bindingCount) =>
@@ -134,25 +137,6 @@ public unsafe partial class MaterialManager
 			.AddMultipleBindings(0, (int) bindingCount, DescriptorType.StorageBuffer, 1, flags, DescriptorBindingFlags.UpdateAfterBindBit)
 			.Build();
 
-	private static DescriptorPool CreateDescriptorPool()
-	{
-		var poolSizes = new DescriptorPoolSize
-		{
-			DescriptorCount = 1024,
-			Type = DescriptorType.StorageBuffer
-		};
-
-		var createInfo = new DescriptorPoolCreateInfo
-		{
-			SType = StructureType.DescriptorPoolCreateInfo,
-			MaxSets = 1,
-			PoolSizeCount = 1,
-			PPoolSizes = &poolSizes,
-			Flags = DescriptorPoolCreateFlags.UpdateAfterBindBitExt
-		};
-
-		Check(Context.Vk.CreateDescriptorPool(Context.Device, &createInfo, null, out var pool), "Failed to create descriptor pool.");
-
-		return pool;
-	}
+	private static DescriptorPool CreateDescriptorPool() => VulkanDescriptorPool.Builder(1, DescriptorPoolCreateFlags.UpdateAfterBindBitExt)
+		.AddType(DescriptorType.StorageBuffer, 1024).Build();
 }

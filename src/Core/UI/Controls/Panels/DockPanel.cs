@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Core.UI.Reactive;
 using SimpleMath.Vectors;
 
 namespace Core.UI.Controls.Panels;
@@ -8,10 +9,10 @@ public class DockPanel : UiControl
 {
 	private readonly Dictionary<UiControl, Dock> _docks = new();
 
-	public override void RemoveChild(UiControl control)
+	public override bool RemoveChild(UiControl control)
 	{
-		base.RemoveChild(control);
 		_docks.Remove(control);
+		return base.RemoveChild(control);
 	}
 
 	public override void ClearChildren()
@@ -98,7 +99,7 @@ public class DockPanel : UiControl
 		}
 	}
 
-	public DockPanel(RootPanel rootPanel) : base(rootPanel) { }
+	public DockPanel(UiContext context) : base(context) { }
 }
 
 public enum Dock

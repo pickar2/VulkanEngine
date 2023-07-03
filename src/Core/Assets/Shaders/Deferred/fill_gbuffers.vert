@@ -22,14 +22,14 @@ layout(location = 5) out vec3 outNormal;
 layout(location = 6) out vec2 outUV;
 
 void main() {
-    outModelId = inModelId;
-    outMaterialOffset = inMaterialOffset;
+	outModelId = inModelId;
+	outMaterialOffset = inMaterialOffset;
 
-    outMaterialType = inMaterialType;
-    outMaterialIndex = inMaterialIndex;
-    outPos = inPos;
-    outNormal = inNormal;
-    outUV = inUV;
+	outMaterialType = inMaterialType;
+	outMaterialIndex = inMaterialIndex;
+	outPos = inPos;
+	outNormal = inNormal;
+	outUV = inUV;
 
-    gl_Position = vec4(inPos, 1.0);
+	gl_Position = vec4(inPos, 1.0);
 }

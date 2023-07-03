@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Drawing;
 using System.Numerics;
+using CommunityToolkit.HighPerformance.Helpers;
 using SimpleMath.Vectors;
 
 namespace Core.UI.Animations;
@@ -163,6 +164,24 @@ public class Animation
 			StartDelay = startDelay,
 			Interpolator = new RGBInterpolator(start, end, vec => getter.Invoke() = vec)
 		};
+}
+
+public static class AnimationExtensions
+{
+	public static Animation Animate<T>(this ref T value, object obj, T start, T end, long duration, float animationOffset = 0,
+		long startDelay = 0, AnimationType type = AnimationType.OneTime, IAnimationCurve? curve = null) where T : unmanaged, INumber<T>
+	{
+		var offset = ObjectMarshal.DangerousGetObjectDataByteOffset(obj, ref value);
+		return new()
+		{
+			Type = type,
+			Curve = curve ?? DefaultCurves.Linear,
+			Duration = duration,
+			AnimationOffset = animationOffset,
+			StartDelay = startDelay,
+			Interpolator = new NumberInterpolator<T>(start, end, vec => ObjectMarshal.DangerousGetObjectDataReferenceAt<T>(obj, offset) = vec)
+		};
+	}
 }
 
 public enum AnimationType
