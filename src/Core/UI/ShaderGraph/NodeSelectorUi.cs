@@ -18,6 +18,7 @@ public class NodeSelectorUi : AbsolutePanel
 	{
 		("Const", graph => new ConstInputNode($"ConstInputNode{graph.Id}", ShaderResourceType.Vec3F, "vec3(0.0)")),
 		("fragTexCoord", graph => new VariableNode($"fragTexCoord{graph.Id}", ShaderResourceType.Vec2F, "fragTexCoord")),
+		("frameIndex", graph => new VariableNode($"frameIndex{graph.Id}", ShaderResourceType.Float, "float(frameIndex)")),
 		("Output", graph => new OutputNode($"OutputNode{graph.Id}", ShaderResourceType.Vec3F)),
 		("Vector2", graph => new Vec2FunctionNode($"Vec2Node{graph.Id}")),
 		("Vector3", graph => new Vec3FunctionNode($"Vec3Node{graph.Id}")),
@@ -26,7 +27,9 @@ public class NodeSelectorUi : AbsolutePanel
 		("intToRGBA", graph => new IntToRgbaFunctionNode($"IntToRGBA{graph.Id}")),
 		("dot", graph => new DotFunctionNode($"DotFunctionNode{graph.Id}")),
 		("mix", graph => new MixFunctionNode($"MixFunctionNode{graph.Id}")),
-		("sum", graph => new ArithmeticFunctionNode($"SumFunctionNode{graph.Id}", "+")),
+		("sin", graph => new SinFunctionNode($"SinFunctionNode{graph.Id}")),
+		("cos", graph => new CosFunctionNode($"CosFunctionNode{graph.Id}")),
+		("add", graph => new ArithmeticFunctionNode($"AddFunctionNode{graph.Id}", "+")),
 		("sub", graph => new ArithmeticFunctionNode($"SubFunctionNode{graph.Id}", "-")),
 		("mul", graph => new ArithmeticFunctionNode($"MulFunctionNode{graph.Id}", "*")),
 		("div", graph => new ArithmeticFunctionNode($"DivFunctionNode{graph.Id}", "/")),

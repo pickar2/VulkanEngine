@@ -546,6 +546,44 @@ public class DotFunctionNode : MultiTypeFunction
 	public override string FunctionName => "dot";
 }
 
+public class SinFunctionNode : MultiTypeFunction
+{
+	public SinFunctionNode(string nodeName) : base(nodeName)
+	{
+		DefaultAcceptedTypes = new List<ShaderResourceType>
+		{
+			ShaderResourceType.Float,
+			ShaderResourceType.Vec2F,
+			ShaderResourceType.Vec3F,
+			ShaderResourceType.Vec4F,
+		};
+		AcceptedTypes = new List<ShaderResourceType>(DefaultAcceptedTypes);
+		InputCount = 1;
+		Init();
+	}
+
+	public override string FunctionName => "sin";
+}
+
+public class CosFunctionNode : MultiTypeFunction
+{
+	public CosFunctionNode(string nodeName) : base(nodeName)
+	{
+		DefaultAcceptedTypes = new List<ShaderResourceType>
+		{
+			ShaderResourceType.Float,
+			ShaderResourceType.Vec2F,
+			ShaderResourceType.Vec3F,
+			ShaderResourceType.Vec4F,
+		};
+		AcceptedTypes = new List<ShaderResourceType>(DefaultAcceptedTypes);
+		InputCount = 1;
+		Init();
+	}
+
+	public override string FunctionName => "sin";
+}
+
 public class Vec2FunctionNode : MultiTypeVectorFunction
 {
 	public Vec2FunctionNode(string nodeName) : base(nodeName)

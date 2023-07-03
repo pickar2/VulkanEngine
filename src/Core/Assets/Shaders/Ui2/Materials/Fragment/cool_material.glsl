@@ -14,7 +14,7 @@ readonly layout(std430, set = FRAGMENT_MATERIAL_SET, binding = cool_material_bin
 };
 
 vec4 cool_material_f0(vec2 b, cool_material_struct mat) {
-	float time = 1 / 15.0;
+	float time = frameIndex / 15.0;
 	b.x += sin(b.y * 3.0) / 15.0 * sin(0.75 + time / 3.5) * 1.3 + time / 28.0;
 	b.y += sin(b.x * 4.0) / 3.0 - time / 40.0 + sin(time / 8.5);
 
