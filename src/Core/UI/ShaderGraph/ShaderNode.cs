@@ -63,7 +63,7 @@ public class DelegateOutputConnector : IOutputConnector
 
 public abstract class ShaderNode
 {
-	public string Name { get; set; } = String.Empty;
+	public string NodeName { get; set; } = String.Empty;
 
 	public abstract string GetHeaderCode();
 	public abstract string GetBodyCode();
@@ -140,12 +140,19 @@ public abstract class ShaderNode
 
 public class ConstInputNode : ShaderNode
 {
-	public ConstInputNode(String name, ShaderResourceType type, String value)
+	public ConstInputNode(String nodeName, ShaderResourceType type, String value)
 	{
-		Name = name;
+		NodeName = nodeName;
 		Value = value;
 		Type = type;
-		OutputConnectors = new IOutputConnector[] {new DefaultOutputConnector {Type = type, Name = name}};
+		OutputConnectors = new IOutputConnector[]
+		{
+			new DelegateOutputConnector
+			{
+				TypeFunc = () => Type,
+				NameFunc = () => NodeName
+			}
+		};
 	}
 
 	private ShaderResourceType _type = default!;
@@ -162,7 +169,7 @@ public class ConstInputNode : ShaderNode
 			}
 
 			_type = value;
-			OutputConnectors = new IOutputConnector[] {new DefaultOutputConnector {Type = Type, Name = Name}};
+			OutputConnectors = OutputConnectors;
 		}
 	}
 
@@ -171,7 +178,24 @@ public class ConstInputNode : ShaderNode
 	public string Value { get; set; }
 
 	public override string GetHeaderCode() => string.Empty;
-	public override string GetBodyCode() => $"const {OutputConnectors[0].Type?.CompileName} {Name} = {Value};";
+	public override string GetBodyCode() => $"const {OutputConnectors[0].Type?.CompileName} {NodeName} = {Value};";
+}
+
+public class VariableNode : ShaderNode
+{
+	public ShaderResourceType Type {get; set;}
+	public string VariableName {get; set;}
+	
+	public VariableNode(string nodeName, ShaderResourceType type, string variableName)
+	{
+		NodeName = nodeName;
+		Type = type;
+		VariableName = variableName;
+		OutputConnectors = new IOutputConnector[] {new DefaultOutputConnector {Type = Type, Name = VariableName}};
+	}
+
+	public override string GetHeaderCode() => string.Empty;
+	public override string GetBodyCode() => string.Empty;
 }
 
 public class MaterialDataNode : ShaderNode
@@ -179,11 +203,11 @@ public class MaterialDataNode : ShaderNode
 	private readonly string _materialIdentifier;
 	private readonly string _shaderType;
 
-	public MaterialDataNode(String materialIdentifier, String shaderType, String name, List<(ShaderResourceType type, string name)> structTuples)
+	public MaterialDataNode(String materialIdentifier, String shaderType, String nodeName, List<(ShaderResourceType type, string name)> structTuples)
 	{
 		_materialIdentifier = materialIdentifier;
 		_shaderType = shaderType;
-		Name = name;
+		NodeName = nodeName;
 		OutputConnectors = new IOutputConnector[structTuples.Count];
 		for (int i = 0; i < structTuples.Count; i++)
 		{
@@ -191,13 +215,13 @@ public class MaterialDataNode : ShaderNode
 			OutputConnectors[i] = new DefaultOutputConnector
 			{
 				Type = type,
-				Name = $"{Name}.{connectorName}"
+				Name = $"{NodeName}.{connectorName}"
 			};
 		}
 	}
 
 	public override string GetHeaderCode() => string.Empty;
-	public override string GetBodyCode() => $"{_materialIdentifier}_struct {Name} = {_materialIdentifier}_data[data.{_shaderType}ElementIndex];";
+	public override string GetBodyCode() => $"{_materialIdentifier}_struct {NodeName} = {_materialIdentifier}_data[data.{_shaderType}ElementIndex];";
 }
 
 public class VectorDecomposeNode : ShaderNode
@@ -223,9 +247,9 @@ public class VectorDecomposeNode : ShaderNode
 	private readonly List<ShaderResourceType> _acceptedTypes = new(DefaultAcceptedTypes);
 	protected ShaderResourceType? OutputType;
 
-	public VectorDecomposeNode(string name)
+	public VectorDecomposeNode(string nodeName)
 	{
-		Name = name;
+		NodeName = nodeName;
 		InputConnectors = new IInputConnector[] {new DefaultInputConnector(_acceptedTypes)};
 
 		OnSetInput += (_, outputNode, outputIndex) =>
@@ -280,25 +304,22 @@ public abstract class FunctionNode : ShaderNode
 	public override string GetHeaderCode() => string.Empty;
 
 	public override string GetBodyCode() =>
-		$"{OutputType?.CompileName} {Name} = {FunctionName}({string.Join(", ", InputConnectors.Select(connector => connector.OutputConnector?.Name))});";
+		$"{OutputType?.CompileName} {NodeName} = {FunctionName}({string.Join(", ", InputConnectors.Select(connector => connector.OutputConnector?.Name))});";
 }
 
-public class DotFunctionNode : FunctionNode
+public abstract class MultiTypeFunction : FunctionNode
 {
-	private static readonly List<ShaderResourceType> DefaultAcceptedTypes = new()
-	{
-		ShaderResourceType.Vec2F,
-		ShaderResourceType.Vec2D,
-		ShaderResourceType.Vec3F,
-		ShaderResourceType.Vec3D
-	};
+	protected List<ShaderResourceType> DefaultAcceptedTypes { get; set; } = new();
+	protected List<ShaderResourceType> AcceptedTypes { get; set; } = new();
+	protected int InputCount { get; set; } = 0;
 
-	private readonly List<ShaderResourceType> _acceptedTypes = new(DefaultAcceptedTypes);
+	public MultiTypeFunction(string nodeName) => NodeName = nodeName;
 
-	public DotFunctionNode(string name)
+	protected void Init()
 	{
-		Name = name;
-		InputConnectors = new IInputConnector[] {new DefaultInputConnector(_acceptedTypes), new DefaultInputConnector(_acceptedTypes)};
+		InputConnectors = new IInputConnector[InputCount];
+		for (var i = 0; i < InputConnectors.Length; i++) InputConnectors[i] = new DefaultInputConnector(AcceptedTypes);
+
 		OutputConnectors = Array.Empty<IOutputConnector>();
 
 		OnSetInput += (_, outputNode, outputIndex) =>
@@ -306,12 +327,12 @@ public class DotFunctionNode : FunctionNode
 			var type = outputNode.OutputConnectors[outputIndex].Type.ThrowIfNull();
 			if(type.Equals(OutputType)) return;
 
-			_acceptedTypes.Clear();
-			_acceptedTypes.Add(type);
+			AcceptedTypes.Clear();
+			AcceptedTypes.Add(type);
 			OutputType = type;
 
 #pragma warning disable CA2245
-			// triggering signal update on _acceptedTypes change
+			// triggering signal update on AcceptedTypes change
 			InputConnectors = InputConnectors;
 #pragma warning restore CA2245
 
@@ -320,73 +341,263 @@ public class DotFunctionNode : FunctionNode
 				new DelegateOutputConnector
 				{
 					TypeFunc = () => OutputType,
-					NameFunc = () => Name
+					NameFunc = () => NodeName
 				}
 			};
 		};
 
 		OnUnsetInput += _ =>
 		{
-			if (InputConnectors[0].ConnectedOutputNode is not null || InputConnectors[1].ConnectedOutputNode is not null) return;
+			foreach (var connector in InputConnectors)
+				if (connector.ConnectedOutputNode is not null)
+					return;
+
 			foreach (var connection in OutputConnectors[0].Connections) connection.ConnectedInputNode?.UnsetInput(connection.InputConnectorIndex);
-			_acceptedTypes.Clear();
-			_acceptedTypes.AddRange(DefaultAcceptedTypes);
+			AcceptedTypes.Clear();
+			AcceptedTypes.AddRange(DefaultAcceptedTypes);
+			OutputType = null;
+			OutputConnectors = Array.Empty<IOutputConnector>();
+		};
+	}
+}
+
+public class MixFunctionNode : FunctionNode
+{
+	protected List<ShaderResourceType> DefaultAcceptedTypes { get; set; }
+	protected List<ShaderResourceType> AcceptedTypes { get; set; }
+	protected int InputCount { get; set; }
+
+	protected List<ShaderResourceType> OtherTypes { get; set; }
+
+	public MixFunctionNode(string nodeName)
+	{
+		NodeName = nodeName;
+		InputCount = 2;
+		DefaultAcceptedTypes = new List<ShaderResourceType>
+		{
+			ShaderResourceType.Float,
+			ShaderResourceType.Vec2F,
+			ShaderResourceType.Vec3F,
+			ShaderResourceType.Vec4F
+		};
+		AcceptedTypes = new List<ShaderResourceType>(DefaultAcceptedTypes);
+		OtherTypes = new List<ShaderResourceType> {ShaderResourceType.Float};
+		
+		Init();
+	}
+
+	protected void Init()
+	{
+		InputConnectors = new IInputConnector[InputCount + 1];
+		for (var i = 0; i < InputConnectors.Length - 1; i++) InputConnectors[i] = new DefaultInputConnector(AcceptedTypes);
+		InputConnectors[InputCount] = new DefaultInputConnector(OtherTypes);
+
+		OutputConnectors = Array.Empty<IOutputConnector>();
+
+		OnSetInput += (inputIndex, outputNode, outputIndex) =>
+		{
+			if (inputIndex == InputCount) return;
+
+			var type = outputNode.OutputConnectors[outputIndex].Type.ThrowIfNull();
+			if(type.Equals(OutputType)) return;
+
+			AcceptedTypes.Clear();
+			AcceptedTypes.Add(type);
+			OutputType = type;
+
+#pragma warning disable CA2245
+			// triggering signal update on AcceptedTypes change
+			InputConnectors = InputConnectors;
+#pragma warning restore CA2245
+
+			OutputConnectors = new IOutputConnector[]
+			{
+				new DelegateOutputConnector
+				{
+					TypeFunc = () => OutputType,
+					NameFunc = () => NodeName
+				}
+			};
+		};
+
+		OnUnsetInput += _ =>
+		{
+			for (int index = 0; index < InputConnectors.Length - 1; index++)
+			{
+				var connector = InputConnectors[index];
+				if (connector.ConnectedOutputNode is not null)
+					return;
+			}
+
+			foreach (var connection in OutputConnectors[0].Connections) connection.ConnectedInputNode?.UnsetInput(connection.InputConnectorIndex);
+			AcceptedTypes.Clear();
+			AcceptedTypes.AddRange(DefaultAcceptedTypes);
 			OutputType = null;
 			OutputConnectors = Array.Empty<IOutputConnector>();
 		};
 	}
 
-	public override string FunctionName => "dot";
+	public override string FunctionName => "mix";
 }
 
-public class Vec3FunctionNode : FunctionNode
+public abstract class MultiTypeVectorFunction : FunctionNode
 {
-	private static readonly List<ShaderResourceType> DefaultAcceptedTypes = new()
+	protected List<ShaderResourceType> DefaultAcceptedTypes { get; set; } = new();
+	protected List<ShaderResourceType> AcceptedTypes { get; set; } = new();
+	protected int InputCount { get; set; } = 0;
+
+	public MultiTypeVectorFunction(string nodeName) => NodeName = nodeName;
+
+	protected void Init()
 	{
-		ShaderResourceType.Float,
-		ShaderResourceType.Double,
-		ShaderResourceType.Int,
-		ShaderResourceType.Short
-	};
+		InputConnectors = new IInputConnector[InputCount];
+		for (var i = 0; i < InputConnectors.Length; i++) InputConnectors[i] = new DefaultInputConnector(AcceptedTypes);
 
-	private readonly List<ShaderResourceType> _acceptedTypes = new(DefaultAcceptedTypes);
-
-	public Vec3FunctionNode(string name)
-	{
-		Name = name;
-		InputConnectors = new IInputConnector[]
-		{
-			new DefaultInputConnector(_acceptedTypes),
-			new DefaultInputConnector(_acceptedTypes),
-			new DefaultInputConnector(_acceptedTypes)
-		};
-
-		OutputConnectors = new IOutputConnector[]
-		{
-			new DelegateOutputConnector
-			{
-				TypeFunc = () => OutputType.ThrowIfNull(),
-				NameFunc = () => Name
-			}
-		};
+		OutputConnectors = Array.Empty<IOutputConnector>();
 
 		OnSetInput += (_, outputNode, outputIndex) =>
 		{
 			var type = outputNode.OutputConnectors[outputIndex].Type.ThrowIfNull();
-			_acceptedTypes.Clear();
-			_acceptedTypes.Add(type);
-			OutputType = ShaderResourceType.ScalarToVector3(type);
+			var vectorType = ShaderResourceType.ScalarToVector(type, InputCount);
+			if (vectorType.Equals(OutputType)) return;
+
+			AcceptedTypes.Clear();
+			AcceptedTypes.Add(type);
+			OutputType = vectorType;
+
+#pragma warning disable CA2245
+			// triggering signal update on AcceptedTypes change
+			InputConnectors = InputConnectors;
+#pragma warning restore CA2245
+
+			OutputConnectors = new IOutputConnector[]
+			{
+				new DelegateOutputConnector
+				{
+					TypeFunc = () => OutputType,
+					NameFunc = () => NodeName
+				}
+			};
 		};
 
 		OnUnsetInput += _ =>
 		{
-			if (InputConnectors[0].ConnectedOutputNode is not null ||
-			    InputConnectors[1].ConnectedOutputNode is not null ||
-			    InputConnectors[2].ConnectedOutputNode is not null) return;
-			_acceptedTypes.Clear();
-			_acceptedTypes.AddRange(DefaultAcceptedTypes);
+			foreach (var connector in InputConnectors)
+				if (connector.ConnectedOutputNode is not null)
+					return;
+
+			foreach (var connection in OutputConnectors[0].Connections) connection.ConnectedInputNode?.UnsetInput(connection.InputConnectorIndex);
+			AcceptedTypes.Clear();
+			AcceptedTypes.AddRange(DefaultAcceptedTypes);
 			OutputType = null;
+			OutputConnectors = Array.Empty<IOutputConnector>();
 		};
+	}
+}
+
+public class ArithmeticFunctionNode : MultiTypeFunction
+{
+	public readonly string Function;
+	
+	public ArithmeticFunctionNode(string nodeName, string function) : base(nodeName)
+	{
+		DefaultAcceptedTypes = new List<ShaderResourceType>(ShaderResourceType.AllTypes);
+		AcceptedTypes = new List<ShaderResourceType>(DefaultAcceptedTypes);
+		InputCount = 2;
+		Function = function;
+		Init();
+	}
+
+	public override string FunctionName => string.Empty;
+	public override string GetBodyCode() => $"{OutputType?.CompileName} {NodeName} = ({string.Join(Function, InputConnectors.Select(connector => connector.OutputConnector?.Name))});";
+}
+
+public class IntToRgbaFunctionNode : FunctionNode
+{
+	private static readonly List<ShaderResourceType> AcceptedTypeList = new() {ShaderResourceType.Int};
+
+	public IntToRgbaFunctionNode(string nodeName)
+	{
+		NodeName = nodeName;
+		OutputType = ShaderResourceType.Vec4F;
+		InputConnectors = new IInputConnector[] {new DefaultInputConnector(AcceptedTypeList)};
+		OutputConnectors = new IOutputConnector[] {new DelegateOutputConnector {TypeFunc = () => ShaderResourceType.Vec4F, NameFunc = () => NodeName}};
+	}
+
+	public override string FunctionName => "intToRGBA";
+}
+
+public class DotFunctionNode : MultiTypeFunction
+{
+	public DotFunctionNode(string nodeName) : base(nodeName)
+	{
+		DefaultAcceptedTypes = new List<ShaderResourceType>
+		{
+			ShaderResourceType.Vec2F,
+			ShaderResourceType.Vec2D,
+			ShaderResourceType.Vec3F,
+			ShaderResourceType.Vec3D
+		};
+		AcceptedTypes = new List<ShaderResourceType>(DefaultAcceptedTypes);
+		InputCount = 2;
+		Init();
+	}
+
+	public override string FunctionName => "dot";
+}
+
+public class Vec2FunctionNode : MultiTypeVectorFunction
+{
+	public Vec2FunctionNode(string nodeName) : base(nodeName)
+	{
+		DefaultAcceptedTypes = new List<ShaderResourceType>
+		{
+			ShaderResourceType.Float,
+			ShaderResourceType.Double,
+			ShaderResourceType.Int,
+			ShaderResourceType.Short
+		};
+		AcceptedTypes = new List<ShaderResourceType>(DefaultAcceptedTypes);
+		InputCount = 2;
+		Init();
+	}
+
+	public override string FunctionName => OutputType?.CompileName!;
+}
+
+public class Vec3FunctionNode : MultiTypeVectorFunction
+{
+	public Vec3FunctionNode(string nodeName) : base(nodeName)
+	{
+		DefaultAcceptedTypes = new List<ShaderResourceType>
+		{
+			ShaderResourceType.Float,
+			ShaderResourceType.Double,
+			ShaderResourceType.Int,
+			ShaderResourceType.Short
+		};
+		AcceptedTypes = new List<ShaderResourceType>(DefaultAcceptedTypes);
+		InputCount = 3;
+		Init();
+	}
+
+	public override string FunctionName => OutputType?.CompileName!;
+}
+
+public class Vec4FunctionNode : MultiTypeVectorFunction
+{
+	public Vec4FunctionNode(string nodeName) : base(nodeName)
+	{
+		DefaultAcceptedTypes = new List<ShaderResourceType>
+		{
+			ShaderResourceType.Float,
+			ShaderResourceType.Double,
+			ShaderResourceType.Int,
+			ShaderResourceType.Short
+		};
+		AcceptedTypes = new List<ShaderResourceType>(DefaultAcceptedTypes);
+		InputCount = 4;
+		Init();
 	}
 
 	public override string FunctionName => OutputType?.CompileName!;
@@ -394,9 +605,9 @@ public class Vec3FunctionNode : FunctionNode
 
 public class OutputNode : ShaderNode
 {
-	public OutputNode(string name, ShaderResourceType type)
+	public OutputNode(string nodeName, ShaderResourceType type)
 	{
-		Name = name;
+		NodeName = nodeName;
 		Type = type;
 	}
 
@@ -417,5 +628,5 @@ public class OutputNode : ShaderNode
 	}
 
 	public override string GetHeaderCode() => string.Empty;
-	public override string GetBodyCode() => $"{Name} = {InputConnectors[0].OutputConnector?.Name};";
+	public override string GetBodyCode() => $"{NodeName} = {InputConnectors[0].OutputConnector?.Name};";
 }

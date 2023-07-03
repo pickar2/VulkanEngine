@@ -55,11 +55,11 @@ public class UiShaderNode
 		var alignPanel = new AlignPanel(Container.Context) {Alignment = Alignment.TopCenter};
 		alignPanel.MarginLT.Y = 5;
 		alignPanel.Size.Y = 45;
-		var nodeLabel = new TextInputBox(Container.Context) {Text = Node.Name};
+		var nodeLabel = new TextInputBox(Container.Context) {Text = Node.NodeName};
 		alignPanel.AddChild(nodeLabel);
 		Container.AddChild(alignPanel);
 
-		nodeLabel.OnTextChange += s => Node.Name = s;
+		nodeLabel.OnTextChange += s => Node.NodeName = s;
 
 		Container.OnDrag((control, _, motion, button, dragType) =>
 		{

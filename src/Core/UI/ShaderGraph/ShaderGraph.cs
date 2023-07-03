@@ -323,7 +323,7 @@ public class ShaderGraph
 			graph.Identifier = "graph_generated";
 
 			var code = graph.GetGraphCode();
-			App.Logger.Debug.Message($"{code}");
+			// App.Logger.Debug.Message($"{code}");
 			ShaderManager.SetVirtualShader("@graph_generated", code);
 			GeneralRenderer.UiContext.MaterialManager.RegisterMaterial(code, "@graph_generated");
 			GeneralRenderer.UiContext.MaterialManager.UpdateShaders();
