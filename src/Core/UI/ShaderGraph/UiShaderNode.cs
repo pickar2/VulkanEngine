@@ -45,10 +45,10 @@ public class UiShaderNode
 		Container.Overflow = Overflow.Shown;
 
 		var bgBox = new Rectangle(Container.Context);
-		bgBox.Color = Color.DimGray.ToArgb();
+		bgBox.Color = Color.Gray500;
 		Container.AddChild(bgBox);
 
-		var borderBox = new BorderBox(Container.Context, Color.Red.ToArgb(), 2);
+		var borderBox = new BorderBox(Container.Context, Color.Red600, 2);
 		borderBox.OffsetZ = 1;
 		Container.AddChild(borderBox);
 
@@ -82,12 +82,12 @@ public class UiShaderNode
 		{
 			if (type == HoverType.Start)
 			{
-				bgBox.Color = Color.LightSlateGray.ToArgb();
+				bgBox.Color = Color.Slate400;
 				Container.OffsetZ += 5;
 			}
 			else
 			{
-				bgBox.Color = Color.DimGray.ToArgb();
+				bgBox.Color = Color.Gray500;
 				Container.OffsetZ -= 5;
 			}
 		});
@@ -130,7 +130,7 @@ public class UiShaderNode
 				connectorLabelAlign.AddChild(inputLabel);
 
 				var inputBox = new Rectangle(Container.Context);
-				inputBox.Color = inputConnector.ConnectedOutputNode is not null ? Color.ForestGreen.ToArgb() : Color.GreenYellow.ToArgb();
+				inputBox.Color = inputConnector.ConnectedOutputNode is not null ? Color.Green600 : Color.Lime600;
 				inputBox.Size = new Vector2<float>(ConnectionSize);
 				connectorBoxAlign.AddChild(inputBox);
 
@@ -146,7 +146,7 @@ public class UiShaderNode
 							var connectedNode = inputConnector.ConnectedOutputNode;
 							ShaderGraph.Unlink(connectedNode, inputConnector.OutputConnectorIndex, Node, conIndex);
 							ShaderGraph.UiShaderNodes[connectedNode].UpdateOutputCurves();
-							inputBox.Color = Color.Blue.ToArgb();
+							inputBox.Color = Color.Blue600;
 						}
 					}
 					else if (ShaderGraph.DraggingFrom is not null &&
@@ -169,9 +169,9 @@ public class UiShaderNode
 				inputBox.OnHover(((_, _, type) =>
 				{
 					if (type == HoverType.End)
-						inputBox.Color = inputConnector?.ConnectedOutputNode is not null ? Color.ForestGreen.ToArgb() : Color.GreenYellow.ToArgb();
+						inputBox.Color = inputConnector?.ConnectedOutputNode is not null ? Color.Green600 : Color.Lime600;
 					else
-						inputBox.Color = inputConnector?.ConnectedOutputNode is not null ? Color.Red.ToArgb() : Color.Blue.ToArgb();
+						inputBox.Color = inputConnector?.ConnectedOutputNode is not null ? Color.Red600 : Color.Blue600;
 				}));
 			}
 		});
@@ -229,7 +229,7 @@ public class UiShaderNode
 				connectorLabelAlign.AddChild(outputLabel);
 
 				var outputBox = new Rectangle(Container.Context);
-				outputBox.Color = Color.GreenYellow.ToArgb();
+				outputBox.Color = Color.Lime600;
 				outputBox.Overflow = Overflow.Shown;
 
 				outputBox.Size = new Vector2<float>(ConnectionSize);

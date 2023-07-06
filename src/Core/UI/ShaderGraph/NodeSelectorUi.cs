@@ -45,7 +45,7 @@ public class NodeSelectorUi : AbsolutePanel
 		AddChild(container);
 
 		var box = new Rectangle(context);
-		box.Color = Color.DarkSlateGray.ToArgb();
+		box.Color = Color.Slate700;
 		AddChild(box);
 
 		var stack = new StackPanel(context);
@@ -60,7 +60,7 @@ public class NodeSelectorUi : AbsolutePanel
 			nodeLine.Size.Y = 25;
 			stack.AddChild(nodeLine);
 
-			var border = new BorderBox(context, Color.Red.ToArgb(), 1);
+			var border = new BorderBox(context, Color.Red600, 1);
 			nodeLine.AddChild(border);
 
 			nodeLine.OnHover(((_, _, type) =>

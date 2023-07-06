@@ -107,7 +107,7 @@ public static partial class UiManager
 	{
 		var box = new Rectangle(MainRoot.Context)
 		{
-			Color = ColorUtils.RandomColorInt() & (127 << 24),
+			Color = ColorUtils.RandomColor().WithAlpha(127),
 			Size = (150, 150),
 			OffsetZ = 200,
 			MarginLT = (350, 150)
@@ -126,7 +126,7 @@ public static partial class UiManager
 
 			var smallBox = new Rectangle(MainRoot.Context)
 			{
-				Color = ColorUtils.RandomColorInt(),
+				Color = ColorUtils.RandomColor(),
 				Size = (30, 30),
 				OffsetZ = 1
 			};
@@ -175,22 +175,22 @@ public static partial class UiManager
 		stackPanel.MarginLT = new Vector2<float>(150, 150);
 		stackPanel.OffsetZ = 5;
 
-		var box1 = new Rectangle(MainRoot.Context) {Color = ColorUtils.RandomColorInt(), OffsetZ = 1};
+		var box1 = new Rectangle(MainRoot.Context) {Color = ColorUtils.RandomColor(), OffsetZ = 1};
 		box1.Size.X = 30;
 		box1.MarginLT = new Vector2<float>(30, 30);
 		stackPanel.AddChild(box1);
 
-		var box2 = new Rectangle(MainRoot.Context) {Color = ColorUtils.RandomColorInt(), OffsetZ = 1};
+		var box2 = new Rectangle(MainRoot.Context) {Color = ColorUtils.RandomColor(), OffsetZ = 1};
 		box2.Size.X = 60;
 		box2.MarginLT = new Vector2<float>(30, -30);
 		stackPanel.AddChild(box2);
 
-		var box3 = new Rectangle(MainRoot.Context) {Color = ColorUtils.RandomColorInt(), OffsetZ = 1};
+		var box3 = new Rectangle(MainRoot.Context) {Color = ColorUtils.RandomColor(), OffsetZ = 1};
 		box3.Size.X = 10;
 		box3.MarginRB.X = 20;
 		stackPanel.AddChild(box3);
 
-		var box4 = new Rectangle(MainRoot.Context) {Color = ColorUtils.RandomColorInt(), OffsetZ = 1};
+		var box4 = new Rectangle(MainRoot.Context) {Color = ColorUtils.RandomColor(), OffsetZ = 1};
 		box4.Size.X = 10;
 		stackPanel.AddChild(box4);
 
@@ -247,23 +247,23 @@ public static partial class UiManager
 			Overflow = Overflow.Shown
 		};
 
-		var top = new Rectangle(MainRoot.Context) {Color = ColorUtils.RandomColorInt()};
+		var top = new Rectangle(MainRoot.Context) {Color = ColorUtils.RandomColor()};
 		top.Size.Y = 30;
-		var top2 = new Rectangle(MainRoot.Context) {Color = ColorUtils.RandomColorInt()};
+		var top2 = new Rectangle(MainRoot.Context) {Color = ColorUtils.RandomColor()};
 		top2.Size.Y = 45;
 
-		var left = new Rectangle(MainRoot.Context) {Color = ColorUtils.RandomColorInt()};
+		var left = new Rectangle(MainRoot.Context) {Color = ColorUtils.RandomColor()};
 		left.Size.X = 60;
 
-		var bottom = new Rectangle(MainRoot.Context) {Color = ColorUtils.RandomColorInt()};
+		var bottom = new Rectangle(MainRoot.Context) {Color = ColorUtils.RandomColor()};
 		bottom.Size.Y = 60;
-		var bottom2 = new Rectangle(MainRoot.Context) {Color = ColorUtils.RandomColorInt()};
+		var bottom2 = new Rectangle(MainRoot.Context) {Color = ColorUtils.RandomColor()};
 		bottom2.Size.Y = 15;
 
-		var right = new Rectangle(MainRoot.Context) {Color = ColorUtils.RandomColorInt()};
+		var right = new Rectangle(MainRoot.Context) {Color = ColorUtils.RandomColor()};
 		right.Size.X = 30;
 
-		var fill = new Rectangle(MainRoot.Context) {Color = ColorUtils.RandomColorInt()};
+		var fill = new Rectangle(MainRoot.Context) {Color = ColorUtils.RandomColor()};
 
 		dockPanel.AddChild(top, Dock.Top);
 		dockPanel.AddChild(top2, Dock.Top);
@@ -333,7 +333,7 @@ public static partial class UiManager
 	{
 		var button = new Rectangle(MainRoot.Context)
 		{
-			Color = ColorUtils.RandomColorInt(),
+			Color = ColorUtils.RandomColor(),
 			Size = (100, 50),
 			MarginLT = (700, 350),
 			OffsetZ = 10
@@ -359,15 +359,15 @@ public static partial class UiManager
 		};
 		box1.FragMaterial = MainRoot.MaterialManager.GetFactory("cool_material").Create();
 		var coolData = box1.FragMaterial.GetMemPtr<CoolMaterialData>();
-		coolData->Color1 = Color.Red.ToArgb();
-		coolData->Color2 = Color.Black.ToArgb();
+		coolData->Color1 = Color.Red600;
+		coolData->Color2 = Color.Neutral950;
 		box1.FragMaterial.MarkForGPUUpdate();
 
 		parent.AddChild(box1);
 
 		var box2 = new Rectangle(MainRoot.Context)
 		{
-			Color = ColorUtils.RandomColorInt(),
+			Color = ColorUtils.RandomColor(),
 			Size = (75, 75),
 			MarginLT = (900, 300),
 			OffsetZ = 10
@@ -415,7 +415,7 @@ public static partial class UiManager
 			Curve = DefaultCurves.EaseInOutSine,
 			Type = AnimationType.RepeatAndReverse,
 			Duration = 1000,
-			Interpolator = new RGBInterpolator(Color.FromArgb(startColor), Color.Red, c => box2.Color = c.ToArgb())
+			Interpolator = new RGBInterpolator(new Color(startColor), Color.Red600, c => box2.Color = c)
 		};
 
 		int color = button.Color;
@@ -424,7 +424,7 @@ public static partial class UiManager
 			Curve = DefaultCurves.EaseInOutSine,
 			Type = AnimationType.OneTime,
 			Duration = 100,
-			Interpolator = new RGBInterpolator(Color.FromArgb(color), Color.Red, c => button.Color = c.ToArgb())
+			Interpolator = new RGBInterpolator(new Color(color), Color.Red600, c => button.Color = c)
 		};
 
 		button.OnHover((_, _, hoverType) =>

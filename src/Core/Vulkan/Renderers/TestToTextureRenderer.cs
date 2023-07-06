@@ -6,6 +6,7 @@ using Core.UI.Animations;
 using Core.Vulkan.Api;
 using Silk.NET.Vulkan;
 using SimpleMath.Vectors;
+using Color = Core.UI.Color;
 
 namespace Core.Vulkan.Renderers;
 
@@ -106,7 +107,7 @@ public unsafe class TestToTextureRenderer : RenderChain
 		cmd.BeginRenderPass(&renderPassBeginInfo, SubpassContents.Inline);
 
 		cmd.BindGraphicsPipeline(_pipeline);
-		cmd.Draw(3, 1, 0, (uint) _color.ToArgb());
+		cmd.Draw(3, 1, 0, (uint) _color.Value);
 
 		cmd.EndRenderPass();
 

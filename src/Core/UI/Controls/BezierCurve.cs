@@ -143,8 +143,8 @@ public class BezierCurve : AbsolutePanel
 			var gradientColor = colorFactory.Create();
 			*gradientColor.GetMemPtr<BezierGradientMaterial>() = new BezierGradientMaterial
 			{
-				Color1 = Color.Purple.ToArgb(),
-				Color2 = Color.DarkBlue.ToArgb(),
+				Color1 = Color.Fuchsia900,
+				Color2 = Color.Blue950,
 				Smoothing = 0.2f
 			};
 			gradientColor.MarkForGPUUpdate();

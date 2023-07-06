@@ -4,6 +4,6 @@ public struct FontMaterialData
 {
 	public int TextureId;
 	public float FontScale;
-	public int Color;
+	public Color Color;
 	public float OutlineDistance;
 }

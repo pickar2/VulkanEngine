@@ -26,6 +26,6 @@ public static class ColorUtils
 		color |= Random.Next(256) << 8;
 		color |= Random.Next(256);
 
-		return Color.FromArgb(color);
+		return new Color(color);
 	}
 }

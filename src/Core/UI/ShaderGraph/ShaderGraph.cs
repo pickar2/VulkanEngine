@@ -254,6 +254,8 @@ public class ShaderGraph
 		// TODO: scroll relative to position
 		UiManager.InputContext.MouseInputHandler.OnScroll += amount =>
 		{
+			if (UiManager.ControlsOnMousePos.Count == 0) return;
+
 			var top = UiManager.ControlsOnMousePos[0];
 			if (top == mainControl || top == graph.GraphPanel)
 			{
@@ -307,7 +309,7 @@ public class ShaderGraph
 
 		var compileButton = new Rectangle(mainControl.Context)
 		{
-			Color = Color.DarkRed.ToArgb(),
+			Color = Color.Slate50,
 			Size = (100, 30),
 			MarginLT = (155, 5),
 			OffsetZ = 100

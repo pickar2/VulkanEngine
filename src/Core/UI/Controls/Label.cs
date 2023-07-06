@@ -119,7 +119,7 @@ public class Label : StackPanel
 			fragData->TextureId = (int) TextureManager.GetTextureId("ConsolasTexture");
 			fragData->FontScale = Math.Max(CombinedScale.X, CombinedScale.Y);
 			fragData->OutlineDistance = 0.1f;
-			fragData->Color = Color.White.ToArgb();
+			fragData->Color = Color.Neutral50;
 
 			box.FragMaterial.MarkForGPUUpdate();
 

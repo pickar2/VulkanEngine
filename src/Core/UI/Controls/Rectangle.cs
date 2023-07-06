@@ -10,15 +10,15 @@ public class Rectangle : CustomBox
 		Component.FragMaterial = context.MaterialManager.GetFactory("color_material").Create();
 		Component.MarkForGPUUpdate();
 
-		Color = System.Drawing.Color.White.ToArgb();
+		Color = Color.Neutral50;
 	}
 
-	public unsafe int Color
+	public unsafe Color Color
 	{
-		get => *Component.FragMaterial.GetMemPtr<int>();
+		get => *Component.FragMaterial.GetMemPtr<Color>();
 		set
 		{
-			*Component.FragMaterial.GetMemPtr<int>() = value;
+			*Component.FragMaterial.GetMemPtr<Color>() = value;
 			Component.FragMaterial.MarkForGPUUpdate();
 		}
 	}

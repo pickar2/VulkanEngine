@@ -7,12 +7,12 @@ namespace Core.UI.Controls;
 
 public unsafe class BorderBox : UiControlOneComponent
 {
-	public int Color
+	public Color Color
 	{
-		get => Component.FragMaterial.GetMemPtr<(int color, float size)>()->color;
+		get => Component.FragMaterial.GetMemPtr<(Color color, float size)>()->color;
 		set
 		{
-			Component.FragMaterial.GetMemPtr<(int color, float size)>()->color = value;
+			Component.FragMaterial.GetMemPtr<(Color color, float size)>()->color = value;
 			Component.FragMaterial.MarkForGPUUpdate();
 		}
 	}
@@ -30,7 +30,7 @@ public unsafe class BorderBox : UiControlOneComponent
 		}
 	}
 
-	public BorderBox(UiContext context, int color, float size) : base(context)
+	public BorderBox(UiContext context, Color color, float size) : base(context)
 	{
 		Component.FragMaterial = context.MaterialManager.GetFactory("border_material").Create();
 		Component.VertMaterial = context.MaterialManager.GetFactory("default_vertex_material").Create();
@@ -48,7 +48,7 @@ public unsafe class BorderBox : UiControlOneComponent
 	public void UpdateSizeScale()
 	{
 		_scaledSize = _unscaledSize * Math.Min(CombinedScale.X, CombinedScale.Y);
-		Component.FragMaterial.GetMemPtr<(int color, float size)>()->size = _scaledSize;
+		Component.FragMaterial.GetMemPtr<(Color color, float size)>()->size = _scaledSize;
 		Component.FragMaterial.MarkForGPUUpdate();
 	}
 }

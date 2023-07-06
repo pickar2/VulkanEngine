@@ -6,6 +6,7 @@ using Core.Vulkan.Renderers;
 using Core.Vulkan.Utility;
 using Silk.NET.Vulkan;
 using SimpleMath.Vectors;
+using Color = System.Drawing.Color;
 
 namespace Core.Vulkan.Deferred3D;
 

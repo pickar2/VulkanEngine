@@ -33,8 +33,8 @@ public class TextInputBox : UiControl
 	{
 		TightBox = true;
 
-		_selection = new Rectangle(context) {Color = Color.LightBlue.ToArgb() & (200 << 24)};
-		_cursor = new Rectangle(context) {Color = Color.White.ToArgb()};
+		_selection = new Rectangle(context) {Color = Color.Blue500.WithAlpha(200)};
+		_cursor = new Rectangle(context) {Color = Color.Neutral50};
 		_label = new Label(context);
 
 		ChildrenList.Add(_label);
@@ -55,7 +55,7 @@ public class TextInputBox : UiControl
 			Curve = DefaultCurves.HalfOffHalfOn,
 			Duration = 1000,
 			Type = AnimationType.RepeatFromStart,
-			Interpolator = new RGBInterpolator(Color.FromArgb(_cursor.Color), Color.FromArgb(0), value => _cursor.Color = value.ToArgb())
+			Interpolator = new RGBInterpolator(_cursor.Color, Color.TransparentBlack, value => _cursor.Color = value)
 		};
 
 		Text = "Text input";

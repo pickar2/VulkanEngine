@@ -48,7 +48,7 @@ public class ControlInfoBox : AbsolutePanel
 
 		var controlBg = new Rectangle(Context)
 		{
-			Color = Color.Brown.ToArgb() & (127 << 24)
+			Color = Color.Yellow900.WithAlpha(127)
 		};
 		AddChild(controlBg);
 
@@ -65,7 +65,7 @@ public class ControlInfoBox : AbsolutePanel
 
 		var stackBg = new Rectangle(Context)
 		{
-			Color = Color.Brown.ToArgb() & (127 << 24),
+			Color = Color.Yellow900.WithAlpha(127),
 			MarginLT = _control.CombinedPos + (_control.ComputedSize.X, 0),
 			OffsetZ = 1,
 			TightBox = true

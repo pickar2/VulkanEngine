@@ -77,12 +77,12 @@ public class RGBInterpolator : ValueInterpolator<Color>
 
 	public override Color Interpolate(float x)
 	{
-		int a = Lerp(Start.A, End.A, x);
-		int r = Lerp(Start.R, End.R, x);
-		int g = Lerp(Start.G, End.G, x);
-		int b = Lerp(Start.B, End.B, x);
+		int a = Lerp(Start.Alpha, End.Alpha, x);
+		int r = Lerp(Start.Red, End.Red, x);
+		int g = Lerp(Start.Green, End.Green, x);
+		int b = Lerp(Start.Blue, End.Blue, x);
 
-		return Color.FromArgb(a, r, g, b);
+		return new Color(r, g, b, a);
 	}
 
 	private static byte Lerp(byte start, byte end, float x) => (byte) ((1.0f - x) * start + x * end);

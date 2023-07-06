@@ -29,10 +29,10 @@ public class ComboBox<T> : UiControl
 	{
 		_initialHeight = Size.Y;
 
-		var border = new BorderBox(Context, Color.DarkRed.ToArgb(), 2) {OffsetZ = 10};
+		var border = new BorderBox(Context, Color.Red700, 2) {OffsetZ = 10};
 		AddChild(border);
 
-		var bg = new Rectangle(Context) {Color = Color.Brown.ToArgb()};
+		var bg = new Rectangle(Context) {Color = Color.Amber800};
 		AddChild(bg);
 
 		var stack = new StackPanel(Context)
@@ -52,7 +52,7 @@ public class ComboBox<T> : UiControl
 		align.AddChild(label);
 
 		float headerSpacing = 2;
-		var spacer = new Rectangle(Context) {Color = Color.Black.ToArgb()};
+		var spacer = new Rectangle(Context) {Color = Color.Neutral950};
 		spacer.Size.Y = headerSpacing;
 		stack.AddChild(spacer);
 
@@ -113,8 +113,8 @@ public class ComboBox<T> : UiControl
 				{
 					var box = new Rectangle(Context);
 					box.Size.Y = _valueHeight;
-					box.Color = Color.Chocolate.ToArgb();
-					box.OnHover(((_, _, hoverType) => box.Color = hoverType == HoverType.Start ? Color.SaddleBrown.ToArgb() : Color.Chocolate.ToArgb()));
+					box.Color = Color.Amber500;
+					box.OnHover(((_, _, hoverType) => box.Color = hoverType == HoverType.Start ? Color.Yellow900 : Color.Amber500));
 					valuesContainer.AddChild(box);
 
 					var valueAlign = new AlignPanel(Context) {Alignment = Alignment.Center};
