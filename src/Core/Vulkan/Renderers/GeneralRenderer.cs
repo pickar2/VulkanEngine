@@ -83,18 +83,18 @@ public static class GeneralRenderer
 		var qoiImage = QoiDecoder.Decode(bytes);
 
 		var texture = CreateTextureFromBytes(qoiImage.Data, (ulong) qoiImage.Data.LongLength, (uint) qoiImage.Width, (uint) qoiImage.Height,
-			(int) qoiImage.Channels, true);
+			(int) qoiImage.Channels, false);
 		TextureManager.RegisterTexture("ConsolasTexture", texture.ImageView);
 
 		ExecuteOnce.InDevice.BeforeDispose(() => texture.Dispose());
 
 		Context.DeviceEvents.AfterCreate += () =>
 		{
-			var texture = CreateTextureFromBytes(qoiImage.Data, (ulong) qoiImage.Data.LongLength, (uint) qoiImage.Width, (uint) qoiImage.Height,
-				(int) qoiImage.Channels, true);
-			TextureManager.RegisterTexture("ConsolasTexture", texture.ImageView);
+			var t = CreateTextureFromBytes(qoiImage.Data, (ulong) qoiImage.Data.LongLength, (uint) qoiImage.Width, (uint) qoiImage.Height,
+				(int) qoiImage.Channels, false);
+			TextureManager.RegisterTexture("ConsolasTexture", t.ImageView);
 
-			ExecuteOnce.InDevice.BeforeDispose(() => texture.Dispose());
+			ExecuteOnce.InDevice.BeforeDispose(() => t.Dispose());
 		};
 	}
 }

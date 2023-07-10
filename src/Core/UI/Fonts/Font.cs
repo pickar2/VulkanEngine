@@ -30,7 +30,7 @@ public class Font
 	public FontPage[] Pages { get; set; } = Array.Empty<FontPage>();
 
 	public void SetCharacter(char ch, FontCharacter character) => Characters[ch] = character;
-	public FontCharacter GetCharacter(char ch) => Characters.GetValueOrDefault(ch, Characters[(char) 0]);
+	public FontCharacter GetCharacter(char ch) => ch is ' ' ? Characters[(char) 0] : Characters.GetValueOrDefault(ch, Characters['?']);
 }
 
 public class FontPage

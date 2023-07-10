@@ -33,7 +33,7 @@ public class TextInputBox : UiControl
 	{
 		TightBox = true;
 
-		_selection = new Rectangle(context) {Color = Color.Blue500.WithAlpha(200)};
+		_selection = new Rectangle(context) {Color = Color.Blue500.A(200)};
 		_cursor = new Rectangle(context) {Color = Color.Neutral50};
 		_label = new Label(context);
 

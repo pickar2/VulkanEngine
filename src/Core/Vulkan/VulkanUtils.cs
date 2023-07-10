@@ -661,8 +661,8 @@ public static unsafe class VulkanUtils
 
 		var stagingBuffer = new VulkanBuffer(bytesCount, BufferUsageFlags.TransferSrcBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_ONLY);
 
-		var ptr = new IntPtr[1];
-		Check(vmaMapMemory(VmaAllocator, stagingBuffer.Allocation, ptr), "Failed to map memory.");
+		var ptr = stackalloc IntPtr[1];
+		Check(vmaMapMemory(VmaAllocator, stagingBuffer.Allocation, (void**) ptr), "Failed to map memory.");
 		Marshal.Copy(bytes, 0, ptr[0], (int) bytesCount);
 		vmaUnmapMemory(VmaAllocator, stagingBuffer.Allocation);
 

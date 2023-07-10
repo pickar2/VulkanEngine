@@ -4,17 +4,14 @@ using System.Runtime.InteropServices;
 
 namespace Core.UI;
 
-[StructLayout(LayoutKind.Explicit, Size = 4, Pack = 0)]
+[StructLayout(LayoutKind.Explicit, Size = 4)]
 public struct Color
 {
 	[FieldOffset(0)] public uint Value = 0;
 
 	[FieldOffset(0)] public byte Blue;
-
 	[FieldOffset(1)] public byte Green;
-
 	[FieldOffset(2)] public byte Red;
-
 	[FieldOffset(3)] public byte Alpha;
 
 	public Color(byte red, byte green, byte blue, byte alpha)
@@ -68,11 +65,37 @@ public struct Color
 	public Color(uint value) => Value = value;
 	public Color(int value) => Value = (uint) value;
 
-	public Color WithAlpha(byte alpha) => new(Red, Green, Blue, alpha);
-	public Color WithAlpha(int alpha) => new(Red, Green, Blue, (byte) alpha);
-	public Color WithAlpha(float alpha) => new(Red, Green, Blue, NormalizeOneByteFloatColor(alpha));
+	public Color R(byte red)
+	{
+		Red = red;
+		return this;
+	}
 
-	public static Color FromArgb(byte alpha, byte red, byte green, byte blue) => new(red, green, blue, alpha);
+	public Color G(byte green)
+	{
+		Green = green;
+		return this;
+	}
+
+	public Color B(byte blue)
+	{
+		Blue = blue;
+		return this;
+	}
+
+	public Color A(byte alpha)
+	{
+		Alpha = alpha;
+		return this;
+	}
+
+	// public Color WithAlpha(byte alpha) => new(Red, Green, Blue, alpha);
+	// public Color WithAlpha(int alpha) => new(Red, Green, Blue, (byte) alpha);
+	// public Color WithAlpha(float alpha) => new(Red, Green, Blue, NormalizeOneByteFloatColor(alpha));
+
+	// public static Color FromArgb(byte alpha, byte red, byte green, byte blue) => new(red, green, blue, alpha);
+
+	public static Color Test() => new(System.Drawing.Color.Aqua.ToArgb());
 
 	public static Color TransparentBlack => new(0, 0, 0, 0);
 	public static Color TransparentWhite => new(1, 1, 1, 0);
@@ -345,4 +368,15 @@ public struct Color
 	public static byte NormalizeOneByteFloatColor(float value) => (byte) Math.Round(value / 255f);
 
 	public static implicit operator int(Color color) => Unsafe.As<uint, int>(ref color.Value);
+	public static implicit operator uint(Color color) => color.Value;
+}
+
+public static class ColorUtils {
+	private static readonly Random Random = new(1234);
+
+	public static Color RandomColor(bool randomTransparency = false) => 
+		new(Random.Next(256),
+			Random.Next(256),
+			Random.Next(256),
+			randomTransparency ? Random.Next(256) : 0xFF);
 }

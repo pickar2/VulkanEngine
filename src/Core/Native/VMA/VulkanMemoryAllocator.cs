@@ -283,6 +283,13 @@ public static class VulkanMemoryAllocator
 		IntPtr allocation,
 		IntPtr[] ppData
 	);
+	
+	[DllImport(libraryName, CallingConvention = CallingConvention.Cdecl)]
+	public static extern unsafe int vmaMapMemory(
+		IntPtr allocator,
+		IntPtr allocation,
+		void** ppData
+	);
 
 	[DllImport(libraryName, CallingConvention = CallingConvention.Cdecl)]
 	public static extern void vmaUnmapMemory(

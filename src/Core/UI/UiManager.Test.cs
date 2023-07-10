@@ -107,7 +107,7 @@ public static partial class UiManager
 	{
 		var box = new Rectangle(MainRoot.Context)
 		{
-			Color = ColorUtils.RandomColor().WithAlpha(127),
+			Color = ColorUtils.RandomColor().A(127),
 			Size = (150, 150),
 			OffsetZ = 200,
 			MarginLT = (350, 150)
@@ -298,7 +298,7 @@ public static partial class UiManager
 		};
 
 		box.FragMaterial = MainRoot.MaterialManager.GetFactory("color_material").Create();
-		*box.FragMaterial.GetMemPtr<int>() = ColorUtils.RandomColorInt();
+		*box.FragMaterial.GetMemPtr<int>() = ColorUtils.RandomColor();
 		box.FragMaterial.MarkForGPUUpdate();
 
 		box.VertMaterial = MainRoot.MaterialManager.GetFactory("transform_material").Create();
@@ -319,7 +319,7 @@ public static partial class UiManager
 		};
 
 		box2.FragMaterial = MainRoot.MaterialManager.GetFactory("color_material").Create();
-		*box2.FragMaterial.GetMemPtr<int>() = ColorUtils.RandomColorInt();
+		*box2.FragMaterial.GetMemPtr<int>() = ColorUtils.RandomColor();
 		box2.FragMaterial.MarkForGPUUpdate();
 
 		box2.VertMaterial = MainRoot.MaterialManager.GetFactory("transform_material").Create();
