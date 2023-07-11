@@ -1,4 +1,5 @@
-﻿using SimpleMath.Vectors;
+﻿using System;
+using SimpleMath.Vectors;
 
 namespace Core.UI.Controls.Panels;
 
@@ -16,8 +17,8 @@ public class FullScreenRootPanel : RootPanel
 		base.Update();
 
 		PropagateScale(Scale);
-		ComputeSizeAndArea(Size);
-		ArrangeChildren(Size);
+		ComputeSizeAndArea(new Vector2<float>(float.PositiveInfinity));
+		ArrangeChildren(new Vector2<float>(float.PositiveInfinity));
 		UpdateChildrenMask(new Vector2<float>(float.NegativeInfinity), new Vector2<float>(float.PositiveInfinity));
 	}
 }

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Core.UI.Reactive;
+using Core.Utils;
 using Core.Vulkan;
 
 namespace Core.UI.ShaderGraph;
@@ -71,13 +72,9 @@ public abstract class ShaderNode
 	public abstract string GetHeaderCode();
 	public abstract string GetBodyCode();
 
-	public virtual unsafe int CalculateByteCount()
+	public virtual unsafe int CalculateLinksByteCount()
 	{
 		int size = 0;
-
-		// size += sizeof(Guid);
-		// size += sizeof(int);
-		// size += NodeName.GetByteCount();
 
 		size += sizeof(int);
 		foreach (var inputConnector in InputConnectors)
@@ -100,7 +97,6 @@ public abstract class ShaderNode
 			{
 				if (connection.ConnectedInputNode is null) continue;
 
-				// size += sizeof(int);
 				size += sizeof(Guid);
 				size += sizeof(int);
 			}
@@ -109,13 +105,13 @@ public abstract class ShaderNode
 		return size;
 	}
 
-	public virtual void Serialize(ref SpanBuffer<byte> buffer)
+	public virtual void SerializeLinks(ref SpanBuffer<byte> buffer)
 	{
-		// buffer.Write(Guid);
-		// buffer.WriteVarString(NodeName);
+		// App.Logger.Debug.Message($"Serializing links of {Guid}");
 
-		int inputCount = InputConnectors.Select(c => c.OutputConnector is not null).Count();
+		int inputCount = InputConnectors.Count(c => c.ConnectedOutputNode is not null);
 		buffer.Write(inputCount);
+		// App.Logger.Debug.Message($"Found {inputCount} satisfied inputs");
 		for (int connectorIndex = 0; connectorIndex < InputConnectors.Length; connectorIndex++)
 		{
 			var inputConnector = InputConnectors[connectorIndex];
@@ -126,7 +122,7 @@ public abstract class ShaderNode
 			buffer.Write(inputConnector.OutputConnectorIndex);
 		}
 
-		int outputCount = OutputConnectors.Select(c => c.Connections.Count != 0).Count();
+		int outputCount = OutputConnectors.Count(c => c.Connections.Count != 0);
 		buffer.Write(outputCount);
 		for (int connectorIndex = 0; connectorIndex < OutputConnectors.Length; connectorIndex++)
 		{
@@ -134,35 +130,35 @@ public abstract class ShaderNode
 			if (outputConnector.Connections.Count == 0) continue;
 
 			buffer.Write(connectorIndex);
-			int connectionsCount = outputConnector.Connections.Select(c => c.ConnectedInputNode is not null).Count();
+			int connectionsCount = outputConnector.Connections.Count(c => c.ConnectedInputNode is not null);
 			buffer.Write(connectionsCount);
 			foreach (var connection in outputConnector.Connections)
 			{
-				if (connection.ConnectedInputNode is null) continue;
+				if (connection.ConnectedInputNode is null) throw new Exception();
 
-				// buffer.Write(connectionIndex);
 				buffer.Write(connection.ConnectedInputNode.Guid);
 				buffer.Write(connection.InputConnectorIndex);
 			}
 		}
 	}
 
-	public virtual void Deserialize(ref SpanBuffer<byte> buffer, ShaderGraph graph)
+	public virtual void DeserializeLinks(ref SpanBuffer<byte> buffer, ShaderGraph graph)
 	{
-		// Guid = buffer.Read<Guid>();
-		// NodeName = buffer.ReadVarString();
-
 		int inputCount = buffer.Read<int>();
+		App.Logger.Debug.Message($"Loading {inputCount} inputs");
 		for (int i = 0; i < inputCount; i++)
 		{
 			int inputIndex = buffer.Read<int>();
 			var nodeGuid = buffer.Read<Guid>();
 			int outputIndex = buffer.Read<int>();
+			
+			App.Logger.Debug.Message($"{inputIndex}, {nodeGuid}, {outputIndex}");
 
 			SetInput(inputIndex, graph.GetNodeByGuid(nodeGuid), outputIndex);
 		}
 
 		int outputCount = buffer.Read<int>();
+		App.Logger.Debug.Message($"Loading {outputCount} outputs");
 		for (int i = 0; i < outputCount; i++)
 		{
 			int outputIndex = buffer.Read<int>();
@@ -176,6 +172,10 @@ public abstract class ShaderNode
 			}
 		}
 	}
+
+	public virtual int CalculateByteCount() => 0;
+	public virtual void Serialize(ref SpanBuffer<byte> buffer) { }
+	public virtual void Deserialize(ref SpanBuffer<byte> buffer, ShaderGraph graph) { }
 
 	private readonly Signal<IInputConnector[]> _inputConnectorsSignal = new(Array.Empty<IInputConnector>());
 
@@ -266,6 +266,30 @@ public class ConstInputNode : ShaderNode
 		};
 	}
 
+	public override unsafe int CalculateByteCount()
+	{
+		int size = sizeof(int); // Type
+		size += Value.GetByteCount() + sizeof(int); // Value
+		
+		return base.CalculateByteCount() + size;
+	}
+
+	public override void Serialize(ref SpanBuffer<byte> buffer)
+	{
+		buffer.Write(_type.GetTypeId());
+		buffer.WriteVarString(Value);
+
+		base.Serialize(ref buffer);
+	}
+
+	public override void Deserialize(ref SpanBuffer<byte> buffer, ShaderGraph graph)
+	{
+		Type = ShaderResourceType.GetTypeFromId(buffer.Read<int>());
+		Value = buffer.ReadVarString();
+
+		base.Deserialize(ref buffer, graph);
+	}
+
 	private ShaderResourceType _type = default!;
 
 	public ShaderResourceType Type
@@ -297,6 +321,30 @@ public class VariableNode : ShaderNode
 {
 	public ShaderResourceType Type { get; set; }
 	public string VariableName { get; set; }
+	
+	public override unsafe int CalculateByteCount()
+	{
+		int size = sizeof(int); // Type
+		size += VariableName.GetByteCount() + sizeof(int); // VariableName
+		
+		return base.CalculateByteCount() + size;
+	}
+
+	public override void Serialize(ref SpanBuffer<byte> buffer)
+	{
+		buffer.Write(Type.GetTypeId());
+		buffer.WriteVarString(VariableName);
+
+		base.Serialize(ref buffer);
+	}
+
+	public override void Deserialize(ref SpanBuffer<byte> buffer, ShaderGraph graph)
+	{
+		Type = ShaderResourceType.GetTypeFromId(buffer.Read<int>());
+		VariableName = buffer.ReadVarString();
+
+		base.Deserialize(ref buffer, graph);
+	}
 
 	public VariableNode(Guid guid, string nodeName, ShaderResourceType type, string variableName) : base(guid)
 	{
@@ -839,6 +887,8 @@ public class MinFunctionNode : MultiTypeFunction
 	{
 		DefaultAcceptedTypes = new List<ShaderResourceType>
 		{
+			ShaderResourceType.Float,
+			ShaderResourceType.Double,
 			ShaderResourceType.Vec2F,
 			ShaderResourceType.Vec2D,
 			ShaderResourceType.Vec3F,
@@ -860,6 +910,8 @@ public class MaxFunctionNode : MultiTypeFunction
 	{
 		DefaultAcceptedTypes = new List<ShaderResourceType>
 		{
+			ShaderResourceType.Float,
+			ShaderResourceType.Double,
 			ShaderResourceType.Vec2F,
 			ShaderResourceType.Vec2D,
 			ShaderResourceType.Vec3F,
@@ -997,6 +1049,52 @@ public class AbsFunctionNode : MultiTypeFunction
 	public override string FunctionName => "abs";
 }
 
+public class FloorFunctionNode : MultiTypeFunction
+{
+	public FloorFunctionNode(Guid guid, string nodeName) : base(guid, nodeName)
+	{
+		DefaultAcceptedTypes = new List<ShaderResourceType>
+		{
+			ShaderResourceType.Float,
+			ShaderResourceType.Vec2F,
+			ShaderResourceType.Vec3F,
+			ShaderResourceType.Vec4F,
+			ShaderResourceType.Double,
+			ShaderResourceType.Vec2D,
+			ShaderResourceType.Vec3D,
+			ShaderResourceType.Vec4D,
+		};
+		AcceptedTypes = new List<ShaderResourceType>(DefaultAcceptedTypes);
+		InputCount = 1;
+		Init();
+	}
+
+	public override string FunctionName => "floor";
+}
+
+public class CeilFunctionNode : MultiTypeFunction
+{
+	public CeilFunctionNode(Guid guid, string nodeName) : base(guid, nodeName)
+	{
+		DefaultAcceptedTypes = new List<ShaderResourceType>
+		{
+			ShaderResourceType.Float,
+			ShaderResourceType.Vec2F,
+			ShaderResourceType.Vec3F,
+			ShaderResourceType.Vec4F,
+			ShaderResourceType.Double,
+			ShaderResourceType.Vec2D,
+			ShaderResourceType.Vec3D,
+			ShaderResourceType.Vec4D,
+		};
+		AcceptedTypes = new List<ShaderResourceType>(DefaultAcceptedTypes);
+		InputCount = 1;
+		Init();
+	}
+
+	public override string FunctionName => "ceil";
+}
+
 public class PowFunctionNode : MultiTypeFunction
 {
 	public PowFunctionNode(Guid guid, string nodeName) : base(guid, nodeName)
@@ -1100,6 +1198,27 @@ public class OutputNode : ShaderNode
 	{
 		NodeName = nodeName;
 		Type = type;
+	}
+	
+	public override unsafe int CalculateByteCount()
+	{
+		int size = sizeof(int); // Type
+
+		return base.CalculateByteCount() + size;
+	}
+
+	public override void Serialize(ref SpanBuffer<byte> buffer)
+	{
+		buffer.Write(Type.GetTypeId());
+
+		base.Serialize(ref buffer);
+	}
+
+	public override void Deserialize(ref SpanBuffer<byte> buffer, ShaderGraph graph)
+	{
+		Type = ShaderResourceType.GetTypeFromId(buffer.Read<int>());
+
+		base.Deserialize(ref buffer, graph);
 	}
 
 	private ShaderResourceType _type = default!;

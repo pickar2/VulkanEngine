@@ -361,7 +361,7 @@ public class ShaderGraph
 				{
 					VertMaterial = GeneralRenderer.UiContext.MaterialManager.GetFactory("default_vertex_material").Create(),
 					FragMaterial = GeneralRenderer.UiContext.MaterialManager.GetFactory("graph_generated").Create(),
-					Size = (200, 200),
+					Size = (600, 600),
 					MarginLT = (320, 5),
 					OffsetZ = 100
 				};
@@ -396,11 +396,12 @@ public class ShaderGraph
 			int size = sizeof(int);
 			foreach (var shaderNode in graph._shaderNodes)
 			{
-				size += shaderNode.CalculateByteCount();
+				size += shaderNode.CalculateLinksByteCount();
 				size += 2 * sizeof(Guid);
 				size += sizeof(Vector2<float>);
 				size += shaderNode.NodeTypeName.GetByteCount() + sizeof(int);
 				size += shaderNode.NodeName.GetByteCount() + sizeof(int);
+				size += shaderNode.CalculateByteCount();
 			}
 
 			Span<byte> span = stackalloc byte[size];
@@ -473,31 +474,37 @@ public class ShaderGraph
 
 			buffer.Write(UiShaderNodes[node].Pos);
 
+			// buffer.Write(node.CalculateByteCount());
+			node.Serialize(ref buffer);
+
 			// App.Logger.Debug.Message($"Saving node {node.NodeTypeName} ({node.Guid}) at {UiShaderNodes[node].Pos}");
 		}
 
 		var endNodes = _shaderNodes.Where(shaderNode => shaderNode.InputConnectors.Length > 0 && shaderNode.OutputConnectors.Length == 0).ToList();
-		foreach (var shaderNode in endNodes) SerializeNode(shaderNode, ref buffer);
+		foreach (var node in endNodes) SerializeLinks(node, ref buffer);
+
+		var looseNodes = _shaderNodes.Where(n => !_alreadyCompiled.Contains(n)).ToArray();
+		foreach (var node in looseNodes) SerializeLinks(node, ref buffer);
 	}
 
-	private void SerializeNode(ShaderNode node, ref SpanBuffer<byte> buffer)
+	private void SerializeLinks(ShaderNode node, ref SpanBuffer<byte> buffer)
 	{
 		if (_alreadyCompiled.Contains(node)) return;
 		foreach (var inputNodeConnector in node.InputConnectors)
 		{
 			if (inputNodeConnector.ConnectedOutputNode is null) continue;
-			SerializeNode(inputNodeConnector.ConnectedOutputNode, ref buffer);
+			SerializeLinks(inputNodeConnector.ConnectedOutputNode, ref buffer);
 		}
 
 		buffer.Write(node.Guid);
-		node.Serialize(ref buffer);
+		node.SerializeLinks(ref buffer);
 		_alreadyCompiled.Add(node);
 	}
 
 	public void DeserializeGraph(ref SpanBuffer<byte> buffer)
 	{
 		int nodeCount = buffer.Read<int>();
-		// App.Logger.Debug.Message($"Loading {nodeCount} nodes");
+		App.Logger.Debug.Message($"Loading {nodeCount} nodes");
 		for (int i = 0; i < nodeCount; i++)
 		{
 			var guid = buffer.Read<Guid>();
@@ -507,15 +514,18 @@ public class ShaderGraph
 			var pos = buffer.Read<Vector2<float>>();
 
 			var node = NodeSelectorUi.Nodes[nodeTypeName].Invoke(guid, nodeName);
+			node.Deserialize(ref buffer, this);
+
 			AddNode(node, pos);
 
-			// App.Logger.Debug.Message($"Adding node {nodeTypeName} ({guid}) at {pos}");
+			App.Logger.Debug.Message($"Adding node {nodeTypeName} ({guid}) at {pos}");
 		}
 
 		for (int i = 0; i < nodeCount; i++)
 		{
 			var guid = buffer.Read<Guid>();
-			GetNodeByGuid(guid).Deserialize(ref buffer, this);
+			App.Logger.Debug.Message($"Loading links for {guid}");
+			GetNodeByGuid(guid).DeserializeLinks(ref buffer, this);
 		}
 
 		foreach (var shaderNode in _shaderNodes) UiShaderNodes[shaderNode].UpdateOutputCurves();

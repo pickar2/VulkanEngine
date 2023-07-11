@@ -30,6 +30,22 @@ public class ShaderResourceType
 		Short, Int, Float, Double, Vec2I16, Vec2I, Vec2F, Vec2D, Vec3I16, Vec3I, Vec3F, Vec3D, Vec4I16, Vec4I, Vec4F, Vec4D
 	};
 
+	private static readonly Dictionary<ShaderResourceType, int> TypeToId = new();
+	private static readonly Dictionary<int, ShaderResourceType> IdToType = new();
+
+	static ShaderResourceType()
+	{
+		for (int index = 0; index < AllTypes.Length; index++)
+		{
+			var shaderResourceType = AllTypes[index];
+			TypeToId[shaderResourceType] = index;
+			IdToType[index] = shaderResourceType;
+		}
+	}
+
+	public int GetTypeId() => TypeToId[this];
+	public static ShaderResourceType GetTypeFromId(int id) => IdToType[id];
+
 	private static readonly Dictionary<ShaderResourceType, ShaderResourceType> ScalarToVector2Dict = new()
 	{
 		{Short, Vec2I16},
@@ -107,7 +123,7 @@ public class ShaderResourceType
 			2 => ScalarToVector2Dict[scalar],
 			3 => ScalarToVector3Dict[scalar],
 			4 => ScalarToVector4Dict[scalar],
-			_ => throw new ArgumentException($"{nameof(vectorSize)} is out of range.")
+			_ => Vector2Scalar[scalar]
 		};
 
 	public static ShaderResourceType ScalarToVector2(ShaderResourceType scalar) => ScalarToVector2Dict[scalar];

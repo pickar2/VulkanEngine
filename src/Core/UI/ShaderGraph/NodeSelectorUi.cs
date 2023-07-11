@@ -40,6 +40,8 @@ public class NodeSelectorUi : AbsolutePanel
 		{"intToRGBA", (guid, name) => new IntToRgbaFunctionNode(guid, name ?? $"IntToRGBA_{guid.ToShortString()}") {NodeTypeName = "intToRGBA"}},
 		{"dot", (guid, name) => new DotFunctionNode(guid, name ?? $"DotFunctionNode_{guid.ToShortString()}") {NodeTypeName = "dot"}},
 		{"length", (guid, name) => new LengthFunctionNode(guid, name ?? $"LengthFunctionNode_{guid.ToShortString()}") {NodeTypeName = "length"}},
+		{"floor", (guid, name) => new FloorFunctionNode(guid, name ?? $"FloorFunctionNode_{guid.ToShortString()}") {NodeTypeName = "floor"}},
+		{"ceil", (guid, name) => new CeilFunctionNode(guid, name ?? $"CeilFunctionNode_{guid.ToShortString()}") {NodeTypeName = "ceil"}},
 		{"pow", (guid, name) => new PowFunctionNode(guid, name ?? $"PowFunctionNode_{guid.ToShortString()}") {NodeTypeName = "pow"}},
 		{"min", (guid, name) => new MinFunctionNode(guid, name ?? $"MinFunctionNode_{guid.ToShortString()}") {NodeTypeName = "min"}},
 		{"max", (guid, name) => new MaxFunctionNode(guid, name ?? $"MaxFunctionNode_{guid.ToShortString()}") {NodeTypeName = "max"}},
@@ -53,7 +55,7 @@ public class NodeSelectorUi : AbsolutePanel
 		{"add", (guid, name) => new ArithmeticFunctionNode(guid, name ?? $"AddFunctionNode_{guid.ToShortString()}", "+") {NodeTypeName = "add"}},
 		{"sub", (guid, name) => new ArithmeticFunctionNode(guid, name ?? $"SubFunctionNode_{guid.ToShortString()}", "-") {NodeTypeName = "sub"}},
 		{"mul", (guid, name) => new ArithmeticFunctionNode(guid, name ?? $"MulFunctionNode_{guid.ToShortString()}", "*") {NodeTypeName = "mul"}},
-		{"div", (guid, name) => new ArithmeticFunctionNode(guid, name ?? $"DivFunctionNode_{guid.ToShortString()}", "/") {NodeTypeName = "div"}}
+		{"div", (guid, name) => new ArithmeticFunctionNode(guid, name ?? $"DivFunctionNode_{guid.ToShortString()}", "/") {NodeTypeName = "div"}},
 	};
 
 	public NodeSelectorUi(UiContext context, ShaderGraph shaderGraph) : base(context)
@@ -78,7 +80,7 @@ public class NodeSelectorUi : AbsolutePanel
 		foreach ((string? name, var factory) in Nodes)
 		{
 			var nodeLine = new AbsolutePanel(context);
-			nodeLine.Size.Y = 25;
+			nodeLine.Size.Y = 30;
 			stack.AddChild(nodeLine);
 
 			var border = new BorderBox(context, Color.Red600, 1);
@@ -94,7 +96,7 @@ public class NodeSelectorUi : AbsolutePanel
 				if (button != MouseButton.Left) return false;
 				if (type != ClickType.End) return false;
 
-				_shaderGraph.AddNode(factory.Invoke(Guid.NewGuid(), null), MarginLT);
+				_shaderGraph.AddNode(factory.Invoke(Guid.NewGuid(), null), MarginLT - shaderGraph.GraphPanel.MarginLT);
 				Parent?.RemoveChild(this);
 				Dispose();
 
