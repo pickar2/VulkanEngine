@@ -1,16 +1,17 @@
-﻿using System.Collections.Generic;
-using System.Drawing;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
-using Core.Native.Shaderc;
 using Core.UI.Controls;
 using Core.UI.Controls.Panels;
+using Core.Utils;
+using Core.Vulkan;
 using Core.Vulkan.Api;
 using Core.Vulkan.Renderers;
 using Core.Window;
 using SDL2;
 using SimpleMath.Vectors;
-using Rectangle = Core.UI.Controls.Rectangle;
 
 namespace Core.UI.ShaderGraph;
 
@@ -18,6 +19,7 @@ public class ShaderGraph
 {
 	private readonly HashSet<ShaderNode> _alreadyCompiled = new();
 	private readonly HashSet<ShaderNode> _shaderNodes = new();
+	private readonly Dictionary<Guid, ShaderNode> _guidToNode = new();
 
 	public readonly Dictionary<ShaderNode, UiShaderNode> UiShaderNodes = new();
 	public readonly Dictionary<UiControl, ShaderNode> UiControlToShaderNode = new();
@@ -32,9 +34,15 @@ public class ShaderGraph
 	public string Identifier { get; set; } = default!;
 	public string Type { get; set; } = default!;
 
+	public ShaderNode GetNodeByGuid(Guid guid) =>
+		_guidToNode.TryGetValue(guid, out var node) ? node : throw new Exception($"Node with guid `{guid}` not found.");
+
 	public string GetGraphCode()
 	{
 		_alreadyCompiled.Clear();
+
+		// var guid = Guid.NewGuid();
+		// guid.ToString()
 
 		var header = new StringBuilder();
 		var body = new StringBuilder();
@@ -76,7 +84,6 @@ public class ShaderGraph
 			CompileNode(inputNodeConnector.ConnectedOutputNode, header, body);
 		}
 
-
 		string headerCode = node.GetHeaderCode();
 		if (headerCode.Length > 0) header.Append(node.GetHeaderCode());
 
@@ -90,6 +97,8 @@ public class ShaderGraph
 	{
 		_shaderNodes.Add(node);
 		UiShaderNodes[node] = UiShaderNodeFactories.CreateNode(GeneralRenderer.UiContext, this, node, Id++);
+
+		_guidToNode[node.Guid] = node;
 	}
 
 	public void AddNode<TNode>(TNode node, Vector2<float> pos) where TNode : ShaderNode
@@ -99,6 +108,8 @@ public class ShaderGraph
 
 		UiShaderNodes[node].Draw(pos);
 		GraphPanel.AddChild(UiShaderNodes[node].Container);
+
+		_guidToNode[node.Guid] = node;
 	}
 
 	public void RemoveNode(ShaderNode node)
@@ -131,6 +142,8 @@ public class ShaderGraph
 
 		uiNode.Container.Parent?.RemoveChild(uiNode.Container);
 		uiNode.Container.Dispose();
+
+		_guidToNode.Remove(node.Guid);
 	}
 
 	public static void Link(ShaderNode outputNode, int outputIndex, ShaderNode inputNode, int inputIndex)
@@ -152,35 +165,41 @@ public class ShaderGraph
 			Type = "FragmentShader"
 		};
 
-		graph.StructFields.Add((ShaderResourceType.Int, "color"));
+		// graph.StructFields.Add((ShaderResourceType.Int, "color"));
 
-		var outColor = new OutputNode("outColor", ShaderResourceType.Vec3F);
-		var colorAlpha = new ConstInputNode("colorAlpha", ShaderResourceType.Float, "0.4f");
-		var someVec3 = new Vec3FunctionNode("someVec3");
-		var otherVec3 = new Vec3FunctionNode("otherVec3");
-		var dotFunc = new DotFunctionNode("dotFunc");
-		var someOtherInputName = new ConstInputNode("someOtherInputName", ShaderResourceType.Float, "1000f");
+		// var outColor = new OutputNode(Guid.NewGuid(), "outColor", ShaderResourceType.Vec3F);
+		// var colorAlpha = new ConstInputNode(Guid.NewGuid(), "colorAlpha", ShaderResourceType.Float, "0.4f");
+		// var someVec3 = new Vec3FunctionNode(Guid.NewGuid(), "someVec3");
+		// var otherVec3 = new Vec3FunctionNode(Guid.NewGuid(), "otherVec3");
+		// var dotFunc = new DotFunctionNode(Guid.NewGuid(), "dotFunc");
+		// var someOtherInputName = new ConstInputNode(Guid.NewGuid(), "someOtherInputName", ShaderResourceType.Float, "1000f");
+		//
+		// graph.AddNode(colorAlpha);
+		// graph.AddNode(someOtherInputName);
+		// graph.AddNode(someVec3);
+		// graph.AddNode(otherVec3);
+		// graph.AddNode(dotFunc);
+		// graph.AddNode(outColor);
+		//
+		// Link(colorAlpha, 0, someVec3, 0);
+		// Link(colorAlpha, 0, someVec3, 1);
+		// Link(colorAlpha, 0, someVec3, 2);
+		//
+		// Link(colorAlpha, 0, otherVec3, 0);
+		//
+		// Link(someVec3, 0, dotFunc, 1);
+		// Link(dotFunc, 0, outColor, 0);
+		//
+		// Link(otherVec3, 0, dotFunc, 0);
+		//
+		// Link(someOtherInputName, 0, otherVec3, 1);
+		// Link(someOtherInputName, 0, otherVec3, 2);
 
-		graph.AddNode(colorAlpha);
-		graph.AddNode(someOtherInputName);
-		graph.AddNode(someVec3);
-		graph.AddNode(otherVec3);
-		graph.AddNode(dotFunc);
-		graph.AddNode(outColor);
-
-		Link(colorAlpha, 0, someVec3, 0);
-		Link(colorAlpha, 0, someVec3, 1);
-		Link(colorAlpha, 0, someVec3, 2);
-
-		Link(colorAlpha, 0, otherVec3, 0);
-
-		Link(someVec3, 0, dotFunc, 1);
-		Link(dotFunc, 0, outColor, 0);
-
-		Link(otherVec3, 0, dotFunc, 0);
-
-		Link(someOtherInputName, 0, otherVec3, 1);
-		Link(someOtherInputName, 0, otherVec3, 2);
+		// var sb = new StringBuilder();
+		// foreach (var node in graph._shaderNodes)
+		// {
+		// 	// node.
+		// }
 
 		// Console.Out.WriteLine(graph.CompileGraph());
 
@@ -203,7 +222,7 @@ public class ShaderGraph
 		graph.GraphPanel.TightBox = true;
 		mainControl.AddChild(graph.GraphPanel);
 
-		mainControl.OnDrag(((control, _, motion, button, type) =>
+		mainControl.OnDrag((control, _, motion, button, type) =>
 		{
 			if (button != MouseButton.Middle) return false;
 
@@ -219,12 +238,12 @@ public class ShaderGraph
 			}
 
 			return true;
-		}));
+		});
 
 		NodeSelectorUi? nodeSelector = null;
 		bool selectingNode = false;
 
-		mainControl.OnClick(((control, button, pos, _, type) =>
+		mainControl.OnClick((control, button, pos, _, type) =>
 		{
 			if (button != MouseButton.Right) return false;
 			if (type != ClickType.End) return false;
@@ -234,13 +253,13 @@ public class ShaderGraph
 				nodeSelector = new NodeSelectorUi(GeneralRenderer.UiContext, graph);
 				nodeSelector.OffsetZ = 20;
 
-				nodeSelector.OnClickOutsideOnce(((_, _) =>
+				nodeSelector.OnClickOutsideOnce((_, _) =>
 				{
 					mainControl.RemoveChild(nodeSelector);
 					nodeSelector.Dispose();
 					selectingNode = false;
 					nodeSelector = null;
-				}));
+				});
 				mainControl.AddChild(nodeSelector);
 				selectingNode = true;
 			}
@@ -248,7 +267,7 @@ public class ShaderGraph
 			nodeSelector!.MarginLT = pos.Cast<int, float>() / control.CombinedScale;
 
 			return true;
-		}));
+		});
 
 		// TODO: UiControl.onScroll()
 		// TODO: scroll relative to position
@@ -330,7 +349,7 @@ public class ShaderGraph
 
 			graph.Identifier = "graph_generated";
 
-			var code = graph.GetGraphCode();
+			string code = graph.GetGraphCode();
 			// App.Logger.Debug.Message($"{code}");
 			ShaderManager.SetVirtualShader("@graph_generated", code);
 			GeneralRenderer.UiContext.MaterialManager.RegisterMaterial(code, "@graph_generated");
@@ -347,11 +366,158 @@ public class ShaderGraph
 					OffsetZ = 100
 				};
 				graphGeneratedBox.Component.MarkForGPUUpdate();
-				
+
 				mainControl.AddChild(graphGeneratedBox);
 			}
 
 			return true;
 		});
+
+		var saveButton = new Rectangle(mainControl.Context)
+		{
+			Color = Color.Slate50,
+			Size = (100, 30),
+			MarginLT = (200, 45),
+			OffsetZ = 100
+		};
+		mainControl.AddChild(saveButton);
+
+		var saveAlign = new AlignPanel(saveButton.Context) {Alignment = Alignment.Center};
+		saveButton.AddChild(saveAlign);
+
+		var saveLabel = new Label(saveAlign.Context) {Text = "Save", OffsetZ = 1};
+		saveAlign.AddChild(saveLabel);
+
+		saveButton.OnClick((control, button, pos, clicks, type) =>
+		{
+			if (button != MouseButton.Left) return false;
+			if (type != ClickType.End) return false;
+
+			int size = sizeof(int);
+			foreach (var shaderNode in graph._shaderNodes)
+			{
+				size += shaderNode.CalculateByteCount();
+				size += 2 * sizeof(Guid);
+				size += sizeof(Vector2<float>);
+				size += shaderNode.NodeTypeName.GetByteCount() + sizeof(int);
+				size += shaderNode.NodeName.GetByteCount() + sizeof(int);
+			}
+
+			Span<byte> span = stackalloc byte[size];
+			var buffer = span.AsBuffer();
+			graph.SerializeGraph(ref buffer);
+
+			using var file = File.Create("compiled_shader_graph.sg");
+			file.Write(span);
+
+			return true;
+		});
+
+		var loadButton = new Rectangle(mainControl.Context)
+		{
+			Color = Color.Slate50,
+			Size = (100, 30),
+			MarginLT = (200, 80),
+			OffsetZ = 100
+		};
+		mainControl.AddChild(loadButton);
+
+		var loadAlign = new AlignPanel(loadButton.Context) {Alignment = Alignment.Center};
+		loadButton.AddChild(loadAlign);
+
+		var loadLabel = new Label(loadAlign.Context) {Text = "Load", OffsetZ = 1};
+		loadAlign.AddChild(loadLabel);
+
+		loadButton.OnClick((control, button, pos, clicks, type) =>
+		{
+			if (button != MouseButton.Left) return false;
+			if (type != ClickType.End) return false;
+
+			if (Path.Exists("compiled_shader_graph.sg"))
+			{
+				using var file = File.OpenRead("compiled_shader_graph.sg");
+				Span<byte> span = stackalloc byte[(int) file.Length];
+				var buffer = span.AsBuffer();
+				int offset = 0;
+				int read;
+				do
+				{
+					read = file.Read(span[offset..]);
+					offset += read;
+				} while (read != 0);
+
+				var nodes = graph._shaderNodes.ToArray();
+				foreach (var node in nodes) graph.RemoveNode(node);
+
+				graph.DeserializeGraph(ref buffer);
+			}
+
+			return true;
+		});
+	}
+
+	public void SerializeGraph(ref SpanBuffer<byte> buffer)
+	{
+		_alreadyCompiled.Clear();
+
+		int nodeCount = _shaderNodes.Count;
+		buffer.Write(nodeCount);
+
+		// App.Logger.Debug.Message($"Saving {nodeCount} nodes");
+
+		foreach (var node in _shaderNodes)
+		{
+			buffer.Write(node.Guid);
+			buffer.WriteVarString(node.NodeTypeName);
+			buffer.WriteVarString(node.NodeName);
+
+			buffer.Write(UiShaderNodes[node].Pos);
+
+			// App.Logger.Debug.Message($"Saving node {node.NodeTypeName} ({node.Guid}) at {UiShaderNodes[node].Pos}");
+		}
+
+		var endNodes = _shaderNodes.Where(shaderNode => shaderNode.InputConnectors.Length > 0 && shaderNode.OutputConnectors.Length == 0).ToList();
+		foreach (var shaderNode in endNodes) SerializeNode(shaderNode, ref buffer);
+	}
+
+	private void SerializeNode(ShaderNode node, ref SpanBuffer<byte> buffer)
+	{
+		if (_alreadyCompiled.Contains(node)) return;
+		foreach (var inputNodeConnector in node.InputConnectors)
+		{
+			if (inputNodeConnector.ConnectedOutputNode is null) continue;
+			SerializeNode(inputNodeConnector.ConnectedOutputNode, ref buffer);
+		}
+
+		buffer.Write(node.Guid);
+		node.Serialize(ref buffer);
+		_alreadyCompiled.Add(node);
+	}
+
+	public void DeserializeGraph(ref SpanBuffer<byte> buffer)
+	{
+		int nodeCount = buffer.Read<int>();
+		// App.Logger.Debug.Message($"Loading {nodeCount} nodes");
+		for (int i = 0; i < nodeCount; i++)
+		{
+			var guid = buffer.Read<Guid>();
+			string nodeTypeName = buffer.ReadVarString();
+			string nodeName = buffer.ReadVarString();
+
+			var pos = buffer.Read<Vector2<float>>();
+
+			var node = NodeSelectorUi.Nodes[nodeTypeName].Invoke(guid, nodeName);
+			AddNode(node, pos);
+
+			// App.Logger.Debug.Message($"Adding node {nodeTypeName} ({guid}) at {pos}");
+		}
+
+		for (int i = 0; i < nodeCount; i++)
+		{
+			var guid = buffer.Read<Guid>();
+			GetNodeByGuid(guid).Deserialize(ref buffer, this);
+		}
+
+		foreach (var shaderNode in _shaderNodes) UiShaderNodes[shaderNode].UpdateOutputCurves();
 	}
 }

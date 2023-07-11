@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
+using Core.Utils;
 using Core.Vulkan.Utility;
 using Silk.NET.Vulkan;
 
@@ -17,21 +19,14 @@ public static unsafe class PointerUtils
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static void WriteToSpan<T>(this ref T value, SpanWithPosition<byte> span) where T : struct
+	public static void WriteToSpan<T>(this ref T value, SpanBuffer<byte> span) where T : struct
 	{
 		var valueSpan = MemoryMarshal.Cast<byte, T>(span.Span[span.Position..]);
 		valueSpan[0] = value;
 	}
 
-	public static SpanWithPosition<T> WriteValue<T, TValue>(this SpanWithPosition<T> span, TValue value) where TValue : unmanaged where T : unmanaged
-	{
-		MemoryMarshal.Cast<T, TValue>(span.Span[span.Position..])[0] = value;
-		span.Position += sizeof(TValue);
-		return span;
-	}
-
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static SpanWithPosition<T> WithPosition<T>(this Span<T> span) where T : unmanaged => span;
+	public static SpanBuffer<T> AsSpanBuffer<T>(this Span<T> span) where T : unmanaged => span;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Span<T> AsSpan<T>(this ref T value) where T : struct => MemoryMarshal.CreateSpan(ref value, 1);
@@ -88,24 +83,118 @@ public static unsafe class PointerUtils
 		(T*) Unsafe.AsPointer(ref MemoryMarshal.GetReference(CollectionsMarshal.AsSpan(list)));
 }
 
-public unsafe ref struct SpanWithPosition<T>
+public unsafe ref struct SpanBuffer<T> where T : unmanaged
 {
 	public Span<T> Span;
-	public int Position;
 
-	public SpanWithPosition(Span<T> span, int position = 0)
+	public int Position { get; set; }
+
+	public SpanBuffer(Span<T> span, int position = 0)
 	{
 		Span = span;
 		Position = position;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public SpanWithPosition<T> Reset()
+	public SpanBuffer<T> Reset()
 	{
 		Position = 0;
 		return this;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static implicit operator SpanWithPosition<T>(Span<T> span) => new(span);
+	public T Read()
+	{
+		var value = Span[Position..][0];
+		Position += sizeof(T);
+		return value;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public TOther Read<TOther>() where TOther : unmanaged
+	{
+		var value = MemoryMarshal.Cast<T, TOther>(Span[Position..])[0];
+		Position += sizeof(TOther);
+		return value;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public SpanBuffer<T> Write(T value)
+	{
+		Span[Position..][0] = value;
+		Position += sizeof(T);
+
+		return this;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public SpanBuffer<T> Write<TOther>(TOther value) where TOther : unmanaged
+	{
+		MemoryMarshal.Cast<T, TOther>(Span[Position..])[0] = value;
+		Position += Maths.DivideRoundUp(sizeof(TOther), sizeof(T));
+
+		return this;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public SpanBuffer<T> Write(T[] array)
+	{
+		array.CopyTo(Span[Position..]);
+		Position += array.Length * sizeof(T);
+
+		return this;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public SpanBuffer<T> Write<TOther>(TOther[] array) where TOther : unmanaged
+	{
+		array.CopyTo(MemoryMarshal.Cast<T, TOther>(Span[Position..]));
+		Position += array.Length * Maths.DivideRoundUp(sizeof(TOther), sizeof(T));
+
+		return this;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static implicit operator SpanBuffer<T>(Span<T> span) => new(span);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static implicit operator Span<T>(SpanBuffer<T> span) => span.Span;
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static implicit operator ReadOnlySpan<T>(SpanBuffer<T> span) => span.Span;
+}
+
+public static class SpanBufferUtils
+{
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static SpanBuffer<T> AsBuffer<T>(this Span<T> span) where T : unmanaged => span;
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static string ReadString(this ref SpanBuffer<byte> buffer, int size)
+	{
+		string str = Encoding.UTF8.GetString(buffer.Span[buffer.Position..(buffer.Position + size)]);
+		buffer.Position += size;
+		return str;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static string ReadVarString(this ref SpanBuffer<byte> buffer)
+	{
+		int stringSize = buffer.Read<int>();
+		return buffer.ReadString(stringSize);
+	}
+
+	public static void WriteString(this ref SpanBuffer<byte> buffer, string str)
+	{
+		int bytesCount = str.GetBytes(buffer.Span[buffer.Position..]);
+		buffer.Position += bytesCount;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static void WriteVarString(this ref SpanBuffer<byte> buffer, string str)
+	{
+		int bytesCount = str.GetBytes(buffer.Span[(buffer.Position + sizeof(int))..]);
+		buffer.Write(bytesCount);
+		buffer.Position += bytesCount;
+	}
 }

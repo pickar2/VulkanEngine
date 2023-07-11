@@ -342,7 +342,7 @@ public unsafe partial class UiRootRenderer : RenderChain
 		cmd.Cmd.BindComputeDescriptorSets(_sortMainPipeline.Value.PipelineLayout, 1, 1, &countersSet);
 		cmd.Cmd.BindComputeDescriptorSets(_sortMainPipeline.Value.PipelineLayout, 2, 1, &indicesSet);
 
-		var count = (uint) Math.Ceiling((float) ComponentManager.Factory.MaxComponents / 1024);
+		uint count = (uint) Math.Ceiling((float) ComponentManager.Factory.MaxComponents / 1024);
 		for (int i = 0; i < count; i++)
 		{
 			Context.Vk.CmdDispatchBase(cmd, (uint) i, 0, 0, 1, 1, 1);
@@ -475,11 +475,11 @@ public unsafe partial class UiRootRenderer : RenderChain
 
 		for (int i = 0; i < Context.State.FrameOverlap; i++)
 		{
-			span.WithPosition()
-				.WriteValue(new DescriptorBufferInfo(_counters1Buffer[i], 0, ZCount * 4))
-				.WriteValue(new DescriptorBufferInfo(_counters2Buffer[i], 0, ZCount * 4))
-				.WriteValue(new DescriptorBufferInfo(_offsetsBuffer[i], 0, ZCount * 4))
-				.WriteValue(new DescriptorBufferInfo(_countBuffer[i], 0, CountDataSize));
+			span.AsSpanBuffer()
+				.Write(new DescriptorBufferInfo(_counters1Buffer[i], 0, ZCount * 4))
+				.Write(new DescriptorBufferInfo(_counters2Buffer[i], 0, ZCount * 4))
+				.Write(new DescriptorBufferInfo(_offsetsBuffer[i], 0, ZCount * 4))
+				.Write(new DescriptorBufferInfo(_countBuffer[i], 0, CountDataSize));
 
 			_countersUpdateTemplate.Value.ExecuteUpdate(_sortCountersSets[i], span.AsPointer());
 		}

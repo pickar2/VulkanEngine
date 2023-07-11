@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Core.Utils;
@@ -67,4 +69,12 @@ public static class Maths
 
 	private const float DegToRadiansF = (float) Math.PI / 180.0f;
 	public static float ToRadians(this float val) => DegToRadiansF * val;
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+	public static T DivideRoundUp<T>(T a, T b) where T : unmanaged, IBinaryInteger<T>
+	{
+		var result = a / b;
+		if (a % b > T.Zero) result++;
+		return result;
+	}
 }
