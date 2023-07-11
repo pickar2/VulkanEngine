@@ -115,5 +115,5 @@ public class ShaderResourceType
 	public static ShaderResourceType ScalarToVector4(ShaderResourceType scalar) => ScalarToVector4Dict[scalar];
 
 	public static ShaderResourceType VectorToScalar(ShaderResourceType vector) => Vector2Scalar[vector];
-	public static int VectorSize(ShaderResourceType vector) => VectorSizes[vector];
+	public static int VectorSize(ShaderResourceType vector) => VectorSizes.TryGetValue(vector, out var size) ? size : 1;
 }

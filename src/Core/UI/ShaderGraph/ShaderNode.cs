@@ -440,6 +440,176 @@ public class MixFunctionNode : FunctionNode
 	public override string FunctionName => "mix";
 }
 
+public class StepFunctionNode : FunctionNode
+{
+	protected List<ShaderResourceType> DefaultAcceptedTypes { get; set; }
+	protected List<ShaderResourceType> AcceptedTypes { get; set; }
+	protected int InputCount { get; set; }
+
+	protected List<ShaderResourceType> OtherTypes { get; set; }
+
+	public StepFunctionNode(string nodeName)
+	{
+		NodeName = nodeName;
+		InputCount = 1;
+		DefaultAcceptedTypes = new List<ShaderResourceType>
+		{
+			ShaderResourceType.Float,
+			ShaderResourceType.Vec2F,
+			ShaderResourceType.Vec3F,
+			ShaderResourceType.Vec4F
+		};
+		AcceptedTypes = new List<ShaderResourceType>(DefaultAcceptedTypes);
+		OtherTypes = new List<ShaderResourceType>(DefaultAcceptedTypes);
+
+		Init();
+	}
+
+	protected void Init()
+	{
+		InputConnectors = new IInputConnector[InputCount + 1];
+		InputConnectors[0] = new DefaultInputConnector(OtherTypes);
+		InputConnectors[1] = new DefaultInputConnector(AcceptedTypes);
+
+		OutputConnectors = Array.Empty<IOutputConnector>();
+
+		OnSetInput += (inputIndex, outputNode, outputIndex) =>
+		{
+			if (inputIndex == 0) return;
+
+			var type = outputNode.OutputConnectors[outputIndex].Type.ThrowIfNull();
+			if(type.Equals(OutputType)) return;
+
+			AcceptedTypes.Clear();
+			AcceptedTypes.Add(type);
+			OutputType = type;
+			
+			OtherTypes.Clear();
+			OtherTypes.Add(type);
+			if (ShaderResourceType.VectorSize(type) != 1)
+				OtherTypes.Add(ShaderResourceType.VectorToScalar(type));
+
+#pragma warning disable CA2245
+			// triggering signal update on AcceptedTypes change
+			InputConnectors = InputConnectors;
+#pragma warning restore CA2245
+
+			OutputConnectors = new IOutputConnector[]
+			{
+				new DelegateOutputConnector
+				{
+					TypeFunc = () => OutputType,
+					NameFunc = () => NodeName
+				}
+			};
+		};
+
+		OnUnsetInput += _ =>
+		{
+			for (int index = 1; index < InputConnectors.Length; index++)
+			{
+				var connector = InputConnectors[index];
+				if (connector.ConnectedOutputNode is not null)
+					return;
+			}
+
+			foreach (var connection in OutputConnectors[0].Connections) connection.ConnectedInputNode?.UnsetInput(connection.InputConnectorIndex);
+			AcceptedTypes.Clear();
+			AcceptedTypes.AddRange(DefaultAcceptedTypes);
+			OtherTypes.Clear();
+			OtherTypes.AddRange(DefaultAcceptedTypes);
+			OutputType = null;
+			OutputConnectors = Array.Empty<IOutputConnector>();
+		};
+	}
+
+	public override string FunctionName => "step";
+}
+
+public class SmoothStepFunctionNode : FunctionNode
+{
+	protected List<ShaderResourceType> DefaultAcceptedTypes { get; set; }
+	protected List<ShaderResourceType> AcceptedTypes { get; set; }
+	protected int InputCount { get; set; }
+
+	protected List<ShaderResourceType> OtherTypes { get; set; }
+
+	public SmoothStepFunctionNode(string nodeName)
+	{
+		NodeName = nodeName;
+		InputCount = 1;
+		DefaultAcceptedTypes = new List<ShaderResourceType>
+		{
+			ShaderResourceType.Float,
+			ShaderResourceType.Vec2F,
+			ShaderResourceType.Vec3F,
+			ShaderResourceType.Vec4F
+		};
+		AcceptedTypes = new List<ShaderResourceType>(DefaultAcceptedTypes);
+		OtherTypes = new List<ShaderResourceType>(DefaultAcceptedTypes);
+
+		Init();
+	}
+
+	protected void Init()
+	{
+		InputConnectors = new IInputConnector[InputCount + 2];
+		InputConnectors[0] = new DefaultInputConnector(OtherTypes);
+		InputConnectors[1] = new DefaultInputConnector(OtherTypes);
+		InputConnectors[2] = new DefaultInputConnector(AcceptedTypes);
+
+		OutputConnectors = Array.Empty<IOutputConnector>();
+
+		OnSetInput += (inputIndex, outputNode, outputIndex) =>
+		{
+			if (inputIndex is 0 or 1) return;
+
+			var type = outputNode.OutputConnectors[outputIndex].Type.ThrowIfNull();
+			if(type.Equals(OutputType)) return;
+
+			AcceptedTypes.Clear();
+			AcceptedTypes.Add(type);
+			OutputType = type;
+
+			OtherTypes.Clear();
+			OtherTypes.Add(type);
+			if (ShaderResourceType.VectorSize(type) != 1)
+				OtherTypes.Add(ShaderResourceType.VectorToScalar(type));
+
+#pragma warning disable CA2245
+			// triggering signal update on AcceptedTypes change
+			InputConnectors = InputConnectors;
+#pragma warning restore CA2245
+
+			OutputConnectors = new IOutputConnector[]
+			{
+				new DelegateOutputConnector
+				{
+					TypeFunc = () => OutputType,
+					NameFunc = () => NodeName
+				}
+			};
+		};
+
+		OnUnsetInput += _ =>
+		{
+			var connector = InputConnectors[2];
+			if (connector.ConnectedOutputNode is not null)
+				return;
+
+			foreach (var connection in OutputConnectors[0].Connections) connection.ConnectedInputNode?.UnsetInput(connection.InputConnectorIndex);
+			AcceptedTypes.Clear();
+			AcceptedTypes.AddRange(DefaultAcceptedTypes);
+			OtherTypes.Clear();
+			OtherTypes.AddRange(DefaultAcceptedTypes);
+			OutputType = null;
+			OutputConnectors = Array.Empty<IOutputConnector>();
+		};
+	}
+
+	public override string FunctionName => "smoothstep";
+}
+
 public abstract class MultiTypeVectorFunction : FunctionNode
 {
 	protected List<ShaderResourceType> DefaultAcceptedTypes { get; set; } = new();
@@ -546,6 +716,48 @@ public class DotFunctionNode : MultiTypeFunction
 	public override string FunctionName => "dot";
 }
 
+public class MinFunctionNode : MultiTypeFunction
+{
+	public MinFunctionNode(string nodeName) : base(nodeName)
+	{
+		DefaultAcceptedTypes = new List<ShaderResourceType>
+		{
+			ShaderResourceType.Vec2F,
+			ShaderResourceType.Vec2D,
+			ShaderResourceType.Vec3F,
+			ShaderResourceType.Vec3D,
+			ShaderResourceType.Vec4F,
+			ShaderResourceType.Vec4D
+		};
+		AcceptedTypes = new List<ShaderResourceType>(DefaultAcceptedTypes);
+		InputCount = 2;
+		Init();
+	}
+
+	public override string FunctionName => "min";
+}
+
+public class MaxFunctionNode : MultiTypeFunction
+{
+	public MaxFunctionNode(string nodeName) : base(nodeName)
+	{
+		DefaultAcceptedTypes = new List<ShaderResourceType>
+		{
+			ShaderResourceType.Vec2F,
+			ShaderResourceType.Vec2D,
+			ShaderResourceType.Vec3F,
+			ShaderResourceType.Vec3D,
+			ShaderResourceType.Vec4F,
+			ShaderResourceType.Vec4D
+		};
+		AcceptedTypes = new List<ShaderResourceType>(DefaultAcceptedTypes);
+		InputCount = 2;
+		Init();
+	}
+
+	public override string FunctionName => "max";
+}
+
 public class SinFunctionNode : MultiTypeFunction
 {
 	public SinFunctionNode(string nodeName) : base(nodeName)
@@ -582,6 +794,109 @@ public class CosFunctionNode : MultiTypeFunction
 	}
 
 	public override string FunctionName => "sin";
+}
+
+public class FractFunctionNode : MultiTypeFunction
+{
+	public FractFunctionNode(string nodeName) : base(nodeName)
+	{
+		DefaultAcceptedTypes = new List<ShaderResourceType>
+		{
+			ShaderResourceType.Float,
+			ShaderResourceType.Vec2F,
+			ShaderResourceType.Vec3F,
+			ShaderResourceType.Vec4F,
+		};
+		AcceptedTypes = new List<ShaderResourceType>(DefaultAcceptedTypes);
+		InputCount = 1;
+		Init();
+	}
+
+	public override string FunctionName => "fract";
+}
+
+public class RadiansFunctionNode : MultiTypeFunction
+{
+	public RadiansFunctionNode(string nodeName) : base(nodeName)
+	{
+		DefaultAcceptedTypes = new List<ShaderResourceType>
+		{
+			ShaderResourceType.Float,
+			ShaderResourceType.Vec2F,
+			ShaderResourceType.Vec3F,
+			ShaderResourceType.Vec4F,
+		};
+		AcceptedTypes = new List<ShaderResourceType>(DefaultAcceptedTypes);
+		InputCount = 1;
+		Init();
+	}
+
+	public override string FunctionName => "radians";
+}
+
+public class DegreesFunctionNode : MultiTypeFunction
+{
+	public DegreesFunctionNode(string nodeName) : base(nodeName)
+	{
+		DefaultAcceptedTypes = new List<ShaderResourceType>
+		{
+			ShaderResourceType.Float,
+			ShaderResourceType.Vec2F,
+			ShaderResourceType.Vec3F,
+			ShaderResourceType.Vec4F,
+		};
+		AcceptedTypes = new List<ShaderResourceType>(DefaultAcceptedTypes);
+		InputCount = 1;
+		Init();
+	}
+
+	public override string FunctionName => "degrees";
+}
+
+public class AbsFunctionNode : MultiTypeFunction
+{
+	public AbsFunctionNode(string nodeName) : base(nodeName)
+	{
+		DefaultAcceptedTypes = new List<ShaderResourceType>
+		{
+			ShaderResourceType.Float,
+			ShaderResourceType.Vec2F,
+			ShaderResourceType.Vec3F,
+			ShaderResourceType.Vec4F,
+			ShaderResourceType.Double,
+			ShaderResourceType.Vec2D,
+			ShaderResourceType.Vec3D,
+			ShaderResourceType.Vec4D,
+			ShaderResourceType.Int,
+			ShaderResourceType.Vec2I,
+			ShaderResourceType.Vec3I,
+			ShaderResourceType.Vec4I,
+		};
+		AcceptedTypes = new List<ShaderResourceType>(DefaultAcceptedTypes);
+		InputCount = 1;
+		Init();
+	}
+
+	public override string FunctionName => "abs";
+}
+
+public class PowFunctionNode : MultiTypeFunction
+{
+	public PowFunctionNode(string nodeName) : base(nodeName)
+	{
+		DefaultAcceptedTypes = new List<ShaderResourceType>
+		{
+			ShaderResourceType.Float,
+			ShaderResourceType.Vec2F,
+			ShaderResourceType.Vec3F,
+			ShaderResourceType.Vec4F,
+		};
+		AcceptedTypes = new List<ShaderResourceType>(DefaultAcceptedTypes);
+		InputCount = 2;
+		Init();
+	}
+
+	public override string FunctionName => "pow";
 }
 
 public class Vec2FunctionNode : MultiTypeVectorFunction
@@ -639,6 +954,27 @@ public class Vec4FunctionNode : MultiTypeVectorFunction
 	}
 
 	public override string FunctionName => OutputType?.CompileName!;
+}
+
+public class LengthFunctionNode : MultiTypeVectorFunction
+{
+	public LengthFunctionNode(string nodeName) : base(nodeName)
+	{
+		DefaultAcceptedTypes = new List<ShaderResourceType>
+		{
+			ShaderResourceType.Vec2F,
+			ShaderResourceType.Vec2D,
+			ShaderResourceType.Vec3F,
+			ShaderResourceType.Vec3D,
+			ShaderResourceType.Vec4F,
+			ShaderResourceType.Vec4D
+		};
+		AcceptedTypes = new List<ShaderResourceType>(DefaultAcceptedTypes);
+		InputCount = 1;
+		Init();
+	}
+
+	public override string FunctionName => "length";
 }
 
 public class OutputNode : ShaderNode
