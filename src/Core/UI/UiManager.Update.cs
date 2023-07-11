@@ -64,8 +64,8 @@ public static partial class UiManager
 	{
 		var handle = new EventWaitHandle(false, EventResetMode.AutoReset);
 
-		var fpsLabel = new Label(GeneralRenderer.UiContext) {MarginLT = (10, 10), OffsetZ = 30};
-		var frameTimeLabel = new Label(GeneralRenderer.UiContext) {MarginLT = (10, 26), OffsetZ = 31};
+		var fpsLabel = new Label(GeneralRenderer.UiContext) {MarginLT = (10, 10), OffsetZ = 30, Color = Color.Neutral50};
+		var frameTimeLabel = new Label(GeneralRenderer.UiContext) {MarginLT = (10, 26), OffsetZ = 31, Color = Color.Neutral50};
 
 		GeneralRenderer.MainRoot.AddChild(fpsLabel);
 		GeneralRenderer.MainRoot.AddChild(frameTimeLabel);

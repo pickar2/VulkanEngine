@@ -58,12 +58,12 @@ float sdf_alpha2( float dOffset, float sdf, float horz_scale, float vert_scale, 
 void font_material(UiElementData data) {
 	font_material_struct mat = font_material_data[data.fragmentDataIndex];
 
-	float scale = mat.scale * 600;
+	float scale = mat.scale * 500;
 	float sdfSize = 2.0 * scale * sdfBorderSize;
 	float subpixelOffset = 0.3333 / scale;
 	float dOffset = 1.0 / sdfSize;
 
-	vec4 color = vec4(0, 0, 0, 1);//intToRGBA(mat.color);
+	vec4 color = intToRGBA(mat.color);
 //	
 //	float sdf       = texture( textures[mat.textureId], fragTexCoord ).a;
 //    float sdf_north = texture( textures[mat.textureId], fragTexCoord + vec2( 0.0, sdfTexel.y ) ).a;
@@ -118,7 +118,7 @@ void font_material(UiElementData data) {
 	float vgrad = abs(grad.y);// 0.0 - vertical stroke, 1.0 - horizontal one
 //	if (subpixel_amount > 0.0) {
 //		 Subpixel SDF samples
-		vec2  subpixel = vec2(subpixelOffset, 0.0);
+//		vec2  subpixel = vec2(subpixelOffset, 0.0);
 
 //		 For displays with vertical subpixel placement:
 //		 vec2 subpixel = vec2( 0.0, subpixelOffset );
@@ -138,8 +138,14 @@ void font_material(UiElementData data) {
 		float vert_scale  = 0.6;
 
 		float alpha = sdf_alpha2(dOffset, sdf, 1.1, 0.6, vgrad);
-//		if (alpha > 0.45) alpha = 1;
-		outColor = vec4(color.rgb, color.a * sqrt(alpha));
+		alpha = sqrt(alpha);
+		if (alpha > 0.95) alpha = 1;
+		if (alpha < 0.1) alpha = 0;
+		alpha = smoothstep(0, 1, alpha);
+		outColor = vec4(color.rgb, color.a * alpha);
+//		outColor = vec4(color.rgb, color.a * smoothstep(0, 1, alpha));
+//		outColor = vec4(color.rgb, color.a * sqrt(alpha));
+//		outColor = vec4(color.rgb, color.a * (alpha));
 //	}
 //
 //	if(sdf < 0.33) outColor.a = 0;

@@ -18,6 +18,7 @@ public class Label : StackPanel
 	private List<CustomBox> _letters = new();
 
 	private Vector2<float> _parentScale;
+	private Color _color;
 
 	private bool _needsUpdate = true;
 	private string _text = string.Empty;
@@ -28,6 +29,7 @@ public class Label : StackPanel
 	public Label(UiContext context) : base(context)
 	{
 		Scale = new Vector2<float>(0.5f);
+		_color = Color.Black;
 
 		_uvMaterial = context.MaterialManager.GetFactory("texture_uv_material");
 		_fontMaterial = context.MaterialManager.GetFactory("font_material");
@@ -48,6 +50,20 @@ public class Label : StackPanel
 					var data = box.FragMaterial.GetMemPtr<FontMaterialData>();
 					data->FontScale = scale;
 				}
+			}
+		}
+	}
+
+	public unsafe Color Color
+	{
+		get => _color;
+		set
+		{
+			_color = value;
+			foreach (var customBox in _letters)
+			{
+				customBox.FragMaterial.GetMemPtr<FontMaterialData>()->Color = value;
+				customBox.FragMaterial.MarkForGPUUpdate();
 			}
 		}
 	}
@@ -119,7 +135,7 @@ public class Label : StackPanel
 			fragData->TextureId = (int) TextureManager.GetTextureId("ConsolasTexture");
 			fragData->FontScale = Math.Max(CombinedScale.X, CombinedScale.Y);
 			fragData->OutlineDistance = 0.1f;
-			fragData->Color = Color.Neutral50;
+			fragData->Color = Color;
 
 			box.FragMaterial.MarkForGPUUpdate();
 

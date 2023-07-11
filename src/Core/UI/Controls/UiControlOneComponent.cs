@@ -87,6 +87,8 @@ public abstract unsafe class UiControlOneComponent : UiControl
 
 	public override void Dispose()
 	{
+		// App.Logger.Debug.Message($"Disposing control frag: ({Component.FragMaterial.VulkanDataIndex}@{Component.FragMaterial.MaterialFactory.Name}), vert: ({Component.VertMaterial.VulkanDataIndex}@{Component.VertMaterial.MaterialFactory.Name})");
+
 		Component.FragMaterial.Dispose();
 		Component.VertMaterial.Dispose();
 		Component.Dispose();

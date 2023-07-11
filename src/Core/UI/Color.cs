@@ -100,6 +100,9 @@ public struct Color
 	public static Color TransparentBlack => new(0, 0, 0, 0);
 	public static Color TransparentWhite => new(1, 1, 1, 0);
 
+	public static Color White => new(0xff, 0xff, 0xff);
+	public static Color Black => new(0, 0, 0);
+
 	public static Color Slate50 => new(0xf8, 0xfa, 0xfc);
 	public static Color Slate100 => new(0xf1, 0xf5, 0xf9);
 	public static Color Slate200 => new(0xe2, 0xe8, 0xf0);

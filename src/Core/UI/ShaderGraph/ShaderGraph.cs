@@ -311,10 +311,16 @@ public class ShaderGraph
 		{
 			Color = Color.Slate50,
 			Size = (100, 30),
-			MarginLT = (155, 5),
+			MarginLT = (200, 5),
 			OffsetZ = 100
 		};
 		mainControl.AddChild(compileButton);
+
+		var compileAlign = new AlignPanel(compileButton.Context) {Alignment = Alignment.Center};
+		compileButton.AddChild(compileAlign);
+
+		var compileLabel = new Label(compileAlign.Context) {Text = "Compile", OffsetZ = 1};
+		compileAlign.AddChild(compileLabel);
 
 		CustomBox? graphGeneratedBox = null;
 		compileButton.OnClick((control, button, pos, clicks, type) =>
@@ -337,7 +343,8 @@ public class ShaderGraph
 					VertMaterial = GeneralRenderer.UiContext.MaterialManager.GetFactory("default_vertex_material").Create(),
 					FragMaterial = GeneralRenderer.UiContext.MaterialManager.GetFactory("graph_generated").Create(),
 					Size = (200, 200),
-					MarginLT = (300, 5)
+					MarginLT = (320, 5),
+					OffsetZ = 100
 				};
 				graphGeneratedBox.Component.MarkForGPUUpdate();
 				
