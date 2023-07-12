@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Drawing;
 using Core.UI.Reactive;
 using Core.Window;
 using SimpleMath.Vectors;
@@ -21,10 +20,11 @@ public class ScrollView : UiControl
 			Color = Color.Amber100,
 			Size = new Vector2<float>(50, 10)
 		};
-		_horizontalSlider.OnClick(((_, button, _, _, _) => button == MouseButton.Left));
+		_horizontalSlider.OnClick((_, button, _, _, _) => button == MouseButton.Left);
 		_horizontalSlider.OnDrag((control, newPos, motion, button, dragType) =>
 		{
 			if (button != MouseButton.Left) return false;
+			if (CombinedScale.X is 0 || CombinedScale.Y is 0) return false;
 			if (dragType == DragType.Move)
 			{
 				var offset = motion / CombinedScale;
@@ -41,10 +41,11 @@ public class ScrollView : UiControl
 			Color = Color.Amber100,
 			Size = new Vector2<float>(10, 50)
 		};
-		_verticalSlider.OnClick(((_, button, _, _, _) => button == MouseButton.Left));
+		_verticalSlider.OnClick((_, button, _, _, _) => button == MouseButton.Left);
 		_verticalSlider.OnDrag((control, newPos, motion, button, dragType) =>
 		{
 			if (button != MouseButton.Left) return false;
+			if (CombinedScale.X is 0 || CombinedScale.Y is 0) return false;
 			if (dragType == DragType.Move)
 			{
 				var offset = motion / CombinedScale;

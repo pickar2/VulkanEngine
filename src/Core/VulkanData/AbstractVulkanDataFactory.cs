@@ -134,7 +134,7 @@ public abstract unsafe class AbstractVulkanDataFactory<TDataHolder> : IVulkanDat
 			? new VulkanBuffer(BufferSize, BufferUsageFlags.StorageBufferBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_TO_GPU)
 			: new VulkanBuffer(BufferSize, BufferUsageFlags.TransferSrcBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_ONLY);
 
-		var newPtr = Context.IsIntegratedGpu ? Marshal.AllocHGlobal((int) BufferSize) : newDataBuffer.Map();
+		nint newPtr = Context.IsIntegratedGpu ? Marshal.AllocHGlobal((int) BufferSize) : newDataBuffer.Map();
 
 		var oldSpan = new Span<byte>(_data, MaxComponents * ComponentSize);
 		var newSpan = new Span<byte>((void*) newPtr, (int) BufferSize);

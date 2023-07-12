@@ -145,20 +145,20 @@ public abstract class ShaderNode
 	public virtual void DeserializeLinks(ref SpanBuffer<byte> buffer, ShaderGraph graph)
 	{
 		int inputCount = buffer.Read<int>();
-		App.Logger.Debug.Message($"Loading {inputCount} inputs");
+		// App.Logger.Debug.Message($"Loading {inputCount} inputs");
 		for (int i = 0; i < inputCount; i++)
 		{
 			int inputIndex = buffer.Read<int>();
 			var nodeGuid = buffer.Read<Guid>();
 			int outputIndex = buffer.Read<int>();
-			
-			App.Logger.Debug.Message($"{inputIndex}, {nodeGuid}, {outputIndex}");
+
+			// App.Logger.Debug.Message($"{inputIndex}, {nodeGuid}, {outputIndex}");
 
 			SetInput(inputIndex, graph.GetNodeByGuid(nodeGuid), outputIndex);
 		}
 
 		int outputCount = buffer.Read<int>();
-		App.Logger.Debug.Message($"Loading {outputCount} outputs");
+		// App.Logger.Debug.Message($"Loading {outputCount} outputs");
 		for (int i = 0; i < outputCount; i++)
 		{
 			int outputIndex = buffer.Read<int>();
@@ -270,7 +270,7 @@ public class ConstInputNode : ShaderNode
 	{
 		int size = sizeof(int); // Type
 		size += Value.GetByteCount() + sizeof(int); // Value
-		
+
 		return base.CalculateByteCount() + size;
 	}
 
@@ -300,8 +300,13 @@ public class ConstInputNode : ShaderNode
 			if (value.Equals(_type)) return;
 			if (OutputConnectors.Length > 0)
 			{
-				foreach (var connection in OutputConnectors[0].Connections)
+				var connections = OutputConnectors[0].Connections.ToArray();
+				foreach (var connection in connections)
+				{
 					connection.ConnectedInputNode?.UnsetInput(connection.InputConnectorIndex);
+					if (connection.InputConnector is not null)
+						RemoveOutput(0, connection.InputConnector);
+				}
 			}
 
 			_type = value;
@@ -321,12 +326,12 @@ public class VariableNode : ShaderNode
 {
 	public ShaderResourceType Type { get; set; }
 	public string VariableName { get; set; }
-	
+
 	public override unsafe int CalculateByteCount()
 	{
 		int size = sizeof(int); // Type
 		size += VariableName.GetByteCount() + sizeof(int); // VariableName
-		
+
 		return base.CalculateByteCount() + size;
 	}
 
@@ -436,6 +441,7 @@ public class VectorDecomposeNode : ShaderNode
 			}
 
 			OutputConnectors = connectors;
+			InputConnectors = InputConnectors;
 		};
 
 		OnUnsetInput += _ =>
@@ -450,6 +456,7 @@ public class VectorDecomposeNode : ShaderNode
 				connection.ConnectedInputNode?.UnsetInput(connection.InputConnectorIndex);
 
 			OutputConnectors = Array.Empty<IOutputConnector>();
+			InputConnectors = InputConnectors;
 		};
 	}
 
@@ -487,17 +494,17 @@ public abstract class MultiTypeFunction : FunctionNode
 
 		OnSetInput += (_, outputNode, outputIndex) =>
 		{
+#pragma warning disable CA2245
+			// triggering signal update on AcceptedTypes change
+			InputConnectors = InputConnectors;
+#pragma warning restore CA2245
+
 			var type = outputNode.OutputConnectors[outputIndex].Type.ThrowIfNull();
 			if (type.Equals(OutputType)) return;
 
 			AcceptedTypes.Clear();
 			AcceptedTypes.Add(type);
 			OutputType = type;
-
-#pragma warning disable CA2245
-			// triggering signal update on AcceptedTypes change
-			InputConnectors = InputConnectors;
-#pragma warning restore CA2245
 
 			OutputConnectors = new IOutputConnector[]
 			{
@@ -559,6 +566,11 @@ public class MixFunctionNode : FunctionNode
 
 		OnSetInput += (inputIndex, outputNode, outputIndex) =>
 		{
+#pragma warning disable CA2245
+			// triggering signal update on AcceptedTypes change
+			InputConnectors = InputConnectors;
+#pragma warning restore CA2245
+
 			if (inputIndex == InputCount) return;
 
 			var type = outputNode.OutputConnectors[outputIndex].Type.ThrowIfNull();
@@ -567,11 +579,6 @@ public class MixFunctionNode : FunctionNode
 			AcceptedTypes.Clear();
 			AcceptedTypes.Add(type);
 			OutputType = type;
-
-#pragma warning disable CA2245
-			// triggering signal update on AcceptedTypes change
-			InputConnectors = InputConnectors;
-#pragma warning restore CA2245
 
 			OutputConnectors = new IOutputConnector[]
 			{
@@ -638,6 +645,10 @@ public class StepFunctionNode : FunctionNode
 
 		OnSetInput += (inputIndex, outputNode, outputIndex) =>
 		{
+#pragma warning disable CA2245
+			// triggering signal update on AcceptedTypes change
+			InputConnectors = InputConnectors;
+#pragma warning restore CA2245
 			if (inputIndex == 0) return;
 
 			var type = outputNode.OutputConnectors[outputIndex].Type.ThrowIfNull();
@@ -651,11 +662,6 @@ public class StepFunctionNode : FunctionNode
 			OtherTypes.Add(type);
 			if (ShaderResourceType.VectorSize(type) != 1)
 				OtherTypes.Add(ShaderResourceType.VectorToScalar(type));
-
-#pragma warning disable CA2245
-			// triggering signal update on AcceptedTypes change
-			InputConnectors = InputConnectors;
-#pragma warning restore CA2245
 
 			OutputConnectors = new IOutputConnector[]
 			{
@@ -725,6 +731,10 @@ public class SmoothStepFunctionNode : FunctionNode
 
 		OnSetInput += (inputIndex, outputNode, outputIndex) =>
 		{
+#pragma warning disable CA2245
+			// triggering signal update on AcceptedTypes change
+			InputConnectors = InputConnectors;
+#pragma warning restore CA2245
 			if (inputIndex is 0 or 1) return;
 
 			var type = outputNode.OutputConnectors[outputIndex].Type.ThrowIfNull();
@@ -738,11 +748,6 @@ public class SmoothStepFunctionNode : FunctionNode
 			OtherTypes.Add(type);
 			if (ShaderResourceType.VectorSize(type) != 1)
 				OtherTypes.Add(ShaderResourceType.VectorToScalar(type));
-
-#pragma warning disable CA2245
-			// triggering signal update on AcceptedTypes change
-			InputConnectors = InputConnectors;
-#pragma warning restore CA2245
 
 			OutputConnectors = new IOutputConnector[]
 			{
@@ -790,6 +795,11 @@ public abstract class MultiTypeVectorFunction : FunctionNode
 
 		OnSetInput += (_, outputNode, outputIndex) =>
 		{
+#pragma warning disable CA2245
+			// triggering signal update on AcceptedTypes change
+			InputConnectors = InputConnectors;
+#pragma warning restore CA2245
+
 			var type = outputNode.OutputConnectors[outputIndex].Type.ThrowIfNull();
 			var vectorType = ShaderResourceType.ScalarToVector(type, InputCount);
 			if (vectorType.Equals(OutputType)) return;
@@ -797,12 +807,6 @@ public abstract class MultiTypeVectorFunction : FunctionNode
 			AcceptedTypes.Clear();
 			AcceptedTypes.Add(type);
 			OutputType = vectorType;
-
-#pragma warning disable CA2245
-			// triggering signal update on AcceptedTypes change
-			InputConnectors = InputConnectors;
-#pragma warning restore CA2245
-
 			OutputConnectors = new IOutputConnector[]
 			{
 				new DelegateOutputConnector
@@ -1062,7 +1066,7 @@ public class FloorFunctionNode : MultiTypeFunction
 			ShaderResourceType.Double,
 			ShaderResourceType.Vec2D,
 			ShaderResourceType.Vec3D,
-			ShaderResourceType.Vec4D,
+			ShaderResourceType.Vec4D
 		};
 		AcceptedTypes = new List<ShaderResourceType>(DefaultAcceptedTypes);
 		InputCount = 1;
@@ -1085,7 +1089,7 @@ public class CeilFunctionNode : MultiTypeFunction
 			ShaderResourceType.Double,
 			ShaderResourceType.Vec2D,
 			ShaderResourceType.Vec3D,
-			ShaderResourceType.Vec4D,
+			ShaderResourceType.Vec4D
 		};
 		AcceptedTypes = new List<ShaderResourceType>(DefaultAcceptedTypes);
 		InputCount = 1;
@@ -1199,7 +1203,7 @@ public class OutputNode : ShaderNode
 		NodeName = nodeName;
 		Type = type;
 	}
-	
+
 	public override unsafe int CalculateByteCount()
 	{
 		int size = sizeof(int); // Type

@@ -504,7 +504,7 @@ public class ShaderGraph
 	public void DeserializeGraph(ref SpanBuffer<byte> buffer)
 	{
 		int nodeCount = buffer.Read<int>();
-		App.Logger.Debug.Message($"Loading {nodeCount} nodes");
+		// App.Logger.Debug.Message($"Loading {nodeCount} nodes");
 		for (int i = 0; i < nodeCount; i++)
 		{
 			var guid = buffer.Read<Guid>();
@@ -518,13 +518,13 @@ public class ShaderGraph
 
 			AddNode(node, pos);
 
-			App.Logger.Debug.Message($"Adding node {nodeTypeName} ({guid}) at {pos}");
+			// App.Logger.Debug.Message($"Adding node {nodeTypeName} ({guid}) at {pos}");
 		}
 
 		for (int i = 0; i < nodeCount; i++)
 		{
 			var guid = buffer.Read<Guid>();
-			App.Logger.Debug.Message($"Loading links for {guid}");
+			// App.Logger.Debug.Message($"Loading links for {guid}");
 			GetNodeByGuid(guid).DeserializeLinks(ref buffer, this);
 		}
 

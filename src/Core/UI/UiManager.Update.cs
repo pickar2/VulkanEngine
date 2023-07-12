@@ -64,11 +64,11 @@ public static partial class UiManager
 	{
 		var handle = new EventWaitHandle(false, EventResetMode.AutoReset);
 
-		var fpsLabel = new Label(GeneralRenderer.UiContext) {MarginLT = (10, 10), OffsetZ = 30, Color = Color.Neutral50};
-		var frameTimeLabel = new Label(GeneralRenderer.UiContext) {MarginLT = (10, 26), OffsetZ = 31, Color = Color.Neutral50};
+		// var fpsLabel = new Label(GeneralRenderer.UiContext) {MarginLT = (10, 10), OffsetZ = 30, Color = Color.Neutral50};
+		// var frameTimeLabel = new Label(GeneralRenderer.UiContext) {MarginLT = (10, 26), OffsetZ = 31, Color = Color.Neutral50};
 
-		GeneralRenderer.MainRoot.AddChild(fpsLabel);
-		GeneralRenderer.MainRoot.AddChild(frameTimeLabel);
+		// GeneralRenderer.MainRoot.AddChild(fpsLabel);
+		// GeneralRenderer.MainRoot.AddChild(frameTimeLabel);
 
 		long lastUpdateTime = 0;
 		const long timeBetweenUpdatesMs = 8;
@@ -76,22 +76,21 @@ public static partial class UiManager
 		while (Context.IsRunning)
 		{
 			if (Stopwatch.GetElapsedTime(lastUpdateTime, Stopwatch.GetTimestamp()).Milliseconds < timeBetweenUpdatesMs) handle.WaitOne(1);
-			;
 
 			double uncappedFps = Maths.Round(1000 / Context.AverageFrameTime, 2);
 
-			fpsLabel.Text = $"FPS: {Maths.FixedPrecision(Context.AverageFps, 1)} ({Maths.FixedPrecision(uncappedFps, 1)})";
-			frameTimeLabel.Text = $"Frame time: {Maths.FixedNumberSize(Maths.FixedPrecision(Context.AverageFrameTime, 2), 4)}ms";
+			// fpsLabel.Text = $"FPS: {Maths.FixedPrecision(Context.AverageFps, 1)} ({Maths.FixedPrecision(uncappedFps, 1)})";
+			// frameTimeLabel.Text = $"Frame time: {Maths.FixedNumberSize(Maths.FixedPrecision(Context.AverageFrameTime, 2), 4)}ms";
 
 			lastUpdateTime = timeBetweenUpdatesMs;
 			Update();
 		}
 
-		GeneralRenderer.MainRoot.RemoveChild(fpsLabel);
-		GeneralRenderer.MainRoot.RemoveChild(frameTimeLabel);
+		// GeneralRenderer.MainRoot.RemoveChild(fpsLabel);
+		// GeneralRenderer.MainRoot.RemoveChild(frameTimeLabel);
 
-		fpsLabel.Dispose();
-		frameTimeLabel.Dispose();
+		// fpsLabel.Dispose();
+		// frameTimeLabel.Dispose();
 	}
 
 	public static List<UiControl> ControlsOnPos(Vector2<float> point, UiControl? startControl, List<UiControl> list)
