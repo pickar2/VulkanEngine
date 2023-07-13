@@ -227,8 +227,8 @@ public unsafe partial class UiRootRenderer : RenderChain
 		cmd.BindGraphicsDescriptorSets(_pipelineLayout, 4, 1, MaterialManager.FragmentDescriptorSet);
 
 		Context.Vk.CmdBindIndexBuffer(cmd, ComponentManager.IndexBuffers[frameInfo.FrameId], 0, IndexType.Uint32);
-		ulong* offsets = stackalloc ulong[1];
-		Context.Vk.CmdBindVertexBuffers(cmd, 0, 1, ComponentManager.VertexBuffers[frameInfo.FrameId], offsets);
+		// ulong* offsets = stackalloc ulong[1];
+		// Context.Vk.CmdBindVertexBuffers(cmd, 0, 1, ComponentManager.VertexBuffers[frameInfo.FrameId], offsets);
 
 		Context.Vk.CmdDrawIndexedIndirect(cmd, _indirectBuffer[frameInfo.FrameId], 0, 1, 0);
 

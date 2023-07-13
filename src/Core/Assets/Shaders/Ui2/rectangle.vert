@@ -6,8 +6,6 @@
 #include "Default/constants.glsl"
 #include "Default/structs.glsl"
 
-layout(location = 0) in int index;
-
 layout(location = 0) out int componentIndex;
 layout(location = 1) out vec2 screenCoord;
 layout(location = 2) out vec2 fragTexCoord;
@@ -36,8 +34,8 @@ void main() {
 	floatData1 = vec4(0);
 	//	floatData2 = vec4(0);
 
-	componentIndex = index;
-	UiElementData d = data[index];
+	componentIndex = gl_VertexIndex >> 2;
+	UiElementData d = data[componentIndex];
 
 	Pos pos = calcFullPos(d);
 	screenCoord = vec2(pos.x, pos.y) + vertexPos[gl_VertexIndex & 3] * vec2(d.width, d.height);

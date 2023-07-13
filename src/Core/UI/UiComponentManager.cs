@@ -16,7 +16,7 @@ public unsafe class UiComponentManager
 	public readonly ReCreator<DescriptorSet> DescriptorSet;
 
 	public readonly ArrayReCreator<VulkanBuffer> IndexBuffers;
-	public readonly ArrayReCreator<VulkanBuffer> VertexBuffers;
+	// public readonly ArrayReCreator<VulkanBuffer> VertexBuffers;
 
 	public bool RequireWait { get; private set; }
 	public Semaphore WaitSemaphore { get; private set; }
@@ -34,7 +34,7 @@ public unsafe class UiComponentManager
 		DescriptorSet = ReCreate.InDevice.Auto(() => AllocateDescriptorSet(DescriptorSetLayout, DescriptorPool));
 
 		IndexBuffers = ReCreate.InDevice.AutoArray(_ => CreateAndFillIndexBuffer(), () => Context.State.FrameOverlap, buffer => buffer.Dispose());
-		VertexBuffers = ReCreate.InDevice.AutoArray(_ => CreateAndFillVertexBuffer(), () => Context.State.FrameOverlap, buffer => buffer.Dispose());
+		// VertexBuffers = ReCreate.InDevice.AutoArray(_ => CreateAndFillVertexBuffer(), () => Context.State.FrameOverlap, buffer => buffer.Dispose());
 	}
 
 	public void AfterUpdate()
@@ -47,12 +47,12 @@ public unsafe class UiComponentManager
 			{
 				var buf = IndexBuffers[i];
 				ExecuteOnce.AtCurrentFrameStart(() => buf.Dispose());
-				var vertBuf = VertexBuffers[i];
-				ExecuteOnce.AtCurrentFrameStart(() => vertBuf.Dispose());
+				// var vertBuf = VertexBuffers[i];
+				// ExecuteOnce.AtCurrentFrameStart(() => vertBuf.Dispose());
 			}
 
 			IndexBuffers.ReCreateAll();
-			VertexBuffers.ReCreateAll();
+			// VertexBuffers.ReCreateAll();
 			UpdateComponentDataDescriptorSets();
 		}
 
@@ -83,16 +83,15 @@ public unsafe class UiComponentManager
 			}
 		}, (ulong) (6 * 4 * Factory.MaxComponents), BufferUsageFlags.IndexBufferBit | BufferUsageFlags.StorageBufferBit);
 
-	private VulkanBuffer CreateAndFillVertexBuffer() =>
-		PutDataIntoGPUOnlyBuffer(span =>
-		{
-			var intSpan = MemoryMarshal.Cast<byte, int>(span);
-			for (int i = 0; i < Factory.MaxComponents; i++)
-			{
-				for (int j = 0; j < 4; j++) intSpan[(i * 4) + j] = i;
-			}
-		}, (ulong) (4 * 4 * Factory.MaxComponents), BufferUsageFlags.VertexBufferBit);
-
+	// private VulkanBuffer CreateAndFillVertexBuffer() =>
+	// 	PutDataIntoGPUOnlyBuffer(span =>
+	// 	{
+	// 		var intSpan = MemoryMarshal.Cast<byte, int>(span);
+	// 		for (int i = 0; i < Factory.MaxComponents; i++)
+	// 		{
+	// 			for (int j = 0; j < 4; j++) intSpan[(i * 4) + j] = i * 4 + j;
+	// 		}
+	// 	}, (ulong) (4 * 4 * Factory.MaxComponents), BufferUsageFlags.VertexBufferBit);
 
 	private void UpdateComponentDataDescriptorSets()
 	{

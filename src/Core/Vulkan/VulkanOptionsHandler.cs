@@ -119,6 +119,7 @@ public class VulkanState
 			BufferDeviceAddress = true,
 			ShaderInt8 = true,
 			StorageBuffer8BitAccess = true,
+			DescriptorIndexing = true
 			// SubgroupBroadcastDynamicId = true,
 			// ShaderSubgroupExtendedTypes = true
 		}

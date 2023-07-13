@@ -15,7 +15,7 @@ public class Label : StackPanel
 	private readonly MaterialDataFactory _uvMaterial;
 	private readonly MaterialDataFactory _fontMaterial;
 
-	private List<CustomBox> _letters = new();
+	private readonly List<CustomBox> _letters = new();
 
 	private Vector2<float> _parentScale;
 	private Color _color;
@@ -42,14 +42,12 @@ public class Label : StackPanel
 		{
 			_parentScale = value;
 			if (_needsUpdate) return;
-			foreach (var child in ChildrenList)
+			foreach (var box in _letters)
 			{
 				var scale = Math.Max(CombinedScale.X, CombinedScale.Y);
-				if (child is CustomBox box && box.FragMaterial.MaterialId == _fontMaterial.Index)
-				{
-					var data = box.FragMaterial.GetMemPtr<FontMaterialData>();
-					data->FontScale = scale;
-				}
+				var data = box.FragMaterial.GetMemPtr<FontMaterialData>();
+				data->FontScale = (float) Math.Sqrt(scale * 2);
+				box.FragMaterial.MarkForGPUUpdate();
 			}
 		}
 	}
