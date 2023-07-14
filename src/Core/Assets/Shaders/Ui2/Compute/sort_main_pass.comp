@@ -77,12 +77,10 @@ void main() {
 		if (isFirstWithSameZ && (i == subgroupIndex)) {
 			offsetAtSubgroupStart = atomicAdd(counters2[z], int(totalAmountOfInvocationsWithZ) * 6);
 		}
-		//		barrier();
+		barrier();
 	}
 
 	offsetAtSubgroupStart = subgroupShuffle(offsetAtSubgroupStart, firstInvocationWithSameZ);
-
-//	if (!willBeRendered) { return; }
 
 	int index = offsets[z] * 6 + offsetAtSubgroupStart + currentInvocationOffset;
 

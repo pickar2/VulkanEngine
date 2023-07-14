@@ -43,7 +43,7 @@ public class UiShaderNode
 		Container.Size = new Vector2<float>(NodeSizeX, NodeSizeY);
 		Container.MarginLT = pos;
 		Container.Overflow = Overflow.Shown;
-		Container.OffsetZ = 1;
+		// Container.OffsetZ = 1;
 
 		var bgBox = new Rectangle(Container.Context);
 		bgBox.Color = Color.Gray500;
