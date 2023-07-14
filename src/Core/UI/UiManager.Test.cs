@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Drawing;
 using System.Linq;
 using System.Numerics;
 using System.Text.RegularExpressions;
@@ -14,7 +13,6 @@ using Core.Window;
 using SDL2;
 using SimpleMath.Vectors;
 using static Core.Vulkan.Renderers.GeneralRenderer;
-using Rectangle = Core.UI.Controls.Rectangle;
 
 namespace Core.UI;
 
@@ -37,7 +35,7 @@ public static partial class UiManager
 			infoBoxRoot.Update();
 		};
 
-		ShaderGraph.ShaderGraph.Test();
+		ShaderGraph.ShaderGraph.Draw();
 
 		// var mainControl = new AbsolutePanel(MainRoot.Context);
 		// // mainControl.Selectable = false;

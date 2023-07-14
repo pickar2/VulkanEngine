@@ -46,12 +46,6 @@ public unsafe class UiComponent : VulkanDataHolder
 	}
 
 	public UiComponentData* GetData() => VulkanDataFactory.GetPointerToData<UiComponentData>(VulkanDataIndex);
-
-	public override void Dispose()
-	{
-		// App.Logger.Debug.Message($"Disposing component {VulkanDataIndex}");
-		base.Dispose();
-	}
 }
 
 public class UiComponentFactory : AbstractVulkanDataFactory<UiComponent>

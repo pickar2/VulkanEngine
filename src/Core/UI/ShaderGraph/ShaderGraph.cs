@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using CommandLine;
 using Core.UI.Controls;
 using Core.UI.Controls.Panels;
 using Core.Utils;
@@ -158,7 +159,7 @@ public class ShaderGraph
 		inputNode.UnsetInput(inputIndex);
 	}
 
-	public static unsafe void Test()
+	public static unsafe void Draw()
 	{
 		var graph = new ShaderGraph
 		{
@@ -166,42 +167,6 @@ public class ShaderGraph
 		};
 
 		// graph.StructFields.Add((ShaderResourceType.Int, "color"));
-
-		// var outColor = new OutputNode(Guid.NewGuid(), "outColor", ShaderResourceType.Vec3F);
-		// var colorAlpha = new ConstInputNode(Guid.NewGuid(), "colorAlpha", ShaderResourceType.Float, "0.4f");
-		// var someVec3 = new Vec3FunctionNode(Guid.NewGuid(), "someVec3");
-		// var otherVec3 = new Vec3FunctionNode(Guid.NewGuid(), "otherVec3");
-		// var dotFunc = new DotFunctionNode(Guid.NewGuid(), "dotFunc");
-		// var someOtherInputName = new ConstInputNode(Guid.NewGuid(), "someOtherInputName", ShaderResourceType.Float, "1000f");
-		//
-		// graph.AddNode(colorAlpha);
-		// graph.AddNode(someOtherInputName);
-		// graph.AddNode(someVec3);
-		// graph.AddNode(otherVec3);
-		// graph.AddNode(dotFunc);
-		// graph.AddNode(outColor);
-		//
-		// Link(colorAlpha, 0, someVec3, 0);
-		// Link(colorAlpha, 0, someVec3, 1);
-		// Link(colorAlpha, 0, someVec3, 2);
-		//
-		// Link(colorAlpha, 0, otherVec3, 0);
-		//
-		// Link(someVec3, 0, dotFunc, 1);
-		// Link(dotFunc, 0, outColor, 0);
-		//
-		// Link(otherVec3, 0, dotFunc, 0);
-		//
-		// Link(someOtherInputName, 0, otherVec3, 1);
-		// Link(someOtherInputName, 0, otherVec3, 2);
-
-		// var sb = new StringBuilder();
-		// foreach (var node in graph._shaderNodes)
-		// {
-		// 	// node.
-		// }
-
-		// Console.Out.WriteLine(graph.CompileGraph());
 
 		var mainControl = new AbsolutePanel(GeneralRenderer.UiContext);
 		mainControl.Overflow = Overflow.Shown;
@@ -231,9 +196,8 @@ public class ShaderGraph
 				var scaledMotion = motion.Cast<int, float>() / control.CombinedScale;
 				graph.GraphPanel.MarginLT += scaledMotion;
 
-				var ptr = bg.FragMaterial.GetMemPtr<(float scale, float offsetX, float offsetY)>();
-				ptr->offsetX -= scaledMotion.X;
-				ptr->offsetY -= scaledMotion.Y;
+				var ptr = bg.FragMaterial.GetMemPtr<BackgroundDotsMaterial>();
+				ptr->Offset -= scaledMotion;
 				bg.FragMaterial.MarkForGPUUpdate();
 			}
 
@@ -270,7 +234,6 @@ public class ShaderGraph
 		});
 
 		// TODO: UiControl.onScroll()
-		// TODO: scroll relative to position
 		UiManager.InputContext.MouseInputHandler.OnScroll += amount =>
 		{
 			if (UiManager.ControlsOnMousePos.Count == 0) return;
@@ -278,8 +241,21 @@ public class ShaderGraph
 			var top = UiManager.ControlsOnMousePos[0];
 			if (top == mainControl || top == graph.GraphPanel)
 			{
-				graph.GraphPanel.Scale += new Vector2<float>(amount.Y / 10f);
-				*bg.FragMaterial.GetMemPtr<float>() = graph.GraphPanel.Scale.X;
+				var mousePos = UiManager.InputContext.MouseInputHandler.MousePos.Cast<int, float>();
+				var pos = graph.GraphPanel.MarginLT;
+				pos -= mousePos;
+				pos /= graph.GraphPanel.Scale;
+				graph.GraphPanel.Scale += amount.Y / 10f;
+				pos *= graph.GraphPanel.Scale;
+				pos += mousePos;
+				graph.GraphPanel.MarginLT = pos;
+
+				*bg.FragMaterial.GetMemPtr<BackgroundDotsMaterial>() = new BackgroundDotsMaterial
+				{
+					Scale = graph.GraphPanel.Scale.X,
+					Offset = -graph.GraphPanel.MarginLT
+				};
+
 				bg.FragMaterial.MarkForGPUUpdate();
 			}
 		};
@@ -326,14 +302,160 @@ public class ShaderGraph
 			return true;
 		}, SDL.SDL_Keycode.SDLK_DELETE);
 
+		AddMenuBar(graph, mainControl);
+	}
+
+	private static unsafe void AddMenuBar(ShaderGraph graph, UiControl mainControl)
+	{
+		var buttonsPanel = new AbsolutePanel(mainControl.Context)
+		{
+			OffsetZ = 1000,
+			Size = new Vector2<float>(float.PositiveInfinity, 25)
+		};
+		mainControl.AddChild(buttonsPanel);
+
+		var buttonsStack = new StackPanel(mainControl.Context)
+		{
+			Orientation = Orientation.Horizontal,
+			Spacing = 2,
+			OffsetZ = 1
+		};
+		buttonsPanel.AddChild(buttonsStack);
+
+		var buttonsBg = new Rectangle(buttonsPanel.Context) {Color = Color.Slate800};
+		buttonsPanel.AddChild(buttonsBg);
+
+		var loadButton = new Rectangle(mainControl.Context)
+		{
+			Color = Color.Slate300,
+			Size = (100, 25)
+		};
+		buttonsStack.AddChild(loadButton);
+
+		var loadAlign = new AlignPanel(loadButton.Context) {Alignment = Alignment.Center};
+		loadButton.AddChild(loadAlign);
+
+		var loadLabel = new Label(loadAlign.Context) {Text = "Load", OffsetZ = 1};
+		loadAlign.AddChild(loadLabel);
+
+		var opened = false;
+		loadButton.OnClick((control, button, pos, clicks, type) =>
+		{
+			if (button != MouseButton.Left) return false;
+			if (type != ClickType.End) return false;
+
+			if (!Directory.Exists("./shaders") || opened) return false;
+			opened = true;
+
+			var loadMenu = new AlignPanel(mainControl.Context)
+			{
+				MarginLT = new Vector2<float>(0, 30),
+				OffsetZ = 1000,
+				TightBox = true
+			};
+			mainControl.AddChild(loadMenu);
+
+			var fileStack = new StackPanel(loadMenu.Context)
+			{
+				Orientation = Orientation.Vertical,
+				Size = new Vector2<float>(200, 700),
+				Spacing = 5
+			};
+			loadMenu.AddChild(fileStack);
+
+			var files = Directory.EnumerateFiles("./shaders").Where(f => f.EndsWith(".sg")).ToArray();
+			foreach (string file in files)
+			{
+				var fileButton = new Rectangle(fileStack.Context)
+				{
+					Color = Color.Slate300,
+					Size = new Vector2<float>(200, 30)
+				};
+				fileStack.AddChild(fileButton);
+
+				var fileButtonAlign = new AlignPanel(fileButton.Context)
+				{
+					Alignment = Alignment.CenterLeft,
+					MarginLT = new Vector2<float>(5, 0)
+				};
+				fileButton.AddChild(fileButtonAlign);
+
+				var fileButtonLabel = new Label(fileButtonAlign.Context)
+				{
+					Text = Path.GetFileName(file),
+					OffsetZ = 1,
+				};
+				fileButtonAlign.AddChild(fileButtonLabel);
+
+				fileButton.OnClick(((uiControl, mouseButton, vector2, b, clickType) =>
+				{
+					if (clickType != ClickType.End) return false;
+					if (mouseButton != MouseButton.Left) return false;
+
+					if (!File.Exists(file)) return false;
+
+					using var stream = File.OpenRead(file);
+					Span<byte> span = stackalloc byte[(int) stream.Length];
+					var buffer = span.AsBuffer();
+					ReadFileToBuffer(stream, ref buffer);
+					graph.LoadGraphFromBuffer(ref buffer);
+
+					mainControl.RemoveChild(loadMenu);
+					loadMenu.Dispose();
+					opened = false;
+
+					return true;
+				}));
+			}
+
+			return true;
+		});
+
+		var saveButton = new Rectangle(mainControl.Context)
+		{
+			Color = Color.Slate300,
+			Size = (100, 25)
+		};
+		buttonsStack.AddChild(saveButton);
+
+		var saveAlign = new AlignPanel(saveButton.Context) {Alignment = Alignment.Center};
+		saveButton.AddChild(saveAlign);
+
+		var saveLabel = new Label(saveAlign.Context) {Text = "Save", OffsetZ = 1};
+		saveAlign.AddChild(saveLabel);
+
+		saveButton.OnClick((control, button, pos, clicks, type) =>
+		{
+			if (button != MouseButton.Left) return false;
+			if (type != ClickType.End) return false;
+
+			int size = sizeof(int);
+			foreach (var shaderNode in graph._shaderNodes)
+			{
+				size += shaderNode.CalculateLinksByteCount();
+				size += 2 * sizeof(Guid);
+				size += sizeof(Vector2<float>);
+				size += shaderNode.NodeTypeName.GetByteCount() + sizeof(int);
+				size += shaderNode.NodeName.GetByteCount() + sizeof(int);
+				size += shaderNode.CalculateByteCount();
+			}
+
+			Span<byte> span = stackalloc byte[size];
+			var buffer = span.AsBuffer();
+			graph.SerializeGraph(ref buffer);
+
+			using var file = File.Create("compiled_shader_graph.sg");
+			file.Write(span);
+
+			return true;
+		});
+
 		var compileButton = new Rectangle(mainControl.Context)
 		{
-			Color = Color.Slate50,
-			Size = (100, 30),
-			MarginLT = (200, 5),
-			OffsetZ = 100
+			Color = Color.Slate300,
+			Size = (100, 25)
 		};
-		mainControl.AddChild(compileButton);
+		buttonsStack.AddChild(compileButton);
 
 		var compileAlign = new AlignPanel(compileButton.Context) {Alignment = Alignment.Center};
 		compileButton.AddChild(compileAlign);
@@ -372,89 +494,29 @@ public class ShaderGraph
 
 			return true;
 		});
+	}
 
-		var saveButton = new Rectangle(mainControl.Context)
+	public static ref SpanBuffer<byte> ReadFileToBuffer(FileStream stream, ref SpanBuffer<byte> buffer)
+	{
+		// Span<byte> span = stackalloc byte[(int) stream.Length];
+		// var buffer = span.AsBuffer();
+		int offset = 0;
+		int read;
+		do
 		{
-			Color = Color.Slate50,
-			Size = (100, 30),
-			MarginLT = (200, 45),
-			OffsetZ = 100
-		};
-		mainControl.AddChild(saveButton);
+			read = stream.Read(buffer.Span[offset..]);
+			offset += read;
+		} while (read != 0);
 
-		var saveAlign = new AlignPanel(saveButton.Context) {Alignment = Alignment.Center};
-		saveButton.AddChild(saveAlign);
+		return ref buffer;
+	}
 
-		var saveLabel = new Label(saveAlign.Context) {Text = "Save", OffsetZ = 1};
-		saveAlign.AddChild(saveLabel);
+	public void LoadGraphFromBuffer(ref SpanBuffer<byte> buffer)
+	{
+		var nodes = _shaderNodes.ToArray();
+		foreach (var node in nodes) RemoveNode(node);
 
-		saveButton.OnClick((control, button, pos, clicks, type) =>
-		{
-			if (button != MouseButton.Left) return false;
-			if (type != ClickType.End) return false;
-
-			int size = sizeof(int);
-			foreach (var shaderNode in graph._shaderNodes)
-			{
-				size += shaderNode.CalculateLinksByteCount();
-				size += 2 * sizeof(Guid);
-				size += sizeof(Vector2<float>);
-				size += shaderNode.NodeTypeName.GetByteCount() + sizeof(int);
-				size += shaderNode.NodeName.GetByteCount() + sizeof(int);
-				size += shaderNode.CalculateByteCount();
-			}
-
-			Span<byte> span = stackalloc byte[size];
-			var buffer = span.AsBuffer();
-			graph.SerializeGraph(ref buffer);
-
-			using var file = File.Create("compiled_shader_graph.sg");
-			file.Write(span);
-
-			return true;
-		});
-
-		var loadButton = new Rectangle(mainControl.Context)
-		{
-			Color = Color.Slate50,
-			Size = (100, 30),
-			MarginLT = (200, 80),
-			OffsetZ = 100
-		};
-		mainControl.AddChild(loadButton);
-
-		var loadAlign = new AlignPanel(loadButton.Context) {Alignment = Alignment.Center};
-		loadButton.AddChild(loadAlign);
-
-		var loadLabel = new Label(loadAlign.Context) {Text = "Load", OffsetZ = 1};
-		loadAlign.AddChild(loadLabel);
-
-		loadButton.OnClick((control, button, pos, clicks, type) =>
-		{
-			if (button != MouseButton.Left) return false;
-			if (type != ClickType.End) return false;
-
-			if (Path.Exists("compiled_shader_graph.sg"))
-			{
-				using var file = File.OpenRead("compiled_shader_graph.sg");
-				Span<byte> span = stackalloc byte[(int) file.Length];
-				var buffer = span.AsBuffer();
-				int offset = 0;
-				int read;
-				do
-				{
-					read = file.Read(span[offset..]);
-					offset += read;
-				} while (read != 0);
-
-				var nodes = graph._shaderNodes.ToArray();
-				foreach (var node in nodes) graph.RemoveNode(node);
-
-				graph.DeserializeGraph(ref buffer);
-			}
-
-			return true;
-		});
+		DeserializeGraph(ref buffer);
 	}
 
 	public void SerializeGraph(ref SpanBuffer<byte> buffer)
@@ -530,4 +592,12 @@ public class ShaderGraph
 
 		foreach (var shaderNode in _shaderNodes) UiShaderNodes[shaderNode].UpdateOutputCurves();
 	}
+}
+
+public struct BackgroundDotsMaterial
+{
+	public float Scale;
+	public Vector2<float> Offset;
+	// public float OffsetX;
+	// public float OffsetY;
 }
