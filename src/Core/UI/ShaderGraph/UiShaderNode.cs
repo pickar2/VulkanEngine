@@ -5,6 +5,7 @@ using System.Linq;
 using Core.UI.Controls;
 using Core.UI.Controls.Panels;
 using Core.UI.Reactive;
+using Core.Utils;
 using Core.Window;
 using SimpleMath.Vectors;
 using Rectangle = Core.UI.Controls.Rectangle;
@@ -48,9 +49,11 @@ public class UiShaderNode
 		bgBox.Color = Color.Gray500;
 		Container.AddChild(bgBox);
 
-		var borderBox = new BorderBox(Container.Context, Color.Red600, 2);
-		borderBox.OffsetZ = 1;
-		Container.AddChild(borderBox);
+		// App.Logger.Debug.Message($"{Node.Guid.ToShortString()} : {bgBox.Component.VulkanDataIndex}");
+
+		// var borderBox = new BorderBox(Container.Context, Color.Red600, 2);
+		// borderBox.OffsetZ = 1;
+		// Container.AddChild(borderBox);
 
 		var alignPanel = new AlignPanel(Container.Context) {Alignment = Alignment.TopCenter};
 		alignPanel.MarginLT.Y = 5;

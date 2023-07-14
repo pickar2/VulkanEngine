@@ -2,6 +2,7 @@
 using Core.Vulkan.Api;
 using Core.Vulkan.Descriptors;
 using Core.Vulkan.Renderers;
+using Core.Vulkan.Utility;
 using Silk.NET.Vulkan;
 
 namespace Core.UI;
@@ -14,8 +15,8 @@ public unsafe partial class MaterialManager
 	public readonly ReCreator<DescriptorPool> VertexDescriptorPool;
 	public readonly ReCreator<DescriptorPool> FragmentDescriptorPool;
 
-	public readonly ReCreator<DescriptorSet> VertexDescriptorSet;
-	public readonly ReCreator<DescriptorSet> FragmentDescriptorSet;
+	public readonly ArrayReCreator<DescriptorSet> VertexDescriptorSet;
+	public readonly ArrayReCreator<DescriptorSet> FragmentDescriptorSet;
 
 	public bool RequireWait { get; private set; }
 	public Semaphore WaitSemaphore { get; private set; }
@@ -37,23 +38,23 @@ public unsafe partial class MaterialManager
 		VertexDescriptorPool = ReCreate.InDevice.Auto(() => CreateDescriptorPool(), pool => pool.Dispose());
 		FragmentDescriptorPool = ReCreate.InDevice.Auto(() => CreateDescriptorPool(), pool => pool.Dispose());
 
-		VertexDescriptorSet = ReCreate.InDevice.Auto(() =>
+		VertexDescriptorSet = ReCreate.InDevice.AutoArrayFrameOverlap(_ =>
 		{
 			_lastVertexMaterialCount = VertexMaterialCount;
 			return AllocateDescriptorSet(VertexDescriptorSetLayout, VertexDescriptorPool);
 		});
-		FragmentDescriptorSet = ReCreate.InDevice.Auto(() =>
+		FragmentDescriptorSet = ReCreate.InDevice.AutoArrayFrameOverlap(_ =>
 		{
 			_lastFragmentMaterialCount = FragmentMaterialCount;
 			return AllocateDescriptorSet(FragmentDescriptorSetLayout, FragmentDescriptorPool);
 		});
 	}
 
-	public void AfterUpdate()
+	public void AfterUpdate(FrameInfo frameInfo)
 	{
 		CheckMaterialCounts();
 		UpdateDescriptorSets();
-		UpdateBuffers();
+		UpdateBuffers(frameInfo);
 	}
 
 	private void CheckMaterialCounts()
@@ -66,7 +67,7 @@ public unsafe partial class MaterialManager
 			VertexDescriptorSetLayout.DisposeAndReCreate();
 			VertexDescriptorPool.DisposeAndReCreate();
 			// Context.Vk.ResetDescriptorPool(Context.Device, VertexDescriptorPool.Value, 0);
-			VertexDescriptorSet.ReCreate();
+			VertexDescriptorSet.ReCreateAll();
 
 			foreach ((string? _, var factory) in Materials)
 				if ((factory.StageFlag & ShaderStageFlags.VertexBit) != 0)
@@ -80,7 +81,7 @@ public unsafe partial class MaterialManager
 			FragmentDescriptorSetLayout.DisposeAndReCreate();
 			FragmentDescriptorPool.DisposeAndReCreate();
 			// Context.Vk.ResetDescriptorPool(Context.Device, FragmentDescriptorPool.Value, 0);
-			FragmentDescriptorSet.ReCreate();
+			FragmentDescriptorSet.ReCreateAll();
 
 			foreach ((string? _, var factory) in Materials)
 				if ((factory.StageFlag & ShaderStageFlags.FragmentBit) != 0)
@@ -109,20 +110,23 @@ public unsafe partial class MaterialManager
 			if (!factory.BufferChanged) continue;
 			factory.BufferChanged = false;
 
-			builder.WriteBuffer(factory.StageFlag == ShaderStageFlags.VertexBit ? VertexDescriptorSet : FragmentDescriptorSet, (uint) factory.Index, 0, 1,
-				DescriptorType.StorageBuffer, factory.DataBufferGpu.Buffer, 0, Vk.WholeSize);
+			for (int i = 0; i < factory.BufferCount; i++)
+			{
+				builder.WriteBuffer(factory.StageFlag == ShaderStageFlags.VertexBit ? VertexDescriptorSet[i] : FragmentDescriptorSet[i], (uint) factory.Index, 0, 1,
+					DescriptorType.StorageBuffer, factory.DataBufferGpu.Buffer, factory.BufferSize * (ulong) i, factory.BufferSize);
+			}
 		}
 
 		builder.Update();
 	}
 
-	private void UpdateBuffers()
+	private void UpdateBuffers(FrameInfo frameInfo)
 	{
 		bool copying = false;
 		OneTimeCommand command = null!;
 		foreach ((string? _, var factory) in Materials)
 		{
-			factory.GetCopyRegions(out uint copyCount, out var regions);
+			factory.GetCopyRegions(frameInfo.FrameId, out uint copyCount, out var regions);
 			if (copyCount <= 0) continue;
 
 			if (!copying)
@@ -151,6 +155,6 @@ public unsafe partial class MaterialManager
 			.AddMultipleBindings(0, (int) bindingCount, DescriptorType.StorageBuffer, 1, flags, DescriptorBindingFlags.UpdateAfterBindBit)
 			.Build();
 
-	private static DescriptorPool CreateDescriptorPool() => VulkanDescriptorPool.Builder(1, DescriptorPoolCreateFlags.UpdateAfterBindBitExt)
+	private static DescriptorPool CreateDescriptorPool() => VulkanDescriptorPool.Builder(Context.State.FrameOverlap, DescriptorPoolCreateFlags.UpdateAfterBindBitExt)
 		.AddType(DescriptorType.StorageBuffer, 1024).Build();
 }

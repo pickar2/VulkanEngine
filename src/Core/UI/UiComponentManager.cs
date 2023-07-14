@@ -13,7 +13,7 @@ public unsafe class UiComponentManager
 
 	public readonly ReCreator<DescriptorSetLayout> DescriptorSetLayout;
 	public readonly ReCreator<DescriptorPool> DescriptorPool;
-	public readonly ReCreator<DescriptorSet> DescriptorSet;
+	public readonly ArrayReCreator<DescriptorSet> DescriptorSet;
 
 	public readonly ArrayReCreator<VulkanBuffer> IndexBuffers;
 	// public readonly ArrayReCreator<VulkanBuffer> VertexBuffers;
@@ -31,13 +31,13 @@ public unsafe class UiComponentManager
 
 		DescriptorSetLayout = ReCreate.InDevice.Auto(() => CreateSetLayout(), layout => layout.Dispose());
 		DescriptorPool = ReCreate.InDevice.Auto(() => CreateDescriptorPool(), pool => pool.Dispose());
-		DescriptorSet = ReCreate.InDevice.Auto(() => AllocateDescriptorSet(DescriptorSetLayout, DescriptorPool));
+		DescriptorSet = ReCreate.InDevice.AutoArrayFrameOverlap(_ => AllocateDescriptorSet(DescriptorSetLayout, DescriptorPool));
 
 		IndexBuffers = ReCreate.InDevice.AutoArray(_ => CreateAndFillIndexBuffer(), () => Context.State.FrameOverlap, buffer => buffer.Dispose());
 		// VertexBuffers = ReCreate.InDevice.AutoArray(_ => CreateAndFillVertexBuffer(), () => Context.State.FrameOverlap, buffer => buffer.Dispose());
 	}
 
-	public void AfterUpdate()
+	public void AfterUpdate(FrameInfo frameInfo)
 	{
 		if (Factory.BufferChanged)
 		{
@@ -57,7 +57,7 @@ public unsafe class UiComponentManager
 		}
 
 		RequireWait = false;
-		Factory.GetCopyRegions(out uint copyCount, out var regions);
+		Factory.GetCopyRegions(frameInfo.FrameId, out uint copyCount, out var regions);
 		if (copyCount > 0)
 		{
 			var command = CommandBuffers.OneTimeTransferToHost();
@@ -95,24 +95,27 @@ public unsafe class UiComponentManager
 
 	private void UpdateComponentDataDescriptorSets()
 	{
-		var bufferInfo = new DescriptorBufferInfo
+		for (int i = 0; i < Context.State.FrameOverlap.Value; i++)
 		{
-			Offset = 0,
-			Range = Vk.WholeSize,
-			Buffer = Factory.DataBufferGpu.Buffer
-		};
+			var bufferInfo = new DescriptorBufferInfo
+			{
+				Offset = Factory.BufferSize * (ulong) i,
+				Range = Factory.BufferSize,
+				Buffer = Factory.DataBufferGpu.Buffer
+			};
 
-		var write = new WriteDescriptorSet
-		{
-			SType = StructureType.WriteDescriptorSet,
-			DescriptorCount = 1,
-			DstBinding = 0,
-			DescriptorType = DescriptorType.StorageBuffer,
-			DstSet = DescriptorSet,
-			PBufferInfo = &bufferInfo
-		};
+			var write = new WriteDescriptorSet
+			{
+				SType = StructureType.WriteDescriptorSet,
+				DescriptorCount = 1,
+				DstBinding = 0,
+				DescriptorType = DescriptorType.StorageBuffer,
+				DstSet = DescriptorSet[i],
+				PBufferInfo = &bufferInfo
+			};
 
-		Context.Vk.UpdateDescriptorSets(Context.Device, 1, write, 0, null);
+			Context.Vk.UpdateDescriptorSets(Context.Device, 1, write, 0, null);
+		}
 	}
 
 	private DescriptorSetLayout CreateSetLayout() =>
@@ -132,7 +135,7 @@ public unsafe class UiComponentManager
 		var componentDataCreateInfo = new DescriptorPoolCreateInfo
 		{
 			SType = StructureType.DescriptorPoolCreateInfo,
-			MaxSets = 1,
+			MaxSets = (uint) Context.State.FrameOverlap.Value,
 			PoolSizeCount = 1,
 			PPoolSizes = componentDataPoolSizes.AsPointer(),
 			Flags = DescriptorPoolCreateFlags.UpdateAfterBindBitExt

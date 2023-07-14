@@ -97,8 +97,8 @@ public unsafe partial class UiRootRenderer : RenderChain
 
 		RenderCommandBuffers += (FrameInfo frameInfo) =>
 		{
-			ComponentManager.AfterUpdate();
-			MaterialManager.AfterUpdate();
+			ComponentManager.AfterUpdate(frameInfo);
+			MaterialManager.AfterUpdate(frameInfo);
 			GlobalDataManager.AfterUpdate();
 			UpdateIndicesDescriptorSet(frameInfo);
 
@@ -221,10 +221,10 @@ public unsafe partial class UiRootRenderer : RenderChain
 
 		cmd.BindGraphicsDescriptorSets(_pipelineLayout, 0, 1, TextureManager.DescriptorSet);
 		cmd.BindGraphicsDescriptorSets(_pipelineLayout, 1, 1, GlobalDataManager.DescriptorSet);
-		cmd.BindGraphicsDescriptorSets(_pipelineLayout, 2, 1, ComponentManager.DescriptorSet);
+		cmd.BindGraphicsDescriptorSets(_pipelineLayout, 2, 1, ComponentManager.DescriptorSet[frameInfo.FrameId]);
 
-		cmd.BindGraphicsDescriptorSets(_pipelineLayout, 3, 1, MaterialManager.VertexDescriptorSet);
-		cmd.BindGraphicsDescriptorSets(_pipelineLayout, 4, 1, MaterialManager.FragmentDescriptorSet);
+		cmd.BindGraphicsDescriptorSets(_pipelineLayout, 3, 1, MaterialManager.VertexDescriptorSet[frameInfo.FrameId]);
+		cmd.BindGraphicsDescriptorSets(_pipelineLayout, 4, 1, MaterialManager.FragmentDescriptorSet[frameInfo.FrameId]);
 
 		Context.Vk.CmdBindIndexBuffer(cmd, ComponentManager.IndexBuffers[frameInfo.FrameId], 0, IndexType.Uint32);
 		// ulong* offsets = stackalloc ulong[1];
@@ -313,7 +313,7 @@ public unsafe partial class UiRootRenderer : RenderChain
 			Size = CountDataSize
 		};
 
-		var componentSet = ComponentManager.DescriptorSet.Value;
+		var componentSet = ComponentManager.DescriptorSet[frameInfo.FrameId];
 		var indicesSet = _sortIndicesSets[frameInfo.FrameId];
 		var countersSet = _sortCountersSets[frameInfo.FrameId];
 

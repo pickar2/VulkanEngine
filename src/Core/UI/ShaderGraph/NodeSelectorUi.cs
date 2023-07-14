@@ -83,13 +83,13 @@ public class NodeSelectorUi : AbsolutePanel
 			nodeLine.Size.Y = 30;
 			stack.AddChild(nodeLine);
 
-			var border = new BorderBox(context, Color.Red600, 1);
-			nodeLine.AddChild(border);
+			// var border = new BorderBox(context, Color.Red600, 1);
+			// nodeLine.AddChild(border);
 
-			nodeLine.OnHover((_, _, type) =>
-			{
-				border.Size = type == HoverType.Start ? 2 : 1;
-			});
+			// nodeLine.OnHover((_, _, type) =>
+			// {
+			// 	border.Size = type == HoverType.Start ? 2 : 1;
+			// });
 
 			nodeLine.OnClick((_, button, _, _, type) =>
 			{

@@ -51,23 +51,23 @@ public static class GeneralRenderer
 		UiContext = MainRoot.Context;
 
 		materialManager.RegisterMaterialFromFile("Assets/Shaders/Ui2/Materials/Vertex/default_vertex_material.glsl");
-		materialManager.RegisterMaterialFromFile("Assets/Shaders/Ui2/Materials/Vertex/transform_material.glsl");
-		materialManager.RegisterMaterialFromFile("Assets/Shaders/Ui2/Materials/Vertex/coordinates_material.glsl");
+		// materialManager.RegisterMaterialFromFile("Assets/Shaders/Ui2/Materials/Vertex/transform_material.glsl");
+		// materialManager.RegisterMaterialFromFile("Assets/Shaders/Ui2/Materials/Vertex/coordinates_material.glsl");
 		materialManager.RegisterMaterialFromFile("Assets/Shaders/Ui2/Materials/Vertex/texture_uv_material.glsl");
-		materialManager.RegisterMaterialFromFile("Assets/Shaders/Ui2/Materials/Vertex/follow_cursor_material.glsl");
-		materialManager.RegisterMaterialFromFile("Assets/Shaders/Ui2/Materials/Vertex/line_material.glsl");
+		// materialManager.RegisterMaterialFromFile("Assets/Shaders/Ui2/Materials/Vertex/follow_cursor_material.glsl");
+		// materialManager.RegisterMaterialFromFile("Assets/Shaders/Ui2/Materials/Vertex/line_material.glsl");
 		materialManager.RegisterMaterialFromFile("Assets/Shaders/Ui2/Materials/Vertex/pixel_coordinates_material.glsl");
 
 		materialManager.RegisterMaterialFromFile("Assets/Shaders/Ui2/Materials/Fragment/color_material.glsl");
-		materialManager.RegisterMaterialFromFile("Assets/Shaders/Ui2/Materials/Fragment/texture_material.glsl");
-		materialManager.RegisterMaterialFromFile("Assets/Shaders/Ui2/Materials/Fragment/colored_texture_material.glsl");
-		materialManager.RegisterMaterialFromFile("Assets/Shaders/Ui2/Materials/Fragment/cool_material.glsl");
-		materialManager.RegisterMaterialFromFile("Assets/Shaders/Ui2/Materials/Fragment/big_gradient_material.glsl");
+		// materialManager.RegisterMaterialFromFile("Assets/Shaders/Ui2/Materials/Fragment/texture_material.glsl");
+		// materialManager.RegisterMaterialFromFile("Assets/Shaders/Ui2/Materials/Fragment/colored_texture_material.glsl");
+		// materialManager.RegisterMaterialFromFile("Assets/Shaders/Ui2/Materials/Fragment/cool_material.glsl");
+		// materialManager.RegisterMaterialFromFile("Assets/Shaders/Ui2/Materials/Fragment/big_gradient_material.glsl");
 		materialManager.RegisterMaterialFromFile("Assets/Shaders/Ui2/Materials/Fragment/font_material.glsl");
-		materialManager.RegisterMaterialFromFile("Assets/Shaders/Ui2/Materials/Fragment/dynamic_border_material.glsl");
+		// materialManager.RegisterMaterialFromFile("Assets/Shaders/Ui2/Materials/Fragment/dynamic_border_material.glsl");
 		materialManager.RegisterMaterialFromFile("Assets/Shaders/Ui2/Materials/Fragment/bezier_gradient_material.glsl");
 		materialManager.RegisterMaterialFromFile("Assets/Shaders/Ui2/Materials/Fragment/dots_background_material.glsl");
-		materialManager.RegisterMaterialFromFile("Assets/Shaders/Ui2/Materials/Fragment/border_material.glsl");
+		// materialManager.RegisterMaterialFromFile("Assets/Shaders/Ui2/Materials/Fragment/border_material.glsl");
 
 		materialManager.UpdateShaders();
 

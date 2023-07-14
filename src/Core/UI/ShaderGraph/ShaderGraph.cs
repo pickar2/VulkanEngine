@@ -220,6 +220,7 @@ public class ShaderGraph
 		// graphPanel.Selectable = false;
 		graph.GraphPanel.Overflow = Overflow.Shown;
 		graph.GraphPanel.TightBox = true;
+		// graph.GraphPanel.Scale = new Vector2<float>(0.2f);
 		mainControl.AddChild(graph.GraphPanel);
 
 		mainControl.OnDrag((control, _, motion, button, type) =>

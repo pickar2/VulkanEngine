@@ -115,7 +115,7 @@ public unsafe class Deferred3DRenderer : RenderChain
 
 		RenderCommandBuffers += (FrameInfo frameInfo) =>
 		{
-			_materialManager.AfterUpdate();
+			_materialManager.AfterUpdate(frameInfo);
 			return CreateCommandBuffer(frameInfo);
 		};
 
@@ -170,8 +170,8 @@ public unsafe class Deferred3DRenderer : RenderChain
 		cmd.BindGraphicsPipeline(_deferredComposePipeline);
 		cmd.BindGraphicsDescriptorSets(_deferredComposePipelineLayout, 0, 1, _composeAttachmentsSet);
 		cmd.BindGraphicsDescriptorSets(_deferredComposePipelineLayout, 1, 1, TextureManager.DescriptorSet);
-		cmd.BindGraphicsDescriptorSets(_deferredComposePipelineLayout, 2, 1, _materialManager.VertexDescriptorSet);
-		cmd.BindGraphicsDescriptorSets(_deferredComposePipelineLayout, 3, 1, _materialManager.FragmentDescriptorSet);
+		cmd.BindGraphicsDescriptorSets(_deferredComposePipelineLayout, 2, 1, _materialManager.VertexDescriptorSet[frameInfo.FrameId]);
+		cmd.BindGraphicsDescriptorSets(_deferredComposePipelineLayout, 3, 1, _materialManager.FragmentDescriptorSet[frameInfo.FrameId]);
 		// cmd.BindGraphicsDescriptorSets(_deferredComposePipelineLayout, 4, 1, Scene.);
 		// cmd.BindGraphicsDescriptorSets(_deferredComposePipelineLayout, 5, 1, _globalDataManager.DescriptorSet);
 

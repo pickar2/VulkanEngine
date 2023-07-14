@@ -21,6 +21,7 @@ public static unsafe class ContextUtils
 
 	public static Result Begin(this ref CommandBuffer cb, CommandBufferUsageFlags flags = 0, CommandBufferInheritanceInfo inheritanceInfo = default)
 	{
+		inheritanceInfo.SType = StructureType.CommandBufferInheritanceInfo;
 		var beginInfo = new CommandBufferBeginInfo
 		{
 			SType = StructureType.CommandBufferBeginInfo,
