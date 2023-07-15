@@ -48,12 +48,14 @@ public abstract class UiControl : IDisposable
 	public virtual Vector2<float> MaskEnd { get; set; } = new(float.PositiveInfinity);
 
 	public virtual List<UiControl> Children => ChildrenList;
+	public bool IsDisposed { get; set; }
 
 	public virtual void Dispose()
 	{
 		foreach (var child in ChildrenList) child.Dispose();
 		ClearChildren();
 		this.RemoveAllEvents();
+		IsDisposed = true;
 		GC.SuppressFinalize(this);
 	}
 
@@ -101,7 +103,7 @@ public abstract class UiControl : IDisposable
 			}
 
 			ComputedSize = maxChildArea.MinV(maxSize).MinV(Size * CombinedScale);
-			ComputedArea = maxChildArea.MinV(maxSize).MinV(Size * CombinedScale + (MarginLT + MarginRB) * ParentScale);
+			ComputedArea = maxChildArea.MinV(maxSize).MinV((Size * CombinedScale) + ((MarginLT + MarginRB) * ParentScale));
 		}
 		else
 		{

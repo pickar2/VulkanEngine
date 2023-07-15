@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Drawing;
 using Core.UI.Animations;
 using Core.UI.Reactive;
 using Core.Window;
@@ -33,7 +32,7 @@ public class TextInputBox : UiControl
 	{
 		TightBox = true;
 
-		_selection = new Rectangle(context) {Color = Color.Blue500.A(200)};
+		_selection = new Rectangle(context) {Color = Color.Blue500.A(100)};
 		_cursor = new Rectangle(context) {Color = Color.Neutral50};
 		_label = new Label(context);
 
@@ -86,7 +85,7 @@ public class TextInputBox : UiControl
 			if (!_isEditing && clickType == ClickType.Start)
 			{
 				_isEditing = true;
-				_label.OnClickOutsideOnce(((_, _) => TextInput.StopInput()));
+				_label.OnClickOutsideOnce((_, _) => TextInput.StopInput());
 
 				_cursor.Size = (9, 16);
 				_selection.Size = (0, 16);
@@ -119,7 +118,7 @@ public class TextInputBox : UiControl
 		});
 
 		int dragSelectionStart = 0;
-		this.OnDrag(((control, pos, motion, button, dragType) =>
+		this.OnDrag((control, pos, motion, button, dragType) =>
 		{
 			if (!_isEditing) return false;
 
@@ -137,6 +136,12 @@ public class TextInputBox : UiControl
 			}
 
 			return true;
-		}));
+		});
+	}
+
+	public override void Dispose()
+	{
+		if (_isEditing) TextInput.StopInput();
+		base.Dispose();
 	}
 }

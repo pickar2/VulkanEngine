@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Drawing;
 using System.Numerics;
 using CommunityToolkit.HighPerformance.Helpers;
 using SimpleMath.Vectors;
@@ -12,7 +11,9 @@ public class Animation
 	public delegate ref T RefGetter<T>();
 
 	private readonly Stopwatch _stopwatch = new();
-	public readonly Action _updateDelegate;
+	private readonly Action _updateDelegate;
+	private bool _subscribedToUpdates = false;
+
 	private long _startTime;
 	public float AnimationOffset;
 	public IAnimationCurve Curve = DefaultCurves.Linear;
@@ -76,6 +77,9 @@ public class Animation
 	{
 		_stopwatch.Start();
 		_startTime = StartDelay;
+
+		if (_subscribedToUpdates) return;
+		_subscribedToUpdates = true;
 		UiManager.BeforeUpdate += _updateDelegate;
 	}
 
@@ -86,6 +90,9 @@ public class Animation
 	public void Stop()
 	{
 		_stopwatch.Stop();
+
+		if (!_subscribedToUpdates) return;
+		_subscribedToUpdates = false;
 		UiManager.BeforeUpdate -= _updateDelegate;
 	}
 
@@ -171,8 +178,8 @@ public static class AnimationExtensions
 	public static Animation Animate<T>(this ref T value, object obj, T start, T end, long duration, float animationOffset = 0,
 		long startDelay = 0, AnimationType type = AnimationType.OneTime, IAnimationCurve? curve = null) where T : unmanaged, INumber<T>
 	{
-		var offset = ObjectMarshal.DangerousGetObjectDataByteOffset(obj, ref value);
-		return new()
+		nint offset = ObjectMarshal.DangerousGetObjectDataByteOffset(obj, ref value);
+		return new Animation
 		{
 			Type = type,
 			Curve = curve ?? DefaultCurves.Linear,

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Core.Native.VMA;
 using Core.Utils;
@@ -254,6 +255,8 @@ public abstract unsafe class AbstractVulkanDataFactory<TDataHolder> : IVulkanDat
 		}
 	}
 
+	private readonly HashSet<int> _inUse = new();
+
 	// TODO: binary insert into gaps array
 	// Reasoning: for instanced rendering it will be useful to have continuous id range for all instances
 	public void DisposeVulkanDataIndex(int index)
@@ -266,6 +269,8 @@ public abstract unsafe class AbstractVulkanDataFactory<TDataHolder> : IVulkanDat
 			_gaps.CopyTo(newGaps, 0);
 			_gaps = newGaps;
 		}
+
+		if (!_inUse.Remove(index)) throw new Exception("Trying to remove already removed index");
 
 		_gaps[_gapCount++] = index;
 	}
@@ -282,6 +287,8 @@ public abstract unsafe class AbstractVulkanDataFactory<TDataHolder> : IVulkanDat
 			if (ComponentCount >= MaxComponents) DoubleBufferSize();
 			index = ComponentCount++;
 		}
+
+		if (!_inUse.Add(index)) throw new Exception("Trying to use already used index");
 
 		new Span<byte>(_data + (index * ComponentSize), ComponentSize).Clear();
 

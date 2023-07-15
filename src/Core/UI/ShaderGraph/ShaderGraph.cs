@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using CommandLine;
 using Core.UI.Controls;
 using Core.UI.Controls.Panels;
 using Core.Utils;
@@ -338,7 +337,7 @@ public class ShaderGraph
 		var loadLabel = new Label(loadAlign.Context) {Text = "Load", OffsetZ = 1};
 		loadAlign.AddChild(loadLabel);
 
-		var opened = false;
+		bool opened = false;
 		loadButton.OnClick((control, button, pos, clicks, type) =>
 		{
 			if (button != MouseButton.Left) return false;
@@ -363,7 +362,7 @@ public class ShaderGraph
 			};
 			loadMenu.AddChild(fileStack);
 
-			var files = Directory.EnumerateFiles("./shaders").Where(f => f.EndsWith(".sg")).ToArray();
+			string[] files = Directory.EnumerateFiles("./shaders").Where(f => f.EndsWith(".sg")).ToArray();
 			foreach (string file in files)
 			{
 				var fileButton = new Rectangle(fileStack.Context)
@@ -383,11 +382,11 @@ public class ShaderGraph
 				var fileButtonLabel = new Label(fileButtonAlign.Context)
 				{
 					Text = Path.GetFileName(file),
-					OffsetZ = 1,
+					OffsetZ = 1
 				};
 				fileButtonAlign.AddChild(fileButtonLabel);
 
-				fileButton.OnClick(((uiControl, mouseButton, vector2, b, clickType) =>
+				fileButton.OnClick((uiControl, mouseButton, vector2, b, clickType) =>
 				{
 					if (clickType != ClickType.End) return false;
 					if (mouseButton != MouseButton.Left) return false;
@@ -405,7 +404,7 @@ public class ShaderGraph
 					opened = false;
 
 					return true;
-				}));
+				});
 			}
 
 			return true;
@@ -598,6 +597,4 @@ public struct BackgroundDotsMaterial
 {
 	public float Scale;
 	public Vector2<float> Offset;
-	// public float OffsetX;
-	// public float OffsetY;
 }
