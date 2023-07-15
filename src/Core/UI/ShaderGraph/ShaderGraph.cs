@@ -41,9 +41,6 @@ public class ShaderGraph
 	{
 		_alreadyCompiled.Clear();
 
-		// var guid = Guid.NewGuid();
-		// guid.ToString()
-
 		var header = new StringBuilder();
 		var body = new StringBuilder();
 		body.Append($"\r\nvoid {Identifier}(UiElementData data) {{\r\n");

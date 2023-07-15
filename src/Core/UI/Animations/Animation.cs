@@ -12,7 +12,7 @@ public class Animation
 
 	private readonly Stopwatch _stopwatch = new();
 	private readonly Action _updateDelegate;
-	private bool _subscribedToUpdates = false;
+	private bool _subscribedToUpdates;
 
 	private long _startTime;
 	public float AnimationOffset;
@@ -66,11 +66,9 @@ public class Animation
 		Value = Curve.Interpolate(NormalizedTime);
 		Interpolator.Update(Value);
 
-		if (Type == AnimationType.OneTime)
-		{
-			if ((_direction && Value >= 1) || (!_direction && Value <= 0))
-				Stop();
-		}
+		if (Type != AnimationType.OneTime) return;
+		if ((_direction && Value >= 1) || (!_direction && Value <= 0))
+			Stop();
 	}
 
 	public void Start()

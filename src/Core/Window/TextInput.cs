@@ -53,12 +53,6 @@ public static partial class TextInput
 		}, SDLK_DELETE);
 
 		EditingNotSelectingContext.KeyboardInputHandler.AddKeyBind(() =>
-		{
-			RemoveCharacters(1);
-			return true;
-		}, SDLK_DELETE);
-
-		EditingNotSelectingContext.KeyboardInputHandler.AddKeyBind(() =>
 			{
 				RemoveCharacters(-FindWordEndLeft(CursorPos));
 				return true;
