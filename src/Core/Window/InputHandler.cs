@@ -245,7 +245,7 @@ public class UiInputContext : IInputContext
 		{
 			case SDL_EventType.SDL_MOUSEMOTION:
 				MouseInputHandler.MouseMotion(sdlEvent.motion);
-				break;
+				return true;
 			case SDL_EventType.SDL_MOUSEBUTTONDOWN:
 				MouseInputHandler.MouseButtonDown(sdlEvent.button);
 				return true;
@@ -254,7 +254,7 @@ public class UiInputContext : IInputContext
 				return true;
 			case SDL_EventType.SDL_MOUSEWHEEL:
 				MouseInputHandler.Scroll(sdlEvent.wheel);
-				break;
+				return true;
 
 			case SDL_EventType.SDL_KEYDOWN:
 				return KeyboardInputHandler.KeyDown(sdlEvent.key);
