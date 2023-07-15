@@ -16,7 +16,7 @@ public class InputHandler
 	{
 		if (_currentContextsSet.Add(context))
 		{
-			CurrentContexts = CurrentContexts.Insert(CurrentContexts.Count, context);
+			CurrentContexts = CurrentContexts.Insert(0, context);
 			_contextChanged = true;
 		}
 	}

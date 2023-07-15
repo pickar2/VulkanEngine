@@ -195,8 +195,8 @@ public static partial class TextInput
 	{
 		if (IsEditing) ResetInput();
 		IsEditing = true;
-		UiManager.InputHandler.EnableContext(EditingContext);
 		UiManager.InputHandler.EnableContext(EditingNotSelectingContext);
+		UiManager.InputHandler.EnableContext(EditingContext);
 
 		_setTextCallback = textCallback;
 		_setCursorPosCallback = cursorPosCallback;
@@ -291,14 +291,18 @@ public static partial class TextInput
 		if (SelectionLength == 0)
 		{
 			IsSelecting = false;
+			UiManager.InputHandler.DisableContext(EditingContext);
 			UiManager.InputHandler.DisableContext(EditingSelectingContext);
 			UiManager.InputHandler.EnableContext(EditingNotSelectingContext);
+			UiManager.InputHandler.EnableContext(EditingContext);
 		}
 		else
 		{
 			IsSelecting = true;
+			UiManager.InputHandler.DisableContext(EditingContext);
 			UiManager.InputHandler.DisableContext(EditingNotSelectingContext);
 			UiManager.InputHandler.EnableContext(EditingSelectingContext);
+			UiManager.InputHandler.EnableContext(EditingContext);
 		}
 	}
 
