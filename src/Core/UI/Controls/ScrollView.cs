@@ -10,6 +10,9 @@ public class ScrollView : UiControl
 	private readonly Rectangle _horizontalSlider;
 	private readonly Rectangle _verticalSlider;
 	private Vector2<float> _maxAreaInside;
+	
+	public bool CanScrollVertically { get; private set; }
+	public bool CanScrollHorizontally { get; private set; }
 
 	public Vector2<float> ScrollOffset;
 
@@ -27,8 +30,7 @@ public class ScrollView : UiControl
 			if (dragType == DragType.Move)
 			{
 				var offset = motion / CombinedScale;
-				ScrollOffset.X += offset.X / (Size.X - _horizontalSlider.Size.X);
-				ScrollOffset.Max(new Vector2<float>(0)).Min(new Vector2<float>(1));
+				ScrollHorizontally(offset.X);
 			}
 
 			return true;
@@ -46,14 +48,42 @@ public class ScrollView : UiControl
 			if (button != MouseButton.Left) return false;
 			if (dragType == DragType.Move)
 			{
-				var offset = motion / CombinedScale;
-				ScrollOffset.Y += offset.Y / (Size.Y - _verticalSlider.Size.Y);
-				ScrollOffset.Max(new Vector2<float>(0)).Min(new Vector2<float>(1));
+				var offset = motion.Cast<int, float>() / CombinedScale;
+				ScrollVertically(offset.Y);
 			}
 
 			return true;
 		});
 		AddChild(_verticalSlider);
+		
+		this.OnScroll((_, _, amount) =>
+		{
+			if (CanScrollVertically)
+			{
+				ScrollVertically(-amount.Y * 10);
+				return true;
+			}
+
+			if (CanScrollHorizontally)
+			{
+				ScrollHorizontally(-amount.Y * 10);
+				return true;
+			}
+
+			return false;
+		});
+	}
+
+	public void ScrollVertically(float amount)
+	{
+		ScrollOffset.Y += amount / (Size.Y - _verticalSlider.Size.Y);
+		ScrollOffset.Max(new Vector2<float>(0)).Min(new Vector2<float>(1));
+	}
+
+	public void ScrollHorizontally(float amount)
+	{
+		ScrollOffset.X += amount / (Size.X - _horizontalSlider.Size.X);
+		ScrollOffset.Max(new Vector2<float>(0)).Min(new Vector2<float>(1));
 	}
 
 	public override void ComputeSizeAndArea(Vector2<float> maxSize)
@@ -100,7 +130,8 @@ public class ScrollView : UiControl
 		_horizontalSlider.LocalPos = _horizontalSlider.MarginLT * CombinedScale;
 		_horizontalSlider.BaseZ = maxChildZ;
 
-		_horizontalSlider.Size.Y = _maxAreaInside.X <= Size.X ? 0 : 10;
+		CanScrollHorizontally = _maxAreaInside.X > Size.X;
+		_horizontalSlider.Size.Y = CanScrollHorizontally ? 10 : 0;
 
 		_verticalSlider.MarginLT.X = Size.X - _verticalSlider.Size.X;
 		_verticalSlider.MarginLT.Y = (Size.Y - _verticalSlider.Size.Y) * ScrollOffset.Y;
@@ -109,6 +140,7 @@ public class ScrollView : UiControl
 		_verticalSlider.LocalPos = _verticalSlider.MarginLT * CombinedScale;
 		_verticalSlider.BaseZ = maxChildZ;
 
-		_verticalSlider.Size.X = _maxAreaInside.Y <= Size.Y ? 0 : 10;
+		CanScrollVertically = _maxAreaInside.Y > Size.Y;
+		_verticalSlider.Size.X = CanScrollVertically ? 10 : 0;
 	}
 }

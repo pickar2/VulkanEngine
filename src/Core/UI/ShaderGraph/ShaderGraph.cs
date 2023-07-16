@@ -386,11 +386,11 @@ public class ShaderGraph
 				};
 				fileButtonAlign.AddChild(fileButtonLabel);
 
-				fileButton.OnClick((uiControl, mouseButton, vector2, b, clickType, startedHere) =>
+				fileButton.OnClick((uiControl, mouseButton, vector2, b, clickType, startedHere2) =>
 				{
 					if (clickType != ClickType.End) return false;
 					if (mouseButton != MouseButton.Left) return false;
-					if (!startedHere) return false;
+					if (!startedHere2) return false;
 
 					if (!File.Exists(file)) return false;
 

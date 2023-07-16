@@ -11,15 +11,17 @@ namespace Core.UI;
 
 public static partial class UiManager
 {
-	public delegate void OnCursorMoveDelegate(UiControl control, Vector2<int> newPos, Vector2<int> motion);
+	// public delegate void OnCursorMoveDelegate(UiControl control, Vector2<int> newPos, Vector2<int> motion);
 	public delegate void OnHoverDelegate(UiControl control, Vector2<int> pos, HoverType hoverType);
 	public delegate bool OnClickDelegate(UiControl control, MouseButton button, Vector2<int> pos, byte clicks, ClickType clickType, bool startAndEndOnSame);
 	public delegate bool OnDragDelegate(UiControl control, Vector2<int> newPos, Vector2<int> motion, MouseButton button, DragType dragType);
+	public delegate bool OnScrollDelegate(UiControl control, Vector2<int> pos, Vector2<float> scrollAmount);
 
 	// private static readonly Dictionary<UiControl, OnCursorMoveDelegate> OnCursorMoveDelegates = new();
 	private static readonly Dictionary<UiControl, OnHoverDelegate> OnHoverDelegates = new();
 	private static readonly Dictionary<UiControl, OnClickDelegate> OnMouseClickDelegates = new();
 	private static readonly Dictionary<UiControl, OnDragDelegate> OnDragDelegates = new();
+	private static readonly Dictionary<UiControl, OnScrollDelegate> OnScrollDelegates = new();
 
 	private static readonly HashSet<UiControl> HoveredControls = new();
 	private static readonly Dictionary<MouseButton, HashSet<UiControl>> DraggedControls = new();
@@ -56,6 +58,8 @@ public static partial class UiManager
 
 		InputContext.MouseInputHandler.OnMouseButtonDown += (button, clicks) => HandleClickStart(button, clicks);
 		InputContext.MouseInputHandler.OnMouseButtonUp += (button, clicks) => HandleClickEnd(button, clicks);
+
+		InputContext.MouseInputHandler.OnScroll += amount => HandleScroll(amount);
 	}
 
 	private static void HandleCursorMove(Vector2<int> newPos, Vector2<int> motion) { }
@@ -153,6 +157,21 @@ public static partial class UiManager
 				handledStart = true;
 		}
 	}
+	
+	private static void HandleScroll(Vector2<float> amount)
+	{
+		foreach (var control in ControlsOnMousePos)
+		{
+			if (!OnScrollDelegates.TryGetValue(control, out var onScroll)) continue;
+			if (control.IsDisposed)
+			{
+				RemoveAllEvents(control);
+				continue;
+			}
+
+			if (onScroll.Invoke(control, InputContext.MouseInputHandler.MousePos, amount)) return;
+		}
+	}
 
 	private static void EventsPreUpdate()
 	{
@@ -194,11 +213,14 @@ public static partial class UiManager
 
 	public static void OnDrag(this UiControl control, OnDragDelegate onDrag) => OnDragDelegates[control] = onDrag;
 
+	public static void OnScroll(this UiControl control, OnScrollDelegate onScroll) => OnScrollDelegates[control] = onScroll;
+
 	public static void RemoveAllEvents(this UiControl control)
 	{
 		RemoveOnHover(control);
 		RemoveOnClick(control);
 		RemoveOnDrag(control);
+		RemoveOnScroll(control);
 	}
 
 	public static void RemoveOnHover(this UiControl control) => OnHoverDelegates.Remove(control);
@@ -206,6 +228,8 @@ public static partial class UiManager
 	public static void RemoveOnClick(this UiControl control) => OnMouseClickDelegates.Remove(control);
 
 	public static void RemoveOnDrag(this UiControl control) => OnDragDelegates.Remove(control);
+
+	public static void RemoveOnScroll(this UiControl control) => OnScrollDelegates.Remove(control);
 }
 
 public enum DragType : byte
