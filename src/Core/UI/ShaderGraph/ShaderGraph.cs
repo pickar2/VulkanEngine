@@ -300,10 +300,123 @@ public class ShaderGraph
 			return true;
 		}, SDL.SDL_Keycode.SDLK_DELETE);
 
-		AddMenuBar(graph, mainControl);
+		DrawMenuBar(graph, mainControl);
+		DrawPreview(graph, mainControl);
 	}
 
-	private static unsafe void AddMenuBar(ShaderGraph graph, UiControl mainControl)
+	private static unsafe void DrawPreview(ShaderGraph graph, UiControl mainControl)
+	{
+		var buttonsPanel = new AbsolutePanel(mainControl.Context)
+		{
+			OffsetZ = 1000,
+			Size = new Vector2<float>(float.PositiveInfinity, 25)
+		};
+		mainControl.AddChild(buttonsPanel);
+
+		var buttonsAlign = new AlignPanel(mainControl.Context) {Alignment = Alignment.TopRight};
+		buttonsPanel.AddChild(buttonsAlign);
+
+		var buttonsStack = new StackPanel(mainControl.Context)
+		{
+			Orientation = Orientation.Horizontal,
+			Spacing = 2,
+			OffsetZ = 1
+		};
+		buttonsAlign.AddChild(buttonsStack);
+
+		var compileButton = new Rectangle(mainControl.Context)
+		{
+			Color = Color.Slate300,
+			Size = (100, 25)
+		};
+		buttonsStack.AddChild(compileButton);
+
+		var compileAlign = new AlignPanel(compileButton.Context) {Alignment = Alignment.Center};
+		compileButton.AddChild(compileAlign);
+
+		var compileLabel = new Label(compileAlign.Context) {Text = "Compile", OffsetZ = 1};
+		compileAlign.AddChild(compileLabel);
+
+		var previewBoxAlign = new AlignPanel(mainControl.Context)
+		{
+			Alignment = Alignment.TopRight,
+			MarginLT = (0, 25)
+		};
+		mainControl.AddChild(previewBoxAlign);
+
+		bool showingPreview = false;
+		CustomBox? graphGeneratedBox = null;
+		compileButton.OnClick((_, button, _, _, type, startedHere) =>
+		{
+			if (button != MouseButton.Left) return false;
+			if (type != ClickType.End) return false;
+			if (!startedHere) return false;
+
+			graph.Identifier = "graph_generated";
+
+			string code = graph.GetGraphCode();
+			// App.Logger.Debug.Message($"{code}");
+			ShaderManager.SetVirtualShader("@graph_generated", code);
+			GeneralRenderer.UiContext.MaterialManager.RegisterMaterial(code, "@graph_generated");
+			GeneralRenderer.UiContext.MaterialManager.UpdateShaders();
+
+			if (graphGeneratedBox is null)
+			{
+				graphGeneratedBox = new CustomBox(mainControl.Context)
+				{
+					VertMaterial = GeneralRenderer.UiContext.MaterialManager.GetFactory("default_vertex_material").Create(),
+					FragMaterial = GeneralRenderer.UiContext.MaterialManager.GetFactory("graph_generated").Create(),
+					Size = (400, 400),
+					OffsetZ = 1000
+				};
+				graphGeneratedBox.Component.MarkForGPUUpdate();
+
+				previewBoxAlign.AddChild(graphGeneratedBox);
+			}
+
+			showingPreview = true;
+			graphGeneratedBox.Enable();
+
+			return true;
+		});
+
+		var togglePreviewButton = new Rectangle(mainControl.Context)
+		{
+			Color = Color.Slate300,
+			Size = (100, 25)
+		};
+		buttonsStack.AddChild(togglePreviewButton);
+
+		var togglePreviewAlign = new AlignPanel(togglePreviewButton.Context) {Alignment = Alignment.Center};
+		togglePreviewButton.AddChild(togglePreviewAlign);
+
+		var togglePreviewLabel = new Label(togglePreviewAlign.Context) {Text = "Preview", OffsetZ = 1};
+		togglePreviewAlign.AddChild(togglePreviewLabel);
+
+		togglePreviewButton.OnClick(((_, button, _, _, type, startedHere) =>
+		{
+			if (button != MouseButton.Left) return false;
+			if (type != ClickType.End) return false;
+			if (!startedHere) return false;
+
+			if (graphGeneratedBox is null) return false;
+
+			if (showingPreview)
+			{
+				graphGeneratedBox.Disable();
+				showingPreview = false;
+			}
+			else
+			{
+				graphGeneratedBox.Enable();
+				showingPreview = true;
+			}
+
+			return true;
+		}));
+	}
+
+	private static unsafe void DrawMenuBar(ShaderGraph graph, UiControl mainControl)
 	{
 		var buttonsPanel = new AbsolutePanel(mainControl.Context)
 		{
@@ -337,7 +450,7 @@ public class ShaderGraph
 		loadAlign.AddChild(loadLabel);
 
 		bool opened = false;
-		loadButton.OnClick((control, button, pos, clicks, type, startedHere) =>
+		loadButton.OnClick((_, button, _, _, type, startedHere) =>
 		{
 			if (button != MouseButton.Left) return false;
 			if (type != ClickType.End) return false;
@@ -386,7 +499,7 @@ public class ShaderGraph
 				};
 				fileButtonAlign.AddChild(fileButtonLabel);
 
-				fileButton.OnClick((uiControl, mouseButton, vector2, b, clickType, startedHere2) =>
+				fileButton.OnClick((_, mouseButton, _, _, clickType, startedHere2) =>
 				{
 					if (clickType != ClickType.End) return false;
 					if (mouseButton != MouseButton.Left) return false;
@@ -424,7 +537,7 @@ public class ShaderGraph
 		var saveLabel = new Label(saveAlign.Context) {Text = "Save", OffsetZ = 1};
 		saveAlign.AddChild(saveLabel);
 
-		saveButton.OnClick((control, button, pos, clicks, type, startedHere) =>
+		saveButton.OnClick((_, button, _, _, type, startedHere) =>
 		{
 			if (button != MouseButton.Left) return false;
 			if (type != ClickType.End) return false;
@@ -447,52 +560,6 @@ public class ShaderGraph
 
 			using var file = File.Create("compiled_shader_graph.sg");
 			file.Write(span);
-
-			return true;
-		});
-
-		var compileButton = new Rectangle(mainControl.Context)
-		{
-			Color = Color.Slate300,
-			Size = (100, 25)
-		};
-		buttonsStack.AddChild(compileButton);
-
-		var compileAlign = new AlignPanel(compileButton.Context) {Alignment = Alignment.Center};
-		compileButton.AddChild(compileAlign);
-
-		var compileLabel = new Label(compileAlign.Context) {Text = "Compile", OffsetZ = 1};
-		compileAlign.AddChild(compileLabel);
-
-		CustomBox? graphGeneratedBox = null;
-		compileButton.OnClick((control, button, pos, clicks, type, startedHere) =>
-		{
-			if (button != MouseButton.Left) return false;
-			if (type != ClickType.End) return false;
-			if (!startedHere) return false;
-
-			graph.Identifier = "graph_generated";
-
-			string code = graph.GetGraphCode();
-			// App.Logger.Debug.Message($"{code}");
-			ShaderManager.SetVirtualShader("@graph_generated", code);
-			GeneralRenderer.UiContext.MaterialManager.RegisterMaterial(code, "@graph_generated");
-			GeneralRenderer.UiContext.MaterialManager.UpdateShaders();
-
-			if (graphGeneratedBox is null)
-			{
-				graphGeneratedBox = new CustomBox(mainControl.Context)
-				{
-					VertMaterial = GeneralRenderer.UiContext.MaterialManager.GetFactory("default_vertex_material").Create(),
-					FragMaterial = GeneralRenderer.UiContext.MaterialManager.GetFactory("graph_generated").Create(),
-					Size = (600, 600),
-					MarginLT = (320, 5),
-					OffsetZ = 100
-				};
-				graphGeneratedBox.Component.MarkForGPUUpdate();
-
-				mainControl.AddChild(graphGeneratedBox);
-			}
 
 			return true;
 		});

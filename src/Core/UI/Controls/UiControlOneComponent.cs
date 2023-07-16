@@ -85,6 +85,18 @@ public abstract unsafe class UiControlOneComponent : UiControl
 		}
 	}
 
+	public void Disable()
+	{
+		Component.GetData()->Flags |= UiComponentFlags.Disabled;
+		Component.MarkForGPUUpdate();
+	}
+
+	public void Enable()
+	{
+		Component.GetData()->Flags &= ~UiComponentFlags.Disabled;
+		Component.MarkForGPUUpdate();
+	}
+
 	public override void Dispose()
 	{
 		// App.Logger.Debug.Message($"Disposing control frag: ({Component.FragMaterial.VulkanDataIndex}@{Component.FragMaterial.MaterialFactory.Name}), vert: ({Component.VertMaterial.VulkanDataIndex}@{Component.VertMaterial.MaterialFactory.Name})");
