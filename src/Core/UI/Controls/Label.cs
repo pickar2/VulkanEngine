@@ -43,9 +43,8 @@ public class Label : StackPanel
 			if (_needsUpdate) return;
 			foreach (var box in _letters)
 			{
-				float scale = Math.Max(CombinedScale.X, CombinedScale.Y);
 				var data = box.FragMaterial.GetMemPtr<FontMaterialData>();
-				data->FontScale = (float) Math.Sqrt(scale * 2);
+				data->FontScale = box.Size.X * CombinedScale.X;
 				box.FragMaterial.MarkForGPUUpdate();
 			}
 		}
@@ -130,7 +129,7 @@ public class Label : StackPanel
 
 			var fragData = box.FragMaterial.GetMemPtr<FontMaterialData>();
 			fragData->TextureId = (int) TextureManager.GetTextureId("ConsolasTexture");
-			fragData->FontScale = Math.Max(CombinedScale.X, CombinedScale.Y);
+			fragData->FontScale = character.Width * CombinedScale.X;
 			fragData->OutlineDistance = 0.1f;
 			fragData->Color = Color;
 

@@ -58,7 +58,7 @@ float sdf_alpha2( float dOffset, float sdf, float horz_scale, float vert_scale, 
 void font_material(UiElementData data) {
 	font_material_struct mat = font_material_data[data.fragmentDataIndex];
 
-	float scale = mat.scale * 500;
+	float scale = sqrt(mat.scale) * 96;
 	float sdfSize = 2.0 * scale * sdfBorderSize;
 	float subpixelOffset = 0.3333 / scale;
 	float dOffset = 1.0 / sdfSize;
@@ -137,11 +137,11 @@ void font_material(UiElementData data) {
 		float horz_scale  = 1.1;
 		float vert_scale  = 0.6;
 
-		float alpha = sdf_alpha2(dOffset, sdf, 1.1, 0.6, vgrad);
+		float alpha = sdf_alpha2(dOffset, sdf, horz_scale, vert_scale, vgrad);
 		alpha = sqrt(alpha);
+		alpha = smoothstep(0, 1, alpha);
 		if (alpha > 0.95) alpha = 1;
 		if (alpha < 0.1) alpha = 0;
-		alpha = smoothstep(0, 1, alpha);
 		outColor = vec4(color.rgb, color.a * alpha);
 //		outColor = vec4(color.rgb, color.a * smoothstep(0, 1, alpha));
 //		outColor = vec4(color.rgb, color.a * sqrt(alpha));

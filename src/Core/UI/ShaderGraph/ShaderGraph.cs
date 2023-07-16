@@ -32,6 +32,7 @@ public class ShaderGraph
 	public List<(ShaderResourceType, string)> StructFields = new();
 
 	public string Identifier { get; set; } = default!;
+	public string Name { get; set; } = string.Empty;
 	public string Type { get; set; } = default!;
 
 	public ShaderNode GetNodeByGuid(Guid guid) =>
@@ -469,6 +470,13 @@ public class ShaderGraph
 			};
 			loadMenu.AddChild(fileStack);
 
+			loadMenu.OnClickOutsideOnce(((_, _) =>
+			{
+				mainControl.RemoveChild(loadMenu);
+				loadMenu.Dispose();
+				opened = false;
+			}));
+
 			string[] files = Directory.EnumerateFiles("./shaders").Where(f => f.EndsWith(".sg")).ToArray();
 			foreach (string file in files)
 			{
@@ -507,6 +515,8 @@ public class ShaderGraph
 					ReadFileToBuffer(stream, ref buffer);
 					graph.LoadGraphFromBuffer(ref buffer);
 
+					graph.Name = Path.GetFileNameWithoutExtension(file);
+
 					mainControl.RemoveChild(loadMenu);
 					loadMenu.Dispose();
 					opened = false;
@@ -531,29 +541,107 @@ public class ShaderGraph
 		var saveLabel = new Label(saveAlign.Context) {Text = "Save", OffsetZ = 1};
 		saveAlign.AddChild(saveLabel);
 
+		bool haveMessageBox = false;
 		saveButton.OnClick((_, button, _, _, type, startedHere) =>
 		{
 			if (button != MouseButton.Left) return false;
 			if (type != ClickType.End) return false;
 			if (!startedHere) return false;
 
-			int size = sizeof(int);
-			foreach (var shaderNode in graph._shaderNodes)
+			if (haveMessageBox) return true;
+			haveMessageBox = true;
+
+			var align = new AlignPanel(mainControl.Context) {Alignment = Alignment.Center};
+			mainControl.AddChild(align);
+
+			var messageBox = new Rectangle(mainControl.Context)
 			{
-				size += shaderNode.CalculateLinksByteCount();
-				size += 2 * sizeof(Guid);
-				size += sizeof(Vector2<float>);
-				size += shaderNode.NodeTypeName.GetByteCount() + sizeof(int);
-				size += shaderNode.NodeName.GetByteCount() + sizeof(int);
-				size += shaderNode.CalculateByteCount();
-			}
+				Color = Color.Amber700,
+				Size = (300, 150),
+				OffsetZ = 1100
+			};
+			align.AddChild(messageBox);
 
-			Span<byte> span = stackalloc byte[size];
-			var buffer = span.AsBuffer();
-			graph.SerializeGraph(ref buffer);
+			var inputAlign = new AlignPanel(messageBox.Context) {Alignment = Alignment.Center};
+			messageBox.AddChild(inputAlign);
 
-			using var file = File.Create("compiled_shader_graph.sg");
-			file.Write(span);
+			var input = new TextInputBox(messageBox.Context)
+			{
+				Text = graph.Name == string.Empty ? "ShaderName" : graph.Name,
+				OffsetZ = 1
+			};
+			inputAlign.AddChild(input);
+
+			var buttonsAlign = new AlignPanel(messageBox.Context) {Alignment = Alignment.BottomCenter};
+			messageBox.AddChild(buttonsAlign);
+
+			var saveButtonsStack = new StackPanel(messageBox.Context)
+			{
+				Orientation = Orientation.Horizontal,
+				Spacing = 30,
+				OffsetZ = 1
+			};
+			buttonsAlign.AddChild(saveButtonsStack);
+
+			var cancelButton = new Button(saveButtonsStack.Context)
+			{
+				Color = Color.Red400,
+				Size = new Vector2<float>(100, 25),
+				TextAlignment = Alignment.Center,
+				Text = "Cancel"
+			};
+			saveButtonsStack.AddChild(cancelButton);
+			cancelButton.OnClick(((_, button, _, _, type, startedHere) =>
+			{
+				if (button != MouseButton.Left) return false;
+				if (type != ClickType.End) return false;
+				if (!startedHere) return false;
+
+				mainControl.RemoveChild(align);
+				align.Dispose();
+				haveMessageBox = false;
+
+				return true;
+			}));
+
+			var confirmSaveButton = new Button(saveButtonsStack.Context)
+			{
+				Color = Color.Green400,
+				Size = new Vector2<float>(100, 25),
+				TextAlignment = Alignment.Center,
+				Text = "Save"
+			};
+			saveButtonsStack.AddChild(confirmSaveButton);
+			confirmSaveButton.OnClick(((_, mouseButton, _, _, clickType, startedHere) =>
+			{
+				if (mouseButton != MouseButton.Left) return false;
+				if (clickType != ClickType.End) return false;
+				if (!startedHere) return false;
+
+				int size = sizeof(int);
+				foreach (var shaderNode in graph._shaderNodes)
+				{
+					size += shaderNode.CalculateLinksByteCount();
+					size += 2 * sizeof(Guid);
+					size += sizeof(Vector2<float>);
+					size += shaderNode.NodeTypeName.GetByteCount() + sizeof(int);
+					size += shaderNode.NodeName.GetByteCount() + sizeof(int);
+					size += shaderNode.CalculateByteCount();
+				}
+				
+				Span<byte> span = stackalloc byte[size];
+				var buffer = span.AsBuffer();
+				graph.SerializeGraph(ref buffer);
+
+				using var file = File.Create($"./shaders/{input.Text}.sg");
+				file.Write(span);
+
+				mainControl.RemoveChild(align);
+				align.Dispose();
+				haveMessageBox = false;
+
+				return true;
+			}));
 
 			return true;
 		});

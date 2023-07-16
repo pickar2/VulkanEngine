@@ -34,6 +34,9 @@ public class StackPanel : UiControl
 			desiredSize.Min(maxSize);
 		}
 
+		desiredSize[stackComponent] -= scaledSpacing;
+		desiredSize[stackComponent] = Math.Max(desiredSize[stackComponent], 0);
+
 		ComputedSize = desiredSize;
 		ComputedArea = maxArea.Min(desiredSize + ((MarginLT + MarginRB) * ParentScale));
 	}
