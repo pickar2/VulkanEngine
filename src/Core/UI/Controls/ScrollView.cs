@@ -10,7 +10,7 @@ public class ScrollView : UiControl
 	private readonly Rectangle _horizontalSlider;
 	private readonly Rectangle _verticalSlider;
 	private Vector2<float> _maxAreaInside;
-	
+
 	public bool CanScrollVertically { get; private set; }
 	public bool CanScrollHorizontally { get; private set; }
 
@@ -29,7 +29,7 @@ public class ScrollView : UiControl
 			if (button != MouseButton.Left) return false;
 			if (dragType == DragType.Move)
 			{
-				var offset = motion / CombinedScale;
+				var offset = motion.Cast<int, float>() / CombinedScale;
 				ScrollHorizontally(offset.X);
 			}
 
@@ -55,7 +55,7 @@ public class ScrollView : UiControl
 			return true;
 		});
 		AddChild(_verticalSlider);
-		
+
 		this.OnScroll((_, _, amount) =>
 		{
 			if (CanScrollVertically)
@@ -91,12 +91,15 @@ public class ScrollView : UiControl
 		var maxArea = maxSize.MinV((Size * CombinedScale) + ((MarginLT + MarginRB) * ParentScale));
 		maxSize.Min(Size * CombinedScale);
 
+		_maxAreaInside = new Vector2<float>();
 		foreach (var child in Children)
 		{
 			if (child == _verticalSlider || child == _horizontalSlider) continue;
 			child.ComputeSizeAndArea(new Vector2<float>(float.PositiveInfinity));
 			_maxAreaInside.Max(child.ComputedArea);
 		}
+
+		_maxAreaInside /= CombinedScale;
 
 		_horizontalSlider.ComputeSizeAndArea(new Vector2<float>(float.PositiveInfinity));
 		_verticalSlider.ComputeSizeAndArea(new Vector2<float>(float.PositiveInfinity));

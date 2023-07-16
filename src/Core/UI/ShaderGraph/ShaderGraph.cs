@@ -230,33 +230,27 @@ public class ShaderGraph
 			return true;
 		});
 
-		// TODO: UiControl.onScroll()
-		UiManager.InputContext.MouseInputHandler.OnScroll += amount =>
+		mainControl.OnScroll((_, mousePos, amount) =>
 		{
-			if (UiManager.ControlsOnMousePos.Count == 0) return;
+			var pos = graph.GraphPanel.MarginLT;
+			pos -= mousePos;
+			pos /= graph.GraphPanel.Scale;
+			graph.GraphPanel.Scale += amount.Y / 10f;
+			graph.GraphPanel.Scale = new Vector2<float>(Math.Clamp(graph.GraphPanel.Scale.X, 0.2f, 2.0f), Math.Clamp(graph.GraphPanel.Scale.Y, 0.2f, 2.0f));
+			pos *= graph.GraphPanel.Scale;
+			pos += mousePos;
+			graph.GraphPanel.MarginLT = pos;
 
-			var top = UiManager.ControlsOnMousePos[0];
-			if (top == mainControl || top == graph.GraphPanel)
+			*bg.FragMaterial.GetMemPtr<BackgroundDotsMaterial>() = new BackgroundDotsMaterial
 			{
-				var mousePos = UiManager.InputContext.MouseInputHandler.MousePos.Cast<int, float>();
-				var pos = graph.GraphPanel.MarginLT;
-				pos -= mousePos;
-				pos /= graph.GraphPanel.Scale;
-				graph.GraphPanel.Scale += amount.Y / 10f;
-				graph.GraphPanel.Scale = new Vector2<float>(Math.Clamp(graph.GraphPanel.Scale.X, 0.2f, 2.0f), Math.Clamp(graph.GraphPanel.Scale.Y, 0.2f, 2.0f));
-				pos *= graph.GraphPanel.Scale;
-				pos += mousePos;
-				graph.GraphPanel.MarginLT = pos;
+				Scale = graph.GraphPanel.Scale.X,
+				Offset = -graph.GraphPanel.MarginLT
+			};
 
-				*bg.FragMaterial.GetMemPtr<BackgroundDotsMaterial>() = new BackgroundDotsMaterial
-				{
-					Scale = graph.GraphPanel.Scale.X,
-					Offset = -graph.GraphPanel.MarginLT
-				};
+			bg.FragMaterial.MarkForGPUUpdate();
 
-				bg.FragMaterial.MarkForGPUUpdate();
-			}
-		};
+			return true;
+		});
 
 		const int maxNodesPerRow = 5;
 		int posX = 50;
@@ -393,7 +387,7 @@ public class ShaderGraph
 		var togglePreviewLabel = new Label(togglePreviewAlign.Context) {Text = "Preview", OffsetZ = 1};
 		togglePreviewAlign.AddChild(togglePreviewLabel);
 
-		togglePreviewButton.OnClick(((_, button, _, _, type, startedHere) =>
+		togglePreviewButton.OnClick((_, button, _, _, type, startedHere) =>
 		{
 			if (button != MouseButton.Left) return false;
 			if (type != ClickType.End) return false;
@@ -413,7 +407,7 @@ public class ShaderGraph
 			}
 
 			return true;
-		}));
+		});
 	}
 
 	private static unsafe void DrawMenuBar(ShaderGraph graph, UiControl mainControl)
