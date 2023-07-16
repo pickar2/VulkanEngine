@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Drawing;
+﻿using System.Collections.Generic;
 using Core.UI.Controls.Panels;
 using Core.UI.Reactive;
 using Core.Window;
@@ -78,7 +76,7 @@ public class ComboBox<T> : UiControl
 			scrollView = new ScrollView(Context)
 			{
 				Size = (Size.X, _maxHeight),
-				OffsetZ = 1,
+				OffsetZ = 1
 			};
 			stack.AddChild(scrollView);
 			scrollView.AddChild(valuesContainer);
@@ -97,14 +95,15 @@ public class ComboBox<T> : UiControl
 			Size.Y = _initialHeight;
 		}
 
-		align.OnClick(((_, button, _, _, type) =>
+		align.OnClick((_, button, _, _, type, startedHere) =>
 		{
 			if (button != MouseButton.Left) return false;
 			if (type != ClickType.End) return false;
+			if (!startedHere) return false;
 
 			if (!open)
 			{
-				this.OnClickOutsideOnce(((_, _) => Close()));
+				this.OnClickOutsideOnce((_, _) => Close());
 				open = true;
 				Size.Y = float.IsPositiveInfinity(_maxHeight) ? Values.Count * (valueSpacing + _valueHeight) : _maxHeight;
 				Size.Y += _initialHeight + headerSpacing;
@@ -114,7 +113,7 @@ public class ComboBox<T> : UiControl
 					var box = new Rectangle(Context);
 					box.Size.Y = _valueHeight;
 					box.Color = Color.Amber500;
-					box.OnHover(((_, _, hoverType) => box.Color = hoverType == HoverType.Start ? Color.Yellow900 : Color.Amber500));
+					box.OnHover((_, _, hoverType) => box.Color = hoverType == HoverType.Start ? Color.Yellow900 : Color.Amber500);
 					valuesContainer.AddChild(box);
 
 					var valueAlign = new AlignPanel(Context) {Alignment = Alignment.Center};
@@ -123,17 +122,18 @@ public class ComboBox<T> : UiControl
 					var valueLabel = new Label(Context) {Text = name, OffsetZ = 1};
 					valueAlign.AddChild(valueLabel);
 
-					box.OnClick(((_, _, _, _, _) =>
+					box.OnClick((_, _, _, _, _, startedHere2) =>
 					{
 						if (button != MouseButton.Left) return false;
 						if (type != ClickType.End) return false;
+						if (!startedHere2) return false;
 
 						Close();
 
 						Current = (Name: name, Value: value);
 
 						return true;
-					}));
+					});
 				}
 			}
 			else
@@ -142,6 +142,6 @@ public class ComboBox<T> : UiControl
 			}
 
 			return true;
-		}));
+		});
 	}
 }

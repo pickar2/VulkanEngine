@@ -31,7 +31,10 @@ public class NodeSelectorUi : AbsolutePanel
 				{NodeTypeName = "frameIndex"}
 		},
 		{"step", (guid, name) => new StepFunctionNode(guid, name ?? $"StepFunctionNode_{guid.ToShortString()}") {NodeTypeName = "step"}},
-		{"smoothstep", (guid, name) => new SmoothStepFunctionNode(guid, name ?? $"SmoothStepFunctionNode_{guid.ToShortString()}") {NodeTypeName = "smoothstep"}},
+		{
+			"smoothstep",
+			(guid, name) => new SmoothStepFunctionNode(guid, name ?? $"SmoothStepFunctionNode_{guid.ToShortString()}") {NodeTypeName = "smoothstep"}
+		},
 		{"output", (guid, name) => new OutputNode(guid, name ?? $"OutputNode_{guid.ToShortString()}", ShaderResourceType.Vec3F) {NodeTypeName = "output"}},
 		{"vec2", (guid, name) => new Vec2FunctionNode(guid, name ?? $"Vec2Node_{guid.ToShortString()}") {NodeTypeName = "vec2"}},
 		{"vec3", (guid, name) => new Vec3FunctionNode(guid, name ?? $"Vec3Node_{guid.ToShortString()}") {NodeTypeName = "vec3"}},
@@ -55,7 +58,7 @@ public class NodeSelectorUi : AbsolutePanel
 		{"add", (guid, name) => new ArithmeticFunctionNode(guid, name ?? $"AddFunctionNode_{guid.ToShortString()}", "+") {NodeTypeName = "add"}},
 		{"sub", (guid, name) => new ArithmeticFunctionNode(guid, name ?? $"SubFunctionNode_{guid.ToShortString()}", "-") {NodeTypeName = "sub"}},
 		{"mul", (guid, name) => new ArithmeticFunctionNode(guid, name ?? $"MulFunctionNode_{guid.ToShortString()}", "*") {NodeTypeName = "mul"}},
-		{"div", (guid, name) => new ArithmeticFunctionNode(guid, name ?? $"DivFunctionNode_{guid.ToShortString()}", "/") {NodeTypeName = "div"}},
+		{"div", (guid, name) => new ArithmeticFunctionNode(guid, name ?? $"DivFunctionNode_{guid.ToShortString()}", "/") {NodeTypeName = "div"}}
 	};
 
 	public NodeSelectorUi(UiContext context, ShaderGraph shaderGraph) : base(context)
@@ -91,10 +94,11 @@ public class NodeSelectorUi : AbsolutePanel
 				border.Size = type == HoverType.Start ? 2 : 1;
 			});
 
-			nodeLine.OnClick((_, button, _, _, type) =>
+			nodeLine.OnClick((_, button, _, _, type, startedHere) =>
 			{
 				if (button != MouseButton.Left) return false;
 				if (type != ClickType.End) return false;
+				if (!startedHere) return false;
 
 				_shaderGraph.AddNode(factory.Invoke(Guid.NewGuid(), null), MarginLT - shaderGraph.GraphPanel.MarginLT);
 				Parent?.RemoveChild(this);

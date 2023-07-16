@@ -13,16 +13,17 @@ public static partial class UiManager
 {
 	public delegate void OnCursorMoveDelegate(UiControl control, Vector2<int> newPos, Vector2<int> motion);
 	public delegate void OnHoverDelegate(UiControl control, Vector2<int> pos, HoverType hoverType);
-	public delegate bool OnClickDelegate(UiControl control, MouseButton button, Vector2<int> pos, byte clicks, ClickType clickType);
+	public delegate bool OnClickDelegate(UiControl control, MouseButton button, Vector2<int> pos, byte clicks, ClickType clickType, bool startAndEndOnSame);
 	public delegate bool OnDragDelegate(UiControl control, Vector2<int> newPos, Vector2<int> motion, MouseButton button, DragType dragType);
 
-	private static readonly Dictionary<UiControl, OnCursorMoveDelegate> OnCursorMoveDelegates = new();
+	// private static readonly Dictionary<UiControl, OnCursorMoveDelegate> OnCursorMoveDelegates = new();
 	private static readonly Dictionary<UiControl, OnHoverDelegate> OnHoverDelegates = new();
 	private static readonly Dictionary<UiControl, OnClickDelegate> OnMouseClickDelegates = new();
 	private static readonly Dictionary<UiControl, OnDragDelegate> OnDragDelegates = new();
 
 	private static readonly HashSet<UiControl> HoveredControls = new();
 	private static readonly Dictionary<MouseButton, HashSet<UiControl>> DraggedControls = new();
+	private static readonly Dictionary<MouseButton, HashSet<UiControl>> ClickedControls = new();
 
 	public static event Action? BeforeUpdate;
 	public static event Action? AfterUpdate;
@@ -41,7 +42,11 @@ public static partial class UiManager
 		};
 
 		var values = Enum.GetValues<MouseButton>();
-		foreach (var button in values) DraggedControls[button] = new HashSet<UiControl>();
+		foreach (var button in values)
+		{
+			DraggedControls[button] = new HashSet<UiControl>();
+			ClickedControls[button] = new HashSet<UiControl>();
+		}
 
 		InputContext.MouseInputHandler.OnMouseMotion += HandleCursorMove;
 
@@ -63,6 +68,12 @@ public static partial class UiManager
 			if (draggedControls.Contains(control)) continue;
 
 			if (!OnDragDelegates.TryGetValue(control, out var onDragStart)) continue;
+			if (control.IsDisposed)
+			{
+				RemoveAllEvents(control);
+				continue;
+			}
+
 			if (onDragStart.Invoke(control, newPos, motion, button, DragType.Start))
 			{
 				draggedControls.Add(control);
@@ -77,6 +88,12 @@ public static partial class UiManager
 		foreach (var control in draggedControls)
 		{
 			if (!OnDragDelegates.TryGetValue(control, out var onDragMove)) continue;
+			if (control.IsDisposed)
+			{
+				RemoveAllEvents(control);
+				continue;
+			}
+
 			if (onDragMove.Invoke(control, newPos, motion, button, DragType.Move)) break;
 		}
 	}
@@ -89,25 +106,51 @@ public static partial class UiManager
 			draggedControls.Remove(control);
 
 			if (!OnDragDelegates.TryGetValue(control, out var onDragEnd)) continue;
+			if (control.IsDisposed)
+			{
+				RemoveAllEvents(control);
+				continue;
+			}
+
 			if (onDragEnd.Invoke(control, newPos, motion, button, DragType.End)) break;
 		}
 	}
 
 	private static void HandleClickEnd(MouseButton button, byte clicks)
 	{
+		var clickedControls = ClickedControls[button];
+		bool handledEnd = false;
 		foreach (var control in ControlsOnMousePos)
 		{
+			bool startedOnThis = clickedControls.Remove(control);
 			if (!OnMouseClickDelegates.TryGetValue(control, out var onMouseClick)) continue;
-			if (onMouseClick.Invoke(control, button, InputContext.MouseInputHandler.MousePos, clicks, ClickType.End)) return;
+			if (control.IsDisposed)
+			{
+				RemoveAllEvents(control);
+				continue;
+			}
+
+			if (!handledEnd && onMouseClick.Invoke(control, button, InputContext.MouseInputHandler.MousePos, clicks, ClickType.End, startedOnThis))
+				handledEnd = true;
 		}
 	}
 
 	private static void HandleClickStart(MouseButton button, byte clicks)
 	{
+		var clickedControls = ClickedControls[button];
+		bool handledStart = false;
 		foreach (var control in ControlsOnMousePos)
 		{
+			clickedControls.Add(control);
 			if (!OnMouseClickDelegates.TryGetValue(control, out var onMouseClick)) continue;
-			if (onMouseClick.Invoke(control, button, InputContext.MouseInputHandler.MousePos, clicks, ClickType.Start)) return;
+			if (control.IsDisposed)
+			{
+				RemoveAllEvents(control);
+				continue;
+			}
+
+			if (!handledStart && onMouseClick.Invoke(control, button, InputContext.MouseInputHandler.MousePos, clicks, ClickType.Start, false))
+				handledStart = true;
 		}
 	}
 

@@ -20,8 +20,8 @@ public class ScrollView : UiControl
 			Color = Color.Amber100,
 			Size = new Vector2<float>(50, 10)
 		};
-		_horizontalSlider.OnClick((_, button, _, _, _) => button == MouseButton.Left);
-		_horizontalSlider.OnDrag((control, newPos, motion, button, dragType) =>
+		_horizontalSlider.OnClick((_, button, _, _, _, _) => button == MouseButton.Left);
+		_horizontalSlider.OnDrag((_, _, motion, button, dragType) =>
 		{
 			if (button != MouseButton.Left) return false;
 			if (dragType == DragType.Move)
@@ -40,8 +40,8 @@ public class ScrollView : UiControl
 			Color = Color.Amber100,
 			Size = new Vector2<float>(10, 50)
 		};
-		_verticalSlider.OnClick((_, button, _, _, _) => button == MouseButton.Left);
-		_verticalSlider.OnDrag((control, newPos, motion, button, dragType) =>
+		_verticalSlider.OnClick((_, button, _, _, _, _) => button == MouseButton.Left);
+		_verticalSlider.OnDrag((_, _, motion, button, dragType) =>
 		{
 			if (button != MouseButton.Left) return false;
 			if (dragType == DragType.Move)
@@ -63,9 +63,13 @@ public class ScrollView : UiControl
 
 		foreach (var child in Children)
 		{
+			if (child == _verticalSlider || child == _horizontalSlider) continue;
 			child.ComputeSizeAndArea(new Vector2<float>(float.PositiveInfinity));
 			_maxAreaInside.Max(child.ComputedArea);
 		}
+
+		_horizontalSlider.ComputeSizeAndArea(new Vector2<float>(float.PositiveInfinity));
+		_verticalSlider.ComputeSizeAndArea(new Vector2<float>(float.PositiveInfinity));
 
 		ComputedSize = maxSize;
 		ComputedArea = maxArea;
@@ -92,17 +96,19 @@ public class ScrollView : UiControl
 		_horizontalSlider.MarginLT.X = (Size.X - _horizontalSlider.Size.X) * ScrollOffset.X;
 		_horizontalSlider.MarginLT.Y = Size.Y - _horizontalSlider.Size.Y;
 
-		_horizontalSlider.BaseZ = maxChildZ;
+		_horizontalSlider.BasePos = CombinedPos;
 		_horizontalSlider.LocalPos = _horizontalSlider.MarginLT * CombinedScale;
+		_horizontalSlider.BaseZ = maxChildZ;
 
-		// _horizontalSlider.Size.Y = (_maxAreaInside.X - 10) <= Size.X ? 0 : 10;
+		_horizontalSlider.Size.Y = _maxAreaInside.X <= Size.X ? 0 : 10;
 
 		_verticalSlider.MarginLT.X = Size.X - _verticalSlider.Size.X;
 		_verticalSlider.MarginLT.Y = (Size.Y - _verticalSlider.Size.Y) * ScrollOffset.Y;
 
-		_verticalSlider.BaseZ = maxChildZ;
+		_verticalSlider.BasePos = CombinedPos;
 		_verticalSlider.LocalPos = _verticalSlider.MarginLT * CombinedScale;
+		_verticalSlider.BaseZ = maxChildZ;
 
-		// _verticalSlider.Size.X = (_maxAreaInside.Y - 10) <= Size.Y ? 0 : 10;
+		_verticalSlider.Size.X = _maxAreaInside.Y <= Size.Y ? 0 : 10;
 	}
 }

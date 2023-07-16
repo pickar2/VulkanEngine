@@ -172,7 +172,7 @@ public class ShaderGraph
 		var bg = new CustomBox(GeneralRenderer.UiContext);
 		bg.VertMaterial = GeneralRenderer.UiContext.MaterialManager.GetFactory("default_vertex_material").Create();
 		bg.FragMaterial = GeneralRenderer.UiContext.MaterialManager.GetFactory("dots_background_material").Create();
-		*bg.FragMaterial.GetMemPtr<float>() = 1f;
+		bg.FragMaterial.GetMemPtr<BackgroundDotsMaterial>()->Scale = 1f;
 		bg.FragMaterial.MarkForGPUUpdate();
 		bg.Selectable = false;
 		mainControl.AddChild(bg);
@@ -203,10 +203,11 @@ public class ShaderGraph
 		NodeSelectorUi? nodeSelector = null;
 		bool selectingNode = false;
 
-		mainControl.OnClick((control, button, pos, _, type) =>
+		mainControl.OnClick((control, button, pos, _, type, startedHere) =>
 		{
 			if (button != MouseButton.Right) return false;
 			if (type != ClickType.End) return false;
+			if (!startedHere) return false;
 
 			if (!selectingNode)
 			{
@@ -242,6 +243,7 @@ public class ShaderGraph
 				pos -= mousePos;
 				pos /= graph.GraphPanel.Scale;
 				graph.GraphPanel.Scale += amount.Y / 10f;
+				graph.GraphPanel.Scale = new Vector2<float>(Math.Clamp(graph.GraphPanel.Scale.X, 0.2f, 2.0f), Math.Clamp(graph.GraphPanel.Scale.Y, 0.2f, 2.0f));
 				pos *= graph.GraphPanel.Scale;
 				pos += mousePos;
 				graph.GraphPanel.MarginLT = pos;
@@ -335,10 +337,11 @@ public class ShaderGraph
 		loadAlign.AddChild(loadLabel);
 
 		bool opened = false;
-		loadButton.OnClick((control, button, pos, clicks, type) =>
+		loadButton.OnClick((control, button, pos, clicks, type, startedHere) =>
 		{
 			if (button != MouseButton.Left) return false;
 			if (type != ClickType.End) return false;
+			if (!startedHere) return false;
 
 			if (!Directory.Exists("./shaders") || opened) return false;
 			opened = true;
@@ -383,10 +386,11 @@ public class ShaderGraph
 				};
 				fileButtonAlign.AddChild(fileButtonLabel);
 
-				fileButton.OnClick((uiControl, mouseButton, vector2, b, clickType) =>
+				fileButton.OnClick((uiControl, mouseButton, vector2, b, clickType, startedHere) =>
 				{
 					if (clickType != ClickType.End) return false;
 					if (mouseButton != MouseButton.Left) return false;
+					if (!startedHere) return false;
 
 					if (!File.Exists(file)) return false;
 
@@ -420,10 +424,11 @@ public class ShaderGraph
 		var saveLabel = new Label(saveAlign.Context) {Text = "Save", OffsetZ = 1};
 		saveAlign.AddChild(saveLabel);
 
-		saveButton.OnClick((control, button, pos, clicks, type) =>
+		saveButton.OnClick((control, button, pos, clicks, type, startedHere) =>
 		{
 			if (button != MouseButton.Left) return false;
 			if (type != ClickType.End) return false;
+			if (!startedHere) return false;
 
 			int size = sizeof(int);
 			foreach (var shaderNode in graph._shaderNodes)
@@ -460,10 +465,11 @@ public class ShaderGraph
 		compileAlign.AddChild(compileLabel);
 
 		CustomBox? graphGeneratedBox = null;
-		compileButton.OnClick((control, button, pos, clicks, type) =>
+		compileButton.OnClick((control, button, pos, clicks, type, startedHere) =>
 		{
 			if (button != MouseButton.Left) return false;
 			if (type != ClickType.End) return false;
+			if (!startedHere) return false;
 
 			graph.Identifier = "graph_generated";
 
@@ -494,8 +500,6 @@ public class ShaderGraph
 
 	public static ref SpanBuffer<byte> ReadFileToBuffer(FileStream stream, ref SpanBuffer<byte> buffer)
 	{
-		// Span<byte> span = stackalloc byte[(int) stream.Length];
-		// var buffer = span.AsBuffer();
 		int offset = 0;
 		int read;
 		do

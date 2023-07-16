@@ -60,7 +60,7 @@ public class TextInputBox : UiControl
 		Text = "Text input";
 
 		int lastWordStart = -1;
-		this.OnClick((control, button, pos, clicks, clickType) =>
+		this.OnClick((control, button, pos, clicks, clickType, _) =>
 		{
 			if (_isEditing && clickType == ClickType.Start)
 			{

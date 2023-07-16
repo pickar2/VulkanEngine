@@ -1,13 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Linq;
 using Core.UI.Controls;
 using Core.UI.Controls.Panels;
 using Core.UI.Reactive;
 using Core.Window;
 using SimpleMath.Vectors;
-using Rectangle = Core.UI.Controls.Rectangle;
 
 namespace Core.UI.ShaderGraph;
 
@@ -113,7 +111,7 @@ public class UiShaderNode
 				var connectorContainer = new AbsolutePanel(Container.Context)
 				{
 					OffsetZ = 1,
-					MarginLT = new Vector2<float>(0, inputInitialHeight + (index * (inputPadding + ConnectionSize))),
+					MarginLT = new Vector2<float>(0, inputInitialHeight + (index * (inputPadding + ConnectionSize)))
 				};
 				connectorContainer.Size.Y = ConnectionSize;
 				Container.AddChild(connectorContainer);
@@ -136,10 +134,9 @@ public class UiShaderNode
 				connectorBoxAlign.AddChild(inputBox);
 
 				int conIndex = index;
-				inputBox.OnClick(((_, button, _, _, type) =>
+				inputBox.OnClick((_, button, _, _, _, _) =>
 				{
 					if (button != MouseButton.Right && button != MouseButton.Left) return false;
-					if (type != ClickType.End) return false;
 					if (button == MouseButton.Right)
 					{
 						if (inputConnector?.ConnectedOutputNode is not null)
@@ -165,15 +162,15 @@ public class UiShaderNode
 					}
 
 					return true;
-				}));
+				});
 
-				inputBox.OnHover(((_, _, type) =>
+				inputBox.OnHover((_, _, type) =>
 				{
 					if (type == HoverType.End)
 						inputBox.Color = inputConnector?.ConnectedOutputNode is not null ? Color.Green600 : Color.Lime600;
 					else
 						inputBox.Color = inputConnector?.ConnectedOutputNode is not null ? Color.Red600 : Color.Blue600;
-				}));
+				});
 			}
 		});
 
@@ -218,7 +215,7 @@ public class UiShaderNode
 
 				var connectorLabelAlign = new AlignPanel(Container.Context)
 				{
-					Alignment = Alignment.CenterRight,
+					Alignment = Alignment.CenterRight
 				};
 				connectorLabelAlign.MarginLT.X = -ConnectionSize - 3;
 				connectorContainer.AddChild(connectorLabelAlign);
@@ -238,12 +235,12 @@ public class UiShaderNode
 				connectorBoxAlign.AddChild(outputBox);
 
 				int conIndex = index;
-				outputBox.OnDrag(((control, newPos, _, button, type) =>
+				outputBox.OnDrag((control, newPos, _, button, type) =>
 				{
 					if (button != MouseButton.Left) return false;
 
 					var start = new Vector2<double>(ConnectionSize, ConnectionSize / 2d);
-					var end = (newPos.Cast<int, double>() - control.CombinedPos) / control.CombinedScale + outputBox.MarginLT;
+					var end = ((newPos.Cast<int, double>() - control.CombinedPos) / control.CombinedScale) + outputBox.MarginLT;
 					switch (type)
 					{
 						case DragType.Start:
@@ -272,7 +269,7 @@ public class UiShaderNode
 					}
 
 					return true;
-				}));
+				});
 			}
 
 			UpdateOutputCurves();
@@ -296,7 +293,7 @@ public class UiShaderNode
 		{
 			var outputConnector = outputs[index];
 			var outputPos = new Vector2<double>(NodeSizeX,
-				outputInitialHeight + (index * (outputPadding + ConnectionSize)) + ConnectionSize / 2f);
+				outputInitialHeight + (index * (outputPadding + ConnectionSize)) + (ConnectionSize / 2f));
 			foreach (var connection in outputConnector.Connections)
 			{
 				if (connection.ConnectedInputNode is null) continue;
@@ -307,7 +304,7 @@ public class UiShaderNode
 				int inputPadding = (VerticalSpaceForConnections - (ConnectionSize * inputs.Length)) / (inputs.Length + 1);
 				int inputInitialHeight = ConnectionsVerticalOffset + inputPadding;
 				var inputPos = new Vector2<double>(inputNode.Pos.X - Pos.X,
-					inputNode.Pos.Y - Pos.Y + inputInitialHeight + (connection.InputConnectorIndex * (inputPadding + ConnectionSize)) + ConnectionSize / 2f);
+					inputNode.Pos.Y - Pos.Y + inputInitialHeight + (connection.InputConnectorIndex * (inputPadding + ConnectionSize)) + (ConnectionSize / 2f));
 
 				var curve = new BezierCurve(Container.Context,
 					outputPos,
@@ -348,7 +345,6 @@ public class UiShaderOutputNode : UiShaderNode
 
 		typeSelector.Context.CreateEffect(() => _outputNode.Type = typeSelector.Current.Value);
 		typeSelector.Draw();
-
 	}
 }
 
@@ -390,8 +386,8 @@ public static class UiShaderNodeFactories
 {
 	static UiShaderNodeFactories()
 	{
-		AddFactory<OutputNode>(((context, graph, node, id) => new UiShaderOutputNode(context, graph, (OutputNode) node, id)));
-		AddFactory<ConstInputNode>(((context, graph, node, id) => new UiShaderInputNode(context, graph, (ConstInputNode) node, id)));
+		AddFactory<OutputNode>((context, graph, node, id) => new UiShaderOutputNode(context, graph, (OutputNode) node, id));
+		AddFactory<ConstInputNode>((context, graph, node, id) => new UiShaderInputNode(context, graph, (ConstInputNode) node, id));
 	}
 
 	public delegate UiShaderNode UiShaderNodeFactoryDelegate(UiContext context, ShaderGraph graph, ShaderNode node, int id);

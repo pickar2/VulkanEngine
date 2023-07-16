@@ -441,7 +441,7 @@ public static partial class UiManager
 		});
 
 		bool started = false;
-		button.OnClick((_, mouseButton, _, _, clickType) =>
+		button.OnClick((_, mouseButton, _, _, clickType, _) =>
 		{
 			if (clickType != ClickType.End || mouseButton != MouseButton.Left) return false;
 			if (!started)
