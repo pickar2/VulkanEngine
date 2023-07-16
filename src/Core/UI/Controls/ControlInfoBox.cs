@@ -1,5 +1,4 @@
-﻿using System.Drawing;
-using Core.UI.Controls.Panels;
+﻿using Core.UI.Controls.Panels;
 using Core.UI.Reactive;
 using Core.Window;
 using SDL2;
@@ -29,7 +28,7 @@ public class ControlInfoBox : AbsolutePanel
 		}
 	}
 
-	public override void Update()
+	public override void BeforeUpdate()
 	{
 		if (_needsUpdate)
 		{
@@ -37,7 +36,7 @@ public class ControlInfoBox : AbsolutePanel
 			_needsUpdate = false;
 		}
 
-		base.Update();
+		base.BeforeUpdate();
 	}
 
 	private void UpdateControl()

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Drawing;
 using Core.UI.Controls.Panels;
 using Core.UI.Reactive;
 using Core.Vulkan.Renderers;
@@ -23,6 +22,8 @@ public class BezierCurve : AbsolutePanel
 	private Vector2<float> _lastScale = new(1);
 	public bool UpdateRequired = true;
 
+	private const int Steps = 15;
+
 	public BezierCurve(UiContext context, Vector2<double> p0, Vector2<double> p1, Vector2<double> p2, Vector2<double> p3, double lineWidth = 3.7) :
 		base(context)
 	{
@@ -36,8 +37,9 @@ public class BezierCurve : AbsolutePanel
 
 		LineWidth = lineWidth;
 
-		for (var i = 0; i < _scaledAnchors.Length; i++) _scaledAnchors[i] = Anchors[i];
+		for (int i = 0; i < _scaledAnchors.Length; i++) _scaledAnchors[i] = Anchors[i];
 		_scaledLineWidth = LineWidth;
+		CreateCurve();
 	}
 
 	public void UpdateScale()
@@ -50,7 +52,7 @@ public class BezierCurve : AbsolutePanel
 		UpdateRequired = true;
 	}
 
-	public override void Update()
+	public override void AfterUpdate()
 	{
 		UpdateScale();
 		if (UpdateRequired)
@@ -59,24 +61,51 @@ public class BezierCurve : AbsolutePanel
 			UpdateRequired = false;
 		}
 
-		base.Update();
+		base.AfterUpdate();
+	}
+
+	private unsafe void CreateCurve()
+	{
+		var colorFactory = GeneralRenderer.MainRoot.MaterialManager.GetFactory("bezier_gradient_material");
+		var coordinatesFactory = GeneralRenderer.MainRoot.MaterialManager.GetFactory("pixel_coordinates_material");
+		for (int index = 0; index < Steps; index++)
+		{
+			var box = new CustomBox(GeneralRenderer.UiContext);
+
+			var pixelCoords = coordinatesFactory.Create();
+
+			pixelCoords.MarkForGPUUpdate();
+
+			var gradientColor = colorFactory.Create();
+			*gradientColor.GetMemPtr<BezierGradientMaterial>() = new BezierGradientMaterial
+			{
+				Color1 = Color.Fuchsia900,
+				Color2 = Color.Blue950,
+				Smoothing = 0.2f
+			};
+			gradientColor.MarkForGPUUpdate();
+
+			box.FragMaterial = gradientColor;
+			box.VertMaterial = pixelCoords;
+
+			box.Size = new Vector2<float>(1, 1);
+
+			AddChild(box);
+		}
 	}
 
 	public unsafe void RecalculateCurve()
 	{
-		foreach (var uiControl in ChildrenList) uiControl.Dispose();
-		ChildrenList.Clear();
 		Points.Clear();
 		Quads.Clear();
 		Quads2.Clear();
 
-		for (var i = 0; i < _scaledAnchors.Length; i++) _scaledAnchors[i] = Anchors[i] * CombinedScale;
+		for (int i = 0; i < _scaledAnchors.Length; i++) _scaledAnchors[i] = Anchors[i] * CombinedScale;
 		_scaledLineWidth = LineWidth * Math.Min(CombinedScale.X, CombinedScale.Y);
 
-		const int steps = 15;
-		const double step = 1.0 / steps;
+		const double step = 1.0 / Steps;
 		double t = 0;
-		for (int i = 0; i <= steps; i++)
+		for (int i = 0; i <= Steps; i++)
 		{
 			Points.Add(GetPointCubic(_scaledAnchors[0], _scaledAnchors[1], _scaledAnchors[2], _scaledAnchors[3], t));
 
@@ -122,48 +151,32 @@ public class BezierCurve : AbsolutePanel
 			t += step;
 		}
 
-		var colorFactory = GeneralRenderer.MainRoot.MaterialManager.GetFactory("bezier_gradient_material");
-		var coordinatesFactory = GeneralRenderer.MainRoot.MaterialManager.GetFactory("pixel_coordinates_material");
-		for (int index = 0; index < Quads.Count; index++)
+		int index = 0;
+		foreach (var uiControl in Children)
 		{
+			if (uiControl is not CustomBox box) continue;
+
 			var quad = Quads[index];
 			var quad2 = Quads2[index];
-			var box = new CustomBox(GeneralRenderer.UiContext);
 
-			var pixelCoords = coordinatesFactory.Create();
-			var pixelCoordsData = pixelCoords.GetMemPtr<PixelCoordinatesMaterial>();
+			var pixelCoordsData = box.VertMaterial.GetMemPtr<PixelCoordinatesMaterial>();
 
 			pixelCoordsData->V1 = new Vector4<float>((float) quad[0].X, (float) quad[0].Y, (float) quad2[0].X, (float) quad2[0].Y);
 			pixelCoordsData->V2 = new Vector4<float>((float) quad[1].X, (float) quad[1].Y, (float) quad2[1].X, (float) quad2[1].Y);
 			pixelCoordsData->V3 = new Vector4<float>((float) quad[2].X, (float) quad[2].Y, (float) quad2[2].X, (float) quad2[2].Y);
 			pixelCoordsData->V4 = new Vector4<float>((float) quad[3].X, (float) quad[3].Y, (float) quad2[3].X, (float) quad2[3].Y);
 
-			pixelCoords.MarkForGPUUpdate();
+			box.VertMaterial.MarkForGPUUpdate();
 
-			var gradientColor = colorFactory.Create();
-			*gradientColor.GetMemPtr<BezierGradientMaterial>() = new BezierGradientMaterial
-			{
-				Color1 = Color.Fuchsia900,
-				Color2 = Color.Blue950,
-				Smoothing = 0.2f
-			};
-			gradientColor.MarkForGPUUpdate();
-
-			box.FragMaterial = gradientColor;
-			box.VertMaterial = pixelCoords;
-
-			box.Size = new Vector2<float>(1, 1);
-			AddChild(box);
+			index++;
 		}
 	}
 
-	public static Vector2<double> GetPointCubic(Vector2<double> p0, Vector2<double> p1, Vector2<double> p2, Vector2<double> p3, double t)
-	{
-		return (p0 * ((-t * t * t) + (3 * t * t) - (3 * t) + 1)) +
-		       (p1 * ((3 * t * t * t) - (6 * t * t) + (3 * t))) +
-		       (p2 * ((-3 * t * t * t) + (3 * t * t))) +
-		       (p3 * (t * t * t));
-	}
+	public static Vector2<double> GetPointCubic(Vector2<double> p0, Vector2<double> p1, Vector2<double> p2, Vector2<double> p3, double t) =>
+		(p0 * ((-t * t * t) + (3 * t * t) - (3 * t) + 1)) +
+		(p1 * ((3 * t * t * t) - (6 * t * t) + (3 * t))) +
+		(p2 * ((-3 * t * t * t) + (3 * t * t))) +
+		(p3 * (t * t * t));
 
 	public static Vector2<double> GetDerivativeCubic(Vector2<double> p0, Vector2<double> p1, Vector2<double> p2, Vector2<double> p3, double t)
 	{

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Drawing;
 using Core.UI.Controls.Panels;
 using Core.UI.Materials.Fragment;
 using Core.UI.Materials.Vertex;
@@ -44,7 +43,7 @@ public class Label : StackPanel
 			if (_needsUpdate) return;
 			foreach (var box in _letters)
 			{
-				var scale = Math.Max(CombinedScale.X, CombinedScale.Y);
+				float scale = Math.Max(CombinedScale.X, CombinedScale.Y);
 				var data = box.FragMaterial.GetMemPtr<FontMaterialData>();
 				data->FontScale = (float) Math.Sqrt(scale * 2);
 				box.FragMaterial.MarkForGPUUpdate();
@@ -76,7 +75,7 @@ public class Label : StackPanel
 		}
 	}
 
-	public override void Update()
+	public override void BeforeUpdate()
 	{
 		if (_needsUpdate)
 		{
@@ -84,14 +83,14 @@ public class Label : StackPanel
 			_needsUpdate = false;
 		}
 
-		base.Update();
+		base.BeforeUpdate();
 	}
 
 	private unsafe void UpdateText()
 	{
 		if (_text.Length < _letters.Count)
 		{
-			for (var i = _text.Length; i < _letters.Count; i++)
+			for (int i = _text.Length; i < _letters.Count; i++)
 			{
 				var letter = _letters[i];
 				RemoveChild(letter);
@@ -140,8 +139,6 @@ public class Label : StackPanel
 			box.Size = new Vector2<float>(character.Width, character.Height);
 			box.MarginLT = new Vector2<float>(character.XOffset, character.YOffset);
 			box.MarginRB.X = character.XAdvance - character.Width - character.XOffset;
-
-			box.Component.MarkForGPUUpdate();
 		}
 	}
 }

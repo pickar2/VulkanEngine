@@ -54,7 +54,7 @@ public static partial class UiManager
 		Mutex.WaitOne();
 
 		EventsPreUpdate();
-		foreach (var root in Roots) root.Update();
+		foreach (var root in Roots) root.BeforeUpdate();
 		EventsPostUpdate();
 
 		Mutex.ReleaseMutex();

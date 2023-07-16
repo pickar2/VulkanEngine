@@ -32,7 +32,7 @@ public static partial class UiManager
 			infoBox.Control = KeyboardInputHandler.IsKeyPressed(SDL.SDL_Keycode.SDLK_LALT) && TopControl is not null && TopControl.Selectable
 				? TopControl
 				: null;
-			infoBoxRoot.Update();
+			infoBoxRoot.BeforeUpdate();
 		};
 
 		ShaderGraph.ShaderGraph.Draw();

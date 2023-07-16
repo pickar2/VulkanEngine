@@ -78,9 +78,14 @@ public abstract class UiControl : IDisposable
 		ChildrenList.Clear();
 	}
 
-	public virtual void Update()
+	public virtual void BeforeUpdate()
 	{
-		foreach (var child in ChildrenList) child.Update();
+		foreach (var child in ChildrenList) child.BeforeUpdate();
+	}
+
+	public virtual void AfterUpdate()
+	{
+		foreach (var child in ChildrenList) child.AfterUpdate();
 	}
 
 	public virtual void PropagateScale(Vector2<float> parentScale)
