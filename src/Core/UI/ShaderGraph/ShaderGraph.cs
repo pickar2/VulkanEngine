@@ -451,7 +451,13 @@ public class ShaderGraph
 			if (type != ClickType.End) return false;
 			if (!startedHere) return false;
 
-			if (!Directory.Exists("./shaders") || opened) return false;
+			var filesEnumerable = Directory.EnumerateFiles("./Assets/DefaultGraphs");
+
+			if (Directory.Exists("./shaders")) filesEnumerable = filesEnumerable.Concat(Directory.EnumerateFiles("./shaders"));
+
+			string[] files = filesEnumerable.Where(f => f.EndsWith(".sg")).ToArray();
+
+			if (files.Length == 0 || opened) return false;
 			opened = true;
 
 			var loadMenu = new AlignPanel(mainControl.Context)
@@ -477,7 +483,6 @@ public class ShaderGraph
 				opened = false;
 			}));
 
-			string[] files = Directory.EnumerateFiles("./shaders").Where(f => f.EndsWith(".sg")).ToArray();
 			foreach (string file in files)
 			{
 				var fileButton = new Rectangle(fileStack.Context)
