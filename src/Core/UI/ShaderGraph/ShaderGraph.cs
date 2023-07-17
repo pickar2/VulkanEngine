@@ -370,7 +370,7 @@ public class ShaderGraph
 			}
 
 			showingPreview = true;
-			graphGeneratedBox.Enable();
+			graphGeneratedBox.Size.X = 400;
 
 			return true;
 		});
