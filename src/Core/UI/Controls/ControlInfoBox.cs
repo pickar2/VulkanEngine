@@ -12,7 +12,7 @@ public class ControlInfoBox : AbsolutePanel
 
 	public ControlInfoBox(UiContext context) : base(context)
 	{
-		OffsetZ = 2045;
+		OffsetZ = 2040;
 		Selectable = false;
 	}
 
