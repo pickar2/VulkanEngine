@@ -172,7 +172,7 @@ public class MouseInputHandler
 
 	public event ScrollDelegate? OnScroll;
 
-	public Vector2<int> MousePos { get; private set; }
+	public Vector2<int> MousePos { get; private set; } = new(int.MinValue);
 	public Vector2<int> LastMotion { get; private set; }
 
 	private readonly Dictionary<MouseButton, bool> _pressedButtons = new();
