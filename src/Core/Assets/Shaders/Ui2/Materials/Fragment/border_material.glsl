@@ -11,21 +11,20 @@ readonly layout(std430, set = FRAGMENT_MATERIAL_SET, binding = border_material_b
 	border_material_struct border_material_data[];
 };
 
-float borderSDF(vec2 CenterPosition, vec2 Size, float Radius) {
-	vec2 q = abs(CenterPosition-Size)-Size+Radius;
-	return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - Radius;
-}
-
 void border_material(UiElementData data) {
 	border_material_struct mat = border_material_data[data.fragmentDataIndex];
 
-	Pos pos = calcFullPos(data);
-	vec2 pixelPos = screenCoord.xy;
+	vec2 quadSize = vec2(data.width, data.height);
 
-	float length = borderSDF(pixelPos - vec2(pos.x, pos.y), vec2(data.width, data.height) / 2.0, 0);
-	if (length <= 0 && length >= -mat.size) {
-		vec4 matColor = intToRGBA(mat.color);
-		outColor = vec4(matColor.xyz, smoothstep(matColor.a, 0.0, (length / mat.size)));
+	float borderSize = mat.size;
+	vec2 pixelPos = floor(fragTexCoord * quadSize) + 0.5;
+
+	if (pixelPos.x <= borderSize ||
+		pixelPos.y <= borderSize ||
+		pixelPos.x + 0.001 >= quadSize.x - borderSize ||
+		pixelPos.y + 0.001 >= quadSize.y - borderSize
+	) {
+		outColor = vec4(1, 0, 0, 1);
 	} else {
 		outColor = vec4(0);
 	}

@@ -47,9 +47,9 @@ public class UiShaderNode
 		bgBox.Color = Color.Gray500;
 		Container.AddChild(bgBox);
 
-		var borderBox = new BorderBox(Container.Context, Color.Red600, 2);
-		borderBox.OffsetZ = 1;
-		Container.AddChild(borderBox);
+		// var borderBox = new BorderBox(Container.Context, Color.Red600, 1);
+		// borderBox.OffsetZ = 1;
+		// Container.AddChild(borderBox);
 
 		var alignPanel = new AlignPanel(Container.Context) {Alignment = Alignment.TopCenter};
 		alignPanel.MarginLT.Y = 5;

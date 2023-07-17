@@ -9,34 +9,33 @@ public unsafe class BorderBox : UiControlOneComponent
 {
 	public Color Color
 	{
-		get => Component.FragMaterial.GetMemPtr<(Color color, float size)>()->color;
+		get => Component.FragMaterial.GetMemPtr<BorderMaterial>()->Color;
 		set
 		{
-			Component.FragMaterial.GetMemPtr<(Color color, float size)>()->color = value;
+			Component.FragMaterial.GetMemPtr<BorderMaterial>()->Color = value;
 			Component.FragMaterial.MarkForGPUUpdate();
 		}
 	}
 
-	private float _scaledSize;
-	private float _unscaledSize;
+	private float _unscaledBorderSize;
 
-	public float Size
+	public float BorderSize
 	{
-		get => _unscaledSize;
+		get => _unscaledBorderSize;
 		set
 		{
-			_unscaledSize = value;
+			_unscaledBorderSize = value;
 			UpdateSizeScale();
 		}
 	}
 
-	public BorderBox(UiContext context, Color color, float size) : base(context)
+	public BorderBox(UiContext context, Color color, float borderSize) : base(context)
 	{
 		Component.FragMaterial = context.MaterialManager.GetFactory("border_material").Create();
 		Component.VertMaterial = context.MaterialManager.GetFactory("default_vertex_material").Create();
 
 		Color = color;
-		Size = size;
+		BorderSize = borderSize;
 	}
 
 	public override void PropagateScale(Vector2<float> parentScale)
@@ -47,8 +46,14 @@ public unsafe class BorderBox : UiControlOneComponent
 
 	public void UpdateSizeScale()
 	{
-		_scaledSize = _unscaledSize * Math.Min(CombinedScale.X, CombinedScale.Y);
-		Component.FragMaterial.GetMemPtr<(Color color, float size)>()->size = _scaledSize;
+		Component.FragMaterial.GetMemPtr<BorderMaterial>()->Size =
+			_unscaledBorderSize != 0 ? Math.Max(_unscaledBorderSize * Math.Min(CombinedScale.X, CombinedScale.Y), 0.5f) : 0;
 		Component.FragMaterial.MarkForGPUUpdate();
 	}
+}
+
+public struct BorderMaterial
+{
+	public Color Color;
+	public float Size;
 }

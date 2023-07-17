@@ -27,9 +27,6 @@ public class ComboBox<T> : UiControl
 	{
 		_initialHeight = Size.Y;
 
-		var border = new BorderBox(Context, Color.Red700, 2) {OffsetZ = 10};
-		AddChild(border);
-
 		var bg = new Rectangle(Context) {Color = Color.Amber700};
 		AddChild(bg);
 
