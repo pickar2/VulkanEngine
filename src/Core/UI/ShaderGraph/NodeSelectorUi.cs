@@ -94,13 +94,13 @@ public class NodeSelectorUi : AbsolutePanel
 				border.Size = type == HoverType.Start ? 2 : 1;
 			});
 
-			nodeLine.OnClick((_, button, _, _, type, startedHere) =>
+			nodeLine.OnClick((_, button, mousePos, _, type, startedHere) =>
 			{
 				if (button != MouseButton.Left) return false;
 				if (type != ClickType.End) return false;
 				if (!startedHere) return false;
 
-				_shaderGraph.AddNode(factory.Invoke(Guid.NewGuid(), null), MarginLT - shaderGraph.GraphPanel.MarginLT);
+				_shaderGraph.AddNode(factory.Invoke(Guid.NewGuid(), null), (mousePos.Cast<int, float>() - shaderGraph.GraphPanel.MarginLT) / shaderGraph.GraphPanel.CombinedScale);
 				Parent?.RemoveChild(this);
 				Dispose();
 
