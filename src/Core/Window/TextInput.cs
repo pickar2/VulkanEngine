@@ -204,7 +204,6 @@ public static partial class TextInput
 		_finishEditingCallback = finishEditingCallback;
 
 		SetText(startText);
-		SetCursorPos(startText.Length);
 
 		var rect = new SDL_Rect
 		{

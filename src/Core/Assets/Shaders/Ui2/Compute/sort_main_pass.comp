@@ -45,11 +45,13 @@ writeonly layout(std430, set = 2, binding = 0) buffer indicesArray {
 #include "../Default/functions.glsl"
 
 void main() {
-	uint subgroupIndex = gl_LocalInvocationID.x / gl_SubgroupSize;
 	int elementIndex = int(gl_GlobalInvocationID.x);
+	if (elementIndex >= elementCount) return;
+
+	uint subgroupIndex = gl_LocalInvocationID.x / gl_SubgroupSize;
 
 	UiElementData d = data[elementIndex];
-	const bool willBeRendered = (d.flags & DISABLED) == ZERO && (d.flags & OFFSCREEN) == ZERO && elementIndex < elementCount;
+	const bool willBeRendered = (d.flags & DISABLED) == ZERO && (d.flags & OFFSCREEN) == ZERO;
 	if (!willBeRendered) { return; }
 
 	Pos pos = calcFullPos(d);

@@ -398,12 +398,12 @@ public class ShaderGraph
 
 			if (showingPreview)
 			{
-				graphGeneratedBox.Disable();
+				graphGeneratedBox.Size.X = 0;
 				showingPreview = false;
 			}
 			else
 			{
-				graphGeneratedBox.Enable();
+				graphGeneratedBox.Size.X = 400;
 				showingPreview = true;
 			}
 

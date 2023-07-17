@@ -6,25 +6,15 @@ using SimpleMath.Vectors;
 
 namespace Core.UI.Controls;
 
-public class TextInputBox : UiControl
+public class TextInputBox : Label
 {
-	private readonly Label _label;
+	// private readonly Label _label;
 	private readonly Rectangle _cursor;
 	private readonly Rectangle _selection;
 
 	private readonly Animation _cursorBlink;
 
 	private bool _isEditing;
-
-	public string Text
-	{
-		get => _label.Text;
-		set
-		{
-			_label.Text = value;
-			OnTextChange?.Invoke(value);
-		}
-	}
 
 	public event Action<string>? OnTextChange;
 
@@ -34,18 +24,18 @@ public class TextInputBox : UiControl
 
 		_selection = new Rectangle(context) {Color = Color.Blue500.A(100)};
 		_cursor = new Rectangle(context) {Color = Color.Neutral50};
-		_label = new Label(context);
+		// _label = new Label(context);
 
-		ChildrenList.Add(_label);
-		ChildrenList.Add(_cursor);
-		ChildrenList.Add(_selection);
+		// ChildrenList.Add(_label);
+		AddChild(_cursor);
+		AddChild(_selection);
 
 		_cursor.Scale.X = 0.2f;
 
 		_cursor.Size = (0, 0);
 		_selection.Size = (0, 0);
 
-		_label.OffsetZ = 1;
+		// _label.OffsetZ = 1;
 		_selection.OffsetZ = 2;
 		_cursor.OffsetZ = 3;
 
@@ -64,7 +54,7 @@ public class TextInputBox : UiControl
 		{
 			if (_isEditing && clickType == ClickType.Start)
 			{
-				int cursorPos = (int) Math.Round((pos.X - CombinedPos.X) / (9 * CombinedScale.X));
+				int cursorPos = CalculateCursorPos(pos);
 				int wordStart = cursorPos - TextInput.FindWordEndLeft(cursorPos);
 
 				if (clicks % 2 == 0 && lastWordStart == wordStart)
@@ -85,22 +75,40 @@ public class TextInputBox : UiControl
 			if (!_isEditing && clickType == ClickType.Start)
 			{
 				_isEditing = true;
-				_label.OnClickOutsideOnce((_, _) => TextInput.StopInput());
+				this.OnClickOutsideOnce((_, _) => TextInput.StopInput());
 
-				_cursor.Size = (9, 16);
-				_selection.Size = (0, 16);
+				_cursor.Size = new Vector2<float>(18, 32);
+				_selection.Size = new Vector2<float>(0, 32);
 				_cursorBlink.Restart();
 				TextInput.StartInput(CombinedPos.Cast<float, int>(), ComputedSize.Cast<float, int>(), Text,
 					(str) => Text = str,
 					(curPos) =>
 					{
-						_cursor.MarginLT.X = curPos * 9;
+						_cursor.MarginLT.X = curPos * 18;
 						_cursorBlink.Restart();
+
+						var visible = new Vector2<float>(0, ComputedSize.X / CombinedScale.X);
+						visible += ScrollOffset.X * (StackPanel.ComputedSize.X / StackPanel.CombinedScale.X - ComputedSize.X / CombinedScale.X);
+
+						if (_cursor.MarginLT.X > visible.Y)
+						{
+							var diff = _cursor.MarginLT.X - visible.Y;
+							var scrollAmount = diff / (StackPanel.ComputedSize.X / StackPanel.CombinedScale.X - ComputedSize.X / CombinedScale.X);
+							ScrollOffset.X += scrollAmount;
+						}
+						else if (_cursor.MarginLT.X < visible.X)
+						{
+							var diff = visible.X - _cursor.MarginLT.X;
+							var scrollAmount = diff / (StackPanel.ComputedSize.X / StackPanel.CombinedScale.X - ComputedSize.X / CombinedScale.X);
+							ScrollOffset.X -= scrollAmount;
+						}
+
+						ScrollOffset.Max(new Vector2<float>(0)).Min(new Vector2<float>(1));
 					},
 					(selectStart, selectLength) =>
 					{
-						_selection.MarginLT.X = selectStart * 9;
-						_selection.Size.X = selectLength * 9;
+						_selection.MarginLT.X = selectStart * 18;
+						_selection.Size.X = selectLength * 18;
 					},
 					() =>
 					{
@@ -111,7 +119,7 @@ public class TextInputBox : UiControl
 					}
 				);
 
-				TextInput.SetCursorPos((int) Math.Round((pos.X - CombinedPos.X) / (9 * CombinedScale.X)));
+				TextInput.SetCursorPos(CalculateCursorPos(pos));
 			}
 
 			return true;
@@ -124,12 +132,12 @@ public class TextInputBox : UiControl
 
 			if (dragType == DragType.Start)
 			{
-				TextInput.SetCursorPos((int) Math.Round((pos.X - CombinedPos.X) / (9 * CombinedScale.X)));
+				TextInput.SetCursorPos(CalculateCursorPos(pos));
 				dragSelectionStart = TextInput.CursorPos;
 			}
 			else if (dragType == DragType.Move)
 			{
-				int cursorPos = (int) Math.Round((pos.X - CombinedPos.X) / (9 * CombinedScale.X));
+				int cursorPos = CalculateCursorPos(pos);
 				int length = cursorPos - dragSelectionStart;
 				TextInput.SetSelection(dragSelectionStart, length);
 				TextInput.SetCursorPos(cursorPos);
@@ -137,6 +145,14 @@ public class TextInputBox : UiControl
 
 			return true;
 		});
+	}
+
+	protected int CalculateCursorPos(Vector2<int> mousePos) => (int) Math.Round((mousePos.X - CombinedPos.X - StackPanel.LocalPos.X) / (18 * CombinedScale.X));
+
+	public override void BeforeUpdate()
+	{
+		base.BeforeUpdate();
+		if (NeedsUpdate) OnTextChange?.Invoke(Text);
 	}
 
 	public override void Dispose()

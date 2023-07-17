@@ -9,24 +9,29 @@ using SimpleMath.Vectors;
 
 namespace Core.UI.Controls;
 
-public class Label : StackPanel
+public class Label : ScrollView
 {
 	private readonly MaterialDataFactory _uvMaterial;
 	private readonly MaterialDataFactory _fontMaterial;
 
 	private readonly List<CustomBox> _letters = new();
 
+	private string _text = string.Empty;
 	private Vector2<float> _parentScale;
 	private Color _color;
 
-	private bool _needsUpdate = true;
-	private string _text = string.Empty;
+	protected bool NeedsUpdate = true;
 
-	// TODO: first letter sometimes has negative left margin, which does not increase its area, and cuts first pixels of it
-	public override Overflow Overflow { get; set; } = Overflow.Shown;
+	protected readonly StackPanel StackPanel;
 
 	public Label(UiContext context) : base(context)
 	{
+		StackPanel = new StackPanel(context) {OffsetZ = 1};
+		AddChild(StackPanel);
+		TightBox = true;
+		ScrollPower = new Vector2<float>(150);
+		ShowSliders = false;
+
 		Scale = new Vector2<float>(0.5f);
 		_color = Color.Black;
 
@@ -40,7 +45,7 @@ public class Label : StackPanel
 		set
 		{
 			_parentScale = value;
-			if (_needsUpdate) return;
+			if (NeedsUpdate) return;
 			foreach (var box in _letters)
 			{
 				var data = box.FragMaterial.GetMemPtr<FontMaterialData>();
@@ -70,19 +75,20 @@ public class Label : StackPanel
 		set
 		{
 			_text = value;
-			_needsUpdate = true;
+			NeedsUpdate = true;
 		}
 	}
 
 	public override void BeforeUpdate()
 	{
-		if (_needsUpdate)
-		{
-			UpdateText();
-			_needsUpdate = false;
-		}
-
+		if (NeedsUpdate) UpdateText();
 		base.BeforeUpdate();
+	}
+
+	public override void AfterUpdate()
+	{
+		base.AfterUpdate();
+		NeedsUpdate = false;
 	}
 
 	private unsafe void UpdateText()
@@ -92,7 +98,7 @@ public class Label : StackPanel
 			for (int i = _text.Length; i < _letters.Count; i++)
 			{
 				var letter = _letters[i];
-				RemoveChild(letter);
+				StackPanel.RemoveChild(letter);
 				letter.Dispose();
 			}
 
@@ -109,7 +115,7 @@ public class Label : StackPanel
 					FragMaterial = _fontMaterial.Create()
 				};
 				_letters.Add(box);
-				AddChild(box);
+				StackPanel.AddChild(box);
 			}
 		}
 

@@ -39,7 +39,7 @@ void main() {
 
 	Pos pos = calcFullPos(d);
 	vec2 pixelPos = screenCoord.xy;
-	if (!isPointInside(pixelPos, vec2(d.maskStartX, d.maskStartY), vec2(d.maskEndX, d.maskEndY)) || ((d.flags & DISABLED) != ZERO)) {
+	if (!isPointInside(pixelPos, vec2(d.maskStartX, d.maskStartY), vec2(d.maskEndX, d.maskEndY))) {
 		outColor = vec4(0);
 		return;
 	}

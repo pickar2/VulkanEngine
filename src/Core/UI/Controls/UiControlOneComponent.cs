@@ -89,12 +89,14 @@ public abstract unsafe class UiControlOneComponent : UiControl
 	{
 		Component.GetData()->Flags |= UiComponentFlags.Disabled;
 		Component.MarkForGPUUpdate();
+		Selectable = false;
 	}
 
 	public void Enable()
 	{
 		Component.GetData()->Flags &= ~UiComponentFlags.Disabled;
 		Component.MarkForGPUUpdate();
+		Selectable = true;
 	}
 
 	public override void Dispose()
