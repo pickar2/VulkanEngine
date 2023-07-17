@@ -46,13 +46,10 @@ writeonly layout(std430, set = 2, binding = 0) buffer indicesArray {
 
 void main() {
 	int elementIndex = int(gl_GlobalInvocationID.x);
-	if (elementIndex >= elementCount) return;
-
 	uint subgroupIndex = gl_LocalInvocationID.x / gl_SubgroupSize;
 
 	UiElementData d = data[elementIndex];
-	const bool willBeRendered = (d.flags & DISABLED) == ZERO && (d.flags & OFFSCREEN) == ZERO;
-	if (!willBeRendered) { return; }
+	const bool willBeRendered = (d.flags & DISABLED) == ZERO && (d.flags & OFFSCREEN) == ZERO && elementIndex < elementCount;
 
 	Pos pos = calcFullPos(d);
 	int id4 = elementIndex * 4;
@@ -84,6 +81,7 @@ void main() {
 
 	offsetAtSubgroupStart = subgroupShuffle(offsetAtSubgroupStart, firstInvocationWithSameZ);
 
+	if (!willBeRendered) { return; }
 	int index = offsets[z] * 6 + offsetAtSubgroupStart + currentInvocationOffset;
 
 	indices[index+0] = 0 + id4;
