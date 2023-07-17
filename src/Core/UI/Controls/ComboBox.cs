@@ -30,7 +30,7 @@ public class ComboBox<T> : UiControl
 		var border = new BorderBox(Context, Color.Red700, 2) {OffsetZ = 10};
 		AddChild(border);
 
-		var bg = new Rectangle(Context) {Color = Color.Amber800};
+		var bg = new Rectangle(Context) {Color = Color.Amber700};
 		AddChild(bg);
 
 		var stack = new StackPanel(Context)
@@ -42,19 +42,20 @@ public class ComboBox<T> : UiControl
 		};
 		AddChild(stack);
 
-		var align = new AlignPanel(Context) {Alignment = Alignment.Center};
-		align.Size.Y = Size.Y;
-		stack.AddChild(align);
-
-		var label = new Label(Context) {OffsetZ = 1};
-		align.AddChild(label);
+		var openComboBox = new Button(Context)
+		{
+			BackgroundColor = Color.Amber700,
+			HoveredColor = Color.Amber900
+		};
+		openComboBox.Size.Y = Size.Y;
+		stack.AddChild(openComboBox);
 
 		float headerSpacing = 2;
 		var spacer = new Rectangle(Context) {Color = Color.Neutral950};
 		spacer.Size.Y = headerSpacing;
 		stack.AddChild(spacer);
 
-		Context.CreateEffect(() => label.Text = Current.Name);
+		Context.CreateEffect(() => openComboBox.Text = Current.Name);
 
 		float valueSpacing = 3;
 		var valuesContainer = new StackPanel(Context)
@@ -95,7 +96,7 @@ public class ComboBox<T> : UiControl
 			Size.Y = _initialHeight;
 		}
 
-		align.OnClick((_, button, _, _, type, startedHere) =>
+		openComboBox.OnClick((_, button, _, _, type, startedHere) =>
 		{
 			if (button != MouseButton.Left) return false;
 			if (type != ClickType.End) return false;
@@ -110,17 +111,12 @@ public class ComboBox<T> : UiControl
 
 				foreach ((string? name, var value) in Values)
 				{
-					var box = new Rectangle(Context);
+					var box = new Button(Context);
+					box.BackgroundColor = Color.Amber500;
+					box.HoveredColor = Color.Amber700;
+					box.Text = name;
 					box.Size.Y = _valueHeight;
-					box.Color = Color.Amber500;
-					box.OnHover((_, _, hoverType) => box.Color = hoverType == HoverType.Start ? Color.Yellow900 : Color.Amber500);
 					valuesContainer.AddChild(box);
-
-					var valueAlign = new AlignPanel(Context) {Alignment = Alignment.Center};
-					box.AddChild(valueAlign);
-
-					var valueLabel = new Label(Context) {Text = name, OffsetZ = 1};
-					valueAlign.AddChild(valueLabel);
 
 					box.OnClick((_, _, _, _, _, startedHere2) =>
 					{

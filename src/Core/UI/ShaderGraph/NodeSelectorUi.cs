@@ -71,7 +71,7 @@ public class NodeSelectorUi : AbsolutePanel
 		AddChild(container);
 
 		var box = new Rectangle(context);
-		box.Color = Color.Slate700;
+		box.Color = Color.Slate300;
 		AddChild(box);
 
 		var stack = new StackPanel(context);
@@ -82,17 +82,16 @@ public class NodeSelectorUi : AbsolutePanel
 		container.AddChild(stack);
 		foreach ((string? name, var factory) in Nodes)
 		{
-			var nodeLine = new AbsolutePanel(context);
-			nodeLine.Size.Y = 30;
-			stack.AddChild(nodeLine);
-
-			var border = new BorderBox(context, Color.Red600, 1);
-			nodeLine.AddChild(border);
-
-			nodeLine.OnHover((_, _, type) =>
+			var nodeLine = new Button(context)
 			{
-				border.Size = type == HoverType.Start ? 2 : 1;
-			});
+				BackgroundColor = Color.Slate700,
+				HoveredColor = Color.Slate500,
+				TextAlignment = Alignment.CenterLeft,
+				Text = name
+			};
+			nodeLine.Size.Y = 30;
+			nodeLine.AlignPanel.MarginLT.X = 4;
+			stack.AddChild(nodeLine);
 
 			nodeLine.OnClick((_, button, mousePos, _, type, startedHere) =>
 			{
@@ -100,22 +99,13 @@ public class NodeSelectorUi : AbsolutePanel
 				if (type != ClickType.End) return false;
 				if (!startedHere) return false;
 
-				_shaderGraph.AddNode(factory.Invoke(Guid.NewGuid(), null), (mousePos.Cast<int, float>() - shaderGraph.GraphPanel.MarginLT) / shaderGraph.GraphPanel.CombinedScale);
+				_shaderGraph.AddNode(factory.Invoke(Guid.NewGuid(), null),
+					(mousePos.Cast<int, float>() - shaderGraph.GraphPanel.MarginLT) / shaderGraph.GraphPanel.CombinedScale);
 				Parent?.RemoveChild(this);
 				Dispose();
 
 				return true;
 			});
-
-			var textAlign = new AlignPanel(context);
-			textAlign.Alignment = Alignment.CenterLeft;
-			textAlign.MarginLT = new Vector2<float>(4, 4);
-			textAlign.Size = new Vector2<float>(300, 25) - textAlign.MarginLT;
-			nodeLine.AddChild(textAlign);
-
-			var label = new Label(context);
-			label.Text = name;
-			textAlign.AddChild(label);
 		}
 	}
 }

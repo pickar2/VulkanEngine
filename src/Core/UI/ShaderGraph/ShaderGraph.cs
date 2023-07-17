@@ -319,18 +319,14 @@ public class ShaderGraph
 		};
 		buttonsAlign.AddChild(buttonsStack);
 
-		var compileButton = new Rectangle(mainControl.Context)
+		var compileButton = new Button(mainControl.Context)
 		{
-			Color = Color.Slate300,
+			BackgroundColor = Color.Slate300,
+			HoveredColor = Color.Slate500,
+			Text = "Compile",
 			Size = (100, 25)
 		};
 		buttonsStack.AddChild(compileButton);
-
-		var compileAlign = new AlignPanel(compileButton.Context) {Alignment = Alignment.Center};
-		compileButton.AddChild(compileAlign);
-
-		var compileLabel = new Label(compileAlign.Context) {Text = "Compile", OffsetZ = 1};
-		compileAlign.AddChild(compileLabel);
 
 		var previewBoxAlign = new AlignPanel(mainControl.Context)
 		{
@@ -375,18 +371,14 @@ public class ShaderGraph
 			return true;
 		});
 
-		var togglePreviewButton = new Rectangle(mainControl.Context)
+		var togglePreviewButton = new Button(mainControl.Context)
 		{
-			Color = Color.Slate300,
+			BackgroundColor = Color.Slate300,
+			HoveredColor = Color.Slate500,
+			Text = "Preview",
 			Size = (100, 25)
 		};
 		buttonsStack.AddChild(togglePreviewButton);
-
-		var togglePreviewAlign = new AlignPanel(togglePreviewButton.Context) {Alignment = Alignment.Center};
-		togglePreviewButton.AddChild(togglePreviewAlign);
-
-		var togglePreviewLabel = new Label(togglePreviewAlign.Context) {Text = "Preview", OffsetZ = 1};
-		togglePreviewAlign.AddChild(togglePreviewLabel);
 
 		togglePreviewButton.OnClick((_, button, _, _, type, startedHere) =>
 		{
@@ -431,18 +423,14 @@ public class ShaderGraph
 		var buttonsBg = new Rectangle(buttonsPanel.Context) {Color = Color.Slate800};
 		buttonsPanel.AddChild(buttonsBg);
 
-		var loadButton = new Rectangle(mainControl.Context)
+		var loadButton = new Button(mainControl.Context)
 		{
-			Color = Color.Slate300,
+			BackgroundColor = Color.Slate300,
+			HoveredColor = Color.Slate500,
+			Text = "Load",
 			Size = (100, 25)
 		};
 		buttonsStack.AddChild(loadButton);
-
-		var loadAlign = new AlignPanel(loadButton.Context) {Alignment = Alignment.Center};
-		loadButton.AddChild(loadAlign);
-
-		var loadLabel = new Label(loadAlign.Context) {Text = "Load", OffsetZ = 1};
-		loadAlign.AddChild(loadLabel);
 
 		bool opened = false;
 		loadButton.OnClick((_, button, _, _, type, startedHere) =>
@@ -485,26 +473,16 @@ public class ShaderGraph
 
 			foreach (string file in files)
 			{
-				var fileButton = new Rectangle(fileStack.Context)
+				var fileButton = new Button(fileStack.Context)
 				{
-					Color = Color.Slate300,
+					BackgroundColor = Color.Slate300,
+					HoveredColor = Color.Slate500,
+					Text = Path.GetFileName(file),
+					TextAlignment = Alignment.CenterLeft,
 					Size = new Vector2<float>(200, 30)
 				};
+				fileButton.AlignPanel.MarginLT.X = 5;
 				fileStack.AddChild(fileButton);
-
-				var fileButtonAlign = new AlignPanel(fileButton.Context)
-				{
-					Alignment = Alignment.CenterLeft,
-					MarginLT = new Vector2<float>(5, 0)
-				};
-				fileButton.AddChild(fileButtonAlign);
-
-				var fileButtonLabel = new Label(fileButtonAlign.Context)
-				{
-					Text = Path.GetFileName(file),
-					OffsetZ = 1
-				};
-				fileButtonAlign.AddChild(fileButtonLabel);
 
 				fileButton.OnClick((_, mouseButton, _, _, clickType, startedHere2) =>
 				{
@@ -533,18 +511,14 @@ public class ShaderGraph
 			return true;
 		});
 
-		var saveButton = new Rectangle(mainControl.Context)
+		var saveButton = new Button(mainControl.Context)
 		{
-			Color = Color.Slate300,
+			BackgroundColor = Color.Slate300,
+			HoveredColor = Color.Slate500,
+			Text = "Save",
 			Size = (100, 25)
 		};
 		buttonsStack.AddChild(saveButton);
-
-		var saveAlign = new AlignPanel(saveButton.Context) {Alignment = Alignment.Center};
-		saveButton.AddChild(saveAlign);
-
-		var saveLabel = new Label(saveAlign.Context) {Text = "Save", OffsetZ = 1};
-		saveAlign.AddChild(saveLabel);
 
 		bool haveMessageBox = false;
 		saveButton.OnClick((_, button, _, _, type, startedHere) =>
@@ -561,7 +535,7 @@ public class ShaderGraph
 
 			var messageBox = new Rectangle(mainControl.Context)
 			{
-				Color = Color.Amber700,
+				Color = Color.Gray800,
 				Size = (300, 150),
 				OffsetZ = 1100
 			};
@@ -590,7 +564,8 @@ public class ShaderGraph
 
 			var cancelButton = new Button(saveButtonsStack.Context)
 			{
-				Color = Color.Red400,
+				BackgroundColor = Color.Red400,
+				HoveredColor = Color.Red700,
 				Size = new Vector2<float>(100, 25),
 				TextAlignment = Alignment.Center,
 				Text = "Cancel"
@@ -611,7 +586,8 @@ public class ShaderGraph
 
 			var confirmSaveButton = new Button(saveButtonsStack.Context)
 			{
-				Color = Color.Green400,
+				BackgroundColor = Color.Green400,
+				HoveredColor = Color.Green700,
 				Size = new Vector2<float>(100, 25),
 				TextAlignment = Alignment.Center,
 				Text = "Save"

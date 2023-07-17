@@ -167,7 +167,19 @@ public class Animation
 			Duration = duration,
 			AnimationOffset = animationOffset,
 			StartDelay = startDelay,
-			Interpolator = new RGBInterpolator(start, end, vec => getter.Invoke() = vec)
+			Interpolator = new RGBInterpolator(start, end, value => getter.Invoke() = value)
+		};
+	
+	public static Animation OfRGB(Action<Color> setter, Color start, Color end, TimeSpan duration, float animationOffset = 0,
+		long startDelay = 0, AnimationType type = AnimationType.OneTime, IAnimationCurve? curve = null)
+		=> new()
+		{
+			Type = type,
+			Curve = curve ?? DefaultCurves.Linear,
+			Duration = duration.Milliseconds,
+			AnimationOffset = animationOffset,
+			StartDelay = startDelay,
+			Interpolator = new RGBInterpolator(start, end, value => setter(value))
 		};
 }
 
