@@ -64,7 +64,7 @@ public unsafe class VoxelRenderer : RenderChain
 	public VoxelRenderer(string name) : base(name)
 	{
 		Size = (1920, 1080);
-		// Size /= 2;
+		Size /= 2;
 
 		ColorAttachment = ReCreate.InDevice.Auto(() =>
 				FrameGraph.CreateAttachment(Format.R8G8B8A8Unorm, ImageAspectFlags.ColorBit, Size,

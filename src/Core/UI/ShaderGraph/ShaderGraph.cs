@@ -2,9 +2,12 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Text;
 using Core.UI.Controls;
 using Core.UI.Controls.Panels;
+using Core.UI.Materials.Fragment;
+using Core.UI.Materials.Vertex;
 using Core.Utils;
 using Core.Vulkan;
 using Core.Vulkan.Api;
@@ -170,6 +173,26 @@ public class ShaderGraph
 		mainControl.Overflow = Overflow.Shown;
 		// mainControl.Selectable = false;
 		GeneralRenderer.UiContext.Root.AddChild(mainControl);
+
+		var voxelOut = new CustomBox(GeneralRenderer.UiContext)
+		{
+			Size = (new Vector2<float>(1920, 1080) / 4),
+			VertMaterial = GeneralRenderer.UiContext.MaterialManager.GetFactory("texture_uv_material").Create(),
+			FragMaterial = GeneralRenderer.UiContext.MaterialManager.GetFactory("texture_material").Create(),
+			OffsetZ = 500,
+			MarginLT = (new Vector2<float>(200))
+		};
+		*voxelOut.FragMaterial.GetMemPtr<UvMaterialData>() = new UvMaterialData()
+		{
+			First = (0,0),
+			Second = (0, 1),
+			Third = (1,0),
+			Fourth = (1,1)
+		};
+		voxelOut.FragMaterial.MarkForGPUUpdate();
+		voxelOut.VertMaterial.GetMemPtr<TextureMaterialData>()->TextureId = (int) TextureManager.GetTextureId("VoxelOutput");
+		voxelOut.VertMaterial.MarkForGPUUpdate();
+		mainControl.AddChild(voxelOut);
 
 		var bg = new CustomBox(GeneralRenderer.UiContext);
 		bg.VertMaterial = GeneralRenderer.UiContext.MaterialManager.GetFactory("default_vertex_material").Create();
