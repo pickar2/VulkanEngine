@@ -255,7 +255,7 @@ public abstract unsafe class AbstractVulkanDataFactory<TDataHolder> : IVulkanDat
 		}
 	}
 
-	private readonly HashSet<int> _inUse = new();
+	// private readonly HashSet<int> _inUse = new();
 
 	// TODO: binary insert into gaps array
 	// Reasoning: for instanced rendering it will be useful to have continuous id range for all instances
@@ -270,7 +270,7 @@ public abstract unsafe class AbstractVulkanDataFactory<TDataHolder> : IVulkanDat
 			_gaps = newGaps;
 		}
 
-		if (!_inUse.Remove(index)) throw new Exception("Trying to remove already removed index");
+		// if (!_inUse.Remove(index)) throw new Exception("Trying to remove already removed index");
 
 		_gaps[_gapCount++] = index;
 	}
@@ -288,7 +288,7 @@ public abstract unsafe class AbstractVulkanDataFactory<TDataHolder> : IVulkanDat
 			index = ComponentCount++;
 		}
 
-		if (!_inUse.Add(index)) throw new Exception("Trying to use already used index");
+		// if (!_inUse.Add(index)) throw new Exception("Trying to use already used index");
 
 		new Span<byte>(_data + (index * ComponentSize), ComponentSize).Clear();
 

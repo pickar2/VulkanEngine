@@ -5,11 +5,13 @@ using System.Numerics;
 using Core.Native.Shaderc;
 using Core.Native.VMA;
 using Core.TemporaryMath;
+using Core.UI;
 using Core.Utils;
 using Core.Vulkan.Api;
 using Core.Vulkan.Descriptors;
 using Core.Vulkan.Renderers;
 using Core.Vulkan.Utility;
+using SDL2;
 using Silk.NET.Maths;
 using Silk.NET.Vulkan;
 using SimpleMath.Vectors;
@@ -63,8 +65,7 @@ public unsafe class VoxelRenderer : RenderChain
 
 	public VoxelRenderer(string name) : base(name)
 	{
-		Size = (1920, 1080);
-		Size /= 2;
+		Size = (new Vector2<float>(1920, 1080) / 1.5f).Cast<float, uint>();
 
 		ColorAttachment = ReCreate.InDevice.Auto(() =>
 				FrameGraph.CreateAttachment(Format.R8G8B8A8Unorm, ImageAspectFlags.ColorBit, Size,

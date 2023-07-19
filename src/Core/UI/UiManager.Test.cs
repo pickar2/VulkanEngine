@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Text.RegularExpressions;
@@ -8,7 +9,10 @@ using Core.UI.Controls.Panels;
 using Core.UI.Fonts;
 using Core.UI.Materials.Fragment;
 using Core.UI.Transforms;
+using Core.Utils;
 using Core.Vulkan.Api;
+using Core.Vulkan.Renderers;
+using Core.Vulkan.Voxels;
 using Core.Window;
 using SDL2;
 using SimpleMath.Vectors;
@@ -21,22 +25,117 @@ public static partial class UiManager
 {
 	public static Font Consolas = default!;
 
+	enum Showcase : byte
+	{
+		ShaderGraph,
+		VoxelRaymarching
+	}
+
 	private static unsafe void InitTestScene()
 	{
 		Consolas = FontLoader.LoadFromText("Assets/Fonts/consolas.fnt");
 		// off main root control example:
-		var infoBoxRoot = new FullScreenRootPanel(MainRoot.ComponentManager, MainRoot.MaterialManager, MainRoot.GlobalDataManager);
-		var infoBox = new ControlInfoBox(infoBoxRoot.Context);
-		infoBoxRoot.AddChild(infoBox);
-		AfterUpdate += () =>
-		{
-			infoBox.Control = InputContext.KeyboardInputHandler.IsKeyPressed(SDL.SDL_Keycode.SDLK_LALT) && TopControl is not null && TopControl.Selectable
-				? TopControl
-				: null;
-			infoBoxRoot.BeforeUpdate();
-		};
+		// var infoBoxRoot = new FullScreenRootPanel(MainRoot.ComponentManager, MainRoot.MaterialManager, MainRoot.GlobalDataManager);
+		// var infoBox = new ControlInfoBox(infoBoxRoot.Context);
+		// infoBoxRoot.AddChild(infoBox);
+		// AfterUpdate += () =>
+		// {
+		// 	infoBox.Control = InputContext.KeyboardInputHandler.IsKeyPressed(SDL.SDL_Keycode.SDLK_LALT) && TopControl is not null && TopControl.Selectable
+		// 		? TopControl
+		// 		: null;
+		// 	infoBoxRoot.BeforeUpdate();
+		// };
 
-		ShaderGraph.ShaderGraph.Draw();
+		// ShaderGraph.ShaderGraph.Draw();
+		
+		// var mainControl = new AbsolutePanel(UiContext)
+		// mainControl.Overflow = Overflow.Shown;
+		// MainRoot.AddChild(mainControl);
+
+		var showcaseSwitcher = new ComboBox<Showcase>(UiContext)
+		{
+			Values = new Dictionary<string, Showcase> {
+				{"Shader graph", Showcase.ShaderGraph},
+				{"Voxel raymarching", Showcase.VoxelRaymarching}
+			},
+			OffsetZ = 1000,
+			BackgroundColor = Color.Slate600,
+			ItemColor = Color.Slate700,
+			ItemColorOnHover = Color.Slate800,
+			TextColor = Color.Slate300,
+			Size = new Vector2<float>(200, 25),
+			Current = ("Shader graph", Showcase.ShaderGraph)
+		};
+		MainRoot.AddChild(showcaseSwitcher.WrapInAlignPanel(Alignment.TopCenter));
+		showcaseSwitcher.Draw();
+		var camera = ((VoxelRenderer) Root.Children[0]).Camera;
+
+		ShaderGraph.ShaderGraph? graph = null;
+		CustomBox? voxelOut = null;
+		Label? label = null;
+
+		void UpdateLabelText()
+		{
+			if (label is null) return;
+
+			var pos = camera.Position + camera.ChunkPos * VoxelChunk.ChunkSize;
+			label.Text = $"({Maths.FixedPrecision(pos.X, 2)}, {Maths.FixedPrecision(pos.Y, 2)}, {Maths.FixedPrecision(pos.Z, 2)})";
+		}
+
+		showcaseSwitcher.Context.CreateEffect(() =>
+		{
+			switch (showcaseSwitcher.Current.Value)
+			{
+				case Showcase.ShaderGraph:
+					if (voxelOut is not null)
+					{
+						MainRoot.RemoveChild(voxelOut);
+						voxelOut.Dispose();
+					}
+
+					if (label is not null)
+					{
+						MainRoot.RemoveChild(label);
+						label.Dispose();
+					}
+					
+					camera.OnPositionUpdate -= UpdateLabelText;
+					graph = ShaderGraph.ShaderGraph.Draw();
+					Root.Children[0].IsPaused = true;
+					break;
+				case Showcase.VoxelRaymarching: 
+					if (graph is not null)
+					{
+						MainRoot.RemoveChild(graph.GraphPanel.Parent!);
+						graph.GraphPanel.Parent!.Dispose();
+					}
+
+					voxelOut = new CustomBox(UiContext)
+					{
+						Size = new Vector2<float>(1920, 1080) / 1.5f,
+						VertMaterial = UiContext.MaterialManager.GetFactory("default_vertex_material").Create(),
+						FragMaterial = UiContext.MaterialManager.GetFactory("texture_material").Create(),
+						OffsetZ = 500,
+						MarginLT = new Vector2<float>(0, 25)
+					};
+					voxelOut.FragMaterial.GetMemPtr<TextureMaterialData>()->TextureId = (int) TextureManager.GetTextureId("VoxelOutput");
+					voxelOut.FragMaterial.MarkForGPUUpdate();
+
+					label = new Label(UiContext);
+					label.OffsetZ = 1000;
+					label.Color = Color.Neutral950;
+					label.MarginLT = (5, 5);
+					MainRoot.AddChild(label);
+
+					camera.OnPositionUpdate += UpdateLabelText;
+		
+					MainRoot.AddChild(voxelOut);
+					Root.Children[0].IsPaused = false;
+					break;
+				default: throw new ArgumentOutOfRangeException();
+			}
+		});
+		
 
 		// var mainControl = new AbsolutePanel(MainRoot.Context);
 		// // mainControl.Selectable = false;

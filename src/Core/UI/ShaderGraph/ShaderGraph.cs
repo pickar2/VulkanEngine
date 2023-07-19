@@ -8,6 +8,7 @@ using Core.UI.Controls;
 using Core.UI.Controls.Panels;
 using Core.UI.Materials.Fragment;
 using Core.UI.Materials.Vertex;
+using Core.UI.Reactive;
 using Core.Utils;
 using Core.Vulkan;
 using Core.Vulkan.Api;
@@ -160,7 +161,7 @@ public class ShaderGraph
 		inputNode.UnsetInput(inputIndex);
 	}
 
-	public static unsafe void Draw()
+	public static unsafe ShaderGraph Draw()
 	{
 		var graph = new ShaderGraph
 		{
@@ -173,26 +174,6 @@ public class ShaderGraph
 		mainControl.Overflow = Overflow.Shown;
 		// mainControl.Selectable = false;
 		GeneralRenderer.UiContext.Root.AddChild(mainControl);
-
-		var voxelOut = new CustomBox(GeneralRenderer.UiContext)
-		{
-			Size = (new Vector2<float>(1920, 1080) / 2),
-			// VertMaterial = GeneralRenderer.UiContext.MaterialManager.GetFactory("texture_uv_material").Create(),
-			FragMaterial = GeneralRenderer.UiContext.MaterialManager.GetFactory("texture_material").Create(),
-			OffsetZ = 500,
-			MarginLT = (new Vector2<float>(100))
-		};
-		// *voxelOut.FragMaterial.GetMemPtr<UvMaterialData>() = new UvMaterialData()
-		// {
-		// 	First = (0,0),
-		// 	Second = (0, 1),
-		// 	Third = (1,0),
-		// 	Fourth = (1,1)
-		// };
-		// voxelOut.FragMaterial.MarkForGPUUpdate();
-		voxelOut.FragMaterial.GetMemPtr<TextureMaterialData>()->TextureId = (int) TextureManager.GetTextureId("VoxelOutput");
-		voxelOut.FragMaterial.MarkForGPUUpdate();
-		mainControl.AddChild(voxelOut);
 
 		var bg = new CustomBox(GeneralRenderer.UiContext);
 		bg.VertMaterial = GeneralRenderer.UiContext.MaterialManager.GetFactory("default_vertex_material").Create();
@@ -321,6 +302,8 @@ public class ShaderGraph
 
 		DrawMenuBar(graph, mainControl);
 		DrawPreview(graph, mainControl);
+
+		return graph;
 	}
 
 	private static unsafe void DrawPreview(ShaderGraph graph, UiControl mainControl)

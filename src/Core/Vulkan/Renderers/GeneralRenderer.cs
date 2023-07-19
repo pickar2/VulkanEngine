@@ -74,6 +74,7 @@ public static class GeneralRenderer
 
 		// var deferred = new Deferred3DRenderer((1280, 720), "TestDeferred");
 		var voxel = new VoxelRenderer("TestVoxel");
+		voxel.IsPaused = true;
 		Root = new UiRootRenderer("Root1", MainRoot);
 
 		// for (int i = 0; i < 2; i++) Root.AddChild(new TestToTextureRenderer($"ChildRenderer{i}"));
@@ -103,6 +104,7 @@ public static class GeneralRenderer
 public abstract unsafe class RenderChain : IDisposable
 {
 	public RenderChain? Parent;
+	public bool IsPaused { get; set; }
 	public readonly string Name;
 	public readonly List<RenderChain> Children = new();
 
@@ -133,6 +135,12 @@ public abstract unsafe class RenderChain : IDisposable
 	public void StartRendering(FrameInfo frameInfo, List<SemaphoreWithStage>? waitSemaphores, out List<SemaphoreWithStage> signalSemaphores,
 		Fence queueFence = default)
 	{
+		if (IsPaused)
+		{
+			signalSemaphores = new List<SemaphoreWithStage>(0);
+			return;
+		}
+
 		Debug.BeginQueueLabel(Context.GraphicsQueue, Name);
 
 		// get signal semaphores

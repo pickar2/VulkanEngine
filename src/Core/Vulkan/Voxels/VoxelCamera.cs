@@ -1,6 +1,5 @@
 ﻿using System;
 using Core.UI;
-using Core.UI.Controls;
 using Core.Utils;
 using Core.Vulkan.Renderers;
 using Core.Window;
@@ -22,7 +21,7 @@ public class VoxelCamera
 	public Vector3<double> YawPitchRoll;
 	public Vector3<int> ChunkPos;
 
-	private readonly Label _label;
+	public event Action? OnPositionUpdate;
 
 	public void MoveDirection(double yaw, double pitch, double roll)
 	{
@@ -51,9 +50,8 @@ public class VoxelCamera
 
 		ChunkPos.Z += (int) Math.Floor(Position.Z / VoxelChunk.ChunkSize);
 		Position.Z = (Position.Z + VoxelChunk.ChunkSize) % VoxelChunk.ChunkSize;
-
-		var pos = Position + ChunkPos * VoxelChunk.ChunkSize;
-		_label.Text = $"({Maths.FixedPrecision(pos.X, 2)}, {Maths.FixedPrecision(pos.Y, 2)}, {Maths.FixedPrecision(pos.Z, 2)})";
+		
+		OnPositionUpdate?.Invoke();
 	}
 
 	public void SetPosition(double x, double y, double z)
@@ -65,12 +63,6 @@ public class VoxelCamera
 
 	public VoxelCamera()
 	{
-		_label = new Label(GeneralRenderer.UiContext);
-		_label.OffsetZ = 1000;
-		_label.Color = Color.Neutral50;
-		_label.MarginLT = (265, 60);
-		GeneralRenderer.MainRoot.AddChild(_label);
-
 		Position = new Vector3<double>(8, 8, 8);
 		UpdatePosition();
 
@@ -94,6 +86,8 @@ public class VoxelCamera
 
 		UiManager.BeforeUpdate += () =>
 		{
+			if (GeneralRenderer.Root.Children[0].IsPaused) return;
+
 			var relativeMoveVector = new Vector3<int>();
 
 			if (UiManager.InputContext.KeyboardInputHandler.IsKeyPressed(SDL.SDL_Keycode.SDLK_w)) relativeMoveVector.Z = -1;
