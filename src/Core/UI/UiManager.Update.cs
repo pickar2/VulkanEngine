@@ -70,20 +70,31 @@ public static partial class UiManager
 		// GeneralRenderer.MainRoot.AddChild(fpsLabel);
 		// GeneralRenderer.MainRoot.AddChild(frameTimeLabel);
 
-		long lastUpdateTime = 0;
-		const long timeBetweenUpdatesMs = 8;
+		var lag = 0f;
+		var lagStopwatch = new Stopwatch();
+		const float msPerUpdate = 1000/60f;
 
 		while (Context.IsRunning)
 		{
-			if (Stopwatch.GetElapsedTime(lastUpdateTime, Stopwatch.GetTimestamp()).Milliseconds < timeBetweenUpdatesMs) handle.WaitOne(1);
+			// while (Stopwatch.GetElapsedTime(lastUpdateTime, Stopwatch.GetTimestamp()).Milliseconds < timeBetweenUpdatesMs) handle.WaitOne(1);
+			
+			lag += lagStopwatch.Ms();
+			lagStopwatch.Restart();
+			if (lag < msPerUpdate)
+			{
+				handle.WaitOne((int) (msPerUpdate - lag > 2 ? Math.Floor(msPerUpdate - lag) : 0));
+				// waitHandle.WaitOne(0);
+				continue;
+			}
 
 			double uncappedFps = Maths.Round(1000 / Context.AverageFrameTime, 2);
 
 			// fpsLabel.Text = $"FPS: {Maths.FixedPrecision(Context.AverageFps, 1)} ({Maths.FixedPrecision(uncappedFps, 1)})";
 			// frameTimeLabel.Text = $"Frame time: {Maths.FixedNumberSize(Maths.FixedPrecision(Context.AverageFrameTime, 2), 4)}ms";
 
-			lastUpdateTime = timeBetweenUpdatesMs;
 			Update();
+
+			lag = 0;
 		}
 
 		// GeneralRenderer.MainRoot.RemoveChild(fpsLabel);

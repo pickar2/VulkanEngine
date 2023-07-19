@@ -159,7 +159,7 @@ int PrepareMortonValue(int value) {
 //}
 
 int Morton(ivec3 pos) {
-	//	if (pos.x < 0 || pos.y < 0 || pos.z < 0) return 0;
+	if (pos.x < 0 || pos.y < 0 || pos.z < 0) return 0;
 	return PrepareMortonValue(pos.x) | PrepareMortonValue(pos.y) << 1 | PrepareMortonValue(pos.z) << 2;
 }
 
@@ -186,7 +186,7 @@ float sdBox(vec3 p, vec3 b)
 	return min(max(d.x, max(d.y, d.z)), 0.0) + length(max(d, 0.0));
 }
 
-#define CHUNK_DRAW_DISTANCE 1
+#define CHUNK_DRAW_DISTANCE 2
 #define MAX_RAY_STEPS (CHUNK_DRAW_DISTANCE * CHUNK_SIZE * 3)
 #define MAX_DIST (MAX_RAY_STEPS / 1.4422)
 RayResult RayMarchVoxelWorld(vec3 rayPos, vec3 rayDir)
@@ -268,7 +268,7 @@ RayResult RayMarchVoxelChunk(vec3 rayPos, vec3 rayDir)
 	res.cell += ivec3(vec3(res.mask)) * rayStep;
 
 	ivec3 startChunk = res.cell >> CHUNK_SIZE_LOG2;
-	//	if (startChunk.x < 0 || startChunk.y < 0 || startChunk.z < 0) return res;
+	if (startChunk.x < 0 || startChunk.y < 0 || startChunk.z < 0) return res;
 
 	while (i < MAX_RAY_STEPS)
 	{
@@ -277,7 +277,7 @@ RayResult RayMarchVoxelChunk(vec3 rayPos, vec3 rayDir)
 		//			break;
 		//		}
 
-		int chunkIndex = chunkIndices[Morton(chunkPos)];
+		int chunkIndex = chunkIndices[Morton(ivec3(0,0,0))];
 		int voxelIndex = GetVoxelIndex(res.cell & (CHUNK_SIZE - 1));
 		uint voxelMask = GetVoxelMask(0, voxelIndex);
 
@@ -321,8 +321,6 @@ void main() {
 
 	vec3 cameraPos = localCameraPos + cameraChunkPos * CHUNK_SIZE;
 
-	//	mat4 pvMatrix = projMatrix * viewMatrix;
-
 	vec3 rayPos = inPos;
 	vec3 rayDir = rayPos - cameraPos;
 	vec3 rayDirNorm = normalize(rayDir);
@@ -339,19 +337,31 @@ void main() {
 	vec3 sideUv = fract(hitPos);
 
 	float spread = 0.05;
-	outColor.xyz = mix(vec3(0), vec3(not(result.mask)), smoothstep(-spread, 1 + spread, sideUv + spread * 2));
+	outColor.xyz = vec3(result.mask) * 0.5 + 0.4; // draw normals
+//	outColor.xyz = mix(vec3(0), vec3(not(result.mask)), smoothstep(-spread, 1 + spread, sideUv + spread * 2));
+	
+//	if (result.mask.x) {
+//		outColor.xyz = vec3(0.5);
+//	}
+//	if (result.mask.y) {
+//		outColor.xyz = vec3(1.0);
+//	}
+//	if (result.mask.z) {
+//		outColor.xyz = vec3(0.75);
+//	}
+	outColor.xyz *= vec3(0.5 + 0.5 * Checker(rayPos + normalize(rayDir) * result.dist));
 
-	VoxelType voxelType = voxelTypes[int(result.voxel.voxelTypeIndex)];
-	switch (int(result.voxel.voxelMaterialType)) {
-		case -1: break;
-		case 0: {
-			//			outColor.xyz = intToRGBA(result.voxel.voxelMaterialIndex).xyz;
-			break;
-		}
-		case 1: {
-			break;
-		}
-	}
+//	VoxelType voxelType = voxelTypes[int(result.voxel.voxelTypeIndex)];
+//	switch (int(result.voxel.voxelMaterialType)) {
+//		case -1: break;
+//		case 0: {
+//			//			outColor.xyz = intToRGBA(result.voxel.voxelMaterialIndex).xyz;
+//			break;
+//		}
+//		case 1: {
+//			break;
+//		}
+//	}
 	//	if (!result.hit) outColor.a = 0.0;
 
 	//	outColor.a = 1.0;

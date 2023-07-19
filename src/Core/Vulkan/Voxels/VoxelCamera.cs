@@ -67,6 +67,7 @@ public class VoxelCamera
 	{
 		_label = new Label(GeneralRenderer.UiContext);
 		_label.OffsetZ = 1000;
+		_label.Color = Color.Neutral50;
 		_label.MarginLT = (265, 60);
 		GeneralRenderer.MainRoot.AddChild(_label);
 
@@ -119,6 +120,8 @@ public class VoxelCamera
 			}
 
 			Position.Y += relativeMoveVector.Y * _speedMultiplier * VerticalSpeed;
+
+			// App.Logger.Debug.Message($"{ChunkPos} {Position}");
 
 			UpdatePosition();
 		};

@@ -176,22 +176,22 @@ public class ShaderGraph
 
 		var voxelOut = new CustomBox(GeneralRenderer.UiContext)
 		{
-			Size = (new Vector2<float>(1920, 1080) / 4),
-			VertMaterial = GeneralRenderer.UiContext.MaterialManager.GetFactory("texture_uv_material").Create(),
+			Size = (new Vector2<float>(1920, 1080) / 2),
+			// VertMaterial = GeneralRenderer.UiContext.MaterialManager.GetFactory("texture_uv_material").Create(),
 			FragMaterial = GeneralRenderer.UiContext.MaterialManager.GetFactory("texture_material").Create(),
 			OffsetZ = 500,
-			MarginLT = (new Vector2<float>(200))
+			MarginLT = (new Vector2<float>(100))
 		};
-		*voxelOut.FragMaterial.GetMemPtr<UvMaterialData>() = new UvMaterialData()
-		{
-			First = (0,0),
-			Second = (0, 1),
-			Third = (1,0),
-			Fourth = (1,1)
-		};
+		// *voxelOut.FragMaterial.GetMemPtr<UvMaterialData>() = new UvMaterialData()
+		// {
+		// 	First = (0,0),
+		// 	Second = (0, 1),
+		// 	Third = (1,0),
+		// 	Fourth = (1,1)
+		// };
+		// voxelOut.FragMaterial.MarkForGPUUpdate();
+		voxelOut.FragMaterial.GetMemPtr<TextureMaterialData>()->TextureId = (int) TextureManager.GetTextureId("VoxelOutput");
 		voxelOut.FragMaterial.MarkForGPUUpdate();
-		voxelOut.VertMaterial.GetMemPtr<TextureMaterialData>()->TextureId = (int) TextureManager.GetTextureId("VoxelOutput");
-		voxelOut.VertMaterial.MarkForGPUUpdate();
 		mainControl.AddChild(voxelOut);
 
 		var bg = new CustomBox(GeneralRenderer.UiContext);
