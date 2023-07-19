@@ -2,13 +2,13 @@
 using Core.UI.Animations;
 using Core.UI.Reactive;
 using Core.Window;
+using SDL2;
 using SimpleMath.Vectors;
 
 namespace Core.UI.Controls;
 
-public class TextInputBox : Label
+public class TextInput : Label
 {
-	// private readonly Label _label;
 	private readonly Rectangle _cursor;
 	private readonly Rectangle _selection;
 
@@ -16,17 +16,13 @@ public class TextInputBox : Label
 
 	private bool _isEditing;
 
-	public event Action<string>? OnTextChange;
-
-	public TextInputBox(UiContext context) : base(context)
+	public TextInput(UiContext context) : base(context)
 	{
 		TightBox = true;
 
 		_selection = new Rectangle(context) {Color = Color.Blue500.A(100)};
 		_cursor = new Rectangle(context) {Color = Color.Neutral50};
-		// _label = new Label(context);
 
-		// ChildrenList.Add(_label);
 		AddChild(_cursor);
 		AddChild(_selection);
 
@@ -35,38 +31,45 @@ public class TextInputBox : Label
 		_cursor.Size = (0, 0);
 		_selection.Size = (0, 0);
 
-		// _label.OffsetZ = 1;
 		_selection.OffsetZ = 2;
 		_cursor.OffsetZ = 3;
 
 		_cursorBlink = new Animation
 		{
-			Curve = DefaultCurves.HalfOffHalfOn,
+			Curve = DefaultCurves.Binary,
 			Duration = 1000,
 			Type = AnimationType.RepeatFromStart,
 			Interpolator = new RGBInterpolator(_cursor.Color, Color.TransparentBlack, value => _cursor.Color = value)
 		};
 
 		Text = "Text input";
+		
+		this.OnHover(((_, _, type) =>
+		{
+			Vulkan.Context.Window.SetCursor(type == HoverType.Start
+				? SDL.SDL_SystemCursor.SDL_SYSTEM_CURSOR_IBEAM
+				: SDL.SDL_SystemCursor.SDL_SYSTEM_CURSOR_ARROW);
+		}));
 
 		int lastWordStart = -1;
-		this.OnClick((control, button, pos, clicks, clickType, _) =>
+		this.OnClick((_, button, pos, clicks, clickType, _) =>
 		{
+			if (button is not MouseButton.Left and not MouseButton.Right) return false;
 			if (_isEditing && clickType == ClickType.Start)
 			{
 				int cursorPos = CalculateCursorPos(pos);
-				int wordStart = cursorPos - TextInput.FindWordEndLeft(cursorPos);
+				int wordStart = cursorPos - Window.TextInput.FindWordEndLeft(cursorPos);
 
 				if (clicks % 2 == 0 && lastWordStart == wordStart)
 				{
-					TextInput.SetSelection(0, 0);
-					TextInput.SetCursorPos(wordStart);
-					TextInput.IncreaseSelection(TextInput.FindWordEndRight(TextInput.CursorPos));
+					Window.TextInput.SetSelection(0, 0);
+					Window.TextInput.SetCursorPos(wordStart);
+					Window.TextInput.IncreaseSelection(Window.TextInput.FindWordEndRight(Window.TextInput.CursorPos));
 				}
 				else
 				{
-					TextInput.SetSelection(0, 0);
-					TextInput.SetCursorPos(cursorPos);
+					Window.TextInput.SetSelection(0, 0);
+					Window.TextInput.SetCursorPos(cursorPos);
 
 					lastWordStart = wordStart;
 				}
@@ -75,12 +78,12 @@ public class TextInputBox : Label
 			if (!_isEditing && clickType == ClickType.Start)
 			{
 				_isEditing = true;
-				this.OnClickOutsideOnce((_, _) => TextInput.StopInput());
+				this.OnClickOutsideOnce((_, _) => Window.TextInput.StopInput());
 
 				_cursor.Size = new Vector2<float>(18, 32);
 				_selection.Size = new Vector2<float>(0, 32);
 				_cursorBlink.Restart();
-				TextInput.StartInput(CombinedPos.Cast<float, int>(), ComputedSize.Cast<float, int>(), Text,
+				Window.TextInput.StartInput(CombinedPos.Cast<float, int>(), ComputedSize.Cast<float, int>(), Text,
 					(str) => Text = str,
 					(curPos) =>
 					{
@@ -119,28 +122,29 @@ public class TextInputBox : Label
 					}
 				);
 
-				TextInput.SetCursorPos(CalculateCursorPos(pos));
+				Window.TextInput.SetCursorPos(CalculateCursorPos(pos));
 			}
 
 			return true;
 		});
 
 		int dragSelectionStart = 0;
-		this.OnDrag((control, pos, motion, button, dragType) =>
+		this.OnDrag((_, pos, _, button, dragType) =>
 		{
 			if (!_isEditing) return false;
+			if (button is not MouseButton.Left and not MouseButton.Right) return false;
 
 			if (dragType == DragType.Start)
 			{
-				TextInput.SetCursorPos(CalculateCursorPos(pos));
-				dragSelectionStart = TextInput.CursorPos;
+				Window.TextInput.SetCursorPos(CalculateCursorPos(pos));
+				dragSelectionStart = Window.TextInput.CursorPos;
 			}
 			else if (dragType == DragType.Move)
 			{
 				int cursorPos = CalculateCursorPos(pos);
 				int length = cursorPos - dragSelectionStart;
-				TextInput.SetSelection(dragSelectionStart, length);
-				TextInput.SetCursorPos(cursorPos);
+				Window.TextInput.SetSelection(dragSelectionStart, length);
+				Window.TextInput.SetCursorPos(cursorPos);
 			}
 
 			return true;
@@ -149,15 +153,9 @@ public class TextInputBox : Label
 
 	protected int CalculateCursorPos(Vector2<int> mousePos) => (int) Math.Round((mousePos.X - CombinedPos.X - StackPanel.LocalPos.X) / (18 * CombinedScale.X));
 
-	public override void BeforeUpdate()
-	{
-		base.BeforeUpdate();
-		if (NeedsUpdate) OnTextChange?.Invoke(Text);
-	}
-
 	public override void Dispose()
 	{
-		if (_isEditing) TextInput.StopInput();
+		if (_isEditing) Window.TextInput.StopInput();
 		base.Dispose();
 	}
 }

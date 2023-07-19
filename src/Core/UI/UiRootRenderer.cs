@@ -61,18 +61,12 @@ public unsafe partial class UiRootRenderer : RenderChain
 	public readonly MaterialManager MaterialManager;
 	public readonly GlobalDataManager GlobalDataManager;
 
-	private System.Drawing.Color someColor = System.Drawing.Color.Blue;
-	public static readonly System.Drawing.Color someColor2 = System.Drawing.Color.FromArgb(3, 155, 101);
-
 	public UiRootRenderer(string name, RootPanel rootPanel) : base(name)
 	{
 		RootPanel = rootPanel;
 		ComponentManager = rootPanel.ComponentManager;
 		MaterialManager = rootPanel.MaterialManager;
 		GlobalDataManager = rootPanel.GlobalDataManager;
-
-		var testC = System.Drawing.Color.Aqua;
-		var testC1 = new System.Drawing.Color();
 
 		// Render
 		// _commandPool = ReCreate.InDevice.Auto(() => CreateCommandPool(Context.GraphicsQueue, CommandPoolCreateFlags.TransientBit),

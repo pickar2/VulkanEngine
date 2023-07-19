@@ -18,7 +18,7 @@ public interface IAnimationCurve
 public static class DefaultCurves
 {
 	public static readonly IAnimationCurve Linear = new LinearAnimationCurve();
-	public static readonly IAnimationCurve HalfOffHalfOn = new HalfOffHalfOnAnimationCurve();
+	public static readonly IAnimationCurve Binary = new HalfOffHalfOnAnimationCurve();
 
 	public static readonly IAnimationCurve EaseOutSine = new EaseOutSineAnimationCurve();
 	public static readonly IAnimationCurve EaseInSine = new EaseInSineAnimationCurve();

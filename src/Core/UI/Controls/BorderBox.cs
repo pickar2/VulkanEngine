@@ -17,17 +17,7 @@ public unsafe class BorderBox : UiControlOneComponent
 		}
 	}
 
-	private float _unscaledBorderSize;
-
-	public float BorderSize
-	{
-		get => _unscaledBorderSize;
-		set
-		{
-			_unscaledBorderSize = value;
-			UpdateSizeScale();
-		}
-	}
+	public float BorderSize { get; set; }
 
 	public BorderBox(UiContext context, Color color, float borderSize) : base(context)
 	{
@@ -47,7 +37,7 @@ public unsafe class BorderBox : UiControlOneComponent
 	public void UpdateSizeScale()
 	{
 		Component.FragMaterial.GetMemPtr<BorderMaterial>()->Size =
-			_unscaledBorderSize != 0 ? Math.Max(_unscaledBorderSize * Math.Min(CombinedScale.X, CombinedScale.Y), 0.5f) : 0;
+			BorderSize != 0 ? Math.Max(BorderSize * Math.Min(CombinedScale.X, CombinedScale.Y), 0.5f) : 0;
 		Component.FragMaterial.MarkForGPUUpdate();
 	}
 }

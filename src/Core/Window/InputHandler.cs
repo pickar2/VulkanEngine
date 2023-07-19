@@ -92,7 +92,7 @@ public class KeyboardInputHandler
 	public static event OnKeyDelegate? OnKeyUp;
 
 	// TODO: decide what to do with static events
-	private static readonly Dictionary<SDL_Keycode, bool> PressedKeys = new();
+	private readonly Dictionary<SDL_Keycode, bool> PressedKeys = new();
 	public readonly Dictionary<SDL_Keysym, Func<bool>> KeyBinds = new();
 
 	public void AddKeyBind(Func<bool> func, SDL_Keysym keySym)
@@ -151,7 +151,7 @@ public class KeyboardInputHandler
 		return false;
 	}
 
-	public static bool IsKeyPressed(SDL_Keycode keycode) => PressedKeys.ContainsKey(keycode) && PressedKeys[keycode];
+	public bool IsKeyPressed(SDL_Keycode keycode) => PressedKeys.ContainsKey(keycode) && PressedKeys[keycode];
 }
 
 public class MouseInputHandler
@@ -255,6 +255,19 @@ public class UiInputContext : IInputContext
 			case SDL_EventType.SDL_MOUSEWHEEL:
 				MouseInputHandler.Scroll(sdlEvent.wheel);
 				return true;
+
+			case SDL_EventType.SDL_WINDOWEVENT:
+			{
+				if(sdlEvent.window.windowEvent == SDL_WindowEventID.SDL_WINDOWEVENT_LEAVE)
+				{
+					MouseInputHandler.MouseMotion(new SDL_MouseMotionEvent
+					{
+						x = int.MinValue,
+						y = int.MinValue
+					});
+				}
+				return true;
+			}
 
 			case SDL_EventType.SDL_KEYDOWN:
 				return KeyboardInputHandler.KeyDown(sdlEvent.key);

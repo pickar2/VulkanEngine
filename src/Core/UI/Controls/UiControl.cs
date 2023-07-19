@@ -97,6 +97,7 @@ public abstract class UiControl : IDisposable
 
 	public virtual void ComputeSizeAndArea(Vector2<float> maxSize)
 	{
+		// maxSize -= MarginRB * ParentScale;
 		if (TightBox)
 		{
 			var maxChildArea = new Vector2<float>();

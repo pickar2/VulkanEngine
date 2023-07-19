@@ -12,6 +12,7 @@ using Core.Vulkan.Renderers;
 using Core.Window;
 using SDL2;
 using SimpleMath.Vectors;
+using TextInput = Core.UI.Controls.TextInput;
 
 namespace Core.UI.ShaderGraph;
 
@@ -104,7 +105,7 @@ public class ShaderGraph
 		_shaderNodes.Add(node);
 		UiShaderNodes[node] = UiShaderNodeFactories.CreateNode(GeneralRenderer.UiContext, this, node, Id++);
 
-		UiShaderNodes[node].Draw(pos);
+		UiShaderNodes[node].Draw(pos.Round());
 		GraphPanel.AddChild(UiShaderNodes[node].Container);
 
 		_guidToNode[node.Guid] = node;
@@ -544,7 +545,7 @@ public class ShaderGraph
 			var inputAlign = new AlignPanel(messageBox.Context) {Alignment = Alignment.Center};
 			messageBox.AddChild(inputAlign);
 
-			var input = new TextInputBox(messageBox.Context)
+			var input = new TextInput(messageBox.Context)
 			{
 				Text = graph.Name == string.Empty ? "ShaderName" : graph.Name,
 				OffsetZ = 1
@@ -613,6 +614,8 @@ public class ShaderGraph
 				Span<byte> span = stackalloc byte[size];
 				var buffer = span.AsBuffer();
 				graph.SerializeGraph(ref buffer);
+
+				if (!Directory.Exists("./shaders")) Directory.CreateDirectory("./shaders");
 
 				using var file = File.Create($"./shaders/{input.Text}.sg");
 				file.Write(span);

@@ -372,6 +372,8 @@ public struct Color
 
 	public static implicit operator int(Color color) => Unsafe.As<uint, int>(ref color.Value);
 	public static implicit operator uint(Color color) => color.Value;
+
+	public override string ToString() => $"({Red}, {Green}, {Blue}, {Alpha})";
 }
 
 public static class ColorUtils {

@@ -15,14 +15,14 @@ public class BezierCurve : AbsolutePanel
 	private readonly Vector2<double>[] _scaledAnchors = new Vector2<double>[4];
 	private double _scaledLineWidth;
 
-	public readonly List<Vector2<double>> Points = new();
-	public readonly List<Quad> Quads = new();
-	public readonly List<Quad> Quads2 = new();
+	private readonly List<Vector2<double>> _points = new();
+	private readonly List<Quad> _quads = new();
+	private readonly List<Quad> _quads2 = new();
 
 	private Vector2<float> _lastScale = new(1);
 	public bool UpdateRequired = true;
 
-	private const int Steps = 15;
+	private const int Steps = 20;
 
 	public BezierCurve(UiContext context, Vector2<double> p0, Vector2<double> p1, Vector2<double> p2, Vector2<double> p3, double lineWidth = 3.7) :
 		base(context)
@@ -96,9 +96,9 @@ public class BezierCurve : AbsolutePanel
 
 	public unsafe void RecalculateCurve()
 	{
-		Points.Clear();
-		Quads.Clear();
-		Quads2.Clear();
+		_points.Clear();
+		_quads.Clear();
+		_quads2.Clear();
 
 		for (int i = 0; i < _scaledAnchors.Length; i++) _scaledAnchors[i] = Anchors[i] * CombinedScale;
 		_scaledLineWidth = LineWidth * Math.Min(CombinedScale.X, CombinedScale.Y);
@@ -107,35 +107,53 @@ public class BezierCurve : AbsolutePanel
 		double t = 0;
 		for (int i = 0; i <= Steps; i++)
 		{
-			Points.Add(GetPointCubic(_scaledAnchors[0], _scaledAnchors[1], _scaledAnchors[2], _scaledAnchors[3], t));
+			_points.Add(GetPointCubic(_scaledAnchors[0], _scaledAnchors[1], _scaledAnchors[2], _scaledAnchors[3], t));
 
 			if (i > 0)
 			{
 				var direction = GetDerivativeCubic(_scaledAnchors[0], _scaledAnchors[1], _scaledAnchors[2], _scaledAnchors[3], t).Normalized();
 
-				double length = (Points[i] - Points[i - 1]).Length;
+				double length = (_points[i] - _points[i - 1]).Length;
 				var forward = direction * length;
 				var spread = direction.Rotate90DegClockwise() * _scaledLineWidth;
 
 				var q1 = new Quad
 				{
-					P0 = Points[i - 1] - spread,
-					P1 = Points[i - 1] + spread,
-					P2 = Points[i - 1] - spread + forward,
-					P3 = Points[i - 1] + spread + forward
+					P0 = _points[i - 1] - spread,
+					P1 = _points[i - 1] + spread,
+					P2 = _points[i - 1] - spread + forward,
+					P3 = _points[i - 1] + spread + forward
 				};
+
+				if (i == 1)
+				{
+					q1.P0 = _points[i - 1];
+					q1.P0.Y -= spread.Y;
+
+					q1.P1 = _points[i - 1];
+					q1.P1.Y += spread.Y;
+				}
+
+				if (i == Steps)
+				{
+					q1.P2 = _points[i];
+					q1.P2.Y -= spread.Y;
+
+					q1.P3 = _points[i];
+					q1.P3.Y += spread.Y;
+				}
 
 				if (i > 1)
 				{
-					var quad = Quads[i - 2];
+					var quad = _quads[i - 2];
 
 					quad.P2 = q1.P0 = (q1.P0 + quad.P2) / 2.0;
 					quad.P3 = q1.P1 = (q1.P1 + quad.P3) / 2.0;
 
-					Quads[i - 2] = quad;
+					_quads[i - 2] = quad;
 				}
 
-				Quads.Add(q1);
+				_quads.Add(q1);
 
 				var q2 = new Quad
 				{
@@ -145,7 +163,7 @@ public class BezierCurve : AbsolutePanel
 					P3 = (t + step, 1)
 				};
 
-				Quads2.Add(q2);
+				_quads2.Add(q2);
 			}
 
 			t += step;
@@ -156,8 +174,8 @@ public class BezierCurve : AbsolutePanel
 		{
 			if (uiControl is not CustomBox box) continue;
 
-			var quad = Quads[index];
-			var quad2 = Quads2[index];
+			var quad = _quads[index];
+			var quad2 = _quads2[index];
 
 			var pixelCoordsData = box.VertMaterial.GetMemPtr<PixelCoordinatesMaterial>();
 

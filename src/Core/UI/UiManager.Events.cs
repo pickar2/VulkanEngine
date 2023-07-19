@@ -217,9 +217,13 @@ public static partial class UiManager
 
 	public static void RemoveAllEvents(this UiControl control)
 	{
+		if (HoveredControls.Contains(control) && OnHoverDelegates.TryGetValue(control, out var onHoverDelegate))
+			onHoverDelegate.Invoke(control, InputContext.MouseInputHandler.MousePos, HoverType.End);
 		RemoveOnHover(control);
 		RemoveOnClick(control);
 		RemoveOnDrag(control);
+		// if (DraggedControls.Contains(control) && OnDragDelegates.TryGetValue(control, out var onDragDelegate))
+			// onHoverDelegate.Invoke(control, InputContext.MouseInputHandler.MousePos, HoverType.End);
 		RemoveOnScroll(control);
 	}
 

@@ -13,6 +13,7 @@ using Core.Window;
 using SDL2;
 using SimpleMath.Vectors;
 using static Core.Vulkan.Renderers.GeneralRenderer;
+using TextInput = Core.UI.Controls.TextInput;
 
 namespace Core.UI;
 
@@ -29,7 +30,7 @@ public static partial class UiManager
 		infoBoxRoot.AddChild(infoBox);
 		AfterUpdate += () =>
 		{
-			infoBox.Control = KeyboardInputHandler.IsKeyPressed(SDL.SDL_Keycode.SDLK_LALT) && TopControl is not null && TopControl.Selectable
+			infoBox.Control = InputContext.KeyboardInputHandler.IsKeyPressed(SDL.SDL_Keycode.SDLK_LALT) && TopControl is not null && TopControl.Selectable
 				? TopControl
 				: null;
 			infoBoxRoot.BeforeUpdate();
@@ -92,7 +93,7 @@ public static partial class UiManager
 
 	private static void TextInputTest(AbsolutePanel parent)
 	{
-		var input = new TextInputBox(MainRoot.Context);
+		var input = new TextInput(MainRoot.Context);
 		input.MarginLT = (10, 110);
 		input.OffsetZ = 150;
 		input.Scale = (2, 2);

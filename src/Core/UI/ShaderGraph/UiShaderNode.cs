@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Core.UI.Animations;
 using Core.UI.Controls;
 using Core.UI.Controls.Panels;
 using Core.UI.Reactive;
 using Core.Window;
+using SDL2;
 using SimpleMath.Vectors;
+using TextInput = Core.UI.Controls.TextInput;
 
 namespace Core.UI.ShaderGraph;
 
@@ -26,6 +29,11 @@ public class UiShaderNode
 	private const int VerticalSpaceForConnections = 250;
 	private const int ConnectionsVerticalOffset = 50;
 
+	public static Color BackgroundColor => Color.Slate950;
+	public static Color BackgroundColorOnHover => Color.Slate900;
+	public static Color BorderColor => new(39, 55, 79);
+	public static Color TextColor => Color.Slate300;
+
 	public UiShaderNode(UiContext context, ShaderGraph graph, ShaderNode node, int id)
 	{
 		ShaderGraph = graph;
@@ -41,30 +49,68 @@ public class UiShaderNode
 		Container.Size = new Vector2<float>(NodeSizeX, NodeSizeY);
 		Container.MarginLT = pos;
 		Container.Overflow = Overflow.Shown;
-		// Container.OffsetZ = 1;
 
-		var bgBox = new Rectangle(Container.Context);
-		bgBox.Color = Color.Gray500;
+		var bgBox = new Button(Container.Context);
+		bgBox.BackgroundColor = BackgroundColor;
+		bgBox.HoveredColor = BackgroundColorOnHover;
+		bgBox.Label.Text = string.Empty;
+		bgBox.TextAlignment = Alignment.TopCenter;
+		bgBox.AlignPanel.MarginLT = new Vector2<float>(5, 5);
+		// bgBox.AlignPanel.MarginRB = new Vector2<float>(5, 0);
+		bgBox.AlignPanel.Size = (NodeSizeX - 10, 45);
+		bgBox.ChangeCursorOnHover = false;
 		Container.AddChild(bgBox);
 
-		// var borderBox = new BorderBox(Container.Context, Color.Red600, 1);
-		// borderBox.OffsetZ = 1;
-		// Container.AddChild(borderBox);
+		var nodeLabel = new TextInput(Container.Context)
+		{
+			Text = Node.NodeName,
+			Color = TextColor
+		};
+		bgBox.AlignPanel.AddChild(nodeLabel);
 
-		var alignPanel = new AlignPanel(Container.Context) {Alignment = Alignment.TopCenter};
-		alignPanel.MarginLT.Y = 5;
-		alignPanel.Size.Y = 45;
-		var nodeLabel = new TextInputBox(Container.Context) {Text = Node.NodeName};
-		alignPanel.AddChild(nodeLabel);
-		Container.AddChild(alignPanel);
+		nodeLabel.Context.CreateEffect(() => Node.NodeName = nodeLabel.Text);
 
-		nodeLabel.OnTextChange += s => Node.NodeName = s;
+		var nodeTypeLabel = new Label(Container.Context)
+		{
+			Text = Node.NodeTypeName,
+			Color = TextColor
+		};
+		bgBox.AddChild(nodeTypeLabel.WrapInAlignPanel(Alignment.BottomCenter));
 
+		var borderBox = new BorderBox(Container.Context, BorderColor, 1);
+		borderBox.OffsetZ = 1;
+		bgBox.AddChild(borderBox);
+
+		var combinedMotion = new Vector2<int>();
+		const int gridSize = 30;
 		Container.OnDrag((control, _, motion, button, dragType) =>
 		{
 			if (button != MouseButton.Left) return false;
 			if (dragType == DragType.Move)
-				control.MarginLT += motion.Cast<int, float>() / control.CombinedScale;
+			{
+				if (UiManager.InputContext.KeyboardInputHandler.IsKeyPressed(SDL.SDL_Keycode.SDLK_LSHIFT))
+				{
+					control.MarginLT -= control.MarginLT % gridSize;
+					combinedMotion += motion.Cast<int, float>() / control.ParentScale;
+					if (combinedMotion.X / gridSize != 0)
+					{
+						control.MarginLT.X += gridSize * (combinedMotion.X / gridSize);
+						combinedMotion.X %= gridSize;
+					}
+
+					if (combinedMotion.Y / gridSize != 0)
+					{
+						control.MarginLT.Y += gridSize * (combinedMotion.Y / gridSize);
+						combinedMotion.Y %= gridSize;
+					}
+				}
+				else
+				{
+					combinedMotion = new Vector2<int>(0);
+					control.MarginLT += motion.Cast<int, float>() / control.ParentScale;
+				}
+				control.MarginLT.Round();
+			}
 
 			UpdateOutputCurves();
 
@@ -75,20 +121,6 @@ public class UiShaderNode
 			}
 
 			return true;
-		});
-
-		Container.OnHover((_, _, type) =>
-		{
-			if (type == HoverType.Start)
-			{
-				bgBox.Color = Color.Slate400;
-				Container.OffsetZ += 5;
-			}
-			else
-			{
-				bgBox.Color = Color.Gray500;
-				Container.OffsetZ -= 5;
-			}
 		});
 
 		var inputControls = new List<UiControl>();
@@ -121,16 +153,17 @@ public class UiShaderNode
 				connectorContainer.AddChild(connectorBoxAlign);
 
 				var connectorLabelAlign = new AlignPanel(Container.Context) {Alignment = Alignment.CenterLeft};
-				connectorLabelAlign.MarginLT.X = ConnectionSize + 3;
+				connectorLabelAlign.MarginLT.X = ConnectionSize / 2f + 3;
 				connectorContainer.AddChild(connectorLabelAlign);
 
 				var inputLabel = new Label(Container.Context);
+				inputLabel.Color = TextColor;
 				inputLabel.Text = inputConnector.AcceptedTypes[0].DisplayName;
 				connectorLabelAlign.AddChild(inputLabel);
 
 				var inputBox = new Rectangle(Container.Context);
 				inputBox.Color = inputConnector.ConnectedOutputNode is not null ? Color.Green600 : Color.Lime600;
-				inputBox.Size = new Vector2<float>(ConnectionSize);
+				inputBox.Size = new Vector2<float>(ConnectionSize / 2f, ConnectionSize);
 				connectorBoxAlign.AddChild(inputBox);
 
 				int conIndex = index;
@@ -217,12 +250,12 @@ public class UiShaderNode
 				{
 					Alignment = Alignment.CenterRight
 				};
-				connectorLabelAlign.MarginLT.X = -ConnectionSize - 3;
+				connectorLabelAlign.MarginLT.X = -ConnectionSize / 2f - 3;
 				connectorContainer.AddChild(connectorLabelAlign);
 
 				var outputLabel = new Label(Container.Context);
 				outputLabel.Text = outputConnector?.Type?.DisplayName ?? "none";
-				outputLabel.Scale = (0.5f, 0.5f);
+				outputLabel.Color = TextColor;
 
 				connectorLabelAlign.AddChild(outputLabel);
 
@@ -230,7 +263,7 @@ public class UiShaderNode
 				outputBox.Color = Color.Lime600;
 				outputBox.Overflow = Overflow.Shown;
 
-				outputBox.Size = new Vector2<float>(ConnectionSize);
+				outputBox.Size = new Vector2<float>(ConnectionSize / 2f, ConnectionSize);
 				outputBox.OffsetZ = 1;
 				connectorBoxAlign.AddChild(outputBox);
 
@@ -239,12 +272,12 @@ public class UiShaderNode
 				{
 					if (button != MouseButton.Left) return false;
 
-					var start = new Vector2<double>(ConnectionSize, ConnectionSize / 2d);
+					var start = new Vector2<double>(ConnectionSize, ConnectionSize) / 2;
 					var end = ((newPos.Cast<int, double>() - control.CombinedPos) / control.CombinedScale) + outputBox.MarginLT;
 					switch (type)
 					{
 						case DragType.Start:
-							dragCurve = new BezierCurve(Container.Context, start, (end.X, start.Y), (start.X, end.Y), end);
+							dragCurve = new BezierCurve(Container.Context, start, ((start.X + end.X) / 2.0, start.Y), ((start.X + end.X) / 2.0, end.Y), end);
 							dragCurve.OffsetZ = 10;
 							outputBox.AddChild(dragCurve);
 
@@ -332,6 +365,10 @@ public class UiShaderOutputNode : UiShaderNode
 
 		var typeSelector = new ComboBox<ShaderResourceType>(Container.Context, 25, 200)
 		{
+			BackgroundColor = Color.Slate700,
+			ItemColor = Color.Slate700,
+			ItemColorOnHover = BorderColor,
+			TextColor = TextColor,
 			Values = ShaderResourceType.AllTypes.ToDictionary(t => t.DisplayName, t => t)
 		};
 
@@ -359,6 +396,10 @@ public class UiShaderInputNode : UiShaderNode
 
 		var typeSelector = new ComboBox<ShaderResourceType>(Container.Context, 25, 200)
 		{
+			BackgroundColor = Color.Slate700,
+			ItemColor = Color.Slate700,
+			ItemColorOnHover = BorderColor,
+			TextColor = TextColor,
 			Values = ShaderResourceType.AllTypes.ToDictionary(t => t.DisplayName, t => t)
 		};
 
@@ -373,12 +414,13 @@ public class UiShaderInputNode : UiShaderNode
 		typeSelector.Context.CreateEffect(() => _inputNode.Type = typeSelector.Current.Value);
 		typeSelector.Draw();
 
-		var valueInput = new TextInputBox(Container.Context);
+		var valueInput = new TextInput(Container.Context);
 		valueInput.Text = _inputNode.Value;
+		valueInput.Color = TextColor;
 		valueInput.MarginLT = new Vector2<float>(5, 90);
 		Container.AddChild(valueInput);
 
-		valueInput.OnTextChange += s => _inputNode.Value = s;
+		valueInput.Context.CreateEffect(() => _inputNode.Value = valueInput.Text);
 	}
 }
 

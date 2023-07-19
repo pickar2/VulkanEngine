@@ -23,7 +23,7 @@ void dots_background_material(UiElementData data) {
 	float scale = mat.scale;
 
 	int brightSize = 5;
-	float squareSize = 5 * scale;
+	float squareSize = 5;
 	float spacing = 30.0 * scale;
 
 	vec2 offset = vec2(mat.offsetX, mat.offsetY) + spacing / 2;//vec2(sin(time*7.0/11.0) * 100.0, sin(time*5.0/11.0) * 70.0);

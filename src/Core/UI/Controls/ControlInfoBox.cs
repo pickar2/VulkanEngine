@@ -51,7 +51,7 @@ public class ControlInfoBox : AbsolutePanel
 		};
 		AddChild(controlBg);
 
-		if (KeyboardInputHandler.IsKeyPressed(SDL.SDL_Keycode.SDLK_LSHIFT))
+		if (UiManager.InputContext.KeyboardInputHandler.IsKeyPressed(SDL.SDL_Keycode.SDLK_LSHIFT))
 		{
 			controlBg.MarginLT = _control.CombinedPos - (_control.MarginLT * _control.ParentScale);
 			controlBg.Size = _control.ComputedArea;

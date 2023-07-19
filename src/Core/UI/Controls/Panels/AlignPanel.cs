@@ -52,6 +52,16 @@ public class AlignPanel : UiControl
 	public AlignPanel(UiContext context) : base(context) { }
 }
 
+public static class AlignExtensions {
+	public static AlignPanel WrapInAlignPanel(this UiControl control, Alignment alignment = Alignment.TopLeft)
+	{
+		var align = new AlignPanel(control.Context) {Alignment = alignment};
+		align.AddChild(control);
+
+		return align;
+	} 
+}
+
 public enum Alignment
 {
 	TopLeft, TopCenter, TopRight,

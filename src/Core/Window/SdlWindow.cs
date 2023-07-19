@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using Core.Utils;
@@ -12,6 +13,7 @@ namespace Core.Window;
 public class SdlWindow : IDisposable
 {
 	private readonly Stopwatch _stopwatch = new();
+	private readonly Dictionary<SDL_SystemCursor, nint> _cursors = new();
 
 	public string Title { get; private set; } = App.Details.AppName;
 	public IntPtr WindowHandle { get; private set; }
@@ -37,6 +39,7 @@ public class SdlWindow : IDisposable
 		SDL_GetDesktopDisplayMode(0, out var mode);
 
 		SDL_SetHint(SDL_HINT_IME_SHOW_UI, "1");
+		SDL_SetHint(SDL_HINT_MOUSE_AUTO_CAPTURE, "0");
 
 		var flags = SDL_WindowFlags.SDL_WINDOW_VULKAN | SDL_WindowFlags.SDL_WINDOW_RESIZABLE | SDL_WindowFlags.SDL_WINDOW_HIDDEN;
 
@@ -77,6 +80,7 @@ public class SdlWindow : IDisposable
 	public void Dispose()
 	{
 		IsClosing = true;
+		foreach ((_, nint ptr) in _cursors) SDL_FreeCursor(ptr);
 		SDL_DestroyWindow(WindowHandle);
 		SDL_Quit();
 		GC.SuppressFinalize(this);
@@ -174,5 +178,16 @@ public class SdlWindow : IDisposable
 
 			return false;
 		}
+	}
+
+	public nint GetCursor() => SDL_GetCursor();
+
+	public void SetCursor(nint cursorPtr) => SDL_SetCursor(cursorPtr);
+
+	public void SetCursor(SDL_SystemCursor cursor)
+	{
+		if (!_cursors.TryGetValue(cursor, out var ptr)) 
+			_cursors[cursor] = ptr = SDL_CreateSystemCursor(cursor);
+		SDL_SetCursor(ptr);
 	}
 }

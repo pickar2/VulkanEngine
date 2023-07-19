@@ -16,7 +16,7 @@ public class Label : ScrollView
 
 	private readonly List<CustomBox> _letters = new();
 
-	private string _text = string.Empty;
+	private readonly Signal<string> _text = new(string.Empty);
 	private Vector2<float> _parentScale;
 	private Color _color;
 
@@ -26,6 +26,7 @@ public class Label : ScrollView
 
 	public Label(UiContext context) : base(context)
 	{
+		UseSubContext();
 		StackPanel = new StackPanel(context) {OffsetZ = 1};
 		AddChild(StackPanel);
 		TightBox = true;
@@ -74,7 +75,7 @@ public class Label : ScrollView
 		get => _text;
 		set
 		{
-			_text = value;
+			_text.Set(value);
 			NeedsUpdate = true;
 		}
 	}
@@ -93,20 +94,20 @@ public class Label : ScrollView
 
 	private unsafe void UpdateText()
 	{
-		if (_text.Length < _letters.Count)
+		if (Text.Length < _letters.Count)
 		{
-			for (int i = _text.Length; i < _letters.Count; i++)
+			for (int i = Text.Length; i < _letters.Count; i++)
 			{
 				var letter = _letters[i];
 				StackPanel.RemoveChild(letter);
 				letter.Dispose();
 			}
 
-			_letters.RemoveRange(_text.Length, _letters.Count - _text.Length);
+			_letters.RemoveRange(Text.Length, _letters.Count - Text.Length);
 		}
-		else if (_text.Length > _letters.Count)
+		else if (Text.Length > _letters.Count)
 		{
-			int diff = _text.Length - _letters.Count;
+			int diff = Text.Length - _letters.Count;
 			for (int i = 0; i < diff; i++)
 			{
 				var box = new CustomBox(Context)
@@ -120,7 +121,7 @@ public class Label : ScrollView
 		}
 
 		int index = 0;
-		foreach (char ch in _text)
+		foreach (char ch in Text)
 		{
 			var character = UiManager.Consolas.GetCharacter(ch);
 			var box = _letters[index++];

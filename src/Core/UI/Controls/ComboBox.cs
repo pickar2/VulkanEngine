@@ -16,19 +16,26 @@ public class ComboBox<T> : UiControl
 	private float _valueHeight;
 	private float _maxHeight;
 
+	public Color BackgroundColor { get => _background.Color; set => _background.Color = value; }
+	public Color ItemColor { get; set; }
+	public Color ItemColorOnHover { get; set; }
+	public Color TextColor { get; set; }
+
+	private Rectangle _background;
+
 	public ComboBox(UiContext context, float valueHeight = 25, float maxHeight = float.PositiveInfinity) : base(context)
 	{
 		UseSubContext();
 		_valueHeight = valueHeight;
 		_maxHeight = maxHeight;
+
+		_background = new Rectangle(Context);
 	}
 
 	public void Draw()
 	{
 		_initialHeight = Size.Y;
-
-		var bg = new Rectangle(Context) {Color = Color.Amber700};
-		AddChild(bg);
+		AddChild(_background);
 
 		var stack = new StackPanel(Context)
 		{
@@ -41,20 +48,21 @@ public class ComboBox<T> : UiControl
 
 		var openComboBox = new Button(Context)
 		{
-			BackgroundColor = Color.Amber700,
-			HoveredColor = Color.Amber900
+			BackgroundColor = ItemColor,
+			HoveredColor = ItemColorOnHover
 		};
+		openComboBox.Label.Color = TextColor;
 		openComboBox.Size.Y = Size.Y;
 		stack.AddChild(openComboBox);
 
-		float headerSpacing = 2;
+		const float headerSpacing = 2;
 		var spacer = new Rectangle(Context) {Color = Color.Neutral950};
 		spacer.Size.Y = headerSpacing;
 		stack.AddChild(spacer);
 
 		Context.CreateEffect(() => openComboBox.Text = Current.Name);
 
-		float valueSpacing = 3;
+		const float valueSpacing = 3;
 		var valuesContainer = new StackPanel(Context)
 		{
 			Orientation = Orientation.Vertical,
@@ -109,8 +117,9 @@ public class ComboBox<T> : UiControl
 				foreach ((string? name, var value) in Values)
 				{
 					var box = new Button(Context);
-					box.BackgroundColor = Color.Amber500;
-					box.HoveredColor = Color.Amber700;
+					box.BackgroundColor = ItemColor;
+					box.HoveredColor = ItemColorOnHover;
+					box.Label.Color = TextColor;
 					box.Text = name;
 					box.Size.Y = _valueHeight;
 					valuesContainer.AddChild(box);

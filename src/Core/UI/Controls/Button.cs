@@ -2,7 +2,7 @@
 using Core.UI.Animations;
 using Core.UI.Controls.Panels;
 using Core.UI.Reactive;
-using Core.Window;
+using SDL2;
 
 namespace Core.UI.Controls;
 
@@ -12,12 +12,14 @@ public class Button : UiControl
 	public AlignPanel AlignPanel { get; }
 	public Label Label { get; }
 
+	public bool ChangeCursorOnHover { get; set; } = true;
+
 	public Alignment TextAlignment { get => AlignPanel.Alignment; set => AlignPanel.Alignment = value; }
 	public string Text { get => Label.Text; set => Label.Text = value; }
 
 	private Color _backgroundColor;
 	private Color _hoveredColor;
-	private Color _clickedColor;
+	// private Color _clickedColor;
 
 	public Color BackgroundColor
 	{
@@ -60,6 +62,13 @@ public class Button : UiControl
 
 		Rectangle.OnHover(((_, _, type) =>
 		{
+			if (ChangeCursorOnHover)
+			{
+				Vulkan.Context.Window.SetCursor(type == HoverType.Start
+					? SDL.SDL_SystemCursor.SDL_SYSTEM_CURSOR_HAND
+					: SDL.SDL_SystemCursor.SDL_SYSTEM_CURSOR_ARROW);
+			}
+
 			if (HoveredColor == default) return;
 
 			if (type == HoverType.Start)
@@ -104,4 +113,10 @@ public class Button : UiControl
 	// 	ClickAnimation?.Stop();
 	// 	ClickAnimation = Animation.OfRGB(value => Rectangle.Color = value, HoveredColor, ClickedColor, TimeSpan.FromMilliseconds(50));
 	// }
+
+	public override void Dispose()
+	{
+		HoverAnimation?.Stop();
+		base.Dispose();
+	}
 }

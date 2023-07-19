@@ -854,8 +854,7 @@ public static unsafe partial class Context
 	{
 		foreach (var format in availableFormats)
 		{
-			if (format.Format == Format.B8G8R8A8Srgb &&
-			    format.ColorSpace == ColorSpaceKHR.SpaceSrgbNonlinearKhr)
+			if (format is {Format: Format.B8G8R8A8SNorm, ColorSpace: ColorSpaceKHR.SpaceSrgbNonlinearKhr})
 				return format;
 		}
 

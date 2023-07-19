@@ -24,7 +24,7 @@ void border_material(UiElementData data) {
 		pixelPos.x + 0.001 >= quadSize.x - borderSize ||
 		pixelPos.y + 0.001 >= quadSize.y - borderSize
 	) {
-		outColor = vec4(1, 0, 0, 1);
+		outColor = vec4(intToRGBA(mat.color));
 	} else {
 		outColor = vec4(0);
 	}
