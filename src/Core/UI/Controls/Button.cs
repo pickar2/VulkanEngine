@@ -116,7 +116,7 @@ public class Button : UiControl
 
 	public override void Dispose()
 	{
-		HoverAnimation?.Stop();
 		base.Dispose();
+		HoverAnimation?.Stop();
 	}
 }
