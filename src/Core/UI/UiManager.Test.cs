@@ -14,7 +14,6 @@ using Core.Vulkan.Api;
 using Core.Vulkan.Renderers;
 using Core.Vulkan.Voxels;
 using Core.Window;
-using SDL2;
 using SimpleMath.Vectors;
 using static Core.Vulkan.Renderers.GeneralRenderer;
 using TextInput = Core.UI.Controls.TextInput;
@@ -28,7 +27,8 @@ public static partial class UiManager
 	enum Showcase : byte
 	{
 		ShaderGraph,
-		VoxelRaymarching
+		VoxelRaymarching,
+		DeferredRenderer
 	}
 
 	private static unsafe void InitTestScene()
@@ -56,7 +56,8 @@ public static partial class UiManager
 		{
 			Values = new Dictionary<string, Showcase> {
 				{"Shader graph", Showcase.ShaderGraph},
-				{"Voxel raymarching", Showcase.VoxelRaymarching}
+				{"Voxel raymarching", Showcase.VoxelRaymarching},
+				{"Deferred renderer", Showcase.DeferredRenderer}
 			},
 			OffsetZ = 1000,
 			BackgroundColor = Color.Slate600,
@@ -68,49 +69,26 @@ public static partial class UiManager
 		};
 		MainRoot.AddChild(showcaseSwitcher.WrapInAlignPanel(Alignment.TopCenter));
 		showcaseSwitcher.Draw();
-		var camera = ((VoxelRenderer) Root.Children[0]).Camera;
 
-		ShaderGraph.ShaderGraph? graph = null;
-		CustomBox? voxelOut = null;
-		Label? label = null;
-
-		void UpdateLabelText()
-		{
-			if (label is null) return;
-
-			var pos = camera.Position + camera.ChunkPos * VoxelChunk.ChunkSize;
-			label.Text = $"({Maths.FixedPrecision(pos.X, 2)}, {Maths.FixedPrecision(pos.Y, 2)}, {Maths.FixedPrecision(pos.Z, 2)})";
-		}
-
+		Action? disposePrevious = null;
 		showcaseSwitcher.Context.CreateEffect(() =>
 		{
 			switch (showcaseSwitcher.Current.Value)
 			{
 				case Showcase.ShaderGraph:
-					if (voxelOut is not null)
-					{
-						MainRoot.RemoveChild(voxelOut);
-						voxelOut.Dispose();
-					}
-
-					if (label is not null)
-					{
-						MainRoot.RemoveChild(label);
-						label.Dispose();
-					}
-					
-					camera.OnPositionUpdate -= UpdateLabelText;
-					graph = ShaderGraph.ShaderGraph.Draw();
-					Root.Children[0].IsPaused = true;
-					break;
-				case Showcase.VoxelRaymarching: 
-					if (graph is not null)
+					disposePrevious?.Invoke();
+					var graph = ShaderGraph.ShaderGraph.Draw();
+					disposePrevious = () =>
 					{
 						MainRoot.RemoveChild(graph.GraphPanel.Parent!);
 						graph.GraphPanel.Parent!.Dispose();
-					}
+					};
+					
+					break;
+				case Showcase.VoxelRaymarching: 
+					disposePrevious?.Invoke();
 
-					voxelOut = new CustomBox(UiContext)
+					var voxelOut = new CustomBox(UiContext)
 					{
 						Size = new Vector2<float>(1920, 1080) / 1.5f,
 						VertMaterial = UiContext.MaterialManager.GetFactory("default_vertex_material").Create(),
@@ -121,16 +99,61 @@ public static partial class UiManager
 					voxelOut.FragMaterial.GetMemPtr<TextureMaterialData>()->TextureId = (int) TextureManager.GetTextureId("VoxelOutput");
 					voxelOut.FragMaterial.MarkForGPUUpdate();
 
-					label = new Label(UiContext);
+					var label = new Label(UiContext);
 					label.OffsetZ = 1000;
 					label.Color = Color.Neutral950;
 					label.MarginLT = (5, 5);
 					MainRoot.AddChild(label);
+					
+					var camera = GeneralRenderer.VoxelRenderer.Camera;
+					
+					void UpdateLabelText()
+					{
+						var pos = camera.Position + camera.ChunkPos * VoxelChunk.ChunkSize;
+						// ReSharper disable once AccessToDisposedClosure
+						label.Text = $"({Maths.FixedPrecision(pos.X, 2)}, {Maths.FixedPrecision(pos.Y, 2)}, {Maths.FixedPrecision(pos.Z, 2)})";
+					}
 
 					camera.OnPositionUpdate += UpdateLabelText;
 		
 					MainRoot.AddChild(voxelOut);
-					Root.Children[0].IsPaused = false;
+					GeneralRenderer.VoxelRenderer.IsPaused = false;
+
+					disposePrevious = () =>
+					{
+						GeneralRenderer.VoxelRenderer.IsPaused = true;
+
+						camera.OnPositionUpdate -= UpdateLabelText;
+						MainRoot.RemoveChild(voxelOut);
+						voxelOut.Dispose();
+						MainRoot.RemoveChild(label);
+						label.Dispose();
+					};
+					break;
+				case Showcase.DeferredRenderer:
+					disposePrevious?.Invoke();
+
+					var deferredOut = new CustomBox(UiContext)
+					{
+						Size = new Vector2<float>(1920, 1080) / 1.5f,
+						VertMaterial = UiContext.MaterialManager.GetFactory("default_vertex_material").Create(),
+						FragMaterial = UiContext.MaterialManager.GetFactory("texture_material").Create(),
+						OffsetZ = 500,
+						MarginLT = new Vector2<float>(0, 25)
+					};
+					deferredOut.FragMaterial.GetMemPtr<TextureMaterialData>()->TextureId = (int) TextureManager.GetTextureId("DeferredOutput");
+					deferredOut.FragMaterial.MarkForGPUUpdate();
+					MainRoot.AddChild(deferredOut);
+
+					GeneralRenderer.Deferred3DRenderer.IsPaused = false;
+
+					disposePrevious = () =>
+					{
+						GeneralRenderer.Deferred3DRenderer.IsPaused = true;
+						MainRoot.RemoveChild(deferredOut);
+						deferredOut.Dispose();
+					};
+
 					break;
 				default: throw new ArgumentOutOfRangeException();
 			}

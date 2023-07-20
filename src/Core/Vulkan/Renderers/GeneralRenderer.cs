@@ -6,6 +6,7 @@ using Core.UI;
 using Core.UI.Controls.Panels;
 using Core.UI.Reactive;
 using Core.Vulkan.Api;
+using Core.Vulkan.Deferred3D;
 using Core.Vulkan.Utility;
 using Core.Vulkan.Voxels;
 using Silk.NET.Vulkan;
@@ -42,6 +43,9 @@ public static class GeneralRenderer
 	public static readonly RootPanel MainRoot;
 	public static readonly UiContext UiContext;
 
+	public static readonly VoxelRenderer VoxelRenderer;
+	public static readonly Deferred3DRenderer Deferred3DRenderer;
+
 	static unsafe GeneralRenderer()
 	{
 		var componentManager = new UiComponentManager("Comp1");
@@ -72,14 +76,16 @@ public static class GeneralRenderer
 
 		materialManager.UpdateShaders();
 
-		// var deferred = new Deferred3DRenderer((1280, 720), "TestDeferred");
-		var voxel = new VoxelRenderer("TestVoxel");
-		voxel.IsPaused = true;
+		VoxelRenderer = new VoxelRenderer("TestVoxel");
+		Deferred3DRenderer = new Deferred3DRenderer((1280, 720), "TestDeferred");
+		VoxelRenderer.IsPaused = true;
+		Deferred3DRenderer.IsPaused = true;
 		Root = new UiRootRenderer("Root1", MainRoot);
 
 		// for (int i = 0; i < 2; i++) Root.AddChild(new TestToTextureRenderer($"ChildRenderer{i}"));
 
-		Root.AddChild(voxel);
+		Root.AddChild(VoxelRenderer);
+		Root.AddChild(Deferred3DRenderer);
 
 		byte[] bytes = File.ReadAllBytes($"Assets/Textures/{UiManager.Consolas.Pages[0].TextureName}");
 		var qoiImage = QoiDecoder.Decode(bytes);

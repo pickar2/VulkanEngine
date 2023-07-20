@@ -15,7 +15,6 @@ public class VoxelCamera
 	private const float MouseSensitivity = 0.25f;
 
 	private static double DefaultSpeedMultiplier => 10 / Context.MsPerUpdate;
-	private double _speedMultiplier = DefaultSpeedMultiplier;
 
 	public Vector3<double> Position;
 	public Vector3<double> YawPitchRoll;
@@ -65,59 +64,67 @@ public class VoxelCamera
 	{
 		Position = new Vector3<double>(8, 8, 8);
 		UpdatePosition();
+		SubscribeToEvents();
+	}
 
-		UiManager.InputContext.MouseInputHandler.OnMouseDragMove +=
-			(_, motion, _) => MoveDirection(motion.X * MouseSensitivity, motion.Y * MouseSensitivity, 0);
+	private void Look(Vector2<int> newPos, Vector2<int> motion, MouseButton button)
+	{
+		if (GeneralRenderer.Root.Children[0].IsPaused) return;
 
-		KeyboardInputHandler.OnKeyDown += (key) =>
+		MoveDirection(motion.X * MouseSensitivity, motion.Y * MouseSensitivity, 0);
+	}
+
+	private void Move()
+	{
+		if (GeneralRenderer.Root.Children[0].IsPaused) return;
+
+		var speedMultiplier = DefaultSpeedMultiplier;
+		if (UiManager.InputContext.KeyboardInputHandler.IsKeyPressed(SDL.SDL_Keycode.SDLK_LCTRL))
+			speedMultiplier *= 2.5;
+		if (UiManager.InputContext.KeyboardInputHandler.IsKeyPressed(SDL.SDL_Keycode.SDLK_LSHIFT))
+			speedMultiplier *= 0.4;
+
+		var relativeMoveVector = new Vector3<int>();
+
+		if (UiManager.InputContext.KeyboardInputHandler.IsKeyPressed(SDL.SDL_Keycode.SDLK_w)) relativeMoveVector.Z = -1;
+		else if (UiManager.InputContext.KeyboardInputHandler.IsKeyPressed(SDL.SDL_Keycode.SDLK_s)) relativeMoveVector.Z = 1;
+
+		if (UiManager.InputContext.KeyboardInputHandler.IsKeyPressed(SDL.SDL_Keycode.SDLK_a)) relativeMoveVector.X = -1;
+		else if (UiManager.InputContext.KeyboardInputHandler.IsKeyPressed(SDL.SDL_Keycode.SDLK_d)) relativeMoveVector.X = 1;
+
+		if (UiManager.InputContext.KeyboardInputHandler.IsKeyPressed(SDL.SDL_Keycode.SDLK_z)) relativeMoveVector.Y = -1;
+		else if (UiManager.InputContext.KeyboardInputHandler.IsKeyPressed(SDL.SDL_Keycode.SDLK_SPACE)) relativeMoveVector.Y = 1;
+
+		double yaw = YawPitchRoll.X.ToRadians();
+
+		if (relativeMoveVector.Z != 0)
 		{
-			_speedMultiplier = key.sym switch
-			{
-				SDL.SDL_Keycode.SDLK_LCTRL => DefaultSpeedMultiplier * 2.7,
-				SDL.SDL_Keycode.SDLK_LSHIFT => DefaultSpeedMultiplier * 0.4,
-				_ => _speedMultiplier
-			};
-		};
+			Position.X -= Math.Sin(yaw) * relativeMoveVector.Z * speedMultiplier * HorizontalSpeed;
+			Position.Z += Math.Cos(yaw) * relativeMoveVector.Z * speedMultiplier * HorizontalSpeed;
+		}
 
-		KeyboardInputHandler.OnKeyUp += (key) =>
+		if (relativeMoveVector.X != 0)
 		{
-			if (key.sym is SDL.SDL_Keycode.SDLK_LCTRL or SDL.SDL_Keycode.SDLK_LSHIFT) _speedMultiplier = DefaultSpeedMultiplier;
-		};
+			Position.X += Math.Cos(yaw) * relativeMoveVector.X * speedMultiplier * HorizontalSpeed;
+			Position.Z += Math.Sin(yaw) * relativeMoveVector.X * speedMultiplier * HorizontalSpeed;
+		}
 
-		UiManager.BeforeUpdate += () =>
-		{
-			if (GeneralRenderer.Root.Children[0].IsPaused) return;
+		Position.Y += relativeMoveVector.Y * speedMultiplier * VerticalSpeed;
 
-			var relativeMoveVector = new Vector3<int>();
+		// App.Logger.Debug.Message($"{ChunkPos} {Position}");
 
-			if (UiManager.InputContext.KeyboardInputHandler.IsKeyPressed(SDL.SDL_Keycode.SDLK_w)) relativeMoveVector.Z = -1;
-			else if (UiManager.InputContext.KeyboardInputHandler.IsKeyPressed(SDL.SDL_Keycode.SDLK_s)) relativeMoveVector.Z = 1;
+		UpdatePosition();
+	}
 
-			if (UiManager.InputContext.KeyboardInputHandler.IsKeyPressed(SDL.SDL_Keycode.SDLK_a)) relativeMoveVector.X = -1;
-			else if (UiManager.InputContext.KeyboardInputHandler.IsKeyPressed(SDL.SDL_Keycode.SDLK_d)) relativeMoveVector.X = 1;
+	public void SubscribeToEvents()
+	{
+		UiManager.BeforeUpdate += Move;
+		UiManager.InputContext.MouseInputHandler.OnMouseDragMove += Look;
+	}
 
-			if (UiManager.InputContext.KeyboardInputHandler.IsKeyPressed(SDL.SDL_Keycode.SDLK_z)) relativeMoveVector.Y = -1;
-			else if (UiManager.InputContext.KeyboardInputHandler.IsKeyPressed(SDL.SDL_Keycode.SDLK_SPACE)) relativeMoveVector.Y = 1;
-
-			double yaw = YawPitchRoll.X.ToRadians();
-
-			if (relativeMoveVector.Z != 0)
-			{
-				Position.X -= Math.Sin(yaw) * relativeMoveVector.Z * _speedMultiplier * HorizontalSpeed;
-				Position.Z += Math.Cos(yaw) * relativeMoveVector.Z * _speedMultiplier * HorizontalSpeed;
-			}
-
-			if (relativeMoveVector.X != 0)
-			{
-				Position.X += Math.Cos(yaw) * relativeMoveVector.X * _speedMultiplier * HorizontalSpeed;
-				Position.Z += Math.Sin(yaw) * relativeMoveVector.X * _speedMultiplier * HorizontalSpeed;
-			}
-
-			Position.Y += relativeMoveVector.Y * _speedMultiplier * VerticalSpeed;
-
-			// App.Logger.Debug.Message($"{ChunkPos} {Position}");
-
-			UpdatePosition();
-		};
+	public void UnsubscribeFromEvents()
+	{
+		UiManager.BeforeUpdate -= Move;
+		UiManager.InputContext.MouseInputHandler.OnMouseDragMove -= Look;
 	}
 }

@@ -52,19 +52,19 @@ public unsafe class Deferred3DRenderer : RenderChain
 			FrameGraph.CreateAttachment(Format.R8G8B8A8Unorm, ImageAspectFlags.ColorBit, Size, ImageUsageFlags.SampledBit), image => image.Dispose());
 
 		DepthAttachment = ReCreate.InDevice.Auto(() =>
-			FrameGraph.CreateAttachment(Format.D32Sfloat, ImageAspectFlags.DepthBit, Size), image => image.Dispose());
+			FrameGraph.CreateAttachment(Format.D32Sfloat, ImageAspectFlags.DepthBit, Size, ImageUsageFlags.TransientAttachmentBit), image => image.Dispose());
 
 		NormalAttachment = ReCreate.InDevice.Auto(() =>
-			FrameGraph.CreateAttachment(Format.R16G16B16A16Sfloat, ImageAspectFlags.ColorBit, Size), image => image.Dispose());
+			FrameGraph.CreateAttachment(Format.R16G16B16A16Sfloat, ImageAspectFlags.ColorBit, Size, ImageUsageFlags.TransientAttachmentBit), image => image.Dispose());
 
 		PositionAttachment = ReCreate.InDevice.Auto(() =>
-			FrameGraph.CreateAttachment(Format.R16G16B16A16Sfloat, ImageAspectFlags.ColorBit, Size), image => image.Dispose());
+			FrameGraph.CreateAttachment(Format.R16G16B16A16Sfloat, ImageAspectFlags.ColorBit, Size, ImageUsageFlags.TransientAttachmentBit), image => image.Dispose());
 
 		FragCoordsAttachment = ReCreate.InDevice.Auto(() =>
-			FrameGraph.CreateAttachment(Format.R16G16B16A16Sfloat, ImageAspectFlags.ColorBit, Size), image => image.Dispose());
+			FrameGraph.CreateAttachment(Format.R16G16B16A16Sfloat, ImageAspectFlags.ColorBit, Size, ImageUsageFlags.TransientAttachmentBit), image => image.Dispose());
 
 		MaterialAttachment = ReCreate.InDevice.Auto(() =>
-			FrameGraph.CreateAttachment(Format.R32G32B32A32Uint, ImageAspectFlags.ColorBit, Size), image => image.Dispose());
+			FrameGraph.CreateAttachment(Format.R32G32B32A32Uint, ImageAspectFlags.ColorBit, Size, ImageUsageFlags.TransientAttachmentBit), image => image.Dispose());
 
 		RenderPass = ReCreate.InDevice.Auto(() => CreateRenderPass(), pass => pass.Dispose());
 		Framebuffer = ReCreate.InDevice.Auto(() => CreateFramebuffer(), framebuffer => framebuffer.Dispose());
@@ -261,7 +261,7 @@ public unsafe class Deferred3DRenderer : RenderChain
 			StencilStoreOp = AttachmentStoreOp.DontCare
 		};
 
-		// Positions
+		// FragCoords
 		attachmentDescriptions[4] = new AttachmentDescription2
 		{
 			SType = StructureType.AttachmentDescription2,
@@ -301,7 +301,7 @@ public unsafe class Deferred3DRenderer : RenderChain
 		{
 			SType = StructureType.AttachmentReference2,
 			Attachment = 1,
-			Layout = ImageLayout.AttachmentOptimal,
+			Layout = ImageLayout.DepthAttachmentOptimal,
 			AspectMask = ImageAspectFlags.DepthBit
 		};
 
@@ -405,17 +405,52 @@ public unsafe class Deferred3DRenderer : RenderChain
 		int subpassDependencyCount = 1;
 		var subpassDependencies = stackalloc SubpassDependency2[subpassDependencyCount];
 
+		// subpassDependencies[0] = new SubpassDependency2
+		// {
+		// 	SType = StructureType.SubpassDependency2,
+		// 	SrcSubpass = Vk.SubpassExternal,
+		// 	DstSubpass = 0,
+		// 	SrcStageMask = PipelineStageFlags.EarlyFragmentTestsBit | PipelineStageFlags.LateFragmentTestsBit,
+		// 	DstStageMask = PipelineStageFlags.EarlyFragmentTestsBit | PipelineStageFlags.LateFragmentTestsBit,
+		// 	SrcAccessMask = AccessFlags.DepthStencilAttachmentReadBit,
+		// 	DstAccessMask = AccessFlags.DepthStencilAttachmentReadBit | AccessFlags.DepthStencilAttachmentWriteBit,
+		// 	DependencyFlags = DependencyFlags.ByRegionBit
+		// };
+		// subpassDependencies[1] = new SubpassDependency2
+		// {
+		// 	SType = StructureType.SubpassDependency2,
+		// 	SrcSubpass = Vk.SubpassExternal,
+		// 	DstSubpass = 0,
+		// 	SrcStageMask = PipelineStageFlags.BottomOfPipeBit,
+		// 	DstStageMask = PipelineStageFlags.ColorAttachmentOutputBit,
+		// 	SrcAccessMask = AccessFlags.MemoryReadBit,
+		// 	DstAccessMask = AccessFlags.ColorAttachmentReadBit | AccessFlags.ColorAttachmentWriteBit,
+		// 	DependencyFlags = DependencyFlags.ByRegionBit
+		// };
+
 		subpassDependencies[0] = new SubpassDependency2
 		{
 			SType = StructureType.SubpassDependency2,
 			SrcSubpass = 0,
 			DstSubpass = 1,
 			SrcStageMask = PipelineStageFlags.ColorAttachmentOutputBit,
-			DstStageMask = PipelineStageFlags.FragmentShaderBit,
-			SrcAccessMask = AccessFlags.ColorAttachmentWriteBit,
-			DstAccessMask = AccessFlags.ShaderReadBit,
+			DstStageMask = PipelineStageFlags.FragmentShaderBit | PipelineStageFlags.ColorAttachmentOutputBit,
+			SrcAccessMask = AccessFlags.ColorAttachmentReadBit | AccessFlags.ColorAttachmentWriteBit,
+			DstAccessMask = AccessFlags.ColorAttachmentWriteBit | AccessFlags.InputAttachmentReadBit,
 			DependencyFlags = DependencyFlags.ByRegionBit
 		};
+
+		// subpassDependencies[3] = new SubpassDependency2
+		// {
+		// 	SType = StructureType.SubpassDependency2,
+		// 	SrcSubpass = 1,
+		// 	DstSubpass = Vk.SubpassExternal,
+		// 	SrcStageMask = PipelineStageFlags.ColorAttachmentOutputBit,
+		// 	DstStageMask = PipelineStageFlags.BottomOfPipeBit,
+		// 	SrcAccessMask = AccessFlags.ColorAttachmentWriteBit,
+		// 	DstAccessMask = AccessFlags.MemoryReadBit,
+		// 	DependencyFlags = DependencyFlags.ByRegionBit
+		// };
 
 		var renderPassInfo2 = new RenderPassCreateInfo2
 		{

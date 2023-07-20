@@ -125,7 +125,7 @@ public static unsafe class FrameGraph
 		return list;
 	}
 
-	public static VulkanImage2 CreateAttachment(Format format, ImageAspectFlags aspectFlags, Vector2<uint> size, ImageUsageFlags usageFlags = 0)
+	public static VulkanImage2 CreateAttachment(Format format, ImageAspectFlags aspectFlags, Vector2<uint> size, ImageUsageFlags usageFlags = 0, VmaMemoryUsage memoryUsage = VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY)
 	{
 		if ((aspectFlags & ImageAspectFlags.ColorBit) != 0)
 		{
@@ -159,7 +159,7 @@ public static unsafe class FrameGraph
 
 		var allocationInfo = new VmaAllocationCreateInfo
 		{
-			usage = VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY
+			usage = memoryUsage
 		};
 
 		Check((Result) vmaCreateImage(Context.VmaAllocator, ref imageCreateInfo, ref allocationInfo, out ulong imageHandle, out var allocation, IntPtr.Zero),
