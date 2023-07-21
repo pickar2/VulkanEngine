@@ -1,5 +1,4 @@
-﻿
-using NullGuard;
+﻿using NullGuard;
 
 [assembly: NullGuard(ValidationFlags.All)]
 
