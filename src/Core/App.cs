@@ -21,7 +21,6 @@ public static class App
 	// Folders
 	internal static readonly string AppFolderPath = Path.Combine(Details.DataPath, Details.AppName);
 
-
 	static App() => Logger.Info($"{Details.AppName}: {Details.Version}, {Details.GitLastCommitHash}");
 
 	public readonly record struct Config

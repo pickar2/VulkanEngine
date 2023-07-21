@@ -1,0 +1,5 @@
+﻿identifier=projection-matrix
+data_size=64
+glsl_file=projection_matrix_gdata.glsl
+csharp_file=ProjectionMatrixStruct.cs
+csharp_struct=VulkanRenderer.Shaders.Generated.ProjectionMatrixStruct

@@ -7,6 +7,7 @@ using Core.UI;
 using Core.Vulkan;
 using Core.Window;
 using NullGuard;
+using Spectre.Console;
 
 [assembly: NullGuard(ValidationFlags.All)]
 
@@ -14,10 +15,21 @@ namespace Core;
 
 internal static class Program
 {
-	private static void Main()
+	private static void Main(string[] args)
 	{
 		Console.OutputEncoding = Encoding.UTF8;
+		try
+		{
+			Run();
+		}
+		catch (Exception ex)
+		{
+			AnsiConsole.WriteException(ex, ExceptionFormats.ShortenEverything);
+		}
+	}
 
+	private static void Run()
+	{
 		var fullSw = new Stopwatch();
 		fullSw.Start();
 

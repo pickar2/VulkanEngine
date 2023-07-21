@@ -69,14 +69,14 @@ public class VoxelCamera
 
 	private void Look(Vector2<int> newPos, Vector2<int> motion, MouseButton button)
 	{
-		if (GeneralRenderer.Root.Children[0].IsPaused) return;
+		if (GeneralRenderer.VoxelRenderer.IsPaused) return;
 
 		MoveDirection(motion.X * MouseSensitivity, motion.Y * MouseSensitivity, 0);
 	}
 
 	private void Move()
 	{
-		if (GeneralRenderer.Root.Children[0].IsPaused) return;
+		if (GeneralRenderer.VoxelRenderer.IsPaused) return;
 
 		double speedMultiplier = DefaultSpeedMultiplier;
 		if (UiManager.InputContext.KeyboardInputHandler.IsKeyPressed(SDL.SDL_Keycode.SDLK_LCTRL))

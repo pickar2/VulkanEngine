@@ -21,6 +21,9 @@ layout(location = 4) out vec3 outPos;
 layout(location = 5) out vec3 outNormal;
 layout(location = 6) out vec2 outUV;
 
+#include "Default/constants.glsl"
+#include "Generated/global_data_includes.glsl"
+
 void main() {
 	outModelId = inModelId;
 	outMaterialOffset = inMaterialOffset;
@@ -31,5 +34,5 @@ void main() {
 	outNormal = inNormal;
 	outUV = inUV;
 
-	gl_Position = vec4(inPos, 1.0);
+	gl_Position = ortho * proj * vec4(inPos, 1.0);
 }

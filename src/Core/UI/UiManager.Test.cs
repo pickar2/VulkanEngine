@@ -100,22 +100,22 @@ public static partial class UiManager
 					voxelOut.FragMaterial.GetMemPtr<TextureMaterialData>()->TextureId = (int) TextureManager.GetTextureId("VoxelOutput");
 					voxelOut.FragMaterial.MarkForGPUUpdate();
 
-					var label = new Label(UiContext);
-					label.OffsetZ = 1000;
-					label.Color = Color.Neutral950;
-					label.MarginLT = (5, 5);
-					MainRoot.AddChild(label);
+					var voxelLabel = new Label(UiContext);
+					voxelLabel.OffsetZ = 1000;
+					voxelLabel.Color = Color.Neutral950;
+					voxelLabel.MarginLT = (5, 5);
+					MainRoot.AddChild(voxelLabel);
 
-					var camera = GeneralRenderer.VoxelRenderer.Camera;
+					var voxelCamera = GeneralRenderer.VoxelRenderer.Camera;
 
-					void UpdateLabelText()
+					void UpdateVoxelLabelText()
 					{
-						var pos = camera.Position + (camera.ChunkPos * VoxelChunk.ChunkSize);
+						var pos = voxelCamera.Position + (voxelCamera.ChunkPos * VoxelChunk.ChunkSize);
 						// ReSharper disable once AccessToDisposedClosure
-						label.Text = $"({Maths.FixedPrecision(pos.X, 2)}, {Maths.FixedPrecision(pos.Y, 2)}, {Maths.FixedPrecision(pos.Z, 2)})";
+						voxelLabel.Text = $"({Maths.FixedPrecision(pos.X, 2)}, {Maths.FixedPrecision(pos.Y, 2)}, {Maths.FixedPrecision(pos.Z, 2)})";
 					}
 
-					camera.OnPositionUpdate += UpdateLabelText;
+					voxelCamera.OnPositionUpdate += UpdateVoxelLabelText;
 
 					MainRoot.AddChild(voxelOut);
 					GeneralRenderer.VoxelRenderer.IsPaused = false;
@@ -124,11 +124,11 @@ public static partial class UiManager
 					{
 						GeneralRenderer.VoxelRenderer.IsPaused = true;
 
-						camera.OnPositionUpdate -= UpdateLabelText;
+						voxelCamera.OnPositionUpdate -= UpdateVoxelLabelText;
 						MainRoot.RemoveChild(voxelOut);
 						voxelOut.Dispose();
-						MainRoot.RemoveChild(label);
-						label.Dispose();
+						MainRoot.RemoveChild(voxelLabel);
+						voxelLabel.Dispose();
 					};
 					break;
 				case Showcase.DeferredRenderer:
@@ -144,6 +144,24 @@ public static partial class UiManager
 					};
 					deferredOut.FragMaterial.GetMemPtr<TextureMaterialData>()->TextureId = (int) TextureManager.GetTextureId("DeferredOutput");
 					deferredOut.FragMaterial.MarkForGPUUpdate();
+
+					var deferredLabel = new Label(UiContext);
+					deferredLabel.OffsetZ = 1000;
+					deferredLabel.Color = Color.Neutral950;
+					deferredLabel.MarginLT = (5, 5);
+					MainRoot.AddChild(deferredLabel);
+
+					var camera = GeneralRenderer.Deferred3DRenderer.Camera;
+
+					void UpdateDeferredLabelText()
+					{
+						var pos = camera.Position;
+						// ReSharper disable once AccessToDisposedClosure
+						deferredLabel.Text = $"({Maths.FixedPrecision(pos.X, 2)}, {Maths.FixedPrecision(pos.Y, 2)}, {Maths.FixedPrecision(pos.Z, 2)})";
+					}
+
+					camera.OnPositionUpdate += UpdateDeferredLabelText;
+
 					MainRoot.AddChild(deferredOut);
 
 					Deferred3DRenderer.IsPaused = false;
@@ -151,8 +169,12 @@ public static partial class UiManager
 					disposePrevious = () =>
 					{
 						Deferred3DRenderer.IsPaused = true;
+
+						camera.OnPositionUpdate -= UpdateDeferredLabelText;
 						MainRoot.RemoveChild(deferredOut);
 						deferredOut.Dispose();
+						MainRoot.RemoveChild(deferredLabel);
+						deferredLabel.Dispose();
 					};
 
 					break;

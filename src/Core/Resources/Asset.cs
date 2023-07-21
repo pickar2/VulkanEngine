@@ -14,10 +14,10 @@ public class Asset
 	public required byte[] Bytes { get; init; }
 }
 
-public struct OffsetAndSize
+public readonly struct OffsetAndSize
 {
-	public int Offset;
-	public int Size;
+	public readonly int Offset;
+	public readonly int Size;
 
 	public OffsetAndSize(int offset, int size)
 	{

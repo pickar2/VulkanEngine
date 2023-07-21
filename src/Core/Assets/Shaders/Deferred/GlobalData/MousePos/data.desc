@@ -1,0 +1,5 @@
+﻿identifier=mouse-position
+data_size=8
+glsl_file=mouse_pos_gdata.glsl
+csharp_file=Vec2I.cs
+csharp_struct=VulkanRenderer.Shaders.Generated.Vec2I

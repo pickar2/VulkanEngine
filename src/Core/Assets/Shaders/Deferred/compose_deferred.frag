@@ -6,10 +6,12 @@
 #include "Default/constants.glsl"
 #include "Default/structs.glsl"
 
-layout (input_attachment_index = 0, binding = 0) uniform subpassInput samplerPosition;
-layout (input_attachment_index = 1, binding = 1) uniform subpassInput samplerNormal;
-layout (input_attachment_index = 2, binding = 2) uniform subpassInput samplerFragCoord;
-layout (input_attachment_index = 3, binding = 3) uniform usubpassInput samplerMaterial;
+#include "Generated/global_data_includes.glsl"
+
+layout (set = 1, input_attachment_index = 0, binding = 0) uniform subpassInput samplerPosition;
+layout (set = 1, input_attachment_index = 1, binding = 1) uniform subpassInput samplerNormal;
+layout (set = 1, input_attachment_index = 2, binding = 2) uniform subpassInput samplerFragCoord;
+layout (set = 1, input_attachment_index = 3, binding = 3) uniform usubpassInput samplerMaterial;
 
 layout (location = 0) in vec2 inUV;
 
@@ -49,7 +51,8 @@ void main() {
 	matData.modelId = material.x;
 
 	matData.vertexMaterialType = vertMat;
-	matData.fragmentMaterialType = fragMat * (int(sin(inUV.y * 100) * cos(fragData.fragCoord.x * 10) + 2) % 2 + 1);
+//	matData.fragmentMaterialType = fragMat * (int(sin(inUV.y * 100) * cos(fragData.fragCoord.x * 10) + 2) % 2 + 1);
+	matData.fragmentMaterialType = fragMat;
 
 	matData.vertexDataIndex = material.z;
 	matData.fragmentDataIndex = material.w;

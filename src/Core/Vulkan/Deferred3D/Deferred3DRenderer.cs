@@ -1,11 +1,22 @@
-﻿using Core.Native.Shaderc;
+﻿using System;
+using System.Buffers;
+using System.IO;
+using System.Numerics;
+using Core.Native.Shaderc;
+using Core.Resources;
+using Core.TemporaryMath;
 using Core.UI;
+using Core.UI.Materials.Fragment;
+using Core.Utils;
 using Core.Vulkan.Api;
 using Core.Vulkan.Renderers;
 using Core.Vulkan.Utility;
+using Silk.NET.Assimp;
+using Silk.NET.Maths;
 using Silk.NET.Vulkan;
 using SimpleMath.Vectors;
-using Color = System.Drawing.Color;
+using File = System.IO.File;
+using Vector3 = System.Numerics.Vector3;
 
 namespace Core.Vulkan.Deferred3D;
 
@@ -37,6 +48,8 @@ public unsafe class Deferred3DRenderer : RenderChain
 
 	private readonly MaterialManager _materialManager;
 	private readonly GlobalDataManager _globalDataManager;
+
+	public readonly DeferredCamera Camera = new();
 
 	public Deferred3DRenderer(Vector2<uint> size, string name) : base(name)
 	{
@@ -82,10 +95,10 @@ public unsafe class Deferred3DRenderer : RenderChain
 		UpdateComposeDescriptorSet();
 		Context.DeviceEvents.AfterCreate += () => UpdateComposeDescriptorSet();
 
-		_fillGBuffersPipelineLayout = ReCreate.InDevice.Auto(() => CreatePipelineLayout(), layout => layout.Dispose());
+		_fillGBuffersPipelineLayout = ReCreate.InDevice.Auto(() => CreatePipelineLayout(_globalDataManager.DescriptorSetLayout), layout => layout.Dispose());
 		_deferredComposePipelineLayout =
 			ReCreate.InDevice.Auto(
-				() => CreatePipelineLayout(_composeAttachmentsLayout, TextureManager.DescriptorSetLayout, _materialManager.VertexDescriptorSetLayout,
+				() => CreatePipelineLayout(_globalDataManager.DescriptorSetLayout, _composeAttachmentsLayout, TextureManager.DescriptorSetLayout, _materialManager.VertexDescriptorSetLayout,
 					_materialManager.FragmentDescriptorSetLayout),
 				layout => layout.Dispose());
 
@@ -93,15 +106,65 @@ public unsafe class Deferred3DRenderer : RenderChain
 		_deferredComposePipeline = CreateDeferredComposePipeline();
 
 		var colorMat = _materialManager.GetFactory("color_material").Create();
-		*colorMat.GetMemPtr<int>() = Color.BlueViolet.ToArgb();
+		*colorMat.GetMemPtr<Color>() = Color.Neutral200;
 		colorMat.MarkForGPUUpdate();
 
 		var coolMat = _materialManager.GetFactory("cool_material").Create();
-		*coolMat.GetMemPtr<int>() = Color.Black.ToArgb();
-		*coolMat.GetMemPtr<int>() = Color.Red.ToArgb();
+		coolMat.GetMemPtr<CoolMaterialData>()->Color1 = Color.Black;
+		coolMat.GetMemPtr<CoolMaterialData>()->Color2 = Color.Red700;
 		coolMat.MarkForGPUUpdate();
 
-		var triangle = StaticMesh.Triangle((ushort) colorMat.MaterialId, (uint) colorMat.VulkanDataIndex);
+		// var triangle = StaticMesh.Triangle((ushort) colorMat.MaterialId, (uint) colorMat.VulkanDataIndex);
+
+		using var dragonMeshFile = File.Open("./Assets/Models/xyzrgb_dragon.obj", FileMode.Open);
+		
+		byte[] byteArray = ArrayPool<byte>.Shared.Rent((int) dragonMeshFile.Length);
+		int read = dragonMeshFile.Read(byteArray);
+		if (read != dragonMeshFile.Length) throw new Exception("Read less bytes than expected.");
+
+		var dragonAssimpScene = Assimp.GetApi().ImportFileFromMemory(byteArray, (uint) byteArray.Length, 0, string.Empty);
+		ArrayPool<byte>.Shared.Return(byteArray);
+
+		var assimpMesh = dragonAssimpScene->MMeshes[0];
+		var vertices = new DeferredVertex[assimpMesh->MNumVertices];
+		for (int i = 0; i < vertices.Length; i++)
+		{
+			var vert = assimpMesh->MVertices[i];
+			// var normal = assimpMesh->MNormals[i];
+			vertices[i] = new DeferredVertex(0, (ushort) colorMat.MaterialId, 0, (uint) colorMat.VulkanDataIndex,
+				new Vector3<float>(vert.X, vert.Y, vert.Z),
+				new Vector3<float>(0,0,0),
+				new Vector2<float>(0, 1));
+		}
+		var indexCount = 0u;
+		for (int i = 0; i < assimpMesh->MNumFaces; i++) indexCount += assimpMesh->MFaces[i].MNumIndices;
+		var indices = new uint[indexCount];
+		int index = 0;
+		for (int i = 0; i < assimpMesh->MNumFaces; i++)
+		{
+			var face = assimpMesh->MFaces[i];
+			for (int j = 0; j < face.MNumIndices; j++) 
+				indices[index+j] = face.MIndices[j];
+			
+			int index1 = (int) face.MIndices[0];
+			int index2 = (int) face.MIndices[1];
+			int index3 = (int) face.MIndices[2];
+
+			var v1 = vertices[index1].Position;
+			var v2 = vertices[index2].Position;
+			var v3 = vertices[index3].Position;
+			var edge2 = v3.Sub(v1);
+			var normal = v2.Sub(v1).Cross(edge2).Normalized();
+
+			vertices[index1].Normal = normal;
+			vertices[index2].Normal = normal;
+			vertices[index3].Normal = normal;
+
+			index += (int) face.MNumIndices;
+		}
+		Assimp.GetApi().ReleaseImport(dragonAssimpScene);
+		
+		var dragonMesh = new StaticMesh(vertices, indices);
 
 		void AddMeshes()
 		{
@@ -109,16 +172,21 @@ public unsafe class Deferred3DRenderer : RenderChain
 			// Scene.AddMesh(triangle);
 			// Scene.AddMesh(triangle);
 			// Scene.AddMesh(triangle);
-			Scene.AddMesh(StaticMesh.Triangle((ushort) colorMat.MaterialId, 1));
+			Scene.AddMesh(dragonMesh);
 			Scene.UpdateBuffers();
 		}
 
 		AddMeshes();
 		Context.DeviceEvents.AfterCreate += () => AddMeshes();
+		
+		Camera.SetPosition(8, 8, 120);
 
 		RenderCommandBuffers += (FrameInfo frameInfo) =>
 		{
+			UpdateGlobalData();
+
 			_materialManager.AfterUpdate();
+			_globalDataManager.AfterUpdate();
 			return CreateCommandBuffer(frameInfo);
 		};
 
@@ -130,6 +198,27 @@ public unsafe class Deferred3DRenderer : RenderChain
 			ExecuteOnce.AtCurrentFrameStart(() => semaphore.Dispose());
 			return new SemaphoreWithStage(semaphore, PipelineStageFlags.TransferBit);
 		};
+	}
+
+	private void UpdateGlobalData()
+	{
+		float aspect = (float) Context.State.WindowSize.Value.X / Context.State.WindowSize.Value.Y;
+
+		var yawPitchRollRadians = new Vector3<double>(Camera.YawPitchRoll.X.ToRadians(), Camera.YawPitchRoll.Y.ToRadians(), Camera.YawPitchRoll.Z.ToRadians())
+			.Cast<double, float>();
+		var cameraWorldPos = Camera.Position;
+
+		var view = Matrix4x4.Identity;
+		view *= Matrix4x4.CreateTranslation((float) -cameraWorldPos.X, (float) -cameraWorldPos.Y, (float) -cameraWorldPos.Z);
+		view *= Matrix4X4<float>.Identity.RotateXYZ(yawPitchRollRadians.Y, yawPitchRollRadians.X, yawPitchRollRadians.Z).ToSystem();
+
+		var proj = Matrix4X4<float>.Identity.SetPerspective(90f.ToRadians(), aspect, 0.01f, 1000.0f);
+		proj.M22 *= -1;
+
+		*_globalDataManager.ProjectionMatrixHolder.Get<Matrix4X4<float>>() = view.ToGeneric();
+		*_globalDataManager.OrthoMatrixHolder.Get<Matrix4X4<float>>() = proj;
+		*_globalDataManager.FrameIndexHolder.Get<int>() = Context.FrameIndex;
+		*_globalDataManager.MousePositionHolder.Get<Vector2<int>>() = UiManager.InputContext.MouseInputHandler.MousePos;
 	}
 
 	private CommandBuffer CreateCommandBuffer(FrameInfo frameInfo)
@@ -159,6 +248,7 @@ public unsafe class Deferred3DRenderer : RenderChain
 		Debug.BeginCmdLabel(cmd, $"FIll G-Buffers");
 
 		cmd.BindGraphicsPipeline(_fillGBuffersPipeline);
+		cmd.BindGraphicsDescriptorSets(_fillGBuffersPipelineLayout, 0, 1, _globalDataManager.DescriptorSet);
 		cmd.BindVertexBuffer(0, Scene.VertexBuffer.Value.Buffer);
 		cmd.BindVertexBuffer(1, Scene.ModelBuffer.Value.Buffer);
 		Context.Vk.CmdBindIndexBuffer(cmd, Scene.IndexBuffer.Value.Buffer, 0, IndexType.Uint32);
@@ -171,12 +261,12 @@ public unsafe class Deferred3DRenderer : RenderChain
 		Context.Vk.CmdNextSubpass(cmd, SubpassContents.Inline);
 
 		cmd.BindGraphicsPipeline(_deferredComposePipeline);
-		cmd.BindGraphicsDescriptorSets(_deferredComposePipelineLayout, 0, 1, _composeAttachmentsSet);
-		cmd.BindGraphicsDescriptorSets(_deferredComposePipelineLayout, 1, 1, TextureManager.DescriptorSet);
-		cmd.BindGraphicsDescriptorSets(_deferredComposePipelineLayout, 2, 1, _materialManager.VertexDescriptorSet);
-		cmd.BindGraphicsDescriptorSets(_deferredComposePipelineLayout, 3, 1, _materialManager.FragmentDescriptorSet);
-		// cmd.BindGraphicsDescriptorSets(_deferredComposePipelineLayout, 4, 1, Scene.);
-		// cmd.BindGraphicsDescriptorSets(_deferredComposePipelineLayout, 5, 1, _globalDataManager.DescriptorSet);
+		cmd.BindGraphicsDescriptorSets(_deferredComposePipelineLayout, 0, 1, _globalDataManager.DescriptorSet);
+		cmd.BindGraphicsDescriptorSets(_deferredComposePipelineLayout, 1, 1, _composeAttachmentsSet);
+		cmd.BindGraphicsDescriptorSets(_deferredComposePipelineLayout, 2, 1, TextureManager.DescriptorSet);
+		cmd.BindGraphicsDescriptorSets(_deferredComposePipelineLayout, 3, 1, _materialManager.VertexDescriptorSet);
+		cmd.BindGraphicsDescriptorSets(_deferredComposePipelineLayout, 4, 1, _materialManager.FragmentDescriptorSet);
+		// cmd.BindGraphicsDescriptorSets(_deferredComposePipelineLayout, 5, 1, Scene);
 
 		cmd.Draw(3, 1, 0, 0);
 
