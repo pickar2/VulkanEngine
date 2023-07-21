@@ -1,5 +1,4 @@
 ﻿using System;
-using Core.UI.Controls.Panels;
 using Core.UI.Reactive;
 using SimpleMath.Vectors;
 

@@ -56,19 +56,19 @@ void main() {
 
 	fragmentSwitch(fragData, matData);
 
-//	if (inUV.x < 0.5) {
-//		if (inUV.y < 0.5) { // top left
-//			outColor.xyz = subpassPosition.xyz;
-//		} else { // bottom left
-//			outColor.xyz = subpassNormal.xyz;
-//		}
-//	} else {
-//		if (inUV.y < 0.5) { // top right
-//			outColor.xyz = vec3(vertMat / 255.0, matData.fragmentMaterialType / 255.0, matData.modelId / 2.0) * 100;
-//		} else { // bottom right
-//			// do nothing, draw as intended
-//		}
-//	}
+	//	if (inUV.x < 0.5) {
+	//		if (inUV.y < 0.5) { // top left
+	//			outColor.xyz = subpassPosition.xyz;
+	//		} else { // bottom left
+	//			outColor.xyz = subpassNormal.xyz;
+	//		}
+	//	} else {
+	//		if (inUV.y < 0.5) { // top right
+	//			outColor.xyz = vec3(vertMat / 255.0, matData.fragmentMaterialType / 255.0, matData.modelId / 2.0) * 100;
+	//		} else { // bottom right
+	//			// do nothing, draw as intended
+	//		}
+	//	}
 
 	outColor.a = 1.0;
 }

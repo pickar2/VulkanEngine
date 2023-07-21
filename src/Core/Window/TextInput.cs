@@ -216,12 +216,10 @@ public static partial class TextInput
 		SDL_SetTextInputRect(ref rect);
 	}
 
-	public static unsafe bool ProcessEvent(SDL_TextEditingEvent editingEvent)
-	{
+	public static unsafe bool ProcessEvent(SDL_TextEditingEvent editingEvent) =>
 		// if (!IsEditing) return;
 		// SetText(CurrentText + UTF8_ToManaged((nint) editingEvent.text));
-		return false;
-	}
+		false;
 
 	public static unsafe bool UpdateText(SDL_TextInputEvent inputEvent)
 	{

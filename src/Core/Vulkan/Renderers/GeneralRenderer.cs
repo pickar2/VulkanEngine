@@ -243,7 +243,7 @@ public abstract unsafe class RenderChain : IDisposable
 			PCommandBuffers = pCommandBuffers
 		};
 
-		// App.Logger.Info.Message($"{Name} : {waitSemaphoreCount} : {string.Join(", ", new Span<SemaphoreWithStage>(pWaitSemaphores, waitSemaphoreCount).ToArray().Select(s => s.Semaphore.Handle))}");
+		// Logger.Info($"{Name} : {waitSemaphoreCount} : {string.Join(", ", new Span<SemaphoreWithStage>(pWaitSemaphores, waitSemaphoreCount).ToArray().Select(s => s.Semaphore.Handle))}");
 
 		Context.GraphicsQueue.Submit(submitInfo, queueFence);
 

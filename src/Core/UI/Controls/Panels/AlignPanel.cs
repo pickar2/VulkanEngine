@@ -1,4 +1,5 @@
 ﻿using Core.UI.Reactive;
+using NetEscapades.EnumGenerators;
 using SimpleMath.Vectors;
 
 namespace Core.UI.Controls.Panels;
@@ -52,16 +53,18 @@ public class AlignPanel : UiControl
 	public AlignPanel(UiContext context) : base(context) { }
 }
 
-public static class AlignExtensions {
+public static class AlignExtensions
+{
 	public static AlignPanel WrapInAlignPanel(this UiControl control, Alignment alignment = Alignment.TopLeft)
 	{
 		var align = new AlignPanel(control.Context) {Alignment = alignment};
 		align.AddChild(control);
 
 		return align;
-	} 
+	}
 }
 
+[EnumExtensions]
 public enum Alignment
 {
 	TopLeft, TopCenter, TopRight,

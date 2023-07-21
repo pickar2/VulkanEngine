@@ -5,11 +5,8 @@ using System.Text;
 using System.Threading;
 using Core.UI;
 using Core.Vulkan;
-using Core.Vulkan.Api;
 using Core.Window;
 using NullGuard;
-using SDL2;
-using Silk.NET.Vulkan;
 
 [assembly: NullGuard(ValidationFlags.All)]
 
@@ -26,10 +23,10 @@ internal static class Program
 
 		var stopwatch = new Stopwatch();
 		stopwatch.Start();
-		string appName = App.Details.AppName;
+		string appName = Details.AppName;
 		stopwatch.Stop();
-		App.Logger.Info.Message($"START");
-		App.Logger.Info.Message($"Version of {appName} is {App.Details.Version}. Ticks: {stopwatch.ElapsedTicks}. Time: {stopwatch.ElapsedMilliseconds}ms.");
+		Logger.Info($"START");
+		Logger.Info($"Version of {appName} is {Details.Version}. Ticks: {stopwatch.ElapsedTicks}. Time: {stopwatch.ElapsedMilliseconds}ms.");
 
 		bool windowReady = false;
 		var windowThread = new Thread(() =>
@@ -90,8 +87,6 @@ internal static class Program
 
 		Context.Window.Dispose();
 
-		SpinWait.SpinUntil(() => !App.Get<DevConsoleRegistry>().IsAlive);
-		App.Get<ConfigRegistry>().SaveStates();
-		App.Logger.Info.Message($"END");
+		Logger.Info($"END");
 	}
 }

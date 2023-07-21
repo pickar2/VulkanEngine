@@ -277,7 +277,7 @@ RayResult RayMarchVoxelChunk(vec3 rayPos, vec3 rayDir)
 		//			break;
 		//		}
 
-		int chunkIndex = chunkIndices[Morton(ivec3(0,0,0))];
+		int chunkIndex = chunkIndices[Morton(ivec3(0, 0, 0))];
 		int voxelIndex = GetVoxelIndex(res.cell & (CHUNK_SIZE - 1));
 		uint voxelMask = GetVoxelMask(0, voxelIndex);
 
@@ -337,31 +337,31 @@ void main() {
 	vec3 sideUv = fract(hitPos);
 
 	float spread = 0.05;
-	outColor.xyz = vec3(result.mask) * 0.5 + 0.4; // draw normals
-//	outColor.xyz = mix(vec3(0), vec3(not(result.mask)), smoothstep(-spread, 1 + spread, sideUv + spread * 2));
-	
-//	if (result.mask.x) {
-//		outColor.xyz = vec3(0.5);
-//	}
-//	if (result.mask.y) {
-//		outColor.xyz = vec3(1.0);
-//	}
-//	if (result.mask.z) {
-//		outColor.xyz = vec3(0.75);
-//	}
+	outColor.xyz = vec3(result.mask) * 0.5 + 0.4;// draw normals
+	//	outColor.xyz = mix(vec3(0), vec3(not(result.mask)), smoothstep(-spread, 1 + spread, sideUv + spread * 2));
+
+	//	if (result.mask.x) {
+	//		outColor.xyz = vec3(0.5);
+	//	}
+	//	if (result.mask.y) {
+	//		outColor.xyz = vec3(1.0);
+	//	}
+	//	if (result.mask.z) {
+	//		outColor.xyz = vec3(0.75);
+	//	}
 	outColor.xyz *= vec3(0.5 + 0.5 * Checker(rayPos + normalize(rayDir) * result.dist));
 
-//	VoxelType voxelType = voxelTypes[int(result.voxel.voxelTypeIndex)];
-//	switch (int(result.voxel.voxelMaterialType)) {
-//		case -1: break;
-//		case 0: {
-//			//			outColor.xyz = intToRGBA(result.voxel.voxelMaterialIndex).xyz;
-//			break;
-//		}
-//		case 1: {
-//			break;
-//		}
-//	}
+	//	VoxelType voxelType = voxelTypes[int(result.voxel.voxelTypeIndex)];
+	//	switch (int(result.voxel.voxelMaterialType)) {
+	//		case -1: break;
+	//		case 0: {
+	//			//			outColor.xyz = intToRGBA(result.voxel.voxelMaterialIndex).xyz;
+	//			break;
+	//		}
+	//		case 1: {
+	//			break;
+	//		}
+	//	}
 	//	if (!result.hit) outColor.a = 0.0;
 
 	//	outColor.a = 1.0;

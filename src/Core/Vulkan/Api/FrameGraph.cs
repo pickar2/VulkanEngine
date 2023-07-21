@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Core.Native.VMA;
-using Core.Registries.Entities;
 using Silk.NET.Vulkan;
 using SimpleMath.Vectors;
 using static Core.Native.VMA.VulkanMemoryAllocator;
@@ -12,8 +11,8 @@ namespace Core.Vulkan.Api;
 
 public static unsafe class FrameGraph
 {
-	public static readonly Dictionary<NamespacedName, RenderPassNode> RenderPasses = new();
-	public static readonly Dictionary<NamespacedName, ImageView> Attachments = new();
+	public static readonly Dictionary<string, RenderPassNode> RenderPasses = new();
+	public static readonly Dictionary<string, ImageView> Attachments = new();
 
 	[SuppressMessage("ReSharper", "ConvertClosureToMethodGroup")]
 	static FrameGraph()
@@ -42,7 +41,7 @@ public static unsafe class FrameGraph
 	public static void AfterSwapchainCreation()
 	{
 		// var formats = GetDepthFormats();
-		// App.Logger.Info.Message($"{string.Join(", ", formats)}");
+		// Logger.Info($"{string.Join(", ", formats)}");
 
 		// var swapchainAttachment = new VulkanImage2(Context2.);
 		var attachments = new Dictionary<string, VulkanImage2>();
@@ -53,7 +52,7 @@ public static unsafe class FrameGraph
 
 		// var maskAttachment = CreateAttachment(Format.R8Uint, ImageAspectFlags.ColorBit, Context2.State.WindowSize.Value);
 
-		// App.Logger.Info.Message($"{positionAttachment.CurrentLayout}");
+		// Logger.Info($"{positionAttachment.CurrentLayout}");
 
 		var attachmentDescriptions = new AttachmentDescription2[attachments.Count + 1];
 		attachmentDescriptions[0] = new AttachmentDescription2
@@ -125,7 +124,8 @@ public static unsafe class FrameGraph
 		return list;
 	}
 
-	public static VulkanImage2 CreateAttachment(Format format, ImageAspectFlags aspectFlags, Vector2<uint> size, ImageUsageFlags usageFlags = 0, VmaMemoryUsage memoryUsage = VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY)
+	public static VulkanImage2 CreateAttachment(Format format, ImageAspectFlags aspectFlags, Vector2<uint> size, ImageUsageFlags usageFlags = 0,
+		VmaMemoryUsage memoryUsage = VmaMemoryUsage.VMA_MEMORY_USAGE_GPU_ONLY)
 	{
 		if ((aspectFlags & ImageAspectFlags.ColorBit) != 0)
 		{
@@ -139,7 +139,7 @@ public static unsafe class FrameGraph
 
 		// if ((usageFlags & ImageUsageFlags.ColorAttachmentBit) != 0 && (usageFlags & ImageUsageFlags.DepthStencilAttachmentBit) != 0)
 		// {
-		// 	throw new ArgumentException("Attachment cannot be both color and depth/stencil.").AsExpectedException();
+		// 	throw new ArgumentException("Attachment cannot be both color and depth/stencil.");
 		// }
 
 		var imageCreateInfo = new ImageCreateInfo
@@ -162,7 +162,7 @@ public static unsafe class FrameGraph
 			usage = memoryUsage
 		};
 
-		Check((Result) vmaCreateImage(Context.VmaAllocator, ref imageCreateInfo, ref allocationInfo, out ulong imageHandle, out var allocation, IntPtr.Zero),
+		Check((Result) vmaCreateImage(Context.VmaAllocator, ref imageCreateInfo, ref allocationInfo, out ulong imageHandle, out nint allocation, IntPtr.Zero),
 			"Failed to create attachment image.");
 
 		var image = new Image(imageHandle);
@@ -235,7 +235,7 @@ public static unsafe class FrameGraph
 		return vulkanImage;
 	}
 
-	public static bool TryGetSubpass(NamespacedName renderPassName, NamespacedName subpassName, [MaybeNullWhen(false)] out SubpassNode subpassNode)
+	public static bool TryGetSubpass(string renderPassName, string subpassName, [MaybeNullWhen(false)] out SubpassNode subpassNode)
 	{
 		subpassNode = null;
 		return RenderPasses.TryGetValue(renderPassName, out var renderPass) && renderPass.Subpasses.TryGetValue(subpassName, out subpassNode);
@@ -244,8 +244,8 @@ public static unsafe class FrameGraph
 
 public unsafe class RenderPassNode
 {
-	public readonly Dictionary<NamespacedName, SubpassNode> Subpasses = new();
-	public readonly Dictionary<NamespacedName, SubpassDependencyNode> SubpassDependencies = new();
+	public readonly Dictionary<string, SubpassNode> Subpasses = new();
+	public readonly Dictionary<string, SubpassDependencyNode> SubpassDependencies = new();
 
 	public RenderPass RenderPass;
 	public RenderPassBeginInfo[] BeginInfos = Array.Empty<RenderPassBeginInfo>();
@@ -272,7 +272,7 @@ public unsafe class RenderPassNode
 
 public class SubpassNode
 {
-	public readonly HashSet<NamespacedName> UsedAttachments = new();
+	public readonly HashSet<string> UsedAttachments = new();
 }
 
 public class SubpassDependencyNode { }

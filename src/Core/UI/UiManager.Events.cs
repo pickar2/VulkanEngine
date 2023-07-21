@@ -157,7 +157,7 @@ public static partial class UiManager
 				handledStart = true;
 		}
 	}
-	
+
 	private static void HandleScroll(Vector2<float> amount)
 	{
 		foreach (var control in ControlsOnMousePos)
@@ -223,7 +223,7 @@ public static partial class UiManager
 		RemoveOnClick(control);
 		RemoveOnDrag(control);
 		// if (DraggedControls.Contains(control) && OnDragDelegates.TryGetValue(control, out var onDragDelegate))
-			// onHoverDelegate.Invoke(control, InputContext.MouseInputHandler.MousePos, HoverType.End);
+		// onHoverDelegate.Invoke(control, InputContext.MouseInputHandler.MousePos, HoverType.End);
 		RemoveOnScroll(control);
 	}
 

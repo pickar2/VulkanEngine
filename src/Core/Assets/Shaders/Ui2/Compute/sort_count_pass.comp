@@ -39,10 +39,10 @@ void main() {
 	if (gl_GlobalInvocationID.x >= count) return;
 
 	UiElementData d = data[gl_GlobalInvocationID.x];
-//	if ((d.flags & DISABLED) != ZERO) return;
+	//	if ((d.flags & DISABLED) != ZERO) return;
 
 	Pos pos = calcFullPos(d);
-	
+
 
 	//	if (pos.x + d.width < 0 || pos.y + d.height < 0 || pos.x >= width || pos.y >= height) {
 	//		data[gl_GlobalInvocationID.x].flags |= OFFSCREEN;

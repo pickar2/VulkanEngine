@@ -41,7 +41,7 @@ public class VulkanState
 	public readonly VulkanOption<string[]> DeviceExtensions = new(new string[]
 	{
 		"VK_KHR_swapchain",
-		"VK_KHR_synchronization2", // layer needs to be precompiled and added for mobile and vulkan < 1.2
+		"VK_KHR_synchronization2" // layer needs to be precompiled and added for mobile and vulkan < 1.2
 		// "VK_KHR_shader_subgroup_uniform_control_flow",
 		// "VK_EXT_shader_subgroup_ballot"
 		// "VK_KHR_separate_depth_stencil_layouts", // was promoted to vulkan 1.2 core

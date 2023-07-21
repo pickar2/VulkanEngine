@@ -1,12 +1,10 @@
 ﻿using System;
-using System.Drawing;
 using Core.Native.Shaderc;
 using Core.UI;
 using Core.UI.Animations;
 using Core.Vulkan.Api;
 using Silk.NET.Vulkan;
 using SimpleMath.Vectors;
-using Color = Core.UI.Color;
 
 namespace Core.Vulkan.Renderers;
 

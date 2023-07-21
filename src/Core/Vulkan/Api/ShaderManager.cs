@@ -26,7 +26,7 @@ public static class ShaderManager
 
 	public static void SetVirtualShader(string name, string content)
 	{
-		if (!name.StartsWith("@")) throw new ArgumentException("Virtual shader name must start with `@`.").AsExpectedException();
+		if (!name.StartsWith("@")) throw new ArgumentException("Virtual shader name must start with `@`.");
 		VirtualShaderNameToContent[name] = content;
 		ShaderWatchers.ForceUpdate(name);
 	}
@@ -36,7 +36,7 @@ public static class ShaderManager
 
 	public static VulkanShader GetOrCreate(string path, ShaderKind shaderKind)
 	{
-		var searchPath = path.StartsWith("@") ? path : NormalizeShaderPath(path);
+		string? searchPath = path.StartsWith("@") ? path : NormalizeShaderPath(path);
 		return PathToCachedShader.TryGetValue(searchPath, out var shader) ? shader : CreateShader(path, path, shaderKind);
 	}
 

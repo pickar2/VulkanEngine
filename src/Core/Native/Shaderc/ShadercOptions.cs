@@ -318,7 +318,7 @@ public class ShadercOptions : IDisposable, ICloneable
 		opts.TryFindInclude(requestingSource, requestedSource, (IncludeType) type, out incFile, out content);
 
 		var result = new IncludeResult(incFile, content, userData.ToInt32());
-		var irPtr = Marshal.AllocHGlobal(Marshal.SizeOf<IncludeResult>());
+		nint irPtr = Marshal.AllocHGlobal(Marshal.SizeOf<IncludeResult>());
 		Marshal.StructureToPtr(result, irPtr, true);
 		return irPtr;
 	}

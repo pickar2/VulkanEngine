@@ -25,7 +25,7 @@ public partial class MaterialManager
 	public MaterialDataFactory GetFactory(string name)
 	{
 		if (!Materials.TryGetValue(name, out var factory))
-			throw new ArgumentException($"Tried to get unknown material factory `{name}`.").AsExpectedException();
+			throw new ArgumentException($"Tried to get unknown material factory `{name}`.");
 		return factory;
 	}
 
@@ -38,7 +38,7 @@ public partial class MaterialManager
 
 		string shaderKindString = lines[1].Split("=")[1].Trim();
 		if (!Enum.TryParse<ShaderKind>(shaderKindString, out var shaderKind))
-			throw new Exception($"Unknown material shader type: `{shaderKindString}`.").AsExpectedException();
+			throw new Exception($"Unknown material shader type: `{shaderKindString}`.");
 
 		int size = int.Parse(lines[2].Split("=")[1].Trim());
 

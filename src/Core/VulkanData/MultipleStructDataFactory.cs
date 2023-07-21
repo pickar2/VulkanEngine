@@ -176,7 +176,7 @@ public unsafe class MultipleStructDataFactory
 			Offset = _offset
 		};
 
-		if (!Holders.TryAdd(identifier, holder)) throw new ArgumentException("Already registered!").AsExpectedException();
+		if (!Holders.TryAdd(identifier, holder)) throw new ArgumentException("Already registered!");
 
 		_offset += size + padding;
 		Count++;

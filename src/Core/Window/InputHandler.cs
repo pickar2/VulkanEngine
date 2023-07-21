@@ -95,16 +95,14 @@ public class KeyboardInputHandler
 	private readonly Dictionary<SDL_Keycode, bool> PressedKeys = new();
 	public readonly Dictionary<SDL_Keysym, Func<bool>> KeyBinds = new();
 
-	public void AddKeyBind(Func<bool> func, SDL_Keysym keySym)
-	{
-		// if (KeyBinds.ContainsKey(keySym)) App.Logger.Debug.Message($"Overriding key {keySym.sym} {keySym.mod}");
+	public void AddKeyBind(Func<bool> func, SDL_Keysym keySym) =>
+		// if (KeyBinds.ContainsKey(keySym)) Logger.Debug($"Overriding key {keySym.sym} {keySym.mod}");
 		KeyBinds[keySym] = func;
-	}
 
 	public void AddKeyBind(Func<bool> func, SDL_Keycode keyCode)
 	{
 		var keySym = InputHandler.KeySym(keyCode).Build();
-		// if (KeyBinds.ContainsKey(keySym)) App.Logger.Debug.Message($"Overriding key {keySym.sym} {keySym.mod}");
+		// if (KeyBinds.ContainsKey(keySym)) Logger.Debug($"Overriding key {keySym.sym} {keySym.mod}");
 		KeyBinds[keySym] = func;
 	}
 
@@ -137,7 +135,7 @@ public class KeyboardInputHandler
 		keySym.mod &= ~uselessMods;
 
 		if (KeyBinds.TryGetValue(keySym, out var func)) return func();
-		// App.Logger.Debug.Message($"Failed to find keybind with mod {keySym.mod}");
+		// Logger.Debug($"Failed to find keybind with mod {keySym.mod}");
 
 		keySym.mod = 0;
 		return KeyBinds.TryGetValue(keySym, out func) && func();
@@ -258,7 +256,7 @@ public class UiInputContext : IInputContext
 
 			case SDL_EventType.SDL_WINDOWEVENT:
 			{
-				if(sdlEvent.window.windowEvent == SDL_WindowEventID.SDL_WINDOWEVENT_LEAVE)
+				if (sdlEvent.window.windowEvent == SDL_WindowEventID.SDL_WINDOWEVENT_LEAVE)
 				{
 					MouseInputHandler.MouseMotion(new SDL_MouseMotionEvent
 					{
@@ -266,6 +264,7 @@ public class UiInputContext : IInputContext
 						y = int.MinValue
 					});
 				}
+
 				return true;
 			}
 

@@ -68,7 +68,7 @@ public static unsafe partial class Context
 		var span = buffer.GetHostSpan<ulong>();
 
 		Vk.GetPhysicalDeviceProperties(PhysicalDevice, out var properties);
-		var period = properties.Limits.TimestampPeriod;
+		float period = properties.Limits.TimestampPeriod;
 
 		FrameIndex = 0;
 		IsRendering = true;
@@ -112,8 +112,8 @@ public static unsafe partial class Context
 
 		for (int i = 0; i < State.FrameOverlap.Value; i++)
 		{
-			// App.Logger.Debug.Message($"Before frame {i}: {_actionsAtFrameStart[i].Count}");
-			// App.Logger.Debug.Message($"After frame {i}: {_actionsAtFrameEnd[i].Count}");
+			// Logger.Debug($"Before frame {i}: {_actionsAtFrameStart[i].Count}");
+			// Logger.Debug($"After frame {i}: {_actionsAtFrameEnd[i].Count}");
 
 			ExecuteAndClearAtFrameStart(i);
 			ExecuteAndClearAtFrameEnd(i);
@@ -157,7 +157,7 @@ public static unsafe partial class Context
 		ExecuteAndClearAtFrameStart(FrameId);
 
 		// Thread.Sleep(1000);
-		// App.Logger.Info.Message($"\r\nTotalTimeRendering: {TotalTimeRendering}, CurrentFrameTime: {CurrentFrameTime}, " +
+		// Logger.Info($"\r\nTotalTimeRendering: {TotalTimeRendering}, CurrentFrameTime: {CurrentFrameTime}, " +
 		//                         $"NormalizedFrameTime: {NormalizedFrameTime}\r\n" +
 		//                         $"Lag: {Lag}, FrameIndex: {FrameIndex}, FrameId: {FrameId}, SwapchainImageId: {SwapchainImageId}");
 

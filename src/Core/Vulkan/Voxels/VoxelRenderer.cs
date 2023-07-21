@@ -5,13 +5,11 @@ using System.Numerics;
 using Core.Native.Shaderc;
 using Core.Native.VMA;
 using Core.TemporaryMath;
-using Core.UI;
 using Core.Utils;
 using Core.Vulkan.Api;
 using Core.Vulkan.Descriptors;
 using Core.Vulkan.Renderers;
 using Core.Vulkan.Utility;
-using SDL2;
 using Silk.NET.Maths;
 using Silk.NET.Vulkan;
 using SimpleMath.Vectors;
@@ -95,7 +93,7 @@ public unsafe class VoxelRenderer : RenderChain
 
 		Pipeline = CreatePipeline();
 
-		ulong chunkCount = (ulong) (_renderDistance * 2 + 1);
+		ulong chunkCount = (ulong) ((_renderDistance * 2) + 1);
 		chunkCount = chunkCount * chunkCount * chunkCount;
 
 		_chunkIndices = ReCreate.InDevice.Auto(
@@ -103,7 +101,7 @@ public unsafe class VoxelRenderer : RenderChain
 			buffer => buffer.Dispose());
 
 		_chunksData = ReCreate.InDevice.Auto(
-			() => new StagedVulkanBuffer((16 * chunkCount), BufferUsageFlags.StorageBufferBit),
+			() => new StagedVulkanBuffer(16 * chunkCount, BufferUsageFlags.StorageBufferBit),
 			buffer => buffer.Dispose());
 
 		_chunksVoxelData = ReCreate.InDevice.Auto(
@@ -111,7 +109,7 @@ public unsafe class VoxelRenderer : RenderChain
 			buffer => buffer.Dispose());
 
 		_chunksMaskData = ReCreate.InDevice.Auto(
-			() => new StagedVulkanBuffer(((VoxelChunk.ChunkVoxelCount / VoxelChunk.MaskCompressionLevel) * sizeof(uint) * 1),
+			() => new StagedVulkanBuffer(VoxelChunk.ChunkVoxelCount / VoxelChunk.MaskCompressionLevel * sizeof(uint) * 1,
 				BufferUsageFlags.StorageBufferBit),
 			buffer => buffer.Dispose());
 
@@ -124,7 +122,7 @@ public unsafe class VoxelRenderer : RenderChain
 			buffer => buffer.Dispose());
 
 		_indexBuffer = ReCreate.InDevice.Auto(
-			() => new StagedVulkanBuffer((ulong) ((sizeof(uint)) * 6 * 3 * chunkCount), BufferUsageFlags.IndexBufferBit),
+			() => new StagedVulkanBuffer((ulong) (sizeof(uint) * 6 * 3 * chunkCount), BufferUsageFlags.IndexBufferBit),
 			buffer => buffer.Dispose());
 
 		_indirectCommandBuffer = ReCreate.InDevice.Auto(() =>
@@ -155,7 +153,7 @@ public unsafe class VoxelRenderer : RenderChain
 			UpdateSceneData();
 
 			sw.Stop();
-			// App.Logger.Info.Message($"Full update {sw.Ms()}ms");
+			// Logger.Info($"Full update {sw.Ms()}ms");
 
 			return cmds[frameInfo.SwapchainImageId];
 		};
@@ -174,7 +172,7 @@ public unsafe class VoxelRenderer : RenderChain
 	{
 		var yawPitchRollRadians = new Vector3<double>(Camera.YawPitchRoll.X.ToRadians(), Camera.YawPitchRoll.Y.ToRadians(), Camera.YawPitchRoll.Z.ToRadians())
 			.Cast<double, float>();
-		var cameraWorldPos = Camera.Position + Camera.ChunkPos * VoxelChunk.ChunkSize;
+		var cameraWorldPos = Camera.Position + (Camera.ChunkPos * VoxelChunk.ChunkSize);
 
 		var view = Matrix4x4.Identity;
 		view *= Matrix4x4.CreateTranslation((float) -cameraWorldPos.X, (float) -cameraWorldPos.Y, (float) -cameraWorldPos.Z);
@@ -201,9 +199,9 @@ public unsafe class VoxelRenderer : RenderChain
 		var sw = new Stopwatch();
 		sw.Start();
 
-		uint chunkCountX = (uint) (_renderDistance * 2 + 1);
+		uint chunkCountX = (uint) ((_renderDistance * 2) + 1);
 		uint chunkCountY = 4;
-		uint chunkCountZ = (uint) (_renderDistance * 2 + 1);
+		uint chunkCountZ = (uint) ((_renderDistance * 2) + 1);
 
 		// var cmd = CommandBuffers.OneTimeCompute("Generate voxel index buffer");
 		//
@@ -247,10 +245,10 @@ public unsafe class VoxelRenderer : RenderChain
 			}
 		}
 
-		// App.Logger.Info.Message($"{chunksToRender.Count}");
+		// Logger.Info($"{chunksToRender.Count}");
 
 		sw.Stop();
-		// App.Logger.Info.Message($"Sort chunks {sw.Ms()}ms");
+		// Logger.Info($"Sort chunks {sw.Ms()}ms");
 		sw.Restart();
 
 		foreach (var chunkOffset in chunksToRender)
@@ -259,13 +257,13 @@ public unsafe class VoxelRenderer : RenderChain
 		}
 
 		sw.Stop();
-		// App.Logger.Info.Message($"Create Indices {sw.Ms()}ms");
+		// Logger.Info($"Create Indices {sw.Ms()}ms");
 		sw.Restart();
 
 		_indexBuffer.Value.UpdateGpuBuffer();
 
 		sw.Stop();
-		// App.Logger.Info.Message($"Update index buffer {sw.Ms()}ms");
+		// Logger.Info($"Update index buffer {sw.Ms()}ms");
 
 		var command = _indirectCommandBuffer.Value.GetHostSpan<DrawIndexedIndirectCommand>();
 		command[0] = new DrawIndexedIndirectCommand
@@ -289,14 +287,14 @@ public unsafe class VoxelRenderer : RenderChain
 	{
 		foreach (var side in VoxelSide.Sides)
 		{
-			var n = ((side.Ordinal & 1) == 1)
+			double n = (side.Ordinal & 1) == 1
 				? side.Normal.Dot(chunkOffset + new Vector3<double>(VoxelChunk.ChunkSize, VoxelChunk.ChunkSize, VoxelChunk.ChunkSize))
 				: side.Normal.Dot(chunkOffset);
-			var dot1 = cameraWorldPos.Dot(side.Normal);
+			double dot1 = cameraWorldPos.Dot(side.Normal);
 			if (n < dot1) continue;
 
 			int flip = 1 - (side.Ordinal & 1);
-			for (var i = 0; i < 6; i++) indices[_indexCount++] = PackIndex(chunkPos, side.Ordinal * 4 + _indices[flip][i]);
+			for (int i = 0; i < 6; i++) indices[_indexCount++] = PackIndex(chunkPos, (side.Ordinal * 4) + _indices[flip][i]);
 		}
 	}
 
@@ -423,7 +421,7 @@ public unsafe class VoxelRenderer : RenderChain
 		var bindingFlags = stackalloc DescriptorBindingFlags[]
 		{
 			DescriptorBindingFlags.UpdateAfterBindBit,
-			DescriptorBindingFlags.UpdateAfterBindBit,
+			DescriptorBindingFlags.UpdateAfterBindBit
 			// DescriptorBindingFlags.UpdateAfterBindBit,
 		};
 
@@ -449,7 +447,7 @@ public unsafe class VoxelRenderer : RenderChain
 				DescriptorCount = 1,
 				DescriptorType = DescriptorType.StorageBuffer,
 				StageFlags = ShaderStageFlags.ComputeBit
-			},
+			}
 			// new()
 			// {
 			// 	Binding = 2,
@@ -515,7 +513,7 @@ public unsafe class VoxelRenderer : RenderChain
 				Offset = 0,
 				Range = Vk.WholeSize,
 				Buffer = _chunksData.Value.Buffer
-			},
+			}
 			// new()
 			// {
 			// 	Offset = 0,
@@ -543,7 +541,7 @@ public unsafe class VoxelRenderer : RenderChain
 				DescriptorType = DescriptorType.StorageBuffer,
 				DstSet = _sceneDataSet,
 				PBufferInfo = bufferInfos[1].AsPointer()
-			},
+			}
 			// new()
 			// {
 			// 	SType = StructureType.WriteDescriptorSet,
@@ -740,10 +738,10 @@ public class FrustumChecker
 	public bool TestAabb(Vector3<float> min, Vector3<float> max) => TestAabb(min.X, min.Y, min.Z, max.X, max.Y, max.Z);
 
 	public bool TestAabb(float minX, float minY, float minZ, float maxX, float maxY, float maxZ) =>
-		NxX * (NxX < 0 ? minX : maxX) + NxY * (NxY < 0 ? minY : maxY) + NxZ * (NxZ < 0 ? minZ : maxZ) >= -NxW &&
-		PxX * (PxX < 0 ? minX : maxX) + PxY * (PxY < 0 ? minY : maxY) + PxZ * (PxZ < 0 ? minZ : maxZ) >= -PxW &&
-		NyX * (NyX < 0 ? minX : maxX) + NyY * (NyY < 0 ? minY : maxY) + NyZ * (NyZ < 0 ? minZ : maxZ) >= -NyW &&
-		PyX * (PyX < 0 ? minX : maxX) + PyY * (PyY < 0 ? minY : maxY) + PyZ * (PyZ < 0 ? minZ : maxZ) >= -PyW &&
-		NzX * (NzX < 0 ? minX : maxX) + NzY * (NzY < 0 ? minY : maxY) + NzZ * (NzZ < 0 ? minZ : maxZ) >= -NzW &&
-		PzX * (PzX < 0 ? minX : maxX) + PzY * (PzY < 0 ? minY : maxY) + PzZ * (PzZ < 0 ? minZ : maxZ) >= -PzW;
+		(NxX * (NxX < 0 ? minX : maxX)) + (NxY * (NxY < 0 ? minY : maxY)) + (NxZ * (NxZ < 0 ? minZ : maxZ)) >= -NxW &&
+		(PxX * (PxX < 0 ? minX : maxX)) + (PxY * (PxY < 0 ? minY : maxY)) + (PxZ * (PxZ < 0 ? minZ : maxZ)) >= -PxW &&
+		(NyX * (NyX < 0 ? minX : maxX)) + (NyY * (NyY < 0 ? minY : maxY)) + (NyZ * (NyZ < 0 ? minZ : maxZ)) >= -NyW &&
+		(PyX * (PyX < 0 ? minX : maxX)) + (PyY * (PyY < 0 ? minY : maxY)) + (PyZ * (PyZ < 0 ? minZ : maxZ)) >= -PyW &&
+		(NzX * (NzX < 0 ? minX : maxX)) + (NzY * (NzY < 0 ? minY : maxY)) + (NzZ * (NzZ < 0 ? minZ : maxZ)) >= -NzW &&
+		(PzX * (PzX < 0 ? minX : maxX)) + (PzY * (PzY < 0 ? minY : maxY)) + (PzZ * (PzZ < 0 ? minZ : maxZ)) >= -PzW;
 }

@@ -103,7 +103,7 @@ public unsafe partial class MaterialManager
 
 		if (changedCount == 0) return;
 
-		var builder = DescriptorSetUtils.UpdateBuilder(writeCount: changedCount, bufferInfoCount: changedCount);
+		var builder = DescriptorSetUtils.UpdateBuilder(changedCount, changedCount);
 		foreach ((string? _, var factory) in Materials)
 		{
 			if (!factory.BufferChanged) continue;

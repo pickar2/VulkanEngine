@@ -142,7 +142,7 @@ public struct Quad
 			1 => P1,
 			2 => P2,
 			3 => P3,
-			_ => throw new ArgumentException("").AsExpectedException()
+			_ => throw new ArgumentException("")
 		};
 		set
 		{

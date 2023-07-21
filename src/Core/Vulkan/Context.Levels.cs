@@ -89,30 +89,22 @@ public class VulkanLevelEvents
 	public event Action? AfterDispose;
 
 	[Obsolete]
-	internal void InvokeBeforeCreate()
-	{
-		// App.Logger.Debug.Message($"BeforeCreate: {BeforeCreate?.GetInvocationList().Length}");
+	internal void InvokeBeforeCreate() =>
+		// Logger.Debug($"BeforeCreate: {BeforeCreate?.GetInvocationList().Length}");
 		BeforeCreate?.Invoke();
-	}
 
 	[Obsolete]
-	internal void InvokeAfterCreate()
-	{
-		// App.Logger.Debug.Message($"AfterCreate: {AfterCreate?.GetInvocationList().Length}");
+	internal void InvokeAfterCreate() =>
+		// Logger.Debug($"AfterCreate: {AfterCreate?.GetInvocationList().Length}");
 		AfterCreate?.Invoke();
-	}
 
 	[Obsolete]
-	internal void InvokeBeforeDispose()
-	{
-		// App.Logger.Debug.Message($"BeforeDispose: {BeforeDispose?.GetInvocationList().Length}");
+	internal void InvokeBeforeDispose() =>
+		// Logger.Debug($"BeforeDispose: {BeforeDispose?.GetInvocationList().Length}");
 		BeforeDispose?.Invoke();
-	}
 
 	[Obsolete]
-	internal void InvokeAfterDispose()
-	{
-		// App.Logger.Debug.Message($"AfterDispose: {AfterDispose?.GetInvocationList().Length}");
+	internal void InvokeAfterDispose() =>
+		// Logger.Debug($"AfterDispose: {AfterDispose?.GetInvocationList().Length}");
 		AfterDispose?.Invoke();
-	}
 }

@@ -237,7 +237,7 @@ public unsafe partial class UiRootRenderer : RenderChain
 
 	private void UpdateGlobalData()
 	{
-		// App.Logger.Info.Message($"{RootPanel.Size} : {RootPanel.Scale}");
+		// Logger.Info($"{RootPanel.Size} : {RootPanel.Scale}");
 		float aspect = (float) Context.State.WindowSize.Value.X / Context.State.WindowSize.Value.Y;
 
 		var ortho = Matrix4X4<float>.Identity.SetOrtho(0, Context.State.WindowSize.Value.X, 0, Context.State.WindowSize.Value.Y, 4096, -4096);
@@ -346,7 +346,7 @@ public unsafe partial class UiRootRenderer : RenderChain
 		}
 		// cmd.Cmd.Dispatch((uint) Math.Ceiling((float) ComponentManager.Factory.MaxComponents / 32), 1, 1);
 
-		// App.Logger.Info.Message($"{ComponentManager.Factory.MaxComponents}");
+		// Logger.Info($"{ComponentManager.Factory.MaxComponents}");
 
 		cmd.SubmitAndWait(); // TODO: run in parallel with semaphore
 

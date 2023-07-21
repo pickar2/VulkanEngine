@@ -1,5 +1,4 @@
 ﻿using System.Numerics;
-using Core.Registries.Entities;
 using Core.UI.Reactive;
 using Core.VulkanData;
 
@@ -25,5 +24,5 @@ public abstract class RootPanel : AbsolutePanel
 
 	public UiComponent CreateComponent() => ComponentManager.Factory.Create();
 	public MaterialDataFactory GetMaterial(string name) => MaterialManager.GetFactory(name);
-	public StructHolder GetGlobalData(NamespacedName identifier) => GlobalDataManager.Factory.Holders[identifier.FullName];
+	public StructHolder GetGlobalData(string identifier) => GlobalDataManager.Factory.Holders[identifier];
 }

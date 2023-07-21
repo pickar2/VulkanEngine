@@ -20,9 +20,9 @@ void border_material(UiElementData data) {
 	vec2 pixelPos = floor(fragTexCoord * quadSize) + 0.5;
 
 	if (pixelPos.x <= borderSize ||
-		pixelPos.y <= borderSize ||
-		pixelPos.x + 0.001 >= quadSize.x - borderSize ||
-		pixelPos.y + 0.001 >= quadSize.y - borderSize
+	pixelPos.y <= borderSize ||
+	pixelPos.x + 0.001 >= quadSize.x - borderSize ||
+	pixelPos.y + 0.001 >= quadSize.y - borderSize
 	) {
 		outColor = vec4(intToRGBA(mat.color));
 	} else {

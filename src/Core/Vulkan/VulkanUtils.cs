@@ -248,7 +248,7 @@ public static unsafe class VulkanUtils
 
 		var allocationCreateInfo = new VmaAllocationCreateInfo {usage = memoryUsage};
 
-		Check((Result) vmaCreateImage(VmaAllocator, ref createInfo, ref allocationCreateInfo, out ulong imageHandle, out var allocation, IntPtr.Zero),
+		Check((Result) vmaCreateImage(VmaAllocator, ref createInfo, ref allocationCreateInfo, out ulong imageHandle, out nint allocation, IntPtr.Zero),
 			"Failed to create image");
 
 		return new VulkanImage
@@ -396,7 +396,7 @@ public static unsafe class VulkanUtils
 			sb.Append(span.Slice(index, match.Index - index));
 			if (ShaderManager.TryGetVirtualShaderContent(match.Groups[1].Value, out string? content))
 			{
-				var lines = content.Split("\n");
+				string[]? lines = content.Split("\n");
 				int errorLine = Convert.ToInt32(match.Groups[2].Value) - 1;
 				for (int i = errorLine - codeLineCount; i <= Math.Min(errorLine + codeLineCount, lines.Length + 1); i++)
 				{
@@ -428,11 +428,11 @@ public static unsafe class VulkanUtils
 			if (ShaderManager.TryGetVirtualShaderContent(path, out string? code))
 				source = code;
 			else
-				throw new Exception($"Virtual shader file `{path}` does not exist.").AsExpectedException();
+				throw new Exception($"Virtual shader file `{path}` does not exist.");
 		}
 		else
 		{
-			if (!File.Exists(path)) throw new Exception($"Shader file `{path}` does not exist.").AsExpectedException();
+			if (!File.Exists(path)) throw new Exception($"Shader file `{path}` does not exist.");
 
 			using var stream = GetReadStream(path);
 			using var reader = new StreamReader(stream);
@@ -443,8 +443,8 @@ public static unsafe class VulkanUtils
 
 		if (result.ErrorCount == 0 && result.WarningCount > 0)
 		{
-			App.Logger.Warn.Message($"Shader `{path}` ({Path.GetFileName(path)}) compilation finished with {result.WarningCount} " +
-			                        $"warning{(result.WarningCount > 0 ? "s" : "")}: {result.Status}\r\n{ImproveShaderErrorMessageString(result.ErrorMessage!)}");
+			Logger.Warn($"Shader `{path}` ({Path.GetFileName(path)}) compilation finished with {result.WarningCount} " +
+			            $"warning{(result.WarningCount > 0 ? "s" : "")}: {result.Status}\r\n{ImproveShaderErrorMessageString(result.ErrorMessage!)}");
 		}
 
 		if (result.Status != Status.Success)
@@ -452,10 +452,10 @@ public static unsafe class VulkanUtils
 			if (State.CrashOnShaderCompileErrors || !ShaderManager.TryGetShader(path, out var oldShader))
 			{
 				throw new Exception($"Shader `{path}` ({Path.GetFileName(path)}) was not compiled: {result.Status}\r\n" +
-				                    $"{ImproveShaderErrorMessageString(result.ErrorMessage!)}").AsExpectedException();
+				                    $"{ImproveShaderErrorMessageString(result.ErrorMessage!)}");
 			}
 
-			App.Logger.Error.Message($"{ImproveShaderErrorMessageString(result.ErrorMessage!)}");
+			Logger.Error($"{ImproveShaderErrorMessageString(result.ErrorMessage!)}");
 			result.Dispose();
 			return oldShader;
 		}
@@ -661,7 +661,7 @@ public static unsafe class VulkanUtils
 
 		var stagingBuffer = new VulkanBuffer(bytesCount, BufferUsageFlags.TransferSrcBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_ONLY);
 
-		var ptr = stackalloc IntPtr[1];
+		nint* ptr = stackalloc IntPtr[1];
 		Check(vmaMapMemory(VmaAllocator, stagingBuffer.Allocation, (void**) ptr), "Failed to map memory.");
 		Marshal.Copy(bytes, 0, ptr[0], (int) bytesCount);
 		vmaUnmapMemory(VmaAllocator, stagingBuffer.Allocation);

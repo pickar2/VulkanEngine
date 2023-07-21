@@ -7,10 +7,7 @@ public class Signal<T> : AbstractSignal
 {
 	private T _value;
 
-	public Signal(T initialValue)
-	{
-		_value = initialValue;
-	}
+	public Signal(T initialValue) => _value = initialValue;
 
 	public T Get()
 	{
@@ -36,10 +33,7 @@ public unsafe class UnmanagedSignal<T> : AbstractSignal where T : unmanaged
 {
 	private readonly T* _pointer;
 
-	public UnmanagedSignal(T* pointer)
-	{
-		_pointer = pointer;
-	}
+	public UnmanagedSignal(T* pointer) => _pointer = pointer;
 
 	public T Get()
 	{

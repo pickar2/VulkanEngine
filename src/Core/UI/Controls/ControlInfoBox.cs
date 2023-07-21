@@ -1,6 +1,5 @@
 ﻿using Core.UI.Controls.Panels;
 using Core.UI.Reactive;
-using Core.Window;
 using SDL2;
 using SimpleMath.Vectors;
 

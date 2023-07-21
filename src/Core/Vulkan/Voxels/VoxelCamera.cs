@@ -28,7 +28,7 @@ public class VoxelCamera
 		YawPitchRoll.Y = Math.Clamp(YawPitchRoll.Y + pitch, -89, 89);
 		YawPitchRoll.Z = (YawPitchRoll.Z + roll) % 360d;
 
-		// App.Logger.Info.Message($"({yaw}, {pitch}, {roll}) : {YawPitchRoll}");
+		// Logger.Info($"({yaw}, {pitch}, {roll}) : {YawPitchRoll}");
 	}
 
 	public Vector3<double> Direction =>
@@ -49,7 +49,7 @@ public class VoxelCamera
 
 		ChunkPos.Z += (int) Math.Floor(Position.Z / VoxelChunk.ChunkSize);
 		Position.Z = (Position.Z + VoxelChunk.ChunkSize) % VoxelChunk.ChunkSize;
-		
+
 		OnPositionUpdate?.Invoke();
 	}
 
@@ -78,7 +78,7 @@ public class VoxelCamera
 	{
 		if (GeneralRenderer.Root.Children[0].IsPaused) return;
 
-		var speedMultiplier = DefaultSpeedMultiplier;
+		double speedMultiplier = DefaultSpeedMultiplier;
 		if (UiManager.InputContext.KeyboardInputHandler.IsKeyPressed(SDL.SDL_Keycode.SDLK_LCTRL))
 			speedMultiplier *= 2.5;
 		if (UiManager.InputContext.KeyboardInputHandler.IsKeyPressed(SDL.SDL_Keycode.SDLK_LSHIFT))
@@ -111,7 +111,7 @@ public class VoxelCamera
 
 		Position.Y += relativeMoveVector.Y * speedMultiplier * VerticalSpeed;
 
-		// App.Logger.Debug.Message($"{ChunkPos} {Position}");
+		// Logger.Debug($"{ChunkPos} {Position}");
 
 		UpdatePosition();
 	}

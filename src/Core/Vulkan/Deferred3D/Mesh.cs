@@ -30,7 +30,7 @@ public class StaticMesh : IMesh
 			new(0, fragMaterialType, 0, fragMaterialIndex, new Vector3<float>(1f, 1, 0), new Vector3<float>(), new Vector2<float>(1, 0))
 		};
 
-		var indices = new uint[] {0, 1, 2};
+		uint[]? indices = new uint[] {0, 1, 2};
 
 		return new StaticMesh(vertices, indices);
 	}

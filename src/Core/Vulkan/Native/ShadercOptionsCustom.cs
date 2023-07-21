@@ -15,15 +15,15 @@ public class ShadercOptionsCustom : ShadercOptions
 
 	protected override bool TryFindInclude(string sourcePath, string includePath, IncludeType incType, out string incFile, out string incContent)
 	{
-		// App.Logger.Info.Message($"Requested {incType} : {sourcePath} :  {includePath}");
+		// Logger.Info($"Requested {incType} : {sourcePath} :  {includePath}");
 
 		if (includePath.StartsWith("@"))
 		{
-			// App.Logger.Info.Message($"Loading virtual: {includePath}");
+			// Logger.Info($"Loading virtual: {includePath}");
 
 			ShaderWatchers.AddWatcherCallback(includePath, $"{sourcePath}:{includePath}", () => ShaderWatchers.ForceUpdate(sourcePath));
 
-			if (ShaderManager.TryGetVirtualShaderContent(includePath, out var content))
+			if (ShaderManager.TryGetVirtualShaderContent(includePath, out string? content))
 			{
 				incFile = includePath;
 				incContent = content;
@@ -46,7 +46,7 @@ public class ShadercOptionsCustom : ShadercOptions
 			}
 
 			incFile = NormalizePath(Path.Combine(lookupStartPath, includePath));
-			// App.Logger.Info.Message($"Loading: {lookupStartPath} :  {incFile}");
+			// Logger.Info($"Loading: {lookupStartPath} :  {incFile}");
 
 			if (Path.Exists(incFile))
 			{

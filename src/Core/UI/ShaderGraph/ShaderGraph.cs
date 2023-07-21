@@ -2,13 +2,9 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection.Metadata;
 using System.Text;
 using Core.UI.Controls;
 using Core.UI.Controls.Panels;
-using Core.UI.Materials.Fragment;
-using Core.UI.Materials.Vertex;
-using Core.UI.Reactive;
 using Core.Utils;
 using Core.Vulkan;
 using Core.Vulkan.Api;
@@ -353,7 +349,7 @@ public class ShaderGraph
 			graph.Identifier = "graph_generated";
 
 			string code = graph.GetGraphCode();
-			// App.Logger.Debug.Message($"{code}");
+			// Logger.Debug($"{code}");
 			ShaderManager.SetVirtualShader("@graph_generated", code);
 			GeneralRenderer.UiContext.MaterialManager.RegisterMaterial(code, "@graph_generated");
 			GeneralRenderer.UiContext.MaterialManager.UpdateShaders();
@@ -471,12 +467,12 @@ public class ShaderGraph
 			};
 			loadMenu.AddChild(fileStack);
 
-			loadMenu.OnClickOutsideOnce(((_, _) =>
+			loadMenu.OnClickOutsideOnce((_, _) =>
 			{
 				mainControl.RemoveChild(loadMenu);
 				loadMenu.Dispose();
 				opened = false;
-			}));
+			});
 
 			foreach (string file in files)
 			{
@@ -578,7 +574,7 @@ public class ShaderGraph
 				Text = "Cancel"
 			};
 			saveButtonsStack.AddChild(cancelButton);
-			cancelButton.OnClick(((_, button, _, _, type, startedHere) =>
+			cancelButton.OnClick((_, button, _, _, type, startedHere) =>
 			{
 				if (button != MouseButton.Left) return false;
 				if (type != ClickType.End) return false;
@@ -589,7 +585,7 @@ public class ShaderGraph
 				haveMessageBox = false;
 
 				return true;
-			}));
+			});
 
 			var confirmSaveButton = new Button(saveButtonsStack.Context)
 			{
@@ -600,7 +596,7 @@ public class ShaderGraph
 				Text = "Save"
 			};
 			saveButtonsStack.AddChild(confirmSaveButton);
-			confirmSaveButton.OnClick(((_, mouseButton, _, _, clickType, startedHere) =>
+			confirmSaveButton.OnClick((_, mouseButton, _, _, clickType, startedHere) =>
 			{
 				if (mouseButton != MouseButton.Left) return false;
 				if (clickType != ClickType.End) return false;
@@ -616,7 +612,7 @@ public class ShaderGraph
 					size += shaderNode.NodeName.GetByteCount() + sizeof(int);
 					size += shaderNode.CalculateByteCount();
 				}
-				
+
 				Span<byte> span = stackalloc byte[size];
 				var buffer = span.AsBuffer();
 				graph.SerializeGraph(ref buffer);
@@ -631,7 +627,7 @@ public class ShaderGraph
 				haveMessageBox = false;
 
 				return true;
-			}));
+			});
 
 			return true;
 		});
@@ -665,7 +661,7 @@ public class ShaderGraph
 		int nodeCount = _shaderNodes.Count;
 		buffer.Write(nodeCount);
 
-		// App.Logger.Debug.Message($"Saving {nodeCount} nodes");
+		// Logger.Debug($"Saving {nodeCount} nodes");
 
 		foreach (var node in _shaderNodes)
 		{
@@ -678,7 +674,7 @@ public class ShaderGraph
 			// buffer.Write(node.CalculateByteCount());
 			node.Serialize(ref buffer);
 
-			// App.Logger.Debug.Message($"Saving node {node.NodeTypeName} ({node.Guid}) at {UiShaderNodes[node].Pos}");
+			// Logger.Debug($"Saving node {node.NodeTypeName} ({node.Guid}) at {UiShaderNodes[node].Pos}");
 		}
 
 		var endNodes = _shaderNodes.Where(shaderNode => shaderNode.InputConnectors.Length > 0 && shaderNode.OutputConnectors.Length == 0).ToList();
@@ -705,7 +701,7 @@ public class ShaderGraph
 	public void DeserializeGraph(ref SpanBuffer<byte> buffer)
 	{
 		int nodeCount = buffer.Read<int>();
-		// App.Logger.Debug.Message($"Loading {nodeCount} nodes");
+		// Logger.Debug($"Loading {nodeCount} nodes");
 		for (int i = 0; i < nodeCount; i++)
 		{
 			var guid = buffer.Read<Guid>();
@@ -719,13 +715,13 @@ public class ShaderGraph
 
 			AddNode(node, pos);
 
-			// App.Logger.Debug.Message($"Adding node {nodeTypeName} ({guid}) at {pos}");
+			// Logger.Debug($"Adding node {nodeTypeName} ({guid}) at {pos}");
 		}
 
 		for (int i = 0; i < nodeCount; i++)
 		{
 			var guid = buffer.Read<Guid>();
-			// App.Logger.Debug.Message($"Loading links for {guid}");
+			// Logger.Debug($"Loading links for {guid}");
 			GetNodeByGuid(guid).DeserializeLinks(ref buffer, this);
 		}
 

@@ -58,7 +58,7 @@ public struct VoxelChunk
 	public const int IntBitCount = 32;
 	public const int MaskCompressionLevel = IntBitCount / VoxelMaskBitCount;
 	public const int MaskCompressionLevelLog2 = 3;
-	public const uint BitMask = ((1 << VoxelMaskBitCount) - 1);
+	public const uint BitMask = (1 << VoxelMaskBitCount) - 1;
 
 	public VoxelChunkFlags Flags = 0;
 	public Vector3<int> ChunkPos;
@@ -101,7 +101,7 @@ public struct VoxelChunk
 		int index = GetVoxelIndex(x, y, z);
 		if (GetMask(index) <= value) return;
 		SetMask(index, value);
-		// App.Logger.Info.Message($"Setting mask {value}");
+		// Logger.Info($"Setting mask {value}");
 
 		SpreadMask(x - 1, y, z, value + 1);
 		SpreadMask(x + 1, y, z, value + 1);

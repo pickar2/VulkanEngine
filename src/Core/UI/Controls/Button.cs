@@ -18,6 +18,7 @@ public class Button : UiControl
 	public string Text { get => Label.Text; set => Label.Text = value; }
 
 	private Color _backgroundColor;
+
 	private Color _hoveredColor;
 	// private Color _clickedColor;
 
@@ -60,7 +61,7 @@ public class Button : UiControl
 		Rectangle = new Rectangle(context);
 		AddChild(Rectangle);
 
-		Rectangle.OnHover(((_, _, type) =>
+		Rectangle.OnHover((_, _, type) =>
 		{
 			if (ChangeCursorOnHover)
 			{
@@ -76,7 +77,7 @@ public class Button : UiControl
 			else
 				HoverAnimation?.ReverseDirection();
 			HoverAnimation?.Start();
-		}));
+		});
 
 		// Rectangle.OnClick(((_, button, _, _, type, _) =>
 		// {

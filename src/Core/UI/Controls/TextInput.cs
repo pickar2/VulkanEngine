@@ -43,13 +43,13 @@ public class TextInput : Label
 		};
 
 		Text = "Text input";
-		
-		this.OnHover(((_, _, type) =>
+
+		this.OnHover((_, _, type) =>
 		{
 			Vulkan.Context.Window.SetCursor(type == HoverType.Start
 				? SDL.SDL_SystemCursor.SDL_SYSTEM_CURSOR_IBEAM
 				: SDL.SDL_SystemCursor.SDL_SYSTEM_CURSOR_ARROW);
-		}));
+		});
 
 		int lastWordStart = -1;
 		this.OnClick((_, button, pos, clicks, clickType, _) =>
@@ -91,18 +91,18 @@ public class TextInput : Label
 						_cursorBlink.Restart();
 
 						var visible = new Vector2<float>(0, ComputedSize.X / CombinedScale.X);
-						visible += ScrollOffset.X * (StackPanel.ComputedSize.X / StackPanel.CombinedScale.X - ComputedSize.X / CombinedScale.X);
+						visible += ScrollOffset.X * ((StackPanel.ComputedSize.X / StackPanel.CombinedScale.X) - (ComputedSize.X / CombinedScale.X));
 
 						if (_cursor.MarginLT.X > visible.Y)
 						{
-							var diff = _cursor.MarginLT.X - visible.Y;
-							var scrollAmount = diff / (StackPanel.ComputedSize.X / StackPanel.CombinedScale.X - ComputedSize.X / CombinedScale.X);
+							float diff = _cursor.MarginLT.X - visible.Y;
+							float scrollAmount = diff / ((StackPanel.ComputedSize.X / StackPanel.CombinedScale.X) - (ComputedSize.X / CombinedScale.X));
 							ScrollOffset.X += scrollAmount;
 						}
 						else if (_cursor.MarginLT.X < visible.X)
 						{
-							var diff = visible.X - _cursor.MarginLT.X;
-							var scrollAmount = diff / (StackPanel.ComputedSize.X / StackPanel.CombinedScale.X - ComputedSize.X / CombinedScale.X);
+							float diff = visible.X - _cursor.MarginLT.X;
+							float scrollAmount = diff / ((StackPanel.ComputedSize.X / StackPanel.CombinedScale.X) - (ComputedSize.X / CombinedScale.X));
 							ScrollOffset.X -= scrollAmount;
 						}
 

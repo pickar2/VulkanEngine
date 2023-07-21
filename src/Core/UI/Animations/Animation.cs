@@ -57,7 +57,7 @@ public class Animation
 			{
 				AnimationType.RepeatFromStart => newFullTime % 1.0f,
 				AnimationType.RepeatAndReverse => (float) Math.Abs(((newFullTime + 1) % 2.0) - 1),
-				_ => throw new ArgumentOutOfRangeException(nameof(Type)).AsExpectedException()
+				_ => throw new ArgumentOutOfRangeException(nameof(Type))
 			};
 		}
 
@@ -169,7 +169,7 @@ public class Animation
 			StartDelay = startDelay,
 			Interpolator = new RGBInterpolator(start, end, value => getter.Invoke() = value)
 		};
-	
+
 	public static Animation OfRGB(Action<Color> setter, Color start, Color end, TimeSpan duration, float animationOffset = 0,
 		long startDelay = 0, AnimationType type = AnimationType.OneTime, IAnimationCurve? curve = null)
 		=> new()

@@ -12,14 +12,14 @@ public static unsafe class StringManager
 	static StringManager() =>
 		Context.ContextEvents.AfterDispose += () =>
 		{
-			foreach ((string? _, var ptr) in CachedStrings) SilkMarshal.Free(ptr);
+			foreach ((string? _, nint ptr) in CachedStrings) SilkMarshal.Free(ptr);
 			CachedStrings.Clear();
 		};
 
 	public static IntPtr GetStringPtr(string str)
 	{
 		if (str.Length == 0) return IntPtr.Zero;
-		if (CachedStrings.TryGetValue(str, out var ptr)) return ptr;
+		if (CachedStrings.TryGetValue(str, out nint ptr)) return ptr;
 		return CachedStrings[str] = SilkMarshal.StringToPtr(str);
 	}
 

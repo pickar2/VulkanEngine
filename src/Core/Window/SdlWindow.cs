@@ -15,7 +15,7 @@ public class SdlWindow : IDisposable
 	private readonly Stopwatch _stopwatch = new();
 	private readonly Dictionary<SDL_SystemCursor, nint> _cursors = new();
 
-	public string Title { get; private set; } = App.Details.AppName;
+	public string Title { get; private set; } = Details.AppName;
 	public IntPtr WindowHandle { get; private set; }
 
 	public float Time => _stopwatch.Ms();
@@ -62,7 +62,7 @@ public class SdlWindow : IDisposable
 		InputHandler.EnableContext(InputContext);
 
 		IsInitialized = true;
-		App.Logger.Info.Message($"Created SDL window. Ticks: {_stopwatch.ElapsedTicks}. Time: {_stopwatch.ElapsedMilliseconds}ms.");
+		Logger.Info($"Created SDL window. Ticks: {_stopwatch.ElapsedTicks}. Time: {_stopwatch.ElapsedMilliseconds}ms.");
 	}
 
 	private static unsafe int WindowResizeEventFilter(IntPtr data, IntPtr e)
@@ -89,7 +89,7 @@ public class SdlWindow : IDisposable
 	public string[] GetRequiredInstanceExtensions()
 	{
 		SDL_Vulkan_GetInstanceExtensions(WindowHandle, out uint pCount, IntPtr.Zero);
-		var pNames = new IntPtr[pCount];
+		nint[]? pNames = new IntPtr[pCount];
 		SDL_Vulkan_GetInstanceExtensions(WindowHandle, out pCount, pNames);
 
 		string[] strings = new string[pCount];
@@ -157,7 +157,7 @@ public class SdlWindow : IDisposable
 	public SurfaceKHR GetVulkanSurface(Instance instance)
 	{
 		if (SDL_Vulkan_CreateSurface(WindowHandle, instance.Handle, out ulong surface) == SDL_bool.SDL_FALSE)
-			throw new Exception("Failed to create vulkan surface").AsExpectedException();
+			throw new Exception("Failed to create vulkan surface");
 
 		return new SurfaceKHR(surface);
 	}
@@ -186,7 +186,7 @@ public class SdlWindow : IDisposable
 
 	public void SetCursor(SDL_SystemCursor cursor)
 	{
-		if (!_cursors.TryGetValue(cursor, out var ptr)) 
+		if (!_cursors.TryGetValue(cursor, out nint ptr))
 			_cursors[cursor] = ptr = SDL_CreateSystemCursor(cursor);
 		SDL_SetCursor(ptr);
 	}

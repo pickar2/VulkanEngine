@@ -334,8 +334,8 @@ public unsafe class SubArrayData
 	public KeyedPointerAccessor GetAccessorByOffset(byte itemOffset) => new(this, itemOffset);
 	public KeyedPointerAccessor GetAccessor(int itemIndex) => new(this, Storage.ItemSize * itemIndex);
 
-	public void PutDataByOffset<T>(byte itemOffset, T data) where T : unmanaged => *((T*) (Storage.DataPtr + ByteOffset + itemOffset)) = data;
-	public void PutData<T>(int itemIndex, T data) where T : unmanaged => *((T*) (Storage.DataPtr + ByteOffset + Storage.ItemSize * itemIndex)) = data;
+	public void PutDataByOffset<T>(byte itemOffset, T data) where T : unmanaged => *(T*) (Storage.DataPtr + ByteOffset + itemOffset) = data;
+	public void PutData<T>(int itemIndex, T data) where T : unmanaged => *(T*) (Storage.DataPtr + ByteOffset + (Storage.ItemSize * itemIndex)) = data;
 }
 
 public readonly struct KeyedPointerAccessor

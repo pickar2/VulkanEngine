@@ -107,11 +107,11 @@ public abstract class ShaderNode
 
 	public virtual void SerializeLinks(ref SpanBuffer<byte> buffer)
 	{
-		// App.Logger.Debug.Message($"Serializing links of {Guid}");
+		// Logger.Debug($"Serializing links of {Guid}");
 
 		int inputCount = InputConnectors.Count(c => c.ConnectedOutputNode is not null);
 		buffer.Write(inputCount);
-		// App.Logger.Debug.Message($"Found {inputCount} satisfied inputs");
+		// Logger.Debug($"Found {inputCount} satisfied inputs");
 		for (int connectorIndex = 0; connectorIndex < InputConnectors.Length; connectorIndex++)
 		{
 			var inputConnector = InputConnectors[connectorIndex];
@@ -145,20 +145,20 @@ public abstract class ShaderNode
 	public virtual void DeserializeLinks(ref SpanBuffer<byte> buffer, ShaderGraph graph)
 	{
 		int inputCount = buffer.Read<int>();
-		// App.Logger.Debug.Message($"Loading {inputCount} inputs");
+		// Logger.Debug($"Loading {inputCount} inputs");
 		for (int i = 0; i < inputCount; i++)
 		{
 			int inputIndex = buffer.Read<int>();
 			var nodeGuid = buffer.Read<Guid>();
 			int outputIndex = buffer.Read<int>();
 
-			// App.Logger.Debug.Message($"{inputIndex}, {nodeGuid}, {outputIndex}");
+			// Logger.Debug($"{inputIndex}, {nodeGuid}, {outputIndex}");
 
 			SetInput(inputIndex, graph.GetNodeByGuid(nodeGuid), outputIndex);
 		}
 
 		int outputCount = buffer.Read<int>();
-		// App.Logger.Debug.Message($"Loading {outputCount} outputs");
+		// Logger.Debug($"Loading {outputCount} outputs");
 		for (int i = 0; i < outputCount; i++)
 		{
 			int outputIndex = buffer.Read<int>();
@@ -198,7 +198,7 @@ public abstract class ShaderNode
 	{
 		var input = InputConnectors[inputIndex];
 		var output = outputNode.OutputConnectors[outputIndex];
-		if (!input.CanConnect(output.Type)) throw new ArgumentException($"Failed to connect output of type {output.Type?.DisplayName}").AsExpectedException();
+		if (!input.CanConnect(output.Type)) throw new ArgumentException($"Failed to connect output of type {output.Type?.DisplayName}");
 
 		input.ConnectedOutputNode = outputNode;
 		input.OutputConnectorIndex = outputIndex;
@@ -227,7 +227,7 @@ public abstract class ShaderNode
 	{
 		var output = OutputConnectors[outputIndex];
 		var input = inputNode.InputConnectors[inputIndex];
-		if (!input.CanConnect(output.Type)) throw new ArgumentException($"Failed to connect output of type {output.Type?.DisplayName}").AsExpectedException();
+		if (!input.CanConnect(output.Type)) throw new ArgumentException($"Failed to connect output of type {output.Type?.DisplayName}");
 
 		output.Connections.Add(new OutputConnection
 		{

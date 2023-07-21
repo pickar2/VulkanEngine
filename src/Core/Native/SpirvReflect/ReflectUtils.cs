@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using Core.Vulkan;
 using Core.Vulkan.Utility;
 using Silk.NET.Vulkan;
 

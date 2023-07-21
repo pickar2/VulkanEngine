@@ -1,5 +1,4 @@
-﻿using System.Drawing;
-using System.Numerics;
+﻿using System.Numerics;
 using SimpleMath;
 using SimpleMath.Vectors;
 
@@ -38,7 +37,7 @@ public class PassThroughInterpolator : ValueInterpolator<float>
 public class NumberInterpolator<T> : ValueInterpolator<T> where T : struct, INumber<T>
 {
 	public NumberInterpolator(T start, T end, ValueUpdater valueUpdater) : base(start, end, valueUpdater) { }
-	public override T Interpolate(float x) => ((1.0f - x) * Start.ToFloatTruncating() + x * End.ToFloatTruncating()).CastTruncating<float, T>();
+	public override T Interpolate(float x) => (((1.0f - x) * Start.ToFloatTruncating()) + (x * End.ToFloatTruncating())).CastTruncating<float, T>();
 }
 
 public class Vector2Interpolator<T> : ValueInterpolator<Vector2<T>> where T : struct, INumber<T>
@@ -46,8 +45,8 @@ public class Vector2Interpolator<T> : ValueInterpolator<Vector2<T>> where T : st
 	public Vector2Interpolator(Vector2<T> start, Vector2<T> end, ValueUpdater valueUpdater) : base(start, end, valueUpdater) { }
 
 	public override Vector2<T> Interpolate(float x) =>
-		new(((1.0f - x) * Start.X.ToFloatTruncating() + x * End.X.ToFloatTruncating()).CastTruncating<float, T>(),
-			((1.0f - x) * Start.Y.ToFloatTruncating() + x * End.Y.ToFloatTruncating()).CastTruncating<float, T>());
+		new((((1.0f - x) * Start.X.ToFloatTruncating()) + (x * End.X.ToFloatTruncating())).CastTruncating<float, T>(),
+			(((1.0f - x) * Start.Y.ToFloatTruncating()) + (x * End.Y.ToFloatTruncating())).CastTruncating<float, T>());
 }
 
 public class Vector3Interpolator<T> : ValueInterpolator<Vector3<T>> where T : struct, INumber<T>
@@ -55,9 +54,9 @@ public class Vector3Interpolator<T> : ValueInterpolator<Vector3<T>> where T : st
 	public Vector3Interpolator(Vector3<T> start, Vector3<T> end, ValueUpdater valueUpdater) : base(start, end, valueUpdater) { }
 
 	public override Vector3<T> Interpolate(float x) =>
-		new(((1.0f - x) * Start.X.ToFloatTruncating() + x * End.X.ToFloatTruncating()).CastTruncating<float, T>(),
-			((1.0f - x) * Start.Y.ToFloatTruncating() + x * End.Y.ToFloatTruncating()).CastTruncating<float, T>(),
-			((1.0f - x) * Start.Z.ToFloatTruncating() + x * End.Z.ToFloatTruncating()).CastTruncating<float, T>());
+		new((((1.0f - x) * Start.X.ToFloatTruncating()) + (x * End.X.ToFloatTruncating())).CastTruncating<float, T>(),
+			(((1.0f - x) * Start.Y.ToFloatTruncating()) + (x * End.Y.ToFloatTruncating())).CastTruncating<float, T>(),
+			(((1.0f - x) * Start.Z.ToFloatTruncating()) + (x * End.Z.ToFloatTruncating())).CastTruncating<float, T>());
 }
 
 public class Vector4Interpolator<T> : ValueInterpolator<Vector4<T>> where T : struct, INumber<T>
@@ -65,10 +64,10 @@ public class Vector4Interpolator<T> : ValueInterpolator<Vector4<T>> where T : st
 	public Vector4Interpolator(Vector4<T> start, Vector4<T> end, ValueUpdater valueUpdater) : base(start, end, valueUpdater) { }
 
 	public override Vector4<T> Interpolate(float x) =>
-		new(((1.0f - x) * Start.X.ToFloatTruncating() + x * End.X.ToFloatTruncating()).CastTruncating<float, T>(),
-			((1.0f - x) * Start.Y.ToFloatTruncating() + x * End.Y.ToFloatTruncating()).CastTruncating<float, T>(),
-			((1.0f - x) * Start.Z.ToFloatTruncating() + x * End.Z.ToFloatTruncating()).CastTruncating<float, T>(),
-			((1.0f - x) * Start.W.ToFloatTruncating() + x * End.W.ToFloatTruncating()).CastTruncating<float, T>());
+		new((((1.0f - x) * Start.X.ToFloatTruncating()) + (x * End.X.ToFloatTruncating())).CastTruncating<float, T>(),
+			(((1.0f - x) * Start.Y.ToFloatTruncating()) + (x * End.Y.ToFloatTruncating())).CastTruncating<float, T>(),
+			(((1.0f - x) * Start.Z.ToFloatTruncating()) + (x * End.Z.ToFloatTruncating())).CastTruncating<float, T>(),
+			(((1.0f - x) * Start.W.ToFloatTruncating()) + (x * End.W.ToFloatTruncating())).CastTruncating<float, T>());
 }
 
 public class RGBInterpolator : ValueInterpolator<Color>
@@ -85,5 +84,5 @@ public class RGBInterpolator : ValueInterpolator<Color>
 		return new Color(r, g, b, a);
 	}
 
-	private static byte Lerp(byte start, byte end, float x) => (byte) ((1.0f - x) * start + x * end);
+	private static byte Lerp(byte start, byte end, float x) => (byte) (((1.0f - x) * start) + (x * end));
 }

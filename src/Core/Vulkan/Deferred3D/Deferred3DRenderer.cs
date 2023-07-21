@@ -1,5 +1,4 @@
-﻿using System.Drawing;
-using Core.Native.Shaderc;
+﻿using Core.Native.Shaderc;
 using Core.UI;
 using Core.Vulkan.Api;
 using Core.Vulkan.Renderers;
@@ -55,16 +54,20 @@ public unsafe class Deferred3DRenderer : RenderChain
 			FrameGraph.CreateAttachment(Format.D32Sfloat, ImageAspectFlags.DepthBit, Size, ImageUsageFlags.TransientAttachmentBit), image => image.Dispose());
 
 		NormalAttachment = ReCreate.InDevice.Auto(() =>
-			FrameGraph.CreateAttachment(Format.R16G16B16A16Sfloat, ImageAspectFlags.ColorBit, Size, ImageUsageFlags.TransientAttachmentBit), image => image.Dispose());
+				FrameGraph.CreateAttachment(Format.R16G16B16A16Sfloat, ImageAspectFlags.ColorBit, Size, ImageUsageFlags.TransientAttachmentBit),
+			image => image.Dispose());
 
 		PositionAttachment = ReCreate.InDevice.Auto(() =>
-			FrameGraph.CreateAttachment(Format.R16G16B16A16Sfloat, ImageAspectFlags.ColorBit, Size, ImageUsageFlags.TransientAttachmentBit), image => image.Dispose());
+				FrameGraph.CreateAttachment(Format.R16G16B16A16Sfloat, ImageAspectFlags.ColorBit, Size, ImageUsageFlags.TransientAttachmentBit),
+			image => image.Dispose());
 
 		FragCoordsAttachment = ReCreate.InDevice.Auto(() =>
-			FrameGraph.CreateAttachment(Format.R16G16B16A16Sfloat, ImageAspectFlags.ColorBit, Size, ImageUsageFlags.TransientAttachmentBit), image => image.Dispose());
+				FrameGraph.CreateAttachment(Format.R16G16B16A16Sfloat, ImageAspectFlags.ColorBit, Size, ImageUsageFlags.TransientAttachmentBit),
+			image => image.Dispose());
 
 		MaterialAttachment = ReCreate.InDevice.Auto(() =>
-			FrameGraph.CreateAttachment(Format.R32G32B32A32Uint, ImageAspectFlags.ColorBit, Size, ImageUsageFlags.TransientAttachmentBit), image => image.Dispose());
+				FrameGraph.CreateAttachment(Format.R32G32B32A32Uint, ImageAspectFlags.ColorBit, Size, ImageUsageFlags.TransientAttachmentBit),
+			image => image.Dispose());
 
 		RenderPass = ReCreate.InDevice.Auto(() => CreateRenderPass(), pass => pass.Dispose());
 		Framebuffer = ReCreate.InDevice.Auto(() => CreateFramebuffer(), framebuffer => framebuffer.Dispose());

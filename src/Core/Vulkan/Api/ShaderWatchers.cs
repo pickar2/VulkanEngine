@@ -19,12 +19,12 @@ public static class ShaderWatchers
 	{
 		if (!Context.State.AllowShaderWatchers) return;
 
-		// App.Logger.Info.Message($"Adding watcher for `{path}`.");
+		// Logger.Info($"Adding watcher for `{path}`.");
 
 		if (path.StartsWith("@"))
 		{
 			if (!ShaderManager.TryGetVirtualShaderContent(path, out _))
-				throw new Exception($"Virtual shader file `{path}` does not exist.").AsExpectedException();
+				throw new Exception($"Virtual shader file `{path}` does not exist.");
 
 			if (!Watchers.TryGetValue(path, out var watcher)) watcher = Watchers[path] = new ManualWatcherHandler(path);
 			watcher.AddCallback(name, callback);
@@ -62,7 +62,7 @@ public static class ShaderWatchers
 
 	public static void ForceUpdate(string path)
 	{
-		// App.Logger.Info.Message($"Force updating {path}. ({Watchers.ContainsKey(path)})");
+		// Logger.Info($"Force updating {path}. ({Watchers.ContainsKey(path)})");
 		if (Watchers.TryGetValue(path, out var watcher))
 			watcher.InvokeUpdate();
 	}
@@ -80,7 +80,7 @@ public abstract class AbstractWatcherCallbacksHandler
 	{
 		if (ShaderManager.TryGetShader(Path, out var shader))
 		{
-			// App.Logger.Info.Message($"Recompiling {Path}");
+			// Logger.Info($"Recompiling {Path}");
 			var newShader = ShaderManager.CreateShader(Path, Path, shader.ShaderKind);
 			if (newShader != shader)
 				ExecuteOnce.InSwapchain.AfterDispose(() => shader.Dispose());
@@ -88,7 +88,7 @@ public abstract class AbstractWatcherCallbacksHandler
 
 		OnFileChanged?.Invoke();
 
-		// App.Logger.Info.Message($"Updated {Path}");
+		// Logger.Info($"Updated {Path}");
 	}
 
 	public void AddCallback(string name, Action callback)
@@ -97,7 +97,7 @@ public abstract class AbstractWatcherCallbacksHandler
 
 		OnFileChanged += Callbacks[name] = () =>
 		{
-			// App.Logger.Info.Message($"Invoking {name}");
+			// Logger.Info($"Invoking {name}");
 			callback();
 		};
 	}
@@ -125,7 +125,7 @@ public class FileSystemWatcherHandler : AbstractWatcherCallbacksHandler
 			var lastWriteTime = File.GetLastWriteTime(Path);
 			if (lastWriteTime == _lastReadTime) return;
 
-			// App.Logger.Info.Message($"File {Path} changed. ");
+			// Logger.Info($"File {Path} changed. ");
 			InvokeUpdate();
 			_lastReadTime = lastWriteTime;
 		};

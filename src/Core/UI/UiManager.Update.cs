@@ -70,14 +70,14 @@ public static partial class UiManager
 		// GeneralRenderer.MainRoot.AddChild(fpsLabel);
 		// GeneralRenderer.MainRoot.AddChild(frameTimeLabel);
 
-		var lag = 0f;
+		float lag = 0f;
 		var lagStopwatch = new Stopwatch();
-		const float msPerUpdate = 1000/60f;
+		const float msPerUpdate = 1000 / 60f;
 
 		while (Context.IsRunning)
 		{
 			// while (Stopwatch.GetElapsedTime(lastUpdateTime, Stopwatch.GetTimestamp()).Milliseconds < timeBetweenUpdatesMs) handle.WaitOne(1);
-			
+
 			lag += lagStopwatch.Ms();
 			lagStopwatch.Restart();
 			if (lag < msPerUpdate)

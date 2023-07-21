@@ -24,7 +24,7 @@ public static partial class UiManager
 {
 	public static Font Consolas = default!;
 
-	enum Showcase : byte
+	private enum Showcase : byte
 	{
 		ShaderGraph,
 		VoxelRaymarching,
@@ -47,14 +47,15 @@ public static partial class UiManager
 		// };
 
 		// ShaderGraph.ShaderGraph.Draw();
-		
+
 		// var mainControl = new AbsolutePanel(UiContext)
 		// mainControl.Overflow = Overflow.Shown;
 		// MainRoot.AddChild(mainControl);
 
 		var showcaseSwitcher = new ComboBox<Showcase>(UiContext)
 		{
-			Values = new Dictionary<string, Showcase> {
+			Values = new Dictionary<string, Showcase>
+			{
 				{"Shader graph", Showcase.ShaderGraph},
 				{"Voxel raymarching", Showcase.VoxelRaymarching},
 				{"Deferred renderer", Showcase.DeferredRenderer}
@@ -83,9 +84,9 @@ public static partial class UiManager
 						MainRoot.RemoveChild(graph.GraphPanel.Parent!);
 						graph.GraphPanel.Parent!.Dispose();
 					};
-					
+
 					break;
-				case Showcase.VoxelRaymarching: 
+				case Showcase.VoxelRaymarching:
 					disposePrevious?.Invoke();
 
 					var voxelOut = new CustomBox(UiContext)
@@ -104,18 +105,18 @@ public static partial class UiManager
 					label.Color = Color.Neutral950;
 					label.MarginLT = (5, 5);
 					MainRoot.AddChild(label);
-					
+
 					var camera = GeneralRenderer.VoxelRenderer.Camera;
-					
+
 					void UpdateLabelText()
 					{
-						var pos = camera.Position + camera.ChunkPos * VoxelChunk.ChunkSize;
+						var pos = camera.Position + (camera.ChunkPos * VoxelChunk.ChunkSize);
 						// ReSharper disable once AccessToDisposedClosure
 						label.Text = $"({Maths.FixedPrecision(pos.X, 2)}, {Maths.FixedPrecision(pos.Y, 2)}, {Maths.FixedPrecision(pos.Z, 2)})";
 					}
 
 					camera.OnPositionUpdate += UpdateLabelText;
-		
+
 					MainRoot.AddChild(voxelOut);
 					GeneralRenderer.VoxelRenderer.IsPaused = false;
 
@@ -145,11 +146,11 @@ public static partial class UiManager
 					deferredOut.FragMaterial.MarkForGPUUpdate();
 					MainRoot.AddChild(deferredOut);
 
-					GeneralRenderer.Deferred3DRenderer.IsPaused = false;
+					Deferred3DRenderer.IsPaused = false;
 
 					disposePrevious = () =>
 					{
-						GeneralRenderer.Deferred3DRenderer.IsPaused = true;
+						Deferred3DRenderer.IsPaused = true;
 						MainRoot.RemoveChild(deferredOut);
 						deferredOut.Dispose();
 					};
@@ -158,7 +159,7 @@ public static partial class UiManager
 				default: throw new ArgumentOutOfRangeException();
 			}
 		});
-		
+
 
 		// var mainControl = new AbsolutePanel(MainRoot.Context);
 		// // mainControl.Selectable = false;
@@ -253,7 +254,7 @@ public static partial class UiManager
 			};
 			var text = new Label(MainRoot.Context)
 			{
-				Text = Regex.Replace(alignment.Stringify(), "[a-z]*", ""),
+				Text = Regex.Replace(alignment.ToStringFast(), "[a-z]*", ""),
 				OffsetZ = 2
 			};
 			alignPanel.AddChild(text);

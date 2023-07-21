@@ -62,14 +62,14 @@ public class ScrollView : UiControl
 		{
 			if (CanScrollVertically)
 			{
-				// App.Logger.Debug.Message($"Scrolled vertically by {-amount.Y * 10}");
+				// Logger.Debug($"Scrolled vertically by {-amount.Y * 10}");
 				ScrollVertically(-amount.Y * ScrollPower.Y);
 				return true;
 			}
 
 			if (CanScrollHorizontally)
 			{
-				// App.Logger.Debug.Message($"Scrolled horizontally by {-amount.Y * 10}");
+				// Logger.Debug($"Scrolled horizontally by {-amount.Y * 10}");
 				ScrollHorizontally(-amount.Y * ScrollPower.X);
 				return true;
 			}

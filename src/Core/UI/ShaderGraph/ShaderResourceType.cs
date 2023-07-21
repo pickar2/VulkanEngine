@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace Core.UI.ShaderGraph;
 
@@ -131,5 +130,5 @@ public class ShaderResourceType
 	public static ShaderResourceType ScalarToVector4(ShaderResourceType scalar) => ScalarToVector4Dict[scalar];
 
 	public static ShaderResourceType VectorToScalar(ShaderResourceType vector) => Vector2Scalar[vector];
-	public static int VectorSize(ShaderResourceType vector) => VectorSizes.TryGetValue(vector, out var size) ? size : 1;
+	public static int VectorSize(ShaderResourceType vector) => VectorSizes.TryGetValue(vector, out int size) ? size : 1;
 }

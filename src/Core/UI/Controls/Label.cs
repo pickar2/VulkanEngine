@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Core.UI.Controls.Panels;
 using Core.UI.Materials.Fragment;
 using Core.UI.Materials.Vertex;

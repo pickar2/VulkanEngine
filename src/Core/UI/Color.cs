@@ -376,10 +376,11 @@ public struct Color
 	public override string ToString() => $"({Red}, {Green}, {Blue}, {Alpha})";
 }
 
-public static class ColorUtils {
+public static class ColorUtils
+{
 	private static readonly Random Random = new(1234);
 
-	public static Color RandomColor(bool randomTransparency = false) => 
+	public static Color RandomColor(bool randomTransparency = false) =>
 		new(Random.Next(256),
 			Random.Next(256),
 			Random.Next(256),

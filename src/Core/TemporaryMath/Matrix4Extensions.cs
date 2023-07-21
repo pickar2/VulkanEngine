@@ -50,15 +50,15 @@ public static class Matrix4Extensions
 
 		double nm01 = -sinX * -sinY, nm02 = cosX * -sinY;
 
-		mat.M31 = (float) (sinY);
+		mat.M31 = (float) sinY;
 		mat.M32 = (float) (-sinX * cosY);
 		mat.M33 = (float) (cosX * cosY);
 		mat.M11 = (float) (cosY * cosZ);
-		mat.M12 = (float) (nm01 * cosZ + cosX * sinZ);
-		mat.M13 = (float) (nm02 * cosZ + sinX * sinZ);
+		mat.M12 = (float) ((nm01 * cosZ) + (cosX * sinZ));
+		mat.M13 = (float) ((nm02 * cosZ) + (sinX * sinZ));
 		mat.M21 = (float) (cosY * -sinZ);
-		mat.M22 = (float) (nm01 * -sinZ + cosX * cosZ);
-		mat.M23 = (float) (nm02 * -sinZ + sinX * cosZ);
+		mat.M22 = (float) ((nm01 * -sinZ) + (cosX * cosZ));
+		mat.M23 = (float) ((nm02 * -sinZ) + (sinX * cosZ));
 
 		return mat;
 	}

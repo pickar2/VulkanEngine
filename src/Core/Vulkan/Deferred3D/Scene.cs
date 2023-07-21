@@ -94,7 +94,7 @@ public unsafe class Scene
 				FirstInstance = 0
 			};
 			commandSpan[commandIndex++] = drawCommand;
-			// App.Logger.Info.Message($"Draw command: ({drawCommand.IndexCount}, {drawCommand.InstanceCount}, {drawCommand.FirstIndex}, {drawCommand.VertexOffset})");
+			// Logger.Info($"Draw command: ({drawCommand.IndexCount}, {drawCommand.InstanceCount}, {drawCommand.FirstIndex}, {drawCommand.VertexOffset})");
 		}
 
 		ModelBuffer.Value.UpdateGpuBuffer();

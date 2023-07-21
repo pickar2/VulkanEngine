@@ -49,7 +49,7 @@ public static unsafe partial class Context
 		ContextEvents.InvokeBeforeCreate();
 
 		string baseDirectory = NormalizePath(Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location) + (State.LoadShadersFromSrc ? "/../../../../" : ""));
-		// App.Logger.Info.Message($"Base directory : {baseDirectory}");
+		// Logger.Info($"Base directory : {baseDirectory}");
 
 		ShadercOptions = new ShadercOptionsCustom(baseDirectory);
 		ShadercOptions.EnableDebugInfo();
@@ -117,7 +117,7 @@ public static unsafe partial class Context
 		{
 			requiredExtensions.ExceptWith(availableExtensions);
 			throw new NotSupportedException(
-				$"Extensions {string.Join(", ", requiredExtensions)} are not available on this instance").AsExpectedException();
+				$"Extensions {string.Join(", ", requiredExtensions)} are not available on this instance");
 		}
 
 		var appInfo = new ApplicationInfo
@@ -168,7 +168,7 @@ public static unsafe partial class Context
 
 			DebugUtilsMessenger.Init();
 
-			App.Logger.Info.Message($"Initialized vulkan Instance with debug mode on.");
+			Logger.Info($"Initialized vulkan Instance with debug mode on.");
 		}
 
 		Vk.TryGetInstanceExtension(Instance, out KhrSurface).ThrowIfFalse($"Failed to load the KhrSurface extension.");
@@ -195,7 +195,7 @@ public static unsafe partial class Context
 
 		if (difference.Count == 0) return;
 
-		// throw new NotSupportedException($"Instance layers [{string.Join(", ", difference)}] are not available on that device.").AsExpectedException();
+		// throw new NotSupportedException($"Instance layers [{string.Join(", ", difference)}] are not available on that device.");
 	}
 
 	private static HashSet<string> GetInstanceExtensions(string layerName)
@@ -305,8 +305,8 @@ public static unsafe partial class Context
 		int selectedGpuIndex = State.SelectedGpuIndex.Value;
 		if (State.SelectedGpuIndex.Value == -1 || State.SelectedGpuIndex.Value >= deviceCount)
 		{
-			var reasons = new string[deviceCount];
-			var scores = new int[deviceCount];
+			string[]? reasons = new string[deviceCount];
+			int[]? scores = new int[deviceCount];
 			scores.Fill(-1);
 
 			for (int i = 0; i < deviceCount; i++)
@@ -323,7 +323,7 @@ public static unsafe partial class Context
 			}
 
 			if (scores.All(score => score == -1))
-				throw new NotSupportedException($"Failed to find suitable GPU: \r\n{string.Join("\r\n", reasons)}").AsExpectedException();
+				throw new NotSupportedException($"Failed to find suitable GPU: \r\n{string.Join("\r\n", reasons)}");
 
 			int maxScore = scores[0];
 			PhysicalDevice = devices[0];
@@ -344,14 +344,14 @@ public static unsafe partial class Context
 			Vk.GetPhysicalDeviceProperties2(device, out var props);
 
 			if (!IsDeviceSuitable(devices[State.SelectedGpuIndex.Value], out string reason))
-				throw new NotSupportedException($"{GetDeviceString(State.SelectedGpuIndex.Value, props)}: \r\n{reason}").AsExpectedException();
+				throw new NotSupportedException($"{GetDeviceString(State.SelectedGpuIndex.Value, props)}: \r\n{reason}");
 
 			PhysicalDevice = device;
 		}
 
 		Vk.GetPhysicalDeviceProperties2(PhysicalDevice, out var properties);
 
-		App.Logger.Info.Message($"Picked {GetDeviceString(selectedGpuIndex, properties)} as GPU.");
+		Logger.Info($"Picked {GetDeviceString(selectedGpuIndex, properties)} as GPU.");
 		SelectedDeviceIndex = selectedGpuIndex;
 
 		IsIntegratedGpu = properties.Properties.DeviceType == PhysicalDeviceType.IntegratedGpu;
@@ -524,7 +524,7 @@ public static unsafe partial class Context
 
 		if (familyCount <= 0)
 		{
-			throw new NotSupportedException("Failed to find any vulkan queue families.").AsExpectedException();
+			throw new NotSupportedException("Failed to find any vulkan queue families.");
 		}
 
 		QueueFamilies = new QueueFamily[familyCount];
@@ -740,7 +740,7 @@ public static unsafe partial class Context
 			pVulkanFunctions = (nint) functions.AsPointer()
 		};
 
-		Check((Result) vmaCreateAllocator(ref vmaAllocatorCreateInfo, out var handle), "Failed to create VMA allocator.");
+		Check((Result) vmaCreateAllocator(ref vmaAllocatorCreateInfo, out nint handle), "Failed to create VMA allocator.");
 		VmaAllocator = handle;
 	}
 

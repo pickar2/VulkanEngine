@@ -39,7 +39,7 @@ public static unsafe class VulkanDescriptorSetLayout
 
 		public DescriptorSetLayout Build()
 		{
-			var bindingCount = (uint) _bindingsList.Count;
+			uint bindingCount = (uint) _bindingsList.Count;
 
 			var flagsInfo = new DescriptorSetLayoutBindingFlagsCreateInfoEXT
 			{

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Core.UI.Animations;
 using Core.UI.Controls;
 using Core.UI.Controls.Panels;
 using Core.UI.Reactive;
@@ -109,6 +108,7 @@ public class UiShaderNode
 					combinedMotion = new Vector2<int>(0);
 					control.MarginLT += motion.Cast<int, float>() / control.ParentScale;
 				}
+
 				control.MarginLT.Round();
 			}
 
@@ -153,7 +153,7 @@ public class UiShaderNode
 				connectorContainer.AddChild(connectorBoxAlign);
 
 				var connectorLabelAlign = new AlignPanel(Container.Context) {Alignment = Alignment.CenterLeft};
-				connectorLabelAlign.MarginLT.X = ConnectionSize / 2f + 3;
+				connectorLabelAlign.MarginLT.X = (ConnectionSize / 2f) + 3;
 				connectorContainer.AddChild(connectorLabelAlign);
 
 				var inputLabel = new Label(Container.Context);
@@ -250,7 +250,7 @@ public class UiShaderNode
 				{
 					Alignment = Alignment.CenterRight
 				};
-				connectorLabelAlign.MarginLT.X = -ConnectionSize / 2f - 3;
+				connectorLabelAlign.MarginLT.X = (-ConnectionSize / 2f) - 3;
 				connectorContainer.AddChild(connectorLabelAlign);
 
 				var outputLabel = new Label(Container.Context);
