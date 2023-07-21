@@ -21,11 +21,11 @@ public class Log
 		LogHandler.HandleLogging(LogLevel.Trace, message.ToStringAndClear());
 	}
 
-	public void Trace(string message)
-	{
-		if (!AllowedLevels.HasFlagFast(LogLevel.Trace)) return;
-		LogHandler.HandleLogging(LogLevel.Trace, message);
-	}
+	// public void Trace(string message)
+	// {
+	// 	if (!AllowedLevels.HasFlagFast(LogLevel.Trace)) return;
+	// 	LogHandler.HandleLogging(LogLevel.Trace, message);
+	// }
 
 	public void Debug([InterpolatedStringHandlerArgument("")] ref DebugInterpolatedLoggerHandler message)
 	{
@@ -33,11 +33,11 @@ public class Log
 		LogHandler.HandleLogging(LogLevel.Debug, message.ToStringAndClear());
 	}
 
-	public void Debug(string message)
-	{
-		if (!AllowedLevels.HasFlagFast(LogLevel.Debug)) return;
-		LogHandler.HandleLogging(LogLevel.Debug, message);
-	}
+	// public void Debug(string message)
+	// {
+	// 	if (!AllowedLevels.HasFlagFast(LogLevel.Debug)) return;
+	// 	LogHandler.HandleLogging(LogLevel.Debug, message);
+	// }
 
 	public void Info([InterpolatedStringHandlerArgument("")] ref InfoInterpolatedLoggerHandler message)
 	{
@@ -45,11 +45,11 @@ public class Log
 		LogHandler.HandleLogging(LogLevel.Info, message.ToStringAndClear());
 	}
 
-	public void Info(string message)
-	{
-		if (!AllowedLevels.HasFlagFast(LogLevel.Info)) return;
-		LogHandler.HandleLogging(LogLevel.Info, message);
-	}
+	// public void Info(string message)
+	// {
+	// 	if (!AllowedLevels.HasFlagFast(LogLevel.Info)) return;
+	// 	LogHandler.HandleLogging(LogLevel.Info, message);
+	// }
 
 	public void Warn([InterpolatedStringHandlerArgument("")] ref WarnInterpolatedLoggerHandler message)
 	{
@@ -57,11 +57,11 @@ public class Log
 		LogHandler.HandleLogging(LogLevel.Warn, message.ToStringAndClear());
 	}
 
-	public void Warn(string message)
-	{
-		if (!AllowedLevels.HasFlagFast(LogLevel.Warn)) return;
-		LogHandler.HandleLogging(LogLevel.Warn, message);
-	}
+	// public void Warn(string message)
+	// {
+	// 	if (!AllowedLevels.HasFlagFast(LogLevel.Warn)) return;
+	// 	LogHandler.HandleLogging(LogLevel.Warn, message);
+	// }
 
 	public void Error([InterpolatedStringHandlerArgument("")] ref ErrorInterpolatedLoggerHandler message)
 	{
@@ -69,11 +69,11 @@ public class Log
 		LogHandler.HandleLogging(LogLevel.Error, message.ToStringAndClear());
 	}
 
-	public void Error(string message)
-	{
-		if (!AllowedLevels.HasFlagFast(LogLevel.Error)) return;
-		LogHandler.HandleLogging(LogLevel.Error, message);
-	}
+	// public void Error(string message)
+	// {
+	// 	if (!AllowedLevels.HasFlagFast(LogLevel.Error)) return;
+	// 	LogHandler.HandleLogging(LogLevel.Error, message);
+	// }
 
 	public void Fatal([InterpolatedStringHandlerArgument("")] ref FatalInterpolatedLoggerHandler message)
 	{
@@ -81,11 +81,11 @@ public class Log
 		LogHandler.HandleLogging(LogLevel.Fatal, message.ToStringAndClear());
 	}
 
-	public void Fatal(string message)
-	{
-		if (!AllowedLevels.HasFlagFast(LogLevel.Fatal)) return;
-		LogHandler.HandleLogging(LogLevel.Fatal, message);
-	}
+	// public void Fatal(string message)
+	// {
+	// 	if (!AllowedLevels.HasFlagFast(LogLevel.Fatal)) return;
+	// 	LogHandler.HandleLogging(LogLevel.Fatal, message);
+	// }
 }
 
 public static class LogHandler
