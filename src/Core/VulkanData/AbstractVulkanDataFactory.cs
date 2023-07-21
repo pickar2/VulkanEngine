@@ -126,6 +126,7 @@ public abstract unsafe class AbstractVulkanDataFactory<TDataHolder> : IVulkanDat
 
 		int copyRegionsSize = (int) Math.Ceiling((double) newMaxComponents / _copyRegionSize);
 		_copyRegions = new bool[copyRegionsSize];
+		_copyRegions.Fill(true);
 
 		BufferSize = (ulong) Math.Max(4, newMaxComponents * ComponentSize);
 		_copyRegionByteSize = Math.Min((ulong) (_copyRegionSize * ComponentSize), BufferSize);

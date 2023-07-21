@@ -2,7 +2,6 @@
 using Core.UI;
 using Core.Utils;
 using Core.Vulkan.Renderers;
-using Core.Vulkan.Voxels;
 using Core.Window;
 using SDL2;
 using SimpleMath.Vectors;
@@ -19,7 +18,6 @@ public class DeferredCamera
 
 	public Vector3<double> Position;
 	public Vector3<double> YawPitchRoll;
-	public Vector3<int> ChunkPos;
 
 	public event Action? OnPositionUpdate;
 
@@ -57,7 +55,6 @@ public class DeferredCamera
 	public void SetPosition(double x, double y, double z)
 	{
 		Position = new Vector3<double>(x, y, z);
-		ChunkPos = new Vector3<int>(0, 0, 0);
 		// UpdatePosition();
 	}
 
