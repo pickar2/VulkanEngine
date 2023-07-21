@@ -522,6 +522,7 @@ public abstract class MultiTypeFunction : FunctionNode
 				if (connector.ConnectedOutputNode is not null)
 					return;
 
+			if (OutputConnectors.Length == 0) return;
 			foreach (var connection in OutputConnectors[0].Connections) connection.ConnectedInputNode?.UnsetInput(connection.InputConnectorIndex);
 			AcceptedTypes.Clear();
 			AcceptedTypes.AddRange(DefaultAcceptedTypes);
@@ -598,8 +599,11 @@ public class MixFunctionNode : FunctionNode
 				if (connector.ConnectedOutputNode is not null)
 					return;
 			}
+			
+			if (OutputConnectors.Length == 0) return;
 
-			foreach (var connection in OutputConnectors[0].Connections) connection.ConnectedInputNode?.UnsetInput(connection.InputConnectorIndex);
+			foreach (var connection in OutputConnectors[0].Connections)
+				connection.ConnectedInputNode?.UnsetInput(connection.InputConnectorIndex);
 			AcceptedTypes.Clear();
 			AcceptedTypes.AddRange(DefaultAcceptedTypes);
 			OutputType = null;
@@ -681,6 +685,7 @@ public class StepFunctionNode : FunctionNode
 				if (connector.ConnectedOutputNode is not null)
 					return;
 			}
+			if (OutputConnectors.Length == 0) return;
 
 			foreach (var connection in OutputConnectors[0].Connections) connection.ConnectedInputNode?.UnsetInput(connection.InputConnectorIndex);
 			AcceptedTypes.Clear();
@@ -764,6 +769,7 @@ public class SmoothStepFunctionNode : FunctionNode
 			var connector = InputConnectors[2];
 			if (connector.ConnectedOutputNode is not null)
 				return;
+			if (OutputConnectors.Length == 0) return;
 
 			foreach (var connection in OutputConnectors[0].Connections) connection.ConnectedInputNode?.UnsetInput(connection.InputConnectorIndex);
 			AcceptedTypes.Clear();
@@ -822,6 +828,7 @@ public abstract class MultiTypeVectorFunction : FunctionNode
 			foreach (var connector in InputConnectors)
 				if (connector.ConnectedOutputNode is not null)
 					return;
+			if (OutputConnectors.Length == 0) return;
 
 			foreach (var connection in OutputConnectors[0].Connections) connection.ConnectedInputNode?.UnsetInput(connection.InputConnectorIndex);
 			AcceptedTypes.Clear();
