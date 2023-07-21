@@ -7,12 +7,13 @@ namespace Core.Logging;
 
 [SuppressMessage("Performance", "CA1822:Mark members as static")]
 [SuppressMessage("ReSharper", "MemberCanBeMadeStatic.Global")]
-public class Log
+public sealed class Log
 {
 	public static readonly Log Instance = new();
 
 	private const LogLevel AllowedLevels = LogLevel.Info | LogLevel.Debug | LogLevel.Warn | LogLevel.Error | LogLevel.Fatal;
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 	public bool IsLevelAllowed(LogLevel level) => AllowedLevels.HasFlagFast(level);
 
 	public void Trace([InterpolatedStringHandlerArgument("")] ref TraceInterpolatedLoggerHandler message)
@@ -92,6 +93,7 @@ public static class LogHandler
 {
 	private const string LogDateFormat = "HH:mm:ss.fff";
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 	public static void HandleLogging<T>(LogLevel level, T message)
 	{
 		AnsiConsole.Write($"[{DateTime.Now.ToString(LogDateFormat)}|{level.ToStringFast()}] ");
