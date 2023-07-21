@@ -45,6 +45,7 @@
 
     <ItemGroup>
         <None Update="Native\Libs\*.dll" CopyToOutputDirectory="Always" />
+        <Folder Include="Assets\Models" />
         <Folder Include="Native" />
         <None Include="Assets\**\*.*" CopyToOutputDirectory="Always" />
     </ItemGroup>

@@ -102,11 +102,11 @@ public unsafe class Deferred3DRenderer : RenderChain
 
 		void AddMeshes()
 		{
-			Scene.AddMesh(triangle);
-			Scene.AddMesh(triangle);
-			Scene.AddMesh(triangle);
-			Scene.AddMesh(triangle);
-			Scene.AddMesh(StaticMesh.Triangle((ushort) colorMat.MaterialId, (uint) 1));
+			// Scene.AddMesh(triangle);
+			// Scene.AddMesh(triangle);
+			// Scene.AddMesh(triangle);
+			// Scene.AddMesh(triangle);
+			Scene.AddMesh(StaticMesh.Triangle((ushort) colorMat.MaterialId, 1));
 			Scene.UpdateBuffers();
 		}
 
@@ -202,7 +202,7 @@ public unsafe class Deferred3DRenderer : RenderChain
 	private RenderPass CreateRenderPass()
 	{
 		// out color, depth, normal, position, fragCoord, material
-		int attachmentCount = 6;
+		const int attachmentCount = 6;
 		var attachmentDescriptions = stackalloc AttachmentDescription2[attachmentCount];
 
 		// Color
@@ -370,11 +370,11 @@ public unsafe class Deferred3DRenderer : RenderChain
 		};
 
 		// fill g-buffers, compose deferred lighting
-		int subpassCount = 2;
+		const int subpassCount = 2;
 		var subpassDescriptions = stackalloc SubpassDescription2[subpassCount];
 
 		// Fill G-Buffers
-		int gBufferColorReferenceCount = 4;
+		const int gBufferColorReferenceCount = 4;
 		var gBufferColorReferences = stackalloc AttachmentReference2[]
 			{normalAttachmentReference, positionAttachmentReference, fragCoordAttachmentReference, materialAttachmentReference};
 		subpassDescriptions[0] = new SubpassDescription2
@@ -382,27 +382,27 @@ public unsafe class Deferred3DRenderer : RenderChain
 			SType = StructureType.SubpassDescription2,
 			PipelineBindPoint = PipelineBindPoint.Graphics,
 			InputAttachmentCount = 0,
-			ColorAttachmentCount = (uint) gBufferColorReferenceCount,
+			ColorAttachmentCount = gBufferColorReferenceCount,
 			PColorAttachments = gBufferColorReferences,
 			PDepthStencilAttachment = &depthReference
 		};
 
 		// Compose deferred lighting
-		int deferredComposeInputReferenceCount = 4;
+		const int deferredComposeInputReferenceCount = 4;
 		var deferredComposeInputReferences = stackalloc AttachmentReference2[]
 			{normalShaderReference, positionShaderReference, fragCoordShaderReference, materialShaderReference};
 		subpassDescriptions[1] = new SubpassDescription2
 		{
 			SType = StructureType.SubpassDescription2,
 			PipelineBindPoint = PipelineBindPoint.Graphics,
-			InputAttachmentCount = (uint) deferredComposeInputReferenceCount,
+			InputAttachmentCount = deferredComposeInputReferenceCount,
 			PInputAttachments = deferredComposeInputReferences,
 			ColorAttachmentCount = 1,
 			PColorAttachments = &colorReference,
 			PDepthStencilAttachment = &depthReference
 		};
 
-		int subpassDependencyCount = 1;
+		const int subpassDependencyCount = 1;
 		var subpassDependencies = stackalloc SubpassDependency2[subpassDependencyCount];
 
 		// subpassDependencies[0] = new SubpassDependency2
@@ -455,11 +455,11 @@ public unsafe class Deferred3DRenderer : RenderChain
 		var renderPassInfo2 = new RenderPassCreateInfo2
 		{
 			SType = StructureType.RenderPassCreateInfo2,
-			AttachmentCount = (uint) attachmentCount,
+			AttachmentCount = attachmentCount,
 			PAttachments = attachmentDescriptions,
-			SubpassCount = (uint) subpassCount,
+			SubpassCount = subpassCount,
 			PSubpasses = subpassDescriptions,
-			DependencyCount = (uint) subpassDependencyCount,
+			DependencyCount = subpassDependencyCount,
 			PDependencies = subpassDependencies
 		};
 
