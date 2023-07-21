@@ -3,7 +3,6 @@ using System.Buffers;
 using System.IO;
 using System.Numerics;
 using Core.Native.Shaderc;
-using Core.Resources;
 using Core.TemporaryMath;
 using Core.UI;
 using Core.UI.Materials.Fragment;
@@ -16,7 +15,6 @@ using Silk.NET.Maths;
 using Silk.NET.Vulkan;
 using SimpleMath.Vectors;
 using File = System.IO.File;
-using Vector3 = System.Numerics.Vector3;
 
 namespace Core.Vulkan.Deferred3D;
 
