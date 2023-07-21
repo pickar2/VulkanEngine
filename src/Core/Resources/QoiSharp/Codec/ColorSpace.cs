@@ -1,4 +1,4 @@
-﻿namespace Core.Serializer.Entities.QoiSharp.Codec;
+﻿namespace Core.Resources.QoiSharp.Codec;
 
 public enum ColorSpace : byte
 {

@@ -1,6 +1,6 @@
-﻿using Core.Serializer.Entities.QoiSharp.Codec;
+﻿using Core.Resources.QoiSharp.Codec;
 
-namespace Core.Serializer.Entities.QoiSharp;
+namespace Core.Resources.QoiSharp;
 
 /// <summary>
 ///     QOI image.

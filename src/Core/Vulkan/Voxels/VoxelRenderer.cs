@@ -199,9 +199,9 @@ public unsafe class VoxelRenderer : RenderChain
 		var sw = new Stopwatch();
 		sw.Start();
 
-		uint chunkCountX = (uint) ((_renderDistance * 2) + 1);
-		uint chunkCountY = 4;
-		uint chunkCountZ = (uint) ((_renderDistance * 2) + 1);
+		// uint chunkCountX = (uint) ((_renderDistance * 2) + 1);
+		// uint chunkCountY = 4;
+		// uint chunkCountZ = (uint) ((_renderDistance * 2) + 1);
 
 		// var cmd = CommandBuffers.OneTimeCompute("Generate voxel index buffer");
 		//

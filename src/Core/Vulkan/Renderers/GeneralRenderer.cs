@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using Core.Serializer.Entities.QoiSharp;
+using Core.Resources.QoiSharp;
 using Core.UI;
 using Core.UI.Controls.Panels;
 using Core.UI.Reactive;

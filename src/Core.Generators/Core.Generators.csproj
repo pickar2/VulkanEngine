@@ -11,11 +11,12 @@
         <IncludeBuildOutput>false</IncludeBuildOutput>
         <Configurations>Release;Debug</Configurations>
         <Platforms>x64</Platforms>
+        <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="4.2.0" />
-        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.2.0" />
+        <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="4.6.0" />
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.6.0" />
     </ItemGroup>
 
 </Project>

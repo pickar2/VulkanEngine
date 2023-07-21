@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Core.Serializer.Entities.QoiSharp.Codec;
+namespace Core.Resources.QoiSharp.Codec;
 
 /// <summary>
 ///     QOI Codec.

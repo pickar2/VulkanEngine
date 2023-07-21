@@ -156,8 +156,8 @@ public unsafe class GraphicsPipelineBuilder
 
 	private PipelineDynamicStateCreateInfo _dynamicState;
 
-	private ReCreator<PipelineLayout> _pipelineLayout;
-	private ReCreator<RenderPass> _renderPass;
+	private ReCreator<PipelineLayout> _pipelineLayout = default!;
+	private ReCreator<RenderPass> _renderPass = default!;
 	private uint _subpass;
 	private Pipeline _basePipeline;
 	private int _basePipelineIndex;

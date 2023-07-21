@@ -81,6 +81,33 @@ public static unsafe class PointerUtils
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static T* AsPointer<T>(this List<T> list) where T : unmanaged =>
 		(T*) Unsafe.AsPointer(ref MemoryMarshal.GetReference(CollectionsMarshal.AsSpan(list)));
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static T Read<T>(this Span<byte> span) where T : unmanaged => MemoryMarshal.Cast<byte, T>(span)[0];
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static void Write<T>(this Span<byte> span, T value) where T : unmanaged => MemoryMarshal.Cast<byte, T>(span)[0] = value;
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static void Write<T>(this Span<byte> span, T[] value) where T : unmanaged
+	{
+		var newSpan = MemoryMarshal.Cast<byte, T>(span);
+		value.CopyTo(newSpan);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static string ReadVarString(this ref Span<byte> span)
+	{
+		int bytesCount = span.Read<int>();
+		return Encoding.UTF8.GetString(span.Slice(sizeof(int), bytesCount));
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static void WriteVarString(this ref Span<byte> span, string str)
+	{
+		int bytesCount = str.GetBytes(span[sizeof(int)..]);
+		span.Write(bytesCount);
+	}
 }
 
 public unsafe ref struct SpanBuffer<T> where T : unmanaged
