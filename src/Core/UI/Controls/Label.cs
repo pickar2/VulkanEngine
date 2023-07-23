@@ -128,7 +128,7 @@ public class Label : ScrollView
 		var cursorPos = new Vector2<float>();
 
 		var font = UiManager.Consolas;
-		var metrics = font.CalculateFontMetrics(14f * (font.GlyphHeight / 70f), 0.2f);
+		var metrics = font.CalculateFontMetrics(12, 0.2f);
 
 		float fallOff = font.Falloff * metrics.ScaleTexturePxToMetrics;
 		float scaleX = metrics.PixelSize;
@@ -170,7 +170,7 @@ public class Label : ScrollView
 
 			// Logger.Debug($"{ch} | {size}, {offset} | {fallOff}, {size.Y}, {scaleY * (character.Bearing.Y + fallOff)}");
 
-			cursorPos.X += character.AdvanceX > 0 ? scaleX * character.AdvanceX : scaleX * font.AdvanceXSpace;
+			cursorPos.X += font.GetAdvanceX(ch, scaleX);
 			float sdfSize = 2 * fallOff * metrics.PixelSize / CombinedScale.X;
 
 			float gLeftTexture = gLeft / font.TextureWidth;

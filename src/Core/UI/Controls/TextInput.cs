@@ -1,4 +1,5 @@
 ﻿using System;
+using Core.Resources.Assets;
 using Core.UI.Animations;
 using Core.UI.Reactive;
 using Core.Window;
@@ -80,29 +81,31 @@ public class TextInput : Label
 				_isEditing = true;
 				this.OnClickOutsideOnce((_, _) => Window.TextInput.StopInput());
 
-				_cursor.Size = new Vector2<float>(18, 32);
-				_selection.Size = new Vector2<float>(0, 32);
+				_cursor.Size = new Vector2<float>(9, 16);
+				_selection.Size = new Vector2<float>(0, 16);
 				_cursorBlink.Restart();
 				Window.TextInput.StartInput(CombinedPos.Cast<float, int>(), ComputedSize.Cast<float, int>(), Text,
 					(str) => Text = str,
 					(curPos) =>
 					{
-						_cursor.MarginLT.X = curPos * 18;
+						_cursor.MarginLT.X = CursorPosToDistance(curPos, CombinedScale, Text, UiManager.Consolas);
 						_cursorBlink.Restart();
 
+						var spaceSize = 12 * UiManager.Consolas.AdvanceXSpace * CombinedScale.X / 2;
+						var offset = (AbsolutePanel.ComputedSize.X / AbsolutePanel.CombinedScale.X) - (ComputedSize.X / CombinedScale.X);
 						var visible = new Vector2<float>(0, ComputedSize.X / CombinedScale.X);
-						visible += ScrollOffset.X * ((AbsolutePanel.ComputedSize.X / AbsolutePanel.CombinedScale.X) - (ComputedSize.X / CombinedScale.X));
+						visible += ScrollOffset.X * offset;
 
-						if (_cursor.MarginLT.X > visible.Y)
+						if (_cursor.MarginLT.X > visible.Y - spaceSize)
 						{
-							float diff = _cursor.MarginLT.X - visible.Y;
-							float scrollAmount = diff / ((AbsolutePanel.ComputedSize.X / AbsolutePanel.CombinedScale.X) - (ComputedSize.X / CombinedScale.X));
+							float diff = _cursor.MarginLT.X - visible.Y + spaceSize;
+							float scrollAmount = diff / offset;
 							ScrollOffset.X += scrollAmount;
 						}
 						else if (_cursor.MarginLT.X < visible.X)
 						{
 							float diff = visible.X - _cursor.MarginLT.X;
-							float scrollAmount = diff / ((AbsolutePanel.ComputedSize.X / AbsolutePanel.CombinedScale.X) - (ComputedSize.X / CombinedScale.X));
+							float scrollAmount = diff / offset;
 							ScrollOffset.X -= scrollAmount;
 						}
 
@@ -110,8 +113,8 @@ public class TextInput : Label
 					},
 					(selectStart, selectLength) =>
 					{
-						_selection.MarginLT.X = selectStart * 18;
-						_selection.Size.X = selectLength * 18;
+						_selection.MarginLT.X = CursorPosToDistance(selectStart, CombinedScale, Text, UiManager.Consolas);
+						_selection.Size.X = CursorPosToDistance(selectLength - selectStart, CombinedScale, Text, UiManager.Consolas);
 					},
 					() =>
 					{
@@ -151,8 +154,45 @@ public class TextInput : Label
 		});
 	}
 
-	protected int CalculateCursorPos(Vector2<int> mousePos) =>
-		(int) Math.Round((mousePos.X - CombinedPos.X - AbsolutePanel.LocalPos.X) / (18 * CombinedScale.X));
+	protected int CalculateCursorPos(Vector2<int> mousePos) => 
+		CalculateCursorPos(mousePos.Cast<int, float>() - CombinedPos - AbsolutePanel.LocalPos, AbsolutePanel.CombinedScale, Text, UiManager.Consolas);
+
+	public static int CalculateCursorPos(Vector2<float> pos, Vector2<float> scale, string text, SdlFont font)
+	{
+		const float pixelSize = 12;
+		int cursorPos = 0;
+		float distance = -font.AdvanceXSpace * pixelSize * scale.X / 2;
+
+		// Logger.Debug($"Start distance {distance}");
+
+		var span = text.AsSpan();
+		foreach (char ch in span)
+		{
+			float newDistance = distance + font.GetAdvanceX(ch, pixelSize * scale.X);
+			// Logger.Debug($"{ch}: {newDistance}, {font.Characters[ch].AdvanceX}");
+			if (float.Round(newDistance) >= pos.X)
+				return cursorPos;
+			cursorPos++;
+			distance = newDistance;
+		}
+
+		return cursorPos;
+	}
+
+	public static float CursorPosToDistance(int cursorPos, Vector2<float> scale, string text, SdlFont font)
+	{
+		const float pixelSize = 12;
+		float distance = 0;
+
+		var span = text.AsSpan();
+		for (int index = 0; index < cursorPos; index++)
+		{
+			char ch = span[index];
+			distance += font.GetAdvanceX(ch, pixelSize * scale.X);
+		}
+
+		return distance;
+	}
 
 	public override void Dispose()
 	{

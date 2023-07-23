@@ -60,6 +60,12 @@ public class SdlFont
 
 		return new FontMetrics(capScale, lowScale, pixelSize, lineHeight, scaleTexturePxToMetrics);
 	}
+
+	public float GetAdvanceX(char ch, float scaleX)
+	{
+		var character = Characters[ch];
+		return character.AdvanceX > 0 ? scaleX * character.AdvanceX : scaleX * AdvanceXSpace;
+	}
 }
 
 public readonly struct FontMetrics
