@@ -8,7 +8,6 @@ using Core.UI.Animations;
 using Core.UI.AssetManager;
 using Core.UI.Controls;
 using Core.UI.Controls.Panels;
-using Core.UI.Fonts;
 using Core.UI.Materials.Fragment;
 using Core.UI.Transforms;
 using Core.Utils;
@@ -18,7 +17,6 @@ using Core.Vulkan.Voxels;
 using Core.Window;
 using SimpleMath.Vectors;
 using static Core.Vulkan.Renderers.GeneralRenderer;
-using TextInput = Core.UI.Controls.TextInput;
 
 namespace Core.UI;
 
@@ -258,7 +256,7 @@ public static partial class UiManager
 
 	private static void TextInputTest(AbsolutePanel parent)
 	{
-		var input = new TextInput(MainRoot.Context);
+		var input = new TextInputBox(MainRoot.Context);
 		input.MarginLT = (10, 110);
 		input.OffsetZ = 150;
 		input.Scale = (2, 2);

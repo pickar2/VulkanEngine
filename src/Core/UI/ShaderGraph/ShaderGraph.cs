@@ -12,7 +12,6 @@ using Core.Vulkan.Renderers;
 using Core.Window;
 using SDL2;
 using SimpleMath.Vectors;
-using TextInput = Core.UI.Controls.TextInput;
 
 namespace Core.UI.ShaderGraph;
 
@@ -547,7 +546,7 @@ public class ShaderGraph
 			var inputAlign = new AlignPanel(messageBox.Context) {Alignment = Alignment.Center};
 			messageBox.AddChild(inputAlign);
 
-			var input = new TextInput(messageBox.Context)
+			var input = new TextInputBox(messageBox.Context)
 			{
 				Text = graph.Name == string.Empty ? "ShaderName" : graph.Name,
 				OffsetZ = 1

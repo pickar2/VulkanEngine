@@ -8,7 +8,7 @@ using SimpleMath.Vectors;
 
 namespace Core.UI.Controls;
 
-public class TextInput : Label
+public class TextInputBox : Label
 {
 	private readonly Rectangle _cursor;
 	private readonly Rectangle _selection;
@@ -17,7 +17,7 @@ public class TextInput : Label
 
 	private bool _isEditing;
 
-	public TextInput(UiContext context) : base(context)
+	public TextInputBox(UiContext context) : base(context)
 	{
 		TightBox = true;
 
@@ -59,18 +59,18 @@ public class TextInput : Label
 			if (_isEditing && clickType == ClickType.Start)
 			{
 				int cursorPos = CalculateCursorPos(pos);
-				int wordStart = cursorPos - Window.TextInput.FindWordEndLeft(cursorPos);
+				int wordStart = cursorPos - TextInput.FindWordEndLeft(cursorPos);
 
 				if (clicks % 2 == 0 && lastWordStart == wordStart)
 				{
-					Window.TextInput.SetSelection(0, 0);
-					Window.TextInput.SetCursorPos(wordStart);
-					Window.TextInput.IncreaseSelection(Window.TextInput.FindWordEndRight(Window.TextInput.CursorPos));
+					TextInput.SetSelection(0, 0);
+					TextInput.SetCursorPos(wordStart);
+					TextInput.IncreaseSelection(TextInput.FindWordEndRight(TextInput.CursorPos));
 				}
 				else
 				{
-					Window.TextInput.SetSelection(0, 0);
-					Window.TextInput.SetCursorPos(cursorPos);
+					TextInput.SetSelection(0, 0);
+					TextInput.SetCursorPos(cursorPos);
 
 					lastWordStart = wordStart;
 				}
@@ -79,20 +79,20 @@ public class TextInput : Label
 			if (!_isEditing && clickType == ClickType.Start)
 			{
 				_isEditing = true;
-				this.OnClickOutsideOnce((_, _) => Window.TextInput.StopInput());
+				this.OnClickOutsideOnce((_, _) => TextInput.StopInput());
 
 				_cursor.Size = new Vector2<float>(9, 16);
 				_selection.Size = new Vector2<float>(0, 16);
 				_cursorBlink.Restart();
-				Window.TextInput.StartInput(CombinedPos.Cast<float, int>(), ComputedSize.Cast<float, int>(), Text,
-					(str) => Text = str,
-					(curPos) =>
+				TextInput.StartInput(CombinedPos.Cast<float, int>(), ComputedSize.Cast<float, int>(), Text,
+					str => Text = str,
+					curPos =>
 					{
 						_cursor.MarginLT.X = CursorPosToDistance(curPos, CombinedScale, Text, UiManager.Consolas);
 						_cursorBlink.Restart();
 
-						var spaceSize = 12 * UiManager.Consolas.AdvanceXSpace * CombinedScale.X / 2;
-						var offset = (AbsolutePanel.ComputedSize.X / AbsolutePanel.CombinedScale.X) - (ComputedSize.X / CombinedScale.X);
+						float spaceSize = 12 * UiManager.Consolas.AdvanceXSpace * CombinedScale.X / 2;
+						float offset = (AbsolutePanel.ComputedSize.X / AbsolutePanel.CombinedScale.X) - (ComputedSize.X / CombinedScale.X);
 						var visible = new Vector2<float>(0, ComputedSize.X / CombinedScale.X);
 						visible += ScrollOffset.X * offset;
 
@@ -114,7 +114,7 @@ public class TextInput : Label
 					(selectStart, selectLength) =>
 					{
 						_selection.MarginLT.X = CursorPosToDistance(selectStart, CombinedScale, Text, UiManager.Consolas);
-						_selection.Size.X = CursorPosToDistance(selectLength - selectStart, CombinedScale, Text, UiManager.Consolas);
+						_selection.Size.X = CursorPosToDistance(selectStart + selectLength, CombinedScale, Text, UiManager.Consolas) - _selection.MarginLT.X;
 					},
 					() =>
 					{
@@ -125,7 +125,7 @@ public class TextInput : Label
 					}
 				);
 
-				Window.TextInput.SetCursorPos(CalculateCursorPos(pos));
+				TextInput.SetCursorPos(CalculateCursorPos(pos));
 			}
 
 			return true;
@@ -139,22 +139,22 @@ public class TextInput : Label
 
 			if (dragType == DragType.Start)
 			{
-				Window.TextInput.SetCursorPos(CalculateCursorPos(pos));
-				dragSelectionStart = Window.TextInput.CursorPos;
+				TextInput.SetCursorPos(CalculateCursorPos(pos));
+				dragSelectionStart = TextInput.CursorPos;
 			}
 			else if (dragType == DragType.Move)
 			{
 				int cursorPos = CalculateCursorPos(pos);
 				int length = cursorPos - dragSelectionStart;
-				Window.TextInput.SetSelection(dragSelectionStart, length);
-				Window.TextInput.SetCursorPos(cursorPos);
+				TextInput.SetSelection(dragSelectionStart, length);
+				TextInput.SetCursorPos(cursorPos);
 			}
 
 			return true;
 		});
 	}
 
-	protected int CalculateCursorPos(Vector2<int> mousePos) => 
+	protected int CalculateCursorPos(Vector2<int> mousePos) =>
 		CalculateCursorPos(mousePos.Cast<int, float>() - CombinedPos - AbsolutePanel.LocalPos, AbsolutePanel.CombinedScale, Text, UiManager.Consolas);
 
 	public static int CalculateCursorPos(Vector2<float> pos, Vector2<float> scale, string text, SdlFont font)
@@ -185,7 +185,7 @@ public class TextInput : Label
 		float distance = 0;
 
 		var span = text.AsSpan();
-		for (int index = 0; index < cursorPos; index++)
+		for (int index = 0; index < cursorPos && index < span.Length; index++)
 		{
 			char ch = span[index];
 			distance += font.GetAdvanceX(ch, pixelSize * scale.X);
@@ -196,7 +196,7 @@ public class TextInput : Label
 
 	public override void Dispose()
 	{
-		if (_isEditing) Window.TextInput.StopInput();
+		if (_isEditing) TextInput.StopInput();
 		base.Dispose();
 	}
 }

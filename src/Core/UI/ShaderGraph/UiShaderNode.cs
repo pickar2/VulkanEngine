@@ -7,7 +7,6 @@ using Core.UI.Reactive;
 using Core.Window;
 using SDL2;
 using SimpleMath.Vectors;
-using TextInput = Core.UI.Controls.TextInput;
 
 namespace Core.UI.ShaderGraph;
 
@@ -60,7 +59,7 @@ public class UiShaderNode
 		bgBox.ChangeCursorOnHover = false;
 		Container.AddChild(bgBox);
 
-		var nodeLabel = new TextInput(Container.Context)
+		var nodeLabel = new TextInputBox(Container.Context)
 		{
 			Text = Node.NodeName,
 			Color = TextColor
@@ -414,7 +413,7 @@ public class UiShaderInputNode : UiShaderNode
 		typeSelector.Context.CreateEffect(() => _inputNode.Type = typeSelector.Current.Value);
 		typeSelector.Draw();
 
-		var valueInput = new TextInput(Container.Context);
+		var valueInput = new TextInputBox(Container.Context);
 		valueInput.Text = _inputNode.Value;
 		valueInput.Color = TextColor;
 		valueInput.MarginLT = new Vector2<float>(5, 90);
