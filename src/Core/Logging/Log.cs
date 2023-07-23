@@ -47,7 +47,8 @@ public sealed class Log
 	}
 
 	public void Info<T>(T message)
-	{ if (!AllowedLevels.HasFlagFast(LogLevel.Info)) return;
+	{
+		if (!AllowedLevels.HasFlagFast(LogLevel.Info)) return;
 		LogHandler.HandleLogging(LogLevel.Info, message);
 	}
 
@@ -99,8 +100,7 @@ public static class LogHandler
 		switch (message)
 		{
 			case Exception exception:
-				AnsiConsole.WriteException(exception,
-					ExceptionFormats.ShortenPaths | ExceptionFormats.ShortenTypes | ExceptionFormats.ShortenMethods | ExceptionFormats.ShowLinks);
+				AnsiConsole.WriteException(exception, ExceptionFormats.ShortenEverything | ExceptionFormats.ShowLinks);
 				return;
 			default:
 				AnsiConsole.WriteLine(message?.ToString() ?? string.Empty);

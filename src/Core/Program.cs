@@ -6,5 +6,9 @@ namespace Core;
 
 internal static class Program
 {
-	public static void Main(string[] args) => Run(args);
+	public static int Main(string[] args)
+	{
+		Run(args);
+		return 0;
+	}
 }

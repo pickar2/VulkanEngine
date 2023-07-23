@@ -1,9 +1,9 @@
 ﻿using System.Collections.Generic;
+using Core.Resources.Assets;
 using Core.UI.Controls.Panels;
 using Core.UI.Materials.Fragment;
 using Core.UI.Materials.Vertex;
 using Core.UI.Reactive;
-using Core.Vulkan.Api;
 using SimpleMath.Vectors;
 
 namespace Core.UI.Controls;
@@ -21,18 +21,23 @@ public class Label : ScrollView
 
 	protected bool NeedsUpdate = true;
 
-	protected readonly StackPanel StackPanel;
+	protected readonly AbsolutePanel AbsolutePanel;
 
 	public Label(UiContext context) : base(context)
 	{
 		UseSubContext();
-		StackPanel = new StackPanel(context) {OffsetZ = 1};
-		AddChild(StackPanel);
+		AbsolutePanel = new AbsolutePanel(Context)
+		{
+			OffsetZ = 1,
+			TightBox = true,
+			Overflow = Overflow.Shown
+		};
+		AddChild(AbsolutePanel);
 		TightBox = true;
 		ScrollPower = new Vector2<float>(150);
 		ShowSliders = false;
 
-		Scale = new Vector2<float>(0.5f);
+		// Scale = new Vector2<float>(0.5f);
 		_color = Color.Black;
 
 		_uvMaterial = context.MaterialManager.GetFactory("texture_uv_material");
@@ -81,6 +86,7 @@ public class Label : ScrollView
 
 	public override void BeforeUpdate()
 	{
+		AbsolutePanel.Size = Size;
 		if (NeedsUpdate) UpdateText();
 		base.BeforeUpdate();
 	}
@@ -98,7 +104,7 @@ public class Label : ScrollView
 			for (int i = Text.Length; i < _letters.Count; i++)
 			{
 				var letter = _letters[i];
-				StackPanel.RemoveChild(letter);
+				AbsolutePanel.RemoveChild(letter);
 				letter.Dispose();
 			}
 
@@ -115,35 +121,78 @@ public class Label : ScrollView
 					FragMaterial = _fontMaterial.Create()
 				};
 				_letters.Add(box);
-				StackPanel.AddChild(box);
+				AbsolutePanel.AddChild(box);
 			}
 		}
+
+		var cursorPos = new Vector2<float>();
+
+		var font = UiManager.Consolas;
+		var metrics = font.CalculateFontMetrics(14f * (font.GlyphHeight / 70f), 0.2f);
+
+		float fallOff = font.Falloff * metrics.ScaleTexturePxToMetrics;
+		float scaleX = metrics.PixelSize;
 
 		int index = 0;
 		foreach (char ch in Text)
 		{
-			var character = UiManager.Consolas.GetCharacter(ch);
 			var box = _letters[index++];
+			if (ch is ' ')
+			{
+				cursorPos.X += font.AdvanceXSpace * metrics.PixelSize;
+				box.MarginLT = new Vector2<float>();
+				box.Size = new Vector2<float>();
+
+				continue;
+			}
+
+			var character = UiManager.Consolas.Characters[ch];
+			bool lowerCase = character.Flags.HasFlagFast(SdlCharacterFlags.Lower);
+			float scaleY = lowerCase ? metrics.LowScale : metrics.CapScale;
+
+			float gLeft = character.TextureCoordinates.X;
+			float gTop = character.TextureCoordinates.Y;
+			float gRight = character.TextureCoordinates.Z;
+			float gBottom = character.TextureCoordinates.W;
+
+			const float kern = 0;
+
+			box.Size.X = scaleX * metrics.ScaleTexturePxToMetrics * (gRight - gLeft);
+			box.Size.Y = scaleY * metrics.ScaleTexturePxToMetrics * (gBottom - gTop);
+
+			box.MarginLT.X = cursorPos.X + (scaleX * (character.Bearing.X - fallOff + kern));
+			box.MarginLT.Y = cursorPos.Y + metrics.PixelSize - (scaleY * (character.Bearing.Y + fallOff));
+
+			if (lowerCase)
+				box.MarginRB.Y = -scaleY * character.Bearing.Y;
+			else
+				box.MarginRB.Y = -(metrics.CapScale - metrics.LowScale) * metrics.ScaleTexturePxToMetrics * (gBottom - gTop);
+
+			// Logger.Debug($"{ch} | {size}, {offset} | {fallOff}, {size.Y}, {scaleY * (character.Bearing.Y + fallOff)}");
+
+			cursorPos.X += character.AdvanceX > 0 ? scaleX * character.AdvanceX : scaleX * font.AdvanceXSpace;
+			float sdfSize = 2 * fallOff * metrics.PixelSize / CombinedScale.X;
+
+			float gLeftTexture = gLeft / font.TextureWidth;
+			float gTopTexture = gTop / font.TextureHeight;
+			float gRightTexture = gRight / font.TextureWidth;
+			float gBottomTexture = gBottom / font.TextureHeight;
 
 			var vertData = box.VertMaterial.GetMemPtr<UvMaterialData>();
-			vertData->First = new Vector2<float>(character.X / 1024f, character.Y / 1024f);
-			vertData->Second = new Vector2<float>((character.X + character.Width) / 1024f, character.Y / 1024f);
-			vertData->Third = new Vector2<float>(character.X / 1024f, (character.Y + character.Height) / 1024f);
-			vertData->Fourth = new Vector2<float>((character.X + character.Width) / 1024f, (character.Y + character.Height) / 1024f);
+			vertData->TopLeft = new Vector2<float>(gLeftTexture, gTopTexture);
+			vertData->TopRight = new Vector2<float>(gRightTexture, gTopTexture);
+			vertData->BottomLeft = new Vector2<float>(gLeftTexture, gBottomTexture);
+			vertData->BottomRight = new Vector2<float>(gRightTexture, gBottomTexture);
 
 			box.VertMaterial.MarkForGPUUpdate();
 
 			var fragData = box.FragMaterial.GetMemPtr<FontMaterialData>();
-			fragData->TextureId = (int) TextureManager.GetTextureId("ConsolasTexture");
-			fragData->FontScale = character.Width * CombinedScale.X;
+			fragData->TextureId = (int) UiManager.Consolas.Texture.Id;
+			fragData->FontScale = sdfSize;
 			fragData->OutlineDistance = 0.1f;
 			fragData->Color = Color;
 
 			box.FragMaterial.MarkForGPUUpdate();
-
-			box.Size = new Vector2<float>(character.Width, character.Height);
-			box.MarginLT = new Vector2<float>(character.XOffset, character.YOffset);
-			box.MarginRB.X = character.XAdvance - character.Width - character.XOffset;
 		}
 	}
 }

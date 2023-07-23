@@ -15,154 +15,83 @@ readonly layout(std430, set = FRAGMENT_MATERIAL_SET, binding = font_material_bin
 
 const vec4 outlineColor = vec4(0, 0, 0, 1);
 
-const float sdfBorderSize = 0.009766;
-const vec2 sdfTexel = 1.0 / vec2(1024.0, 1024.0);
-
 const float subpixel_amount = 1.0;
 const float hint_amount = 1.0;
 
-vec3 sdf_triplet_alpha(float dOffset, vec3 sdf, float horz_scale, float vert_scale, float vgrad) {
-	float hdoffset = mix(dOffset * horz_scale, dOffset * vert_scale, vgrad);
-	float rdoffset = mix(dOffset, hdoffset, hint_amount);
-	vec3 alpha = smoothstep(vec3(0.5 - rdoffset), vec3(0.5 + rdoffset), sdf);
-	alpha = pow(alpha, vec3(1.0 + 0.2 * vgrad * hint_amount));
-	return alpha;
+vec3 estimateSubpixelCoverage(vec2 grad, float pixelCoverage, float subpixelLevel, bool isBgr, bool isVertical) {
+	float slope = isVertical ? grad.y : grad.x;
+	slope *= 0.333 * subpixelLevel;// empirical value
+	/* Check for inequality because if we flip twice (both because of the sign of the slope and because of the BGR pattern) we effectively do not flip. */
+	bool flip = isVertical
+	? (slope < 0.0) != isBgr
+	: (slope > 0.0) != isBgr;
+	vec3 subpixelPositions = flip ?  vec3(2, 1, 0) : vec3(0, 1, 2);
+
+	vec3 subpixelCoverage = pixelCoverage + abs(slope) * (2.0 * pixelCoverage - subpixelPositions);
+	subpixelCoverage = clamp(subpixelCoverage, 0.0, 1.0);
+
+	return subpixelCoverage;
 }
 
-float sdf_alpha(float dOffset, float sdf, float horz_scale, float vert_scale, float vgrad) {
-	float hdoffset = mix(dOffset * horz_scale, dOffset * vert_scale, vgrad);
-	float rdoffset = mix(dOffset, hdoffset, hint_amount);
-	float alpha = smoothstep(0.5 - rdoffset, 0.5 + rdoffset, sdf);
-	alpha = pow(alpha, 1.0 + 0.2 * vgrad * hint_amount);
-	return alpha;
-}
-
-vec3 subpixel(float v, float a) {
-	float vt      = 0.6 * v;// 1.0 will make your eyes bleed
-	vec3  rgb_max = vec3(-vt, 0.0, vt);
-	float top     = abs(vt);
-	float bottom  = -top - 1.0;
-	float cfloor  = mix(top, bottom, a);
-	vec3  res     = clamp(rgb_max - vec3(cfloor), 0.0, 1.0);
-	return res;
-}
-
-
-float sdf_alpha2(float dOffset, float sdf, float horz_scale, float vert_scale, float vgrad) {
-	float hdoffset = mix(dOffset * horz_scale, dOffset * vert_scale, vgrad);
-	float alpha = smoothstep(0.5 - hdoffset, 0.5 + hdoffset, sdf);
-	alpha = pow(alpha, 1.0 + 0.2 * vgrad);
-	return alpha;
-}
+//vec3 sdf_triplet_alpha( vec3 sdf, float horz_scale, float vert_scale, float vgrad, float doffset ) {
+//    float hdoffset = mix( doffset * horz_scale, doffset * vert_scale, vgrad );
+//    float rdoffset = mix( doffset, hdoffset, hint_amount );
+//    vec3 alpha = smoothstep( vec3( 0.5 - rdoffset ), vec3( 0.5 + rdoffset ), sdf );
+//    alpha = pow( alpha, vec3( 1.0 + 0.2 * vgrad * hint_amount ) );
+//    return alpha;
+//}
 
 void font_material(UiElementData data) {
 	font_material_struct mat = font_material_data[data.fragmentDataIndex];
 
-	float scale = sqrt(mat.scale) * 96;
-	float sdfSize = 2.0 * scale * sdfBorderSize;
-	float subpixelOffset = 0.3333 / scale;
-	float dOffset = 1.0 / sdfSize;
-
+	//	float scale = mat.scale;
 	vec4 color = intToRGBA(mat.color);
-	//	
-	//	float sdf       = texture( textures[mat.textureId], fragTexCoord ).a;
-	//    float sdf_north = texture( textures[mat.textureId], fragTexCoord + vec2( 0.0, sdfTexel.y ) ).a;
-	//    float sdf_east  = texture( textures[mat.textureId], fragTexCoord + vec2( sdfTexel.x, 0.0 ) ).a;
-	//
-	//    // Estimating stroke direction by the distance field gradient vector
-	//    vec2  sgrad     = vec2( sdf_east - sdf, sdf_north - sdf );
-	//    float sgrad_len = max( length( sgrad ), 1.0 / 128.0 );
-	//    vec2  grad      = sgrad / vec2( sgrad_len );
-	//    float vgrad = abs( grad.y ); // 0.0 - vertical stroke, 1.0 - horizontal one
-	//    
-	//    float horz_scale  = 1.1; // Blurring vertical strokes along the X axis a bit
-	//    float vert_scale  = 0.6; // While adding some contrast to the horizontal strokes
-	//    float hdoffset    = mix( dOffset * horz_scale, dOffset * vert_scale, vgrad ); 
-	//    float res_doffset = mix( dOffset, hdoffset, hint_amount );
-	//    
-	//    float alpha       = smoothstep( 0.5 - res_doffset, 0.5 + res_doffset, sdf );
-	//
-	//    // Additional contrast
-	//    alpha             = pow( alpha, 1 + 0.2 * vgrad * hint_amount );
-	//
-	//    // Unfortunately there is no support for ARB_blend_func_extended in WebGL.
-	//    // Fortunately the background is filled with a solid color so we can do
-	//    // the blending inside the shader.
-	//    
-	//    // Discarding pixels beyond a threshold to minimise possible artifacts.
-	//    
-	//    vec3 channels = subpixel( grad.x * 0.5 * subpixel_amount, alpha );
-	//
-	//    // For subpixel rendering we have to blend each color channel separately
-	//    vec3 res = mix( vec3(0.3), color.rgb, channels );
-	//
-	////    outColor = vec4( color.rgb, color.a);
-	//
-	//	float smoothing = 0.25 / (4 * mat.scale);
-	//	float alpha2 = smoothstep(0.5-smoothing, 0.5+smoothing, texture(textures[mat.textureId], fragTexCoord).a);
-	//	outColor = vec4(res, 1);
-	//
-	////	if (sdf < 0.333) outColor.a = 0;
-	//    if ( alpha < 20.0 / 256.0 ) outColor.a = 0;
 
+	vec2 sdf_texel = vec2(1.0 / 2048.0);
+	float doffset = 1.0 / mat.scale;
 
+	// Sampling the texture, L pattern
+	float sdf       = 2.52 * texture(textures[mat.textureId], fragTexCoord).r;
+	float sdf_north = 2.52 * texture(textures[mat.textureId], fragTexCoord + vec2(0.0, sdf_texel.y)).r;
+	float sdf_east  = 2.52 * texture(textures[mat.textureId], fragTexCoord + vec2(sdf_texel.x, 0.0)).r;
 
+	//	sdf = sdf * sdf;
+	//	sdf_north = sdf_north * sdf_north;
+	//	sdf_east = sdf_east * sdf_east;
 
-	float sdf       = texture(textures[mat.textureId], fragTexCoord).a;
-	float sdf_north = texture(textures[mat.textureId], fragTexCoord + vec2(0.0, sdfTexel.y)).a;
-	float sdf_east  = texture(textures[mat.textureId], fragTexCoord + vec2(sdfTexel.x, 0.0)).a;
 	// Estimating stroke direction by the distance field gradient vector
 	vec2  sgrad     = vec2(sdf_east - sdf, sdf_north - sdf);
 	float sgrad_len = max(length(sgrad), 1.0 / 128.0);
 	vec2  grad      = sgrad / vec2(sgrad_len);
 	float vgrad = abs(grad.y);// 0.0 - vertical stroke, 1.0 - horizontal one
-	//	if (subpixel_amount > 0.0) {
-	//		 Subpixel SDF samples
-	//		vec2  subpixel = vec2(subpixelOffset, 0.0);
 
-	//		 For displays with vertical subpixel placement:
-	//		 vec2 subpixel = vec2( 0.0, subpixelOffset );
+	float horz_scale  = 1;// Blurring vertical strokes along the X axis a bit
+	float vert_scale  = 1;// While adding some contrast to the horizontal strokes
+	float hdoffset    = mix(doffset * horz_scale, doffset * vert_scale, vgrad);
+	float res_doffset = mix(doffset, hdoffset, hint_amount) * 2;
 
-	//		float sdf_sp_n  = texture(textures[mat.textureId], fragTexCoord - subpixel).a;
-	//		float sdf_sp_p  = texture(textures[mat.textureId], fragTexCoord + subpixel).a;
-	//		float horz_scale  = 0.5;// Should be 0.33333, a subpixel size, but that is too colorful
-	//		float vert_scale  = 0.6;
-	//		vec3 triplet_alpha = sdf_triplet_alpha(dOffset, vec3(sdf_sp_n, sdf, sdf_sp_p), horz_scale, vert_scale, vgrad);
+	float alpha       = smoothstep(0.5 - res_doffset, 0.5 + res_doffset, sdf);
+
+	// Additional contrast
+	alpha             = pow(alpha, 1.0 + 0.2 * vgrad * hint_amount);
+	if (alpha < 20.0 / 256.0) alpha = 0;
+
+	vec3 channels = estimateSubpixelCoverage(grad, alpha, subpixel_amount, false, false);
+
+	//	if(sdf < 0.3) discard;
+	outColor = vec4(channels * color.rgb, alpha);
+
+	//    vec2  subpixel = vec2( 1920.0 / 3.0, 0.0 );
+	//    
+	//    // For displays with vertical subpixel placement:
+	//    // vec2 subpixel = vec2( 0.0, subpixel_offset );
+	//    
+	//    float sdf_sp_n  = 2.5 * texture( textures[mat.textureId], fragTexCoord - subpixel ).r;
+	//    float sdf_sp_p  = 2.5 * texture( textures[mat.textureId], fragTexCoord + subpixel ).r;
 	//
-	//		// For BGR subpixels:
-	//		// triplet_alpha = triplet.bgr
+	//    horz_scale  = 0.5; // Should be 0.33333, a subpixel size, but that is too colorful
+	//    vert_scale  = 0.6;
 	//
-	//		outColor = vec4(mix(vec3(0.66), color.rgb, triplet_alpha), triplet_alpha);
-	//	} else {
-	float horz_scale  = 1.1;
-	float vert_scale  = 0.6;
-
-	float alpha = sdf_alpha2(dOffset, sdf, horz_scale, vert_scale, vgrad);
-	alpha = sqrt(alpha);
-	alpha = smoothstep(0, 1, alpha);
-	if (alpha > 0.95) alpha = 1;
-	if (alpha < 0.1) alpha = 0;
-	outColor = vec4(color.rgb, color.a * alpha);
-	//		outColor = vec4(color.rgb, color.a * smoothstep(0, 1, alpha));
-	//		outColor = vec4(color.rgb, color.a * sqrt(alpha));
-	//		outColor = vec4(color.rgb, color.a * (alpha));
-	//	}
-	//
-	//	if(sdf < 0.33) outColor.a = 0;
-
-	//	if (outColor.a < 0.9) outColor.a = 0;
-
-	//	float outlineDistanceScaled = clamp(0, 0.5, 0.45 * mat.scale);
-	//	
-	//	float smoothing = 0.25 / (4 * mat.scale);
-	//	float distance = texture(textures[mat.textureId], fragTexCoord).a;
-	//	float outlineFactor = smoothstep(0.5 - smoothing, 0.5 + smoothing, distance);
-	//	vec4 color = mix(outlineColor, textColor, outlineFactor);
-	//	float alpha = smoothstep(outlineDistanceScaled - smoothing, outlineDistanceScaled + smoothing, distance);
-	//	outColor = vec4(color.rgb, alpha);
-
-
-	//	float smoothing = 0.25 / (4 * mat.scale);
-	//	float alpha2 = smoothstep(0.5-smoothing, 0.5+smoothing, texture(textures[mat.textureId], fragTexCoord).a);
-	//	outColor = vec4(color.rgb, alpha2);
+	//    vec3 channels = sdf_triplet_alpha( vec3( sdf_sp_n, sdf, sdf_sp_p ), horz_scale, vert_scale, vgrad, doffset );
+	//    outColor = vec4( channels * color.xyz, alpha * color.a );
 }

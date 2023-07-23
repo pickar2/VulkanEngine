@@ -4,8 +4,8 @@ namespace Core.UI.Materials.Vertex;
 
 public struct UvMaterialData
 {
-	public Vector2<float> First;
-	public Vector2<float> Second;
-	public Vector2<float> Third;
-	public Vector2<float> Fourth;
+	public Vector2<float> TopLeft;
+	public Vector2<float> TopRight;
+	public Vector2<float> BottomLeft;
+	public Vector2<float> BottomRight;
 }

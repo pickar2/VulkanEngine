@@ -109,6 +109,12 @@ public class Button : UiControl
 		HoverAnimation = Animation.OfRGB(value => Rectangle.Color = value, BackgroundColor, HoveredColor, TimeSpan.FromMilliseconds(70));
 	}
 
+	public override void BeforeUpdate()
+	{
+		Label.Size = Rectangle.ComputedSize / Rectangle.CombinedScale;
+		base.BeforeUpdate();
+	}
+
 	// private void UpdateClickAnimation()
 	// {
 	// 	ClickAnimation?.Stop();

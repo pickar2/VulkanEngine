@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using Core.Resources;
+using Core.Resources.Assets;
 using Core.Resources.QoiSharp;
 using Core.UI;
 using Core.UI.Controls.Panels;
@@ -87,23 +89,27 @@ public static class GeneralRenderer
 		Root.AddChild(VoxelRenderer);
 		Root.AddChild(Deferred3DRenderer);
 
-		byte[] bytes = File.ReadAllBytes($"Assets/Textures/{UiManager.Consolas.Pages[0].TextureName}");
-		var qoiImage = QoiDecoder.Decode(bytes);
+		// byte[] bytes = File.ReadAllBytes($"Assets/Textures/{UiManager.Consolas.Pages[0].TextureName}");
+		// var qoiImage = QoiDecoder.Decode(bytes);
 
-		var texture = CreateTextureFromBytes(qoiImage.Data, (ulong) qoiImage.Data.LongLength, (uint) qoiImage.Width, (uint) qoiImage.Height,
-			(int) qoiImage.Channels, false);
-		TextureManager.RegisterTexture("ConsolasTexture", texture.ImageView);
+		// var texture = CreateTextureFromBytes(qoiImage.Data, (ulong) qoiImage.Data.LongLength, (uint) qoiImage.Width, (uint) qoiImage.Height,
+			// (int) qoiImage.Channels, false);
+		// TextureManager.RegisterTexture("ConsolasTexture", texture.ImageView);
 
-		ExecuteOnce.InDevice.BeforeDispose(() => texture.Dispose());
+		// ExecuteOnce.InDevice.BeforeDispose(() => texture.Dispose());
 
-		Context.DeviceEvents.AfterCreate += () =>
-		{
-			var t = CreateTextureFromBytes(qoiImage.Data, (ulong) qoiImage.Data.LongLength, (uint) qoiImage.Width, (uint) qoiImage.Height,
-				(int) qoiImage.Channels, false);
-			TextureManager.RegisterTexture("ConsolasTexture", t.ImageView);
+		ResourceManager.AddCodec<SdlFont>(SdlFontCodec.Instance);
+		UiManager.Consolas = ResourceManager.Get<SdlFont>("Assets/Fonts/consolas.bin");
+		// UiManager.SegoeUi = ResourceManager.Get<SdlFont>("Assets/Fonts/segoeui.bin");
+		// UiManager.SegoeUi = ResourceManager.Get<SdlFont>("Assets/Fonts/roboto.bin");
 
-			ExecuteOnce.InDevice.BeforeDispose(() => t.Dispose());
-		};
+		byte[] bytes2 = File.ReadAllBytes($"Assets/Textures/{UiManager.Consolas.TextureName}");
+		var qoiImage2 = QoiDecoder.Decode(bytes2);
+
+		var texture2 = CreateTextureFromBytes(qoiImage2.Data, (ulong) qoiImage2.Data.LongLength, (uint) qoiImage2.Width, (uint) qoiImage2.Height,
+			(int) qoiImage2.Channels, false);
+		TextureManager.RegisterTexture(UiManager.Consolas.TextureName, texture2.ImageView);
+		ExecuteOnce.InDevice.BeforeDispose(() => texture2.Dispose());
 	}
 }
 

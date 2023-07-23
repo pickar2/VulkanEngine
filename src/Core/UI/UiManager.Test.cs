@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Text.RegularExpressions;
+using Core.Resources.Assets;
 using Core.UI.Animations;
+using Core.UI.AssetManager;
 using Core.UI.Controls;
 using Core.UI.Controls.Panels;
 using Core.UI.Fonts;
@@ -22,18 +24,20 @@ namespace Core.UI;
 
 public static partial class UiManager
 {
-	public static Font Consolas = default!;
+	// public static Font Consolas = default!;
+	public static SdlFont Consolas = default!;
 
 	private enum Showcase : byte
 	{
 		ShaderGraph,
 		VoxelRaymarching,
-		DeferredRenderer
+		DeferredRenderer,
+		AssetManager
 	}
 
 	private static unsafe void InitTestScene()
 	{
-		Consolas = FontLoader.LoadFromText("Assets/Fonts/consolas.fnt");
+		// Consolas = FontLoader.LoadFromText("Assets/Fonts/consolas.fnt");
 		// off main root control example:
 		// var infoBoxRoot = new FullScreenRootPanel(MainRoot.ComponentManager, MainRoot.MaterialManager, MainRoot.GlobalDataManager);
 		// var infoBox = new ControlInfoBox(infoBoxRoot.Context);
@@ -58,7 +62,8 @@ public static partial class UiManager
 			{
 				{"Shader graph", Showcase.ShaderGraph},
 				{"Voxel raymarching", Showcase.VoxelRaymarching},
-				{"Deferred renderer", Showcase.DeferredRenderer}
+				{"Deferred renderer", Showcase.DeferredRenderer},
+				{"Asset manager", Showcase.AssetManager}
 			},
 			OffsetZ = 1000,
 			BackgroundColor = Color.Slate600,
@@ -151,7 +156,7 @@ public static partial class UiManager
 					deferredLabel.MarginLT = (5, 5);
 					MainRoot.AddChild(deferredLabel);
 
-					var camera = GeneralRenderer.Deferred3DRenderer.Camera;
+					var camera = Deferred3DRenderer.Camera;
 
 					void UpdateDeferredLabelText()
 					{
@@ -177,6 +182,21 @@ public static partial class UiManager
 						deferredLabel.Dispose();
 					};
 
+					break;
+				case Showcase.AssetManager:
+					disposePrevious?.Invoke();
+
+					var assetManagerPanel = new AbsolutePanel(MainRoot.Context);
+					MainRoot.AddChild(assetManagerPanel);
+
+					AssetManagerUi.Draw(assetManagerPanel);
+
+					disposePrevious = () =>
+					{
+						AssetManagerUi.Dispose();
+						MainRoot.RemoveChild(assetManagerPanel);
+						assetManagerPanel.Dispose();
+					};
 					break;
 				default: throw new ArgumentOutOfRangeException();
 			}

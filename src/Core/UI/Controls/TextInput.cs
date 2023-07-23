@@ -91,18 +91,18 @@ public class TextInput : Label
 						_cursorBlink.Restart();
 
 						var visible = new Vector2<float>(0, ComputedSize.X / CombinedScale.X);
-						visible += ScrollOffset.X * ((StackPanel.ComputedSize.X / StackPanel.CombinedScale.X) - (ComputedSize.X / CombinedScale.X));
+						visible += ScrollOffset.X * ((AbsolutePanel.ComputedSize.X / AbsolutePanel.CombinedScale.X) - (ComputedSize.X / CombinedScale.X));
 
 						if (_cursor.MarginLT.X > visible.Y)
 						{
 							float diff = _cursor.MarginLT.X - visible.Y;
-							float scrollAmount = diff / ((StackPanel.ComputedSize.X / StackPanel.CombinedScale.X) - (ComputedSize.X / CombinedScale.X));
+							float scrollAmount = diff / ((AbsolutePanel.ComputedSize.X / AbsolutePanel.CombinedScale.X) - (ComputedSize.X / CombinedScale.X));
 							ScrollOffset.X += scrollAmount;
 						}
 						else if (_cursor.MarginLT.X < visible.X)
 						{
 							float diff = visible.X - _cursor.MarginLT.X;
-							float scrollAmount = diff / ((StackPanel.ComputedSize.X / StackPanel.CombinedScale.X) - (ComputedSize.X / CombinedScale.X));
+							float scrollAmount = diff / ((AbsolutePanel.ComputedSize.X / AbsolutePanel.CombinedScale.X) - (ComputedSize.X / CombinedScale.X));
 							ScrollOffset.X -= scrollAmount;
 						}
 
@@ -151,7 +151,8 @@ public class TextInput : Label
 		});
 	}
 
-	protected int CalculateCursorPos(Vector2<int> mousePos) => (int) Math.Round((mousePos.X - CombinedPos.X - StackPanel.LocalPos.X) / (18 * CombinedScale.X));
+	protected int CalculateCursorPos(Vector2<int> mousePos) =>
+		(int) Math.Round((mousePos.X - CombinedPos.X - AbsolutePanel.LocalPos.X) / (18 * CombinedScale.X));
 
 	public override void Dispose()
 	{

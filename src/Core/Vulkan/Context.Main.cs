@@ -391,6 +391,7 @@ public static unsafe partial class Context
 
 	private static bool CheckDeviceFeatures(PhysicalDevice device, StringBuilder sb)
 	{
+		GC.Collect();
 		PhysicalDeviceFeatures2.Chain(out var chain);
 		object[] args = new object[3];
 		args[2] = false;

@@ -237,6 +237,8 @@ public class UiInputContext : IInputContext
 	public KeyboardInputHandler KeyboardInputHandler { get; } = new();
 	public MouseInputHandler MouseInputHandler { get; } = new();
 
+	public event Action<string>? OnFileDrop;
+
 	public bool ProcessEvent(SDL_Event sdlEvent)
 	{
 		switch (sdlEvent.type)
@@ -255,7 +257,6 @@ public class UiInputContext : IInputContext
 				return true;
 
 			case SDL_EventType.SDL_WINDOWEVENT:
-			{
 				if (sdlEvent.window.windowEvent == SDL_WindowEventID.SDL_WINDOWEVENT_LEAVE)
 				{
 					MouseInputHandler.MouseMotion(new SDL_MouseMotionEvent
@@ -266,12 +267,20 @@ public class UiInputContext : IInputContext
 				}
 
 				return true;
-			}
 
 			case SDL_EventType.SDL_KEYDOWN:
 				return KeyboardInputHandler.KeyDown(sdlEvent.key);
 			case SDL_EventType.SDL_KEYUP:
 				return KeyboardInputHandler.KeyUp(sdlEvent.key);
+
+			case SDL_EventType.SDL_DROPFILE:
+				nint filePtr = sdlEvent.drop.file;
+				string? filePath = UTF8_ToManaged(filePtr, true);
+				if (String.IsNullOrEmpty(filePath)) return true;
+
+				OnFileDrop?.Invoke(filePath);
+
+				return true;
 		}
 
 		return false;

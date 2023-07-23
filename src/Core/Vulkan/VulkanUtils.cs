@@ -657,7 +657,8 @@ public static unsafe class VulkanUtils
 
 	public static VulkanImage CreateTextureFromBytes(byte[] bytes, ulong bytesCount, uint width, uint height, int channels, bool generateMipmaps)
 	{
-		var format = channels == 4 ? Format.R8G8B8A8Srgb : Format.R8G8B8Srgb; // TODO: R8G8B8Srgb is not valid format ???
+		if (channels != 4) throw new Exception("There should be 4 channels in texture");
+		var format = Format.R8G8B8A8Srgb;
 
 		var stagingBuffer = new VulkanBuffer(bytesCount, BufferUsageFlags.TransferSrcBit, VmaMemoryUsage.VMA_MEMORY_USAGE_CPU_ONLY);
 
