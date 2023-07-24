@@ -146,7 +146,8 @@ public class Label : ScrollView
 				continue;
 			}
 
-			var character = UiManager.Consolas.Characters[ch];
+			var character = UiManager.Consolas.GetCharacter(ch);
+
 			bool lowerCase = character.Flags.HasFlagFast(SdlCharacterFlags.Lower);
 			float scaleY = lowerCase ? metrics.LowScale : metrics.CapScale;
 
@@ -163,10 +164,12 @@ public class Label : ScrollView
 			box.MarginLT.X = cursorPos.X + (scaleX * (character.Bearing.X - fallOff + kern));
 			box.MarginLT.Y = cursorPos.Y + metrics.PixelSize - (scaleY * (character.Bearing.Y + fallOff));
 
-			if (lowerCase)
-				box.MarginRB.Y = -scaleY * character.Bearing.Y;
-			else
-				box.MarginRB.Y = -(metrics.CapScale - metrics.LowScale) * metrics.ScaleTexturePxToMetrics * (gBottom - gTop);
+			box.MarginRB.Y = box.MarginLT.Y;
+
+			// if (lowerCase)
+				// box.MarginRB.Y = -scaleY * character.Bearing.Y;
+			// else
+				// box.MarginRB.Y = -(metrics.CapScale - metrics.LowScale) * metrics.ScaleTexturePxToMetrics * (gBottom - gTop);
 
 			// Logger.Debug($"{ch} | {size}, {offset} | {fallOff}, {size.Y}, {scaleY * (character.Bearing.Y + fallOff)}");
 

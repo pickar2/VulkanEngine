@@ -15,6 +15,7 @@ using Core.Vulkan.Api;
 using Core.Vulkan.Renderers;
 using Core.Vulkan.Voxels;
 using Core.Window;
+using SDL2;
 using SimpleMath.Vectors;
 using static Core.Vulkan.Renderers.GeneralRenderer;
 
@@ -23,7 +24,7 @@ namespace Core.UI;
 public static partial class UiManager
 {
 	// public static Font Consolas = default!;
-	public static SdlFont Consolas = default!;
+	public static SdfFont Consolas = default!;
 
 	private enum Showcase : byte
 	{
@@ -35,18 +36,16 @@ public static partial class UiManager
 
 	private static unsafe void InitTestScene()
 	{
-		// Consolas = FontLoader.LoadFromText("Assets/Fonts/consolas.fnt");
-		// off main root control example:
-		// var infoBoxRoot = new FullScreenRootPanel(MainRoot.ComponentManager, MainRoot.MaterialManager, MainRoot.GlobalDataManager);
-		// var infoBox = new ControlInfoBox(infoBoxRoot.Context);
-		// infoBoxRoot.AddChild(infoBox);
-		// AfterUpdate += () =>
-		// {
-		// 	infoBox.Control = InputContext.KeyboardInputHandler.IsKeyPressed(SDL.SDL_Keycode.SDLK_LALT) && TopControl is not null && TopControl.Selectable
-		// 		? TopControl
-		// 		: null;
-		// 	infoBoxRoot.BeforeUpdate();
-		// };
+		var infoBoxRoot = new FullScreenRootPanel(MainRoot.ComponentManager, MainRoot.MaterialManager, MainRoot.GlobalDataManager);
+		var infoBox = new ControlInfoBox(infoBoxRoot.Context);
+		infoBoxRoot.AddChild(infoBox);
+		BeforeUpdate += () =>
+		{
+			infoBox.Control = InputContext.KeyboardInputHandler.IsKeyPressed(SDL.SDL_Keycode.SDLK_LALT) && TopControl is not null && TopControl.Selectable
+				? TopControl
+				: null;
+			infoBoxRoot.BeforeUpdate();
+		};
 
 		// ShaderGraph.ShaderGraph.Draw();
 

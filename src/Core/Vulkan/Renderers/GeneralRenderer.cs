@@ -98,8 +98,8 @@ public static class GeneralRenderer
 
 		// ExecuteOnce.InDevice.BeforeDispose(() => texture.Dispose());
 
-		ResourceManager.AddCodec<SdlFont>(SdlFontCodec.Instance);
-		UiManager.Consolas = ResourceManager.Get<SdlFont>("Assets/Fonts/consolas.bin");
+		ResourceManager.AddCodec<SdfFont>(SdlFontCodec.Instance);
+		UiManager.Consolas = ResourceManager.Get<SdfFont>("Assets/Fonts/consolas.bin");
 		// UiManager.SegoeUi = ResourceManager.Get<SdlFont>("Assets/Fonts/segoeui.bin");
 		// UiManager.SegoeUi = ResourceManager.Get<SdlFont>("Assets/Fonts/roboto.bin");
 

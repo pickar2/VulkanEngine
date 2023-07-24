@@ -88,7 +88,7 @@ public class TextInputBox : Label
 					str => Text = str,
 					curPos =>
 					{
-						_cursor.MarginLT.X = CursorPosToDistance(curPos, CombinedScale, Text, UiManager.Consolas);
+						_cursor.MarginLT.X = CursorPosToDistance(curPos, Text, UiManager.Consolas);
 						_cursorBlink.Restart();
 
 						float spaceSize = 12 * UiManager.Consolas.AdvanceXSpace * CombinedScale.X / 2;
@@ -113,8 +113,8 @@ public class TextInputBox : Label
 					},
 					(selectStart, selectLength) =>
 					{
-						_selection.MarginLT.X = CursorPosToDistance(selectStart, CombinedScale, Text, UiManager.Consolas);
-						_selection.Size.X = CursorPosToDistance(selectStart + selectLength, CombinedScale, Text, UiManager.Consolas) - _selection.MarginLT.X;
+						_selection.MarginLT.X = CursorPosToDistance(selectStart, Text, UiManager.Consolas);
+						_selection.Size.X = CursorPosToDistance(selectStart + selectLength, Text, UiManager.Consolas) - _selection.MarginLT.X;
 					},
 					() =>
 					{
@@ -157,7 +157,7 @@ public class TextInputBox : Label
 	protected int CalculateCursorPos(Vector2<int> mousePos) =>
 		CalculateCursorPos(mousePos.Cast<int, float>() - CombinedPos - AbsolutePanel.LocalPos, AbsolutePanel.CombinedScale, Text, UiManager.Consolas);
 
-	public static int CalculateCursorPos(Vector2<float> pos, Vector2<float> scale, string text, SdlFont font)
+	public static int CalculateCursorPos(Vector2<float> pos, Vector2<float> scale, string text, SdfFont font)
 	{
 		const float pixelSize = 12;
 		int cursorPos = 0;
@@ -179,7 +179,7 @@ public class TextInputBox : Label
 		return cursorPos;
 	}
 
-	public static float CursorPosToDistance(int cursorPos, Vector2<float> scale, string text, SdlFont font)
+	public static float CursorPosToDistance(int cursorPos, string text, SdfFont font)
 	{
 		const float pixelSize = 12;
 		float distance = 0;
@@ -188,7 +188,7 @@ public class TextInputBox : Label
 		for (int index = 0; index < cursorPos && index < span.Length; index++)
 		{
 			char ch = span[index];
-			distance += font.GetAdvanceX(ch, pixelSize * scale.X);
+			distance += font.GetAdvanceX(ch, pixelSize);
 		}
 
 		return distance;

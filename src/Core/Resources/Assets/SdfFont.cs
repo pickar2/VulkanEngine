@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Core.UI;
 using Core.Utils;
 using Core.Vulkan;
 using Core.Vulkan.Api;
@@ -9,7 +10,7 @@ using SimpleMath.Vectors;
 
 namespace Core.Resources.Assets;
 
-public class SdlFont
+public class SdfFont
 {
 	// static SdlFont() => ResourceManager.AddCodec<SdlFont>(SdlFontCodec.Instance);
 
@@ -27,7 +28,14 @@ public class SdlFont
 	public float XHeight { get; set; }
 	public float AdvanceXSpace { get; set; }
 
-	public Dictionary<char, SdlCharacter> Characters { get; } = new();
+	public Dictionary<char, SdfCharacter> Characters { get; } = new();
+
+	public SdfCharacter GetCharacter(char ch)
+	{
+		if (!Characters.TryGetValue(ch, out var character))
+			character = Characters['?'];
+		return character;
+	}
 	// public .. kernings
 
 	private Texture? _texture;
@@ -63,7 +71,7 @@ public class SdlFont
 
 	public float GetAdvanceX(char ch, float scaleX)
 	{
-		var character = Characters[ch];
+		var character = GetCharacter(ch);
 		return character.AdvanceX > 0 ? scaleX * character.AdvanceX : scaleX * AdvanceXSpace;
 	}
 }
@@ -86,16 +94,16 @@ public readonly struct FontMetrics
 	}
 }
 
-public readonly unsafe struct SdlCharacter
+public readonly unsafe struct SdfCharacter
 {
-	public static readonly int SizeOf = sizeof(SdlCharacter);
+	public static readonly int SizeOf = sizeof(SdfCharacter);
 
 	public readonly Vector4<float> TextureCoordinates;
 	public readonly Vector2<float> Bearing;
 	public readonly float AdvanceX;
 	public readonly SdlCharacterFlags Flags;
 
-	public SdlCharacter(Vector4<float> textureCoordinates, Vector2<float> bearing, float advanceX, SdlCharacterFlags flags)
+	public SdfCharacter(Vector4<float> textureCoordinates, Vector2<float> bearing, float advanceX, SdlCharacterFlags flags)
 	{
 		TextureCoordinates = textureCoordinates;
 		Bearing = bearing;
@@ -114,7 +122,7 @@ public enum SdlCharacterFlags : byte
 	Space = 8
 }
 
-public sealed class SdlFontCodec : CompressedResourceCodec<SdlFont>
+public sealed class SdlFontCodec : CompressedResourceCodec<SdfFont>
 {
 	public static readonly SdlFontCodec Instance = new();
 
@@ -122,11 +130,11 @@ public sealed class SdlFontCodec : CompressedResourceCodec<SdlFont>
 
 	public override LZ4Level CompressionLevel => LZ4Level.L10_OPT;
 
-	public override SdlFont DecodeUnpacked(Span<byte> bytes)
+	public override SdfFont DecodeUnpacked(Span<byte> bytes)
 	{
 		var buffer = bytes.AsSpanBuffer();
 
-		var font = new SdlFont
+		var font = new SdfFont
 		{
 			FontName = buffer.ReadVarString(),
 			TextureName = buffer.ReadVarString(),
@@ -144,13 +152,13 @@ public sealed class SdlFontCodec : CompressedResourceCodec<SdlFont>
 		for (int i = 0; i < charactersCount; i++)
 		{
 			char code = buffer.Read<char>();
-			font.Characters[code] = buffer.Read<SdlCharacter>();
+			font.Characters[code] = buffer.Read<SdfCharacter>();
 		}
 
 		return font;
 	}
 
-	public override int EstimateByteSize(SdlFont font)
+	public override int EstimateByteSize(SdfFont font)
 	{
 		int sum = 0;
 
@@ -162,12 +170,12 @@ public sealed class SdlFontCodec : CompressedResourceCodec<SdlFont>
 		sum += sizeof(float) * 5;
 
 		sum += sizeof(int);
-		sum += (sizeof(char) + SdlCharacter.SizeOf) * font.Characters.Count;
+		sum += (sizeof(char) + SdfCharacter.SizeOf) * font.Characters.Count;
 
 		return sum;
 	}
 
-	public override void EncodeUnpacked(SdlFont font, Span<byte> span)
+	public override void EncodeUnpacked(SdfFont font, Span<byte> span)
 	{
 		var buffer = span.AsSpanBuffer();
 
@@ -196,9 +204,9 @@ public sealed class SdlFontCodec : CompressedResourceCodec<SdlFont>
 
 public static class SdlFontExtensions
 {
-	public static SdlFont ReadFromJs(string[] lines)
+	public static SdfFont ReadFromJs(string[] lines)
 	{
-		var font = new SdlFont();
+		var font = new SdfFont();
 		foreach (string line in lines)
 		{
 			if (TryReadInt(line, "textureWidth", out int textureWidth)) font.TextureWidth = textureWidth;
@@ -240,7 +248,7 @@ public static class SdlFontExtensions
 					advanceX = float.Parse(split[6].Trim());
 					flags = (SdlCharacterFlags) byte.Parse(split[7].Trim());
 
-					font.Characters[code] = new SdlCharacter(textureCoordinates, bearing, advanceX, flags);
+					font.Characters[code] = new SdfCharacter(textureCoordinates, bearing, advanceX, flags);
 
 					innerArray = innerArray[(innerArray.IndexOf(']') + 1)..];
 					if (innerArray.Length > 0 && innerArray[0] == ',') innerArray = innerArray[1..];
