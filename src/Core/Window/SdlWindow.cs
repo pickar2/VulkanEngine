@@ -105,11 +105,19 @@ public class SdlWindow : IDisposable
 	}
 
 	public void SetTitle(string title) => SDL_SetWindowTitle(WindowHandle, Title = title);
-	public void Hide() => SDL_HideWindow(WindowHandle);
-	public void Show() => SDL_ShowWindow(WindowHandle);
+
+	public void Hide() => ExecuteInWindowThread(() => SDL_HideWindow(WindowHandle));
+
+	public void Show() => ExecuteInWindowThread(() => SDL_ShowWindow(WindowHandle));
+
 	public bool IsShown => ((SDL_WindowFlags) SDL_GetWindowFlags(WindowHandle) & SDL_WindowFlags.SDL_WINDOW_SHOWN) != 0;
 
 	public event Action<int, SDL_Event[]>? OnEvents;
+
+	private List<Action> _otherActions = new();
+	private List<Action> _actions = new();
+
+	public void ExecuteInWindowThread(Action action) => _actions.Add(action);
 
 	public void MainLoop()
 	{
@@ -120,6 +128,11 @@ public class SdlWindow : IDisposable
 		IsRunning = true;
 		while (IsRunning)
 		{
+			var actions = Interlocked.Exchange(ref _actions, _otherActions);
+			foreach (var action in actions) action.Invoke();
+			actions.Clear();
+			_otherActions = actions;
+
 			SDL_PumpEvents();
 			int eventCount = SDL_PeepEvents(events,
 				maxNumEvents,
@@ -146,8 +159,8 @@ public class SdlWindow : IDisposable
 			case SDL_WindowEventID.SDL_WINDOWEVENT_ENTER:
 				if (_firstTimeFocus)
 				{
-					SDL_RaiseWindow(WindowHandle);
 					_firstTimeFocus = false;
+					ExecuteInWindowThread(() => SDL_RaiseWindow(WindowHandle));
 				}
 
 				break;
@@ -182,12 +195,13 @@ public class SdlWindow : IDisposable
 
 	public nint GetCursor() => SDL_GetCursor();
 
-	public void SetCursor(nint cursorPtr) => SDL_SetCursor(cursorPtr);
+	public void SetCursor(nint cursorPtr) => ExecuteInWindowThread(() => SDL_SetCursor(cursorPtr));
 
-	public void SetCursor(SDL_SystemCursor cursor)
-	{
-		if (!_cursors.TryGetValue(cursor, out nint ptr))
-			_cursors[cursor] = ptr = SDL_CreateSystemCursor(cursor);
-		SDL_SetCursor(ptr);
-	}
+	public void SetCursor(SDL_SystemCursor cursor) =>
+		ExecuteInWindowThread(() =>
+		{
+			if (!_cursors.TryGetValue(cursor, out nint ptr))
+				_cursors[cursor] = ptr = SDL_CreateSystemCursor(cursor);
+			SDL_SetCursor(ptr);
+		});
 }
