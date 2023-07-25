@@ -2,7 +2,6 @@ This is a toy project, that I used to learn basics of graphics programming and v
 Project is a mess, because as I was trying and learning new stuff, some parts were added, updated and replaced, while other were written once at the start of the journey and used without any change. \
 Lots of stuff can be improved and fixed, features can be added, but before that some parts need to be rewritten from ground up.
 ## Libraries and tools
-***
 * [.NET 7.0](https://dotnet.microsoft.com/en-us/download/dotnet/7.0) SDK
 * [Silk.NET](https://github.com/dotnet/Silk.NET) as vulkan bindings.
 * [SDL2-CS](https://github.com/Ryujinx/SDL2-CS) as SDL bindings.
@@ -13,7 +12,6 @@ Lots of stuff can be improved and fixed, features can be added, but before that 
 * [sdf_atlas](https://github.com/astiopin/sdf_atlas) tool to generate sdf fonts.
 * [RenderDoc](https://renderdoc.org/) to debug graphics.
 ## Technologies
-***
 SDL2 window.
 
 Vulkan 1.2 renderer with primitive render graph.
@@ -25,7 +23,6 @@ Data used by different materials is being stored using arena allocator with free
 
 SimpleMath library created using c# source generators.
 ## Screenshots
-***
 Fully functional shader graph system. Example shader [adapted from](https://www.shadertoy.com/view/mdBSRt)\
 ![Shader graph example](./img/shader_graph.gif)
 Ui is built using my own retained mode system.
