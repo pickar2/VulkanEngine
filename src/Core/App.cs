@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
@@ -23,9 +22,6 @@ public static class App
 	};
 
 	public static readonly Log Logger = Log.Instance;
-
-	// Folders
-	internal static readonly string AppFolderPath = Path.Combine(Details.DataPath, Details.AppName);
 
 	static App()
 	{
