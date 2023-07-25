@@ -18,7 +18,7 @@ jobs:
                              # https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idruns-on
 
     env:
-      SolutionName: Core
+      SolutionName: Core.sln
       ReleaseZipName: Core.zip
 
     steps:
