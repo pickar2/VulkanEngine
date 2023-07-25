@@ -12,7 +12,7 @@ jobs:
 
     strategy:
       matrix:
-        configuration: [Debug, Release]
+        configuration: [Release]
 
     runs-on: windows-latest  # For a list of available runner types, refer to
                              # https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idruns-on
@@ -40,8 +40,12 @@ jobs:
       run: dotnet build ${{ env.SolutionName }} --configuration Release --no-restore
 
     - name: Zip the Build
-      run: zip -r ${{ env.ReleaseZipName }} ./src/Core/bin/x64/Release/net7.0/win-x64/
-    
+      uses: thedoctor0/zip-release@0.7.1
+      with:
+        type: 'zip'
+        filename: ${{ env.ReleaseZipName }}
+        path: './src/Core/bin/x64/Release/net7.0/win-x64/'
+
     - name: Upload build artifacts
       uses: actions/upload-artifact@v3
       with:
