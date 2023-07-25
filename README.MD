@@ -1,6 +1,8 @@
 This is a toy project, that I used to learn basics of graphics programming and vulkan. \
 Project is a mess, because as I was trying and learning new stuff, some parts were added, updated and replaced, while other were written once at the start of the journey and used without any change. \
 Lots of stuff can be improved and fixed, features can be added, but before that some parts need to be rewritten from ground up.
+
+Win64 binaries can be downloaded from [actions](https://github.com/pickar2/VulkanEngine/actions).
 ## Libraries and tools
 * [.NET 7.0](https://dotnet.microsoft.com/en-us/download/dotnet/7.0) SDK
 * [Silk.NET](https://github.com/dotnet/Silk.NET) as vulkan bindings.
