@@ -1,4 +1,4 @@
-﻿using SimpleMath.Vectors;
+﻿using SimplerMath;
 
 namespace Core.UI.Materials.Vertex;
 

@@ -6,7 +6,7 @@ using Core.UI.Controls.Panels;
 using Core.UI.Reactive;
 using Core.Window;
 using SDL2;
-using SimpleMath.Vectors;
+using SimplerMath;
 
 namespace Core.UI.ShaderGraph;
 
@@ -55,7 +55,7 @@ public class UiShaderNode
 		bgBox.TextAlignment = Alignment.TopCenter;
 		bgBox.AlignPanel.MarginLT = new Vector2<float>(5, 5);
 		// bgBox.AlignPanel.MarginRB = new Vector2<float>(5, 0);
-		bgBox.AlignPanel.Size = (NodeSizeX - 10, 45);
+		bgBox.AlignPanel.Size = new Vector2<float>(NodeSizeX - 10, 45);
 		bgBox.ChangeCursorOnHover = false;
 		Container.AddChild(bgBox);
 
@@ -89,7 +89,7 @@ public class UiShaderNode
 				if (UiManager.InputContext.KeyboardInputHandler.IsKeyPressed(SDL.SDL_Keycode.SDLK_LSHIFT))
 				{
 					control.MarginLT -= control.MarginLT % gridSize;
-					combinedMotion += motion.Cast<int, float>() / control.ParentScale;
+					combinedMotion += (motion.As<float>() / control.ParentScale).As<int>();
 					if (combinedMotion.X / gridSize != 0)
 					{
 						control.MarginLT.X += gridSize * (combinedMotion.X / gridSize);
@@ -105,7 +105,7 @@ public class UiShaderNode
 				else
 				{
 					combinedMotion = new Vector2<int>(0);
-					control.MarginLT += motion.Cast<int, float>() / control.ParentScale;
+					control.MarginLT += motion.As<float>() / control.ParentScale;
 				}
 
 				control.MarginLT.Round();
@@ -272,11 +272,12 @@ public class UiShaderNode
 					if (button != MouseButton.Left) return false;
 
 					var start = new Vector2<double>(ConnectionSize, ConnectionSize) / 2;
-					var end = ((newPos.Cast<int, double>() - control.CombinedPos) / control.CombinedScale) + outputBox.MarginLT;
+					var end = (((newPos.As<float>() - control.CombinedPos) / control.CombinedScale) + outputBox.MarginLT).As<double>();
 					switch (type)
 					{
 						case DragType.Start:
-							dragCurve = new BezierCurve(Container.Context, start, ((start.X + end.X) / 2.0, start.Y), ((start.X + end.X) / 2.0, end.Y), end);
+							dragCurve = new BezierCurve(Container.Context, start, new Vector2<double>((start.X + end.X) / 2.0, start.Y),
+								new Vector2<double>((start.X + end.X) / 2.0, end.Y), end);
 							dragCurve.OffsetZ = 10;
 							outputBox.AddChild(dragCurve);
 
@@ -285,8 +286,8 @@ public class UiShaderNode
 							break;
 						case DragType.Move when dragCurve is not null:
 							dragCurve.Anchors[0] = start;
-							dragCurve.Anchors[1] = ((start.X + end.X) / 2.0, start.Y);
-							dragCurve.Anchors[2] = ((start.X + end.X) / 2.0, end.Y);
+							dragCurve.Anchors[1] = new Vector2<double>((start.X + end.X) / 2.0, start.Y);
+							dragCurve.Anchors[2] = new Vector2<double>((start.X + end.X) / 2.0, end.Y);
 							dragCurve.Anchors[3] = end;
 							dragCurve.UpdateRequired = true;
 							break;
@@ -340,8 +341,8 @@ public class UiShaderNode
 
 				var curve = new BezierCurve(Container.Context,
 					outputPos,
-					((outputPos.X + inputPos.X) / 2.0, outputPos.Y),
-					((outputPos.X + inputPos.X) / 2.0, inputPos.Y),
+					new Vector2<double>((outputPos.X + inputPos.X) / 2.0, outputPos.Y),
+					new Vector2<double>((outputPos.X + inputPos.X) / 2.0, inputPos.Y),
 					inputPos);
 				curve.OffsetZ = 2;
 

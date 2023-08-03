@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Core.UI.Reactive;
-using SimpleMath.Vectors;
+using SimplerMath;
 
 namespace Core.UI.Controls.Panels;
 
@@ -31,14 +31,14 @@ public class DockPanel : UiControl
 
 	public override void ComputeSizeAndArea(Vector2<float> maxSize)
 	{
-		var maxArea = maxSize.MinV((Size * CombinedScale) + ((MarginLT + MarginRB) * ParentScale));
-		maxSize.Min(Size * CombinedScale);
+		var maxArea = maxSize.Min((Size * CombinedScale) + ((MarginLT + MarginRB) * ParentScale));
+		maxSize.MMin(Size * CombinedScale);
 
 		var accumulated = new Vector2<float>();
 		var desiredSize = new Vector2<float>();
 		foreach (var child in Children)
 		{
-			var availableSize = (maxSize - accumulated).MaxV(0);
+			var availableSize = (maxSize - accumulated).Max(0);
 
 			child.ComputeSizeAndArea(availableSize);
 			if (!_docks.TryGetValue(child, out var dock)) continue;
@@ -57,10 +57,10 @@ public class DockPanel : UiControl
 			}
 		}
 
-		desiredSize.Max(accumulated);
+		desiredSize.MMax(accumulated);
 
-		ComputedSize = maxSize.Min(desiredSize);
-		ComputedArea = maxArea.Min(desiredSize + ((MarginLT + MarginRB) * ParentScale));
+		ComputedSize = maxSize.MMin(desiredSize);
+		ComputedArea = maxArea.MMin(desiredSize + ((MarginLT + MarginRB) * ParentScale));
 	}
 
 	public override void ArrangeChildren(Vector2<float> area)

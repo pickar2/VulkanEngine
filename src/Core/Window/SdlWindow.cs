@@ -5,7 +5,7 @@ using System.Threading;
 using Core.Utils;
 using Core.Vulkan;
 using Silk.NET.Vulkan;
-using SimpleMath.Vectors;
+using SimplerMath;
 using static SDL2.SDL;
 
 namespace Core.Window;

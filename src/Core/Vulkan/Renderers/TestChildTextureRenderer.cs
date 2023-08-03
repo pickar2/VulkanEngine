@@ -3,7 +3,7 @@ using Core.Native.VMA;
 using Core.Vulkan.Api;
 using Core.Vulkan.Utility;
 using Silk.NET.Vulkan;
-using SimpleMath.Vectors;
+using SimplerMath;
 
 namespace Core.Vulkan.Renderers;
 

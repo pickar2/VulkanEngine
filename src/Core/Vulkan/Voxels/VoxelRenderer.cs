@@ -12,7 +12,7 @@ using Core.Vulkan.Renderers;
 using Core.Vulkan.Utility;
 using Silk.NET.Maths;
 using Silk.NET.Vulkan;
-using SimpleMath.Vectors;
+using SimplerMath;
 
 namespace Core.Vulkan.Voxels;
 
@@ -63,7 +63,7 @@ public unsafe class VoxelRenderer : RenderChain
 
 	public VoxelRenderer(string name) : base(name)
 	{
-		Size = (new Vector2<float>(1920, 1080) / 1.5f).Cast<float, uint>();
+		Size = (new Vector2<float>(1920, 1080) / 1.5f).As<uint>();
 
 		ColorAttachment = ReCreate.InDevice.Auto(() =>
 				FrameGraph.CreateAttachment(Format.R8G8B8A8Unorm, ImageAspectFlags.ColorBit, Size,
@@ -171,8 +171,8 @@ public unsafe class VoxelRenderer : RenderChain
 	public void UpdateSceneData()
 	{
 		var yawPitchRollRadians = new Vector3<double>(Camera.YawPitchRoll.X.ToRadians(), Camera.YawPitchRoll.Y.ToRadians(), Camera.YawPitchRoll.Z.ToRadians())
-			.Cast<double, float>();
-		var cameraWorldPos = Camera.Position + (Camera.ChunkPos * VoxelChunk.ChunkSize);
+			.As<float>();
+		var cameraWorldPos = Camera.Position + new Vector3<double>(Camera.ChunkPos.As<double>() * VoxelChunk.ChunkSize);
 
 		var view = Matrix4x4.Identity;
 		view *= Matrix4x4.CreateTranslation((float) -cameraWorldPos.X, (float) -cameraWorldPos.Y, (float) -cameraWorldPos.Z);
@@ -185,8 +185,8 @@ public unsafe class VoxelRenderer : RenderChain
 		scene[0] = new VoxelSceneData
 		{
 			CameraChunkPos = Camera.ChunkPos,
-			LocalCameraPos = Camera.Position.Cast<double, float>(),
-			ViewDirection = Camera.Direction.Cast<double, float>(),
+			LocalCameraPos = Camera.Position.As<float>(),
+			ViewDirection = Camera.Direction.As<float>(),
 			FrameIndex = Context.FrameIndex,
 			ViewMatrix = view.ToGeneric(),
 			ProjectionMatrix = proj
@@ -233,7 +233,7 @@ public unsafe class VoxelRenderer : RenderChain
 			processed.Add(chunkPos);
 
 			var chunkVoxelPos = chunkPos * VoxelChunk.ChunkSize;
-			if (checker.TestAabb(chunkVoxelPos.Cast<int, float>(), (chunkVoxelPos + VoxelChunk.ChunkSize).Cast<int, float>()))
+			if (checker.TestAabb(chunkVoxelPos.As<float>(), (chunkVoxelPos + VoxelChunk.ChunkSize).As<float>()))
 				chunksToRender.Add(chunkVoxelPos);
 
 			foreach (var side in VoxelSide.Sides)
@@ -288,9 +288,9 @@ public unsafe class VoxelRenderer : RenderChain
 		foreach (var side in VoxelSide.Sides)
 		{
 			double n = (side.Ordinal & 1) == 1
-				? side.Normal.Dot(chunkOffset + new Vector3<double>(VoxelChunk.ChunkSize, VoxelChunk.ChunkSize, VoxelChunk.ChunkSize))
-				: side.Normal.Dot(chunkOffset);
-			double dot1 = cameraWorldPos.Dot(side.Normal);
+				? side.Normal.As<double>().Dot(chunkOffset.As<double>() + new Vector3<double>(VoxelChunk.ChunkSize, VoxelChunk.ChunkSize, VoxelChunk.ChunkSize))
+				: side.Normal.As<double>().Dot(chunkOffset.As<double>());
+			double dot1 = cameraWorldPos.Dot(side.Normal.As<double>());
 			if (n < dot1) continue;
 
 			int flip = 1 - (side.Ordinal & 1);

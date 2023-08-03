@@ -1,7 +1,7 @@
 ﻿using Core.UI.Controls.Panels;
 using Core.UI.Reactive;
 using SDL2;
-using SimpleMath.Vectors;
+using SimplerMath;
 
 namespace Core.UI.Controls;
 
@@ -64,7 +64,7 @@ public class ControlInfoBox : AbsolutePanel
 		var stackBg = new Rectangle(Context)
 		{
 			Color = Color.Yellow900.A(127),
-			MarginLT = _control.CombinedPos + (_control.ComputedSize.X, 0),
+			MarginLT = _control.CombinedPos + new Vector2<float>(_control.ComputedSize.X, 0f),
 			OffsetZ = 1,
 			TightBox = true
 		};

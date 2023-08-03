@@ -16,7 +16,7 @@ using Core.Vulkan.Renderers;
 using Core.Vulkan.Voxels;
 using Core.Window;
 using SDL2;
-using SimpleMath.Vectors;
+using SimplerMath;
 using static Core.Vulkan.Renderers.GeneralRenderer;
 
 namespace Core.UI;
@@ -105,14 +105,14 @@ public static partial class UiManager
 					var voxelLabel = new Label(UiContext);
 					voxelLabel.OffsetZ = 1000;
 					voxelLabel.Color = Color.Neutral950;
-					voxelLabel.MarginLT = (5, 5);
+					voxelLabel.MarginLT = new Vector2<float>(5, 5);
 					MainRoot.AddChild(voxelLabel);
 
 					var voxelCamera = GeneralRenderer.VoxelRenderer.Camera;
 
 					void UpdateVoxelLabelText()
 					{
-						var pos = voxelCamera.Position + (voxelCamera.ChunkPos * VoxelChunk.ChunkSize);
+						var pos = voxelCamera.Position + (voxelCamera.ChunkPos * VoxelChunk.ChunkSize).As<double>();
 						// ReSharper disable once AccessToDisposedClosure
 						voxelLabel.Text = $"({Maths.FixedPrecision(pos.X, 2)}, {Maths.FixedPrecision(pos.Y, 2)}, {Maths.FixedPrecision(pos.Z, 2)})";
 					}
@@ -150,7 +150,7 @@ public static partial class UiManager
 					var deferredLabel = new Label(UiContext);
 					deferredLabel.OffsetZ = 1000;
 					deferredLabel.Color = Color.Neutral950;
-					deferredLabel.MarginLT = (5, 5);
+					deferredLabel.MarginLT = new Vector2<float>(5, 5);
 					MainRoot.AddChild(deferredLabel);
 
 					var camera = Deferred3DRenderer.Camera;
@@ -229,7 +229,7 @@ public static partial class UiManager
 	{
 		// TODO: Vulkan panel is just texture which ID can change every frame.
 		var box1 = new CustomBox(MainRoot.Context);
-		box1.MarginLT = (250, 50);
+		box1.MarginLT = new Vector2<float>(250, 50);
 		box1.Size = new Vector2<float>(640, 360) * 1.5f;
 		box1.OffsetZ = 250;
 		var frag = MainRoot.MaterialManager.GetFactory("texture_material").Create();
@@ -256,9 +256,9 @@ public static partial class UiManager
 	private static void TextInputTest(AbsolutePanel parent)
 	{
 		var input = new TextInputBox(MainRoot.Context);
-		input.MarginLT = (10, 110);
+		input.MarginLT = new Vector2<float>(10, 110);
 		input.OffsetZ = 150;
-		input.Scale = (2, 2);
+		input.Scale = new Vector2<float>(2, 2);
 		input.Text = "Text that has spaces:    ; DOTS.... and .,|-:;<>";
 
 		parent.AddChild(input);
@@ -269,9 +269,9 @@ public static partial class UiManager
 		var box = new Rectangle(MainRoot.Context)
 		{
 			Color = ColorUtils.RandomColor().A(127),
-			Size = (150, 150),
+			Size = new Vector2<float>(150, 150),
 			OffsetZ = 200,
-			MarginLT = (350, 150)
+			MarginLT = new Vector2<float>(350, 150)
 		};
 		parent.AddChild(box);
 
@@ -288,7 +288,7 @@ public static partial class UiManager
 			var smallBox = new Rectangle(MainRoot.Context)
 			{
 				Color = ColorUtils.RandomColor(),
-				Size = (30, 30),
+				Size = new Vector2<float>(30, 30),
 				OffsetZ = 1
 			};
 			var text = new Label(MainRoot.Context)
@@ -357,7 +357,7 @@ public static partial class UiManager
 
 		parent.AddChild(stackPanel);
 
-		stackPanel.Scale.Set(0.5);
+		stackPanel.Scale.Set(0.5f);
 	}
 
 	private static void WrapPanelTest(UiControl parent)
@@ -368,7 +368,7 @@ public static partial class UiManager
 			Size = new Vector2<float>(450, 150),
 			StackSpacing = 9,
 			WrapSpacing = 0,
-			Scale = (2, 2)
+			Scale = new Vector2<float>(2, 2)
 		};
 
 		const string text =
@@ -390,7 +390,7 @@ public static partial class UiManager
 		{
 			if (button != MouseButton.Left) return false;
 			if (dragType == DragType.Move)
-				control.MarginLT += motion.Cast<int, float>() / control.CombinedScale;
+				control.MarginLT += motion.As<float>() / control.CombinedScale;
 
 			return true;
 		});
@@ -402,8 +402,8 @@ public static partial class UiManager
 	{
 		var dockPanel = new DockPanel(MainRoot.Context)
 		{
-			Size = (300, 300),
-			MarginLT = (750, 400),
+			Size = new Vector2<float>(300, 300),
+			MarginLT = new Vector2<float>(750, 400),
 			OffsetZ = 55,
 			Overflow = Overflow.Shown
 		};
@@ -441,17 +441,17 @@ public static partial class UiManager
 	{
 		var panel = new AbsolutePanel(MainRoot.Context)
 		{
-			Size = (150, 150),
-			MarginLT = (450, 450),
+			Size = new Vector2<float>(150, 150),
+			MarginLT = new Vector2<float>(450, 450),
 			OffsetZ = 100
 		};
 		parent.AddChild(panel);
 
 		var transform = new Transform3D()
-			.Scale((0.5f, 0.5f, 1.0f))
-			.Translate((-0.5f, -0.5f, 0))
+			.Scale(new Vector3<float>(0.5f, 0.5f, 1.0f))
+			.Translate(new Vector3<float>(-0.5f, -0.5f, 0))
 			.RotateY(0.3f)
-			.Translate((0.5f, 0.5f, 0));
+			.Translate(new Vector3<float>(0.5f, 0.5f, 0));
 
 		var box = new CustomBox(MainRoot.Context)
 		{
@@ -469,10 +469,10 @@ public static partial class UiManager
 		panel.AddChild(box);
 
 		var transform2 = new Transform3D()
-			.Scale((0.5f, 0.5f, 1.0f))
-			.Translate((-0.5f, -0.5f, 0))
+			.Scale(new Vector3<float>(0.5f, 0.5f, 1.0f))
+			.Translate(new Vector3<float>(-0.5f, -0.5f, 0))
 			.RotateY(-0.15f)
-			.Translate((0.5f, 0.5f, 0));
+			.Translate(new Vector3<float>(0.5f, 0.5f, 0));
 
 		var box2 = new CustomBox(MainRoot.Context)
 		{
@@ -495,8 +495,8 @@ public static partial class UiManager
 		var button = new Rectangle(MainRoot.Context)
 		{
 			Color = ColorUtils.RandomColor(),
-			Size = (100, 50),
-			MarginLT = (700, 350),
+			Size = new Vector2<float>(100, 50),
+			MarginLT = new Vector2<float>(700, 350),
 			OffsetZ = 10
 		};
 		parent.AddChild(button);
@@ -514,8 +514,8 @@ public static partial class UiManager
 		var box1 = new CustomBox(MainRoot.Context)
 		{
 			// Color = ColorUtils.RandomColorInt(),
-			Size = (75, 75),
-			MarginLT = (900, 150),
+			Size = new Vector2<float>(75, 75),
+			MarginLT = new Vector2<float>(900, 150),
 			OffsetZ = 10
 		};
 		box1.FragMaterial = MainRoot.MaterialManager.GetFactory("cool_material").Create();
@@ -529,8 +529,8 @@ public static partial class UiManager
 		var box2 = new Rectangle(MainRoot.Context)
 		{
 			Color = ColorUtils.RandomColor(),
-			Size = (75, 75),
-			MarginLT = (900, 300),
+			Size = new Vector2<float>(75, 75),
+			MarginLT = new Vector2<float>(900, 300),
 			OffsetZ = 10
 		};
 		parent.AddChild(box2);
@@ -544,7 +544,7 @@ public static partial class UiManager
 		var animation2 = Animation.Of(() => ref box1.MarginLT.Y, box1.MarginLT.Y, box1.MarginLT.Y + 75, 1000, startDelay: 500,
 			type: AnimationType.RepeatAndReverse, curve: DefaultCurves.EaseInOutSine);
 
-		var animation3 = Animation.Of(() => ref box2.MarginLT, box2.MarginLT, box2.MarginLT + (75, 150), 3000);
+		var animation3 = Animation.Of(() => ref box2.MarginLT, box2.MarginLT, box2.MarginLT + new Vector2<float>(75, 150), 3000);
 
 		// var test1 = Animation.Of(() => ref Root.Scale, Root.Scale, Root.Scale / 2, 5000);
 		// test1.Start();

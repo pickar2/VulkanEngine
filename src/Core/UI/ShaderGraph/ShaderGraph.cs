@@ -11,7 +11,7 @@ using Core.Vulkan.Api;
 using Core.Vulkan.Renderers;
 using Core.Window;
 using SDL2;
-using SimpleMath.Vectors;
+using SimplerMath;
 
 namespace Core.UI.ShaderGraph;
 
@@ -190,7 +190,7 @@ public class ShaderGraph
 
 			if (type == DragType.Move)
 			{
-				var scaledMotion = motion.Cast<int, float>() / control.CombinedScale;
+				var scaledMotion = motion.As<float>() / control.CombinedScale;
 				graph.GraphPanel.MarginLT += scaledMotion;
 
 				var ptr = bg.FragMaterial.GetMemPtr<BackgroundDotsMaterial>();
@@ -226,7 +226,7 @@ public class ShaderGraph
 				selectingNode = true;
 			}
 
-			nodeSelector!.MarginLT = pos.Cast<int, float>() / control.CombinedScale;
+			nodeSelector!.MarginLT = pos.As<float>() / control.CombinedScale;
 
 			return true;
 		});
@@ -234,12 +234,12 @@ public class ShaderGraph
 		mainControl.OnScroll((_, mousePos, amount) =>
 		{
 			var pos = graph.GraphPanel.MarginLT;
-			pos -= mousePos;
+			pos -= mousePos.As<float>();
 			pos /= graph.GraphPanel.Scale;
 			graph.GraphPanel.Scale += amount.Y / 10f;
 			graph.GraphPanel.Scale = new Vector2<float>(Math.Clamp(graph.GraphPanel.Scale.X, 0.2f, 2.0f), Math.Clamp(graph.GraphPanel.Scale.Y, 0.2f, 2.0f));
 			pos *= graph.GraphPanel.Scale;
-			pos += mousePos;
+			pos += mousePos.As<float>();
 			graph.GraphPanel.MarginLT = pos;
 
 			*bg.FragMaterial.GetMemPtr<BackgroundDotsMaterial>() = new BackgroundDotsMaterial
@@ -279,7 +279,7 @@ public class ShaderGraph
 
 		UiManager.InputContext.KeyboardInputHandler.AddKeyBind(() =>
 		{
-			var list = UiManager.ControlsOnPos(UiManager.InputContext.MouseInputHandler.MousePos.Cast<int, float>(), mainControl, new List<UiControl>());
+			var list = UiManager.ControlsOnPos(UiManager.InputContext.MouseInputHandler.MousePos.As<float>(), mainControl, new List<UiControl>());
 
 			ShaderNode? node = null;
 			foreach (var uiControl in list)
@@ -326,14 +326,14 @@ public class ShaderGraph
 			BackgroundColor = Color.Slate300,
 			HoveredColor = Color.Slate500,
 			Text = "Compile",
-			Size = (100, 25)
+			Size = new Vector2<float>(100, 25)
 		};
 		buttonsStack.AddChild(compileButton);
 
 		var previewBoxAlign = new AlignPanel(mainControl.Context)
 		{
 			Alignment = Alignment.TopRight,
-			MarginLT = (0, 25)
+			MarginLT = new Vector2<float>(0, 25)
 		};
 		mainControl.AddChild(previewBoxAlign);
 
@@ -359,7 +359,7 @@ public class ShaderGraph
 				{
 					VertMaterial = GeneralRenderer.UiContext.MaterialManager.GetFactory("default_vertex_material").Create(),
 					FragMaterial = GeneralRenderer.UiContext.MaterialManager.GetFactory("graph_generated").Create(),
-					Size = (400, 400),
+					Size = new Vector2<float>(400, 400),
 					OffsetZ = 1000
 				};
 				graphGeneratedBox.Component.MarkForGPUUpdate();
@@ -378,7 +378,7 @@ public class ShaderGraph
 			BackgroundColor = Color.Slate300,
 			HoveredColor = Color.Slate500,
 			Text = "Preview",
-			Size = (100, 25)
+			Size = new Vector2<float>(100, 25)
 		};
 		buttonsStack.AddChild(togglePreviewButton);
 
@@ -430,7 +430,7 @@ public class ShaderGraph
 			BackgroundColor = Color.Slate300,
 			HoveredColor = Color.Slate500,
 			Text = "Load",
-			Size = (100, 25)
+			Size = new Vector2<float>(100, 25)
 		};
 		buttonsStack.AddChild(loadButton);
 
@@ -518,7 +518,7 @@ public class ShaderGraph
 			BackgroundColor = Color.Slate300,
 			HoveredColor = Color.Slate500,
 			Text = "Save",
-			Size = (100, 25)
+			Size = new Vector2<float>(100, 25)
 		};
 		buttonsStack.AddChild(saveButton);
 
@@ -538,7 +538,7 @@ public class ShaderGraph
 			var messageBox = new Rectangle(mainControl.Context)
 			{
 				Color = Color.Gray800,
-				Size = (300, 150),
+				Size = new Vector2<float>(300, 150),
 				OffsetZ = 1100
 			};
 			align.AddChild(messageBox);

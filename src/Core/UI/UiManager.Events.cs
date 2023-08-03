@@ -5,7 +5,7 @@ using Core.Vulkan;
 using Core.Vulkan.Renderers;
 using Core.Window;
 using SDL2;
-using SimpleMath.Vectors;
+using SimplerMath;
 
 namespace Core.UI;
 
@@ -202,7 +202,7 @@ public static partial class UiManager
 
 	private static void EventsPostUpdate()
 	{
-		ControlsOnMousePos = ControlsOnPos(InputContext.MouseInputHandler.MousePos.Cast<int, float>(), GeneralRenderer.MainRoot, new List<UiControl>());
+		ControlsOnMousePos = ControlsOnPos(InputContext.MouseInputHandler.MousePos.As<float>(), GeneralRenderer.MainRoot, new List<UiControl>());
 
 		AfterUpdate?.Invoke();
 	}

@@ -1,6 +1,6 @@
 ﻿using System;
 using Core.UI.Reactive;
-using SimpleMath.Vectors;
+using SimplerMath;
 
 namespace Core.UI.Controls.Panels;
 
@@ -12,8 +12,8 @@ public class WrapPanel : UiControl
 
 	public override void ComputeSizeAndArea(Vector2<float> maxSize)
 	{
-		var maxArea = maxSize.MinV((Size * CombinedScale) + ((MarginLT + MarginRB) * ParentScale));
-		maxSize.Min(Size * CombinedScale);
+		var maxArea = maxSize.Min((Size * CombinedScale) + ((MarginLT + MarginRB) * ParentScale));
+		maxSize.MMin(Size * CombinedScale);
 
 		var desiredSize = new Vector2<float>();
 
@@ -53,8 +53,8 @@ public class WrapPanel : UiControl
 
 		desiredSize[wrapComponent] = offset[wrapComponent] + currentWrapMaxSize;
 
-		ComputedSize = desiredSize.MinV(maxSize);
-		ComputedArea = maxArea.Min(desiredSize + ((MarginLT + MarginRB) * ParentScale));
+		ComputedSize = desiredSize.Min(maxSize);
+		ComputedArea = maxArea.MMin(desiredSize + ((MarginLT + MarginRB) * ParentScale));
 	}
 
 	public override void ArrangeChildren(Vector2<float> area)

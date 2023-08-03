@@ -2,7 +2,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Core.Window;
 using Silk.NET.Vulkan;
-using SimpleMath.Vectors;
+using SimplerMath;
 
 namespace Core.Vulkan;
 

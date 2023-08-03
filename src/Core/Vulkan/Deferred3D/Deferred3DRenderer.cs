@@ -13,7 +13,7 @@ using Core.Vulkan.Utility;
 using Silk.NET.Assimp;
 using Silk.NET.Maths;
 using Silk.NET.Vulkan;
-using SimpleMath.Vectors;
+using SimplerMath;
 using File = System.IO.File;
 
 namespace Core.Vulkan.Deferred3D;
@@ -96,7 +96,8 @@ public unsafe class Deferred3DRenderer : RenderChain
 		_fillGBuffersPipelineLayout = ReCreate.InDevice.Auto(() => CreatePipelineLayout(_globalDataManager.DescriptorSetLayout), layout => layout.Dispose());
 		_deferredComposePipelineLayout =
 			ReCreate.InDevice.Auto(
-				() => CreatePipelineLayout(_globalDataManager.DescriptorSetLayout, _composeAttachmentsLayout, TextureManager.DescriptorSetLayout, _materialManager.VertexDescriptorSetLayout,
+				() => CreatePipelineLayout(_globalDataManager.DescriptorSetLayout, _composeAttachmentsLayout, TextureManager.DescriptorSetLayout,
+					_materialManager.VertexDescriptorSetLayout,
 					_materialManager.FragmentDescriptorSetLayout),
 				layout => layout.Dispose());
 
@@ -115,7 +116,7 @@ public unsafe class Deferred3DRenderer : RenderChain
 		// var triangle = StaticMesh.Triangle((ushort) colorMat.MaterialId, (uint) colorMat.VulkanDataIndex);
 
 		using var dragonMeshFile = File.Open("./Assets/Models/xyzrgb_dragon.obj", FileMode.Open);
-		
+
 		byte[] byteArray = ArrayPool<byte>.Shared.Rent((int) dragonMeshFile.Length);
 		int read = dragonMeshFile.Read(byteArray);
 		if (read != dragonMeshFile.Length) throw new Exception("Read less bytes than expected.");
@@ -131,19 +132,20 @@ public unsafe class Deferred3DRenderer : RenderChain
 			// var normal = assimpMesh->MNormals[i];
 			vertices[i] = new DeferredVertex(0, (ushort) colorMat.MaterialId, 0, (uint) colorMat.VulkanDataIndex,
 				new Vector3<float>(vert.X, vert.Y, vert.Z),
-				new Vector3<float>(0,0,0),
+				new Vector3<float>(0, 0, 0),
 				new Vector2<float>(0, 1));
 		}
-		var indexCount = 0u;
+
+		uint indexCount = 0u;
 		for (int i = 0; i < assimpMesh->MNumFaces; i++) indexCount += assimpMesh->MFaces[i].MNumIndices;
-		var indices = new uint[indexCount];
+		uint[] indices = new uint[indexCount];
 		int index = 0;
 		for (int i = 0; i < assimpMesh->MNumFaces; i++)
 		{
 			var face = assimpMesh->MFaces[i];
-			for (int j = 0; j < face.MNumIndices; j++) 
-				indices[index+j] = face.MIndices[j];
-			
+			for (int j = 0; j < face.MNumIndices; j++)
+				indices[index + j] = face.MIndices[j];
+
 			int index1 = (int) face.MIndices[0];
 			int index2 = (int) face.MIndices[1];
 			int index3 = (int) face.MIndices[2];
@@ -152,7 +154,7 @@ public unsafe class Deferred3DRenderer : RenderChain
 			var v2 = vertices[index2].Position;
 			var v3 = vertices[index3].Position;
 			var edge2 = v3.Sub(v1);
-			var normal = v2.Sub(v1).Cross(edge2).Normalized();
+			var normal = v2.Sub(v1).Cross(edge2).Normalize();
 
 			vertices[index1].Normal = normal;
 			vertices[index2].Normal = normal;
@@ -160,8 +162,9 @@ public unsafe class Deferred3DRenderer : RenderChain
 
 			index += (int) face.MNumIndices;
 		}
+
 		Assimp.GetApi().ReleaseImport(dragonAssimpScene);
-		
+
 		var dragonMesh = new StaticMesh(vertices, indices);
 
 		void AddMeshes()
@@ -176,7 +179,7 @@ public unsafe class Deferred3DRenderer : RenderChain
 
 		AddMeshes();
 		Context.DeviceEvents.AfterCreate += () => AddMeshes();
-		
+
 		Camera.SetPosition(8, 8, 120);
 
 		RenderCommandBuffers += (FrameInfo frameInfo) =>
@@ -203,7 +206,7 @@ public unsafe class Deferred3DRenderer : RenderChain
 		float aspect = (float) Context.State.WindowSize.Value.X / Context.State.WindowSize.Value.Y;
 
 		var yawPitchRollRadians = new Vector3<double>(Camera.YawPitchRoll.X.ToRadians(), Camera.YawPitchRoll.Y.ToRadians(), Camera.YawPitchRoll.Z.ToRadians())
-			.Cast<double, float>();
+			.As<float>();
 		var cameraWorldPos = Camera.Position;
 
 		var view = Matrix4x4.Identity;

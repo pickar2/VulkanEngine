@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Text.RegularExpressions;
 using Core.UI;
-using SimpleMath.Vectors;
+using SimplerMath;
 using static SDL2.SDL;
 using static SDL2.SDL.SDL_Keycode;
 using static SDL2.SDL.SDL_Keymod;

@@ -1,4 +1,4 @@
-﻿using SimpleMath.Vectors;
+﻿using SimplerMath;
 
 namespace Core.UI.Controls.Panels;
 
@@ -10,7 +10,7 @@ public class FullScreenRootPanel : RootPanel
 
 	public override void BeforeUpdate()
 	{
-		Size = Vulkan.Context.State.WindowSize.Value.Cast<uint, float>();
+		Size = Vulkan.Context.State.WindowSize.Value.As<float>();
 
 		base.BeforeUpdate();
 

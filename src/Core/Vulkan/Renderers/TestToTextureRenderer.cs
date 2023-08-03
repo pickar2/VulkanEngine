@@ -4,7 +4,7 @@ using Core.UI;
 using Core.UI.Animations;
 using Core.Vulkan.Api;
 using Silk.NET.Vulkan;
-using SimpleMath.Vectors;
+using SimplerMath;
 
 namespace Core.Vulkan.Renderers;
 

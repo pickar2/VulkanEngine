@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Numerics;
-using SimpleMath.Vectors;
+using SimplerMath;
 
 namespace Core.UI.Transforms;
 

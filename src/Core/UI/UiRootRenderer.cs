@@ -12,7 +12,7 @@ using Core.Vulkan.Renderers;
 using Core.Vulkan.Utility;
 using Silk.NET.Maths;
 using Silk.NET.Vulkan;
-using SimpleMath.Vectors;
+using SimplerMath;
 
 namespace Core.UI;
 

@@ -4,9 +4,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Core", "Core\Core.csproj", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Core.Generators", "Core.Generators\Core.Generators.csproj", "{1E62AE24-7797-47FA-A7FF-6064C54AD8E3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimpleMath", "SimpleMath\SimpleMath.csproj", "{DFAA9DCA-4E64-47CC-A62B-BCFB3727B533}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimpleMath.Generators", "SimpleMath.Generators\SimpleMath.Generators.csproj", "{6E88DCC3-70ED-4691-9D7E-B0F0B4F69FE8}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimplerMath", "SimplerMath\SimplerMath.csproj", "{C1818C62-4AAB-48B5-B01B-1382BECCB93A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -22,13 +20,9 @@ Global
 		{1E62AE24-7797-47FA-A7FF-6064C54AD8E3}.Release|x64.Build.0 = Release|x64
 		{1E62AE24-7797-47FA-A7FF-6064C54AD8E3}.Debug|x64.ActiveCfg = Debug|x64
 		{1E62AE24-7797-47FA-A7FF-6064C54AD8E3}.Debug|x64.Build.0 = Debug|x64
-		{DFAA9DCA-4E64-47CC-A62B-BCFB3727B533}.Debug|x64.ActiveCfg = Debug|x64
-		{DFAA9DCA-4E64-47CC-A62B-BCFB3727B533}.Debug|x64.Build.0 = Debug|x64
-		{DFAA9DCA-4E64-47CC-A62B-BCFB3727B533}.Release|x64.ActiveCfg = Release|x64
-		{DFAA9DCA-4E64-47CC-A62B-BCFB3727B533}.Release|x64.Build.0 = Release|x64
-		{6E88DCC3-70ED-4691-9D7E-B0F0B4F69FE8}.Debug|x64.ActiveCfg = Debug|x64
-		{6E88DCC3-70ED-4691-9D7E-B0F0B4F69FE8}.Debug|x64.Build.0 = Debug|x64
-		{6E88DCC3-70ED-4691-9D7E-B0F0B4F69FE8}.Release|x64.ActiveCfg = Release|x64
-		{6E88DCC3-70ED-4691-9D7E-B0F0B4F69FE8}.Release|x64.Build.0 = Release|x64
+		{C1818C62-4AAB-48B5-B01B-1382BECCB93A}.Release|x64.ActiveCfg = Release|Any CPU
+		{C1818C62-4AAB-48B5-B01B-1382BECCB93A}.Release|x64.Build.0 = Release|Any CPU
+		{C1818C62-4AAB-48B5-B01B-1382BECCB93A}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{C1818C62-4AAB-48B5-B01B-1382BECCB93A}.Debug|x64.Build.0 = Debug|Any CPU
 	EndGlobalSection
 EndGlobal

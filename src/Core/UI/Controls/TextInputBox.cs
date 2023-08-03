@@ -4,7 +4,7 @@ using Core.UI.Animations;
 using Core.UI.Reactive;
 using Core.Window;
 using SDL2;
-using SimpleMath.Vectors;
+using SimplerMath;
 
 namespace Core.UI.Controls;
 
@@ -29,8 +29,8 @@ public class TextInputBox : Label
 
 		_cursor.Scale.X = 0.2f;
 
-		_cursor.Size = (0, 0);
-		_selection.Size = (0, 0);
+		_cursor.Size = new Vector2<float>(0, 0);
+		_selection.Size = new Vector2<float>(0, 0);
 
 		_selection.OffsetZ = 2;
 		_cursor.OffsetZ = 3;
@@ -84,7 +84,7 @@ public class TextInputBox : Label
 				_cursor.Size = new Vector2<float>(9, 16);
 				_selection.Size = new Vector2<float>(0, 16);
 				_cursorBlink.Restart();
-				TextInput.StartInput(CombinedPos.Cast<float, int>(), ComputedSize.Cast<float, int>(), Text,
+				TextInput.StartInput(CombinedPos.As<int>(), ComputedSize.As<int>(), Text,
 					str => Text = str,
 					curPos =>
 					{
@@ -109,7 +109,7 @@ public class TextInputBox : Label
 							ScrollOffset.X -= scrollAmount;
 						}
 
-						ScrollOffset.Max(new Vector2<float>(0)).Min(new Vector2<float>(1));
+						ScrollOffset.MMax(0).MMin(1);
 					},
 					(selectStart, selectLength) =>
 					{
@@ -118,8 +118,8 @@ public class TextInputBox : Label
 					},
 					() =>
 					{
-						_cursor.Size = (0, 0);
-						_selection.Size = (0, 0);
+						_cursor.Size = new Vector2<float>(0, 0);
+						_selection.Size = new Vector2<float>(0, 0);
 						_cursorBlink.Stop();
 						_isEditing = false;
 					}
@@ -155,7 +155,7 @@ public class TextInputBox : Label
 	}
 
 	protected int CalculateCursorPos(Vector2<int> mousePos) =>
-		CalculateCursorPos(mousePos.Cast<int, float>() - CombinedPos - AbsolutePanel.LocalPos, AbsolutePanel.CombinedScale, Text, UiManager.Consolas);
+		CalculateCursorPos(mousePos.As<float>() - CombinedPos - AbsolutePanel.LocalPos, AbsolutePanel.CombinedScale, Text, UiManager.Consolas);
 
 	public static int CalculateCursorPos(Vector2<float> pos, Vector2<float> scale, string text, SdfFont font)
 	{

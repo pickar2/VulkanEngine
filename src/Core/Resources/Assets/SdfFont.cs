@@ -1,12 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using Core.UI;
 using Core.Utils;
 using Core.Vulkan;
 using Core.Vulkan.Api;
 using K4os.Compression.LZ4;
 using NetEscapades.EnumGenerators;
-using SimpleMath.Vectors;
+using SimplerMath;
 
 namespace Core.Resources.Assets;
 

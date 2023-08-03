@@ -5,7 +5,7 @@ using Core.Native.Shaderc;
 using Core.Native.SpirvReflect;
 using Core.Vulkan.Utility;
 using Silk.NET.Vulkan;
-using SimpleMath.Vectors;
+using SimplerMath;
 
 namespace Core.Vulkan.Api;
 

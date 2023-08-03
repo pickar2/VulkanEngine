@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Drawing;
 using Core.Utils;
-using SimpleMath.Vectors;
+using SimplerMath;
 
 namespace Core.Vulkan.Voxels;
 
@@ -12,7 +12,7 @@ public class VoxelWorld
 
 	public VoxelWorld()
 	{
-		var testChunkl = new VoxelChunk((0, 0, 0));
+		var testChunkl = new VoxelChunk(new Vector3<int>(0, 0, 0));
 		var redBlock = new VoxelData
 		{
 			VoxelTypeIndex = 1,
@@ -85,7 +85,7 @@ public struct VoxelChunk
 
 	private static float SdfBox(Vector3<float> p)
 	{
-		var d = new Vector3<float>(Math.Abs(p.X), Math.Abs(p.Y), Math.Abs(p.Z)) - new Vector3<int>(ChunkSize);
+		var d = new Vector3<float>(Math.Abs(p.X), Math.Abs(p.Y), Math.Abs(p.Z)) - ChunkSize;
 		return (float) (Math.Min(Math.Max(d.X, Math.Max(d.Y, d.Z)), 0.0) +
 		                new Vector3<float>(Math.Max(d.X, 0.0f), Math.Max(d.Y, 0.0f), Math.Max(d.Z, 0.0f)).Length);
 	}

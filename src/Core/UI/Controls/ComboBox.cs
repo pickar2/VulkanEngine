@@ -2,7 +2,7 @@
 using Core.UI.Controls.Panels;
 using Core.UI.Reactive;
 using Core.Window;
-using SimpleMath.Vectors;
+using SimplerMath;
 
 namespace Core.UI.Controls;
 
@@ -67,7 +67,7 @@ public class ComboBox<T> : UiControl
 		{
 			Orientation = Orientation.Vertical,
 			Spacing = valueSpacing,
-			Size = (Size.X, 10000),
+			Size = new Vector2<float>(Size.X, 10000),
 			TightBox = true,
 			OffsetZ = 1
 		};
@@ -81,7 +81,7 @@ public class ComboBox<T> : UiControl
 		{
 			scrollView = new ScrollView(Context)
 			{
-				Size = (Size.X, _maxHeight),
+				Size = new Vector2<float>(Size.X, _maxHeight),
 				OffsetZ = 1
 			};
 			stack.AddChild(scrollView);

@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using SimpleMath.Vectors;
+using SimplerMath;
 
 namespace Core.Vulkan.Voxels;
 

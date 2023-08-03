@@ -1,6 +1,6 @@
 ﻿using System;
 using Core.UI.Reactive;
-using SimpleMath.Vectors;
+using SimplerMath;
 
 namespace Core.UI.Controls.Panels;
 
@@ -11,8 +11,8 @@ public class StackPanel : UiControl
 
 	public override void ComputeSizeAndArea(Vector2<float> maxSize)
 	{
-		var maxArea = maxSize.MinV((Size * CombinedScale) + ((MarginLT + MarginRB) * ParentScale));
-		maxSize.Min(Size * CombinedScale);
+		var maxArea = maxSize.Min((Size * CombinedScale) + ((MarginLT + MarginRB) * ParentScale));
+		maxSize.MMin(Size * CombinedScale);
 
 		var desiredSize = new Vector2<float>();
 
@@ -31,14 +31,14 @@ public class StackPanel : UiControl
 			desiredSize[stackComponent] = desiredSize[stackComponent] + childArea[stackComponent] + scaledSpacing;
 			desiredSize[otherComponent] = Math.Max(desiredSize[otherComponent], childArea[otherComponent]);
 
-			desiredSize.Min(maxSize);
+			desiredSize.MMin(maxSize);
 		}
 
 		desiredSize[stackComponent] -= scaledSpacing;
 		desiredSize[stackComponent] = Math.Max(desiredSize[stackComponent], 0);
 
 		ComputedSize = desiredSize;
-		ComputedArea = maxArea.Min(desiredSize + ((MarginLT + MarginRB) * ParentScale));
+		ComputedArea = maxArea.MMin(desiredSize + ((MarginLT + MarginRB) * ParentScale));
 	}
 
 	public override void ArrangeChildren(Vector2<float> area)

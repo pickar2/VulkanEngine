@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Core.UI.Reactive;
-using SimpleMath.Vectors;
+using SimplerMath;
 
 namespace Core.UI.Controls;
 
@@ -105,16 +105,16 @@ public abstract class UiControl : IDisposable
 			foreach (var child in ChildrenList)
 			{
 				child.ComputeSizeAndArea(maxSize);
-				maxChildArea.Max(child.ComputedArea);
+				maxChildArea.MMax(child.ComputedArea);
 			}
 
-			ComputedSize = maxChildArea.MinV(maxSize).MinV(Size * CombinedScale);
-			ComputedArea = maxChildArea.MinV(maxSize).MinV((Size * CombinedScale) + ((MarginLT + MarginRB) * ParentScale));
+			ComputedSize = maxChildArea.Min(maxSize).Min(Size * CombinedScale);
+			ComputedArea = maxChildArea.Min(maxSize).Min((Size * CombinedScale) + ((MarginLT + MarginRB) * ParentScale));
 		}
 		else
 		{
-			var maxArea = maxSize.MinV((Size * CombinedScale) + ((MarginLT + MarginRB) * ParentScale));
-			maxSize.Min(Size * CombinedScale);
+			var maxArea = maxSize.Min((Size * CombinedScale) + ((MarginLT + MarginRB) * ParentScale));
+			maxSize.MMin(Size * CombinedScale);
 
 			foreach (var child in ChildrenList) child.ComputeSizeAndArea(maxSize);
 			ComputedSize = maxSize;
@@ -145,8 +145,8 @@ public abstract class UiControl : IDisposable
 				case Overflow.Hidden:
 					var maskStart = CombinedPos;
 					var maskEnd = CombinedPos + ComputedSize;
-					child.MaskStart = maskStart.Max(MaskStart);
-					child.MaskEnd = maskEnd.Min(MaskEnd);
+					child.MaskStart = maskStart.MMax(MaskStart);
+					child.MaskEnd = maskEnd.MMin(MaskEnd);
 					break;
 				case Overflow.Shown:
 					child.MaskStart = parentMaskStart;

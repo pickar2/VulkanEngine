@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using SimpleMath.Vectors;
+using SimplerMath;
 using static SDL2.SDL;
 
 namespace Core.Window;

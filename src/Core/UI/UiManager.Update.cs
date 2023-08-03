@@ -9,7 +9,7 @@ using Core.Vulkan;
 using Core.Vulkan.Renderers;
 using Core.Window;
 using SDL2;
-using SimpleMath.Vectors;
+using SimplerMath;
 
 namespace Core.UI;
 
@@ -125,7 +125,7 @@ public static partial class UiManager
 		void ActionPlusRemove(MouseButton button, byte clicks)
 		{
 			var pos = InputContext.MouseInputHandler.MousePos;
-			if (control is null || IsInsideControl(control, pos.Cast<int, float>())) return;
+			if (control is null || IsInsideControl(control, pos.As<float>())) return;
 
 			@delegate(button, clicks);
 			InputContext.MouseInputHandler.OnMouseButtonDown -= ActionPlusRemove;

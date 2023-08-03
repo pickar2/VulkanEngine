@@ -4,7 +4,7 @@ using Core.UI.Controls.Panels;
 using Core.UI.Materials.Fragment;
 using Core.UI.Materials.Vertex;
 using Core.UI.Reactive;
-using SimpleMath.Vectors;
+using SimplerMath;
 
 namespace Core.UI.Controls;
 
@@ -167,9 +167,9 @@ public class Label : ScrollView
 			box.MarginRB.Y = box.MarginLT.Y;
 
 			// if (lowerCase)
-				// box.MarginRB.Y = -scaleY * character.Bearing.Y;
+			// box.MarginRB.Y = -scaleY * character.Bearing.Y;
 			// else
-				// box.MarginRB.Y = -(metrics.CapScale - metrics.LowScale) * metrics.ScaleTexturePxToMetrics * (gBottom - gTop);
+			// box.MarginRB.Y = -(metrics.CapScale - metrics.LowScale) * metrics.ScaleTexturePxToMetrics * (gBottom - gTop);
 
 			// Logger.Debug($"{ch} | {size}, {offset} | {fallOff}, {size.Y}, {scaleY * (character.Bearing.Y + fallOff)}");
 

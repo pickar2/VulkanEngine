@@ -5,7 +5,7 @@ using Core.UI.Controls.Panels;
 using Core.UI.Reactive;
 using Core.Utils;
 using Core.Window;
-using SimpleMath.Vectors;
+using SimplerMath;
 
 namespace Core.UI.ShaderGraph;
 
@@ -100,7 +100,7 @@ public class NodeSelectorUi : AbsolutePanel
 				if (!startedHere) return false;
 
 				_shaderGraph.AddNode(factory.Invoke(Guid.NewGuid(), null),
-					(mousePos.Cast<int, float>() - shaderGraph.GraphPanel.MarginLT) / shaderGraph.GraphPanel.CombinedScale);
+					(mousePos.As<float>() - shaderGraph.GraphPanel.MarginLT) / shaderGraph.GraphPanel.CombinedScale);
 				Parent?.RemoveChild(this);
 				Dispose();
 

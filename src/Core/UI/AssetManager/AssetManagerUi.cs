@@ -4,7 +4,7 @@ using Core.Resources;
 using Core.Resources.Assets;
 using Core.UI.Controls;
 using Core.Window;
-using SimpleMath.Vectors;
+using SimplerMath;
 
 namespace Core.UI.AssetManager;
 

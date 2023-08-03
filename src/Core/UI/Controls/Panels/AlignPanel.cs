@@ -1,6 +1,6 @@
 ﻿using Core.UI.Reactive;
 using NetEscapades.EnumGenerators;
-using SimpleMath.Vectors;
+using SimplerMath;
 
 namespace Core.UI.Controls.Panels;
 

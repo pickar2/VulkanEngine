@@ -4,7 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Core.Native.VMA;
 using Silk.NET.Vulkan;
-using SimpleMath.Vectors;
+using SimplerMath;
 using static Core.Native.VMA.VulkanMemoryAllocator;
 
 namespace Core.Vulkan.Api;

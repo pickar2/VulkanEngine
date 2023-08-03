@@ -4,7 +4,7 @@ using Core.Utils;
 using Core.Vulkan.Renderers;
 using Core.Window;
 using SDL2;
-using SimpleMath.Vectors;
+using SimplerMath;
 
 namespace Core.Vulkan.Deferred3D;
 
@@ -52,12 +52,9 @@ public class DeferredCamera
 	// 	OnPositionUpdate?.Invoke();
 	// }
 
-	public void SetPosition(double x, double y, double z)
-	{
-		Position = new Vector3<double>(x, y, z);
-		// UpdatePosition();
-	}
+	public void SetPosition(double x, double y, double z) => Position = new Vector3<double>(x, y, z);
 
+	// UpdatePosition();
 	public DeferredCamera()
 	{
 		Position = new Vector3<double>(8, 8, 8);

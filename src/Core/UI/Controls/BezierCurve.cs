@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Core.UI.Controls.Panels;
 using Core.UI.Reactive;
 using Core.Vulkan.Renderers;
-using SimpleMath.Vectors;
+using SimplerMath;
 
 namespace Core.UI.Controls;
 
@@ -100,7 +100,7 @@ public class BezierCurve : AbsolutePanel
 		_quads.Clear();
 		_quads2.Clear();
 
-		for (int i = 0; i < _scaledAnchors.Length; i++) _scaledAnchors[i] = Anchors[i] * CombinedScale;
+		for (int i = 0; i < _scaledAnchors.Length; i++) _scaledAnchors[i] = Anchors[i] * CombinedScale.As<double>();
 		_scaledLineWidth = LineWidth * Math.Min(CombinedScale.X, CombinedScale.Y);
 
 		const double step = 1.0 / Steps;
@@ -111,7 +111,7 @@ public class BezierCurve : AbsolutePanel
 
 			if (i > 0)
 			{
-				var direction = GetDerivativeCubic(_scaledAnchors[0], _scaledAnchors[1], _scaledAnchors[2], _scaledAnchors[3], t).Normalized();
+				var direction = GetDerivativeCubic(_scaledAnchors[0], _scaledAnchors[1], _scaledAnchors[2], _scaledAnchors[3], t).Normalize();
 
 				double length = (_points[i] - _points[i - 1]).Length;
 				var forward = direction * length;
@@ -157,10 +157,10 @@ public class BezierCurve : AbsolutePanel
 
 				var q2 = new Quad
 				{
-					P0 = (t, 0),
-					P1 = (t, 1),
-					P2 = (t + step, 0),
-					P3 = (t + step, 1)
+					P0 = new Vector2<double>(t, 0),
+					P1 = new Vector2<double>(t, 1),
+					P2 = new Vector2<double>(t + step, 0),
+					P3 = new Vector2<double>(t + step, 1)
 				};
 
 				_quads2.Add(q2);

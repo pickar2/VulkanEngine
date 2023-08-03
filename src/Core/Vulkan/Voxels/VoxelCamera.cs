@@ -4,7 +4,7 @@ using Core.Utils;
 using Core.Vulkan.Renderers;
 using Core.Window;
 using SDL2;
-using SimpleMath.Vectors;
+using SimplerMath;
 
 namespace Core.Vulkan.Voxels;
 

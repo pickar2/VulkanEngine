@@ -2,7 +2,7 @@
 using System.Diagnostics;
 using System.Numerics;
 using CommunityToolkit.HighPerformance.Helpers;
-using SimpleMath.Vectors;
+using SimplerMath;
 
 namespace Core.UI.Animations;
 

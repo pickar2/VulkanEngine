@@ -12,6 +12,7 @@ using Core.Vulkan.Deferred3D;
 using Core.Vulkan.Utility;
 using Core.Vulkan.Voxels;
 using Silk.NET.Vulkan;
+using SimplerMath;
 
 namespace Core.Vulkan.Renderers;
 
@@ -79,7 +80,7 @@ public static class GeneralRenderer
 		materialManager.UpdateShaders();
 
 		VoxelRenderer = new VoxelRenderer("TestVoxel");
-		Deferred3DRenderer = new Deferred3DRenderer((1280, 720), "TestDeferred");
+		Deferred3DRenderer = new Deferred3DRenderer(new Vector2<uint>(1280, 720), "TestDeferred");
 		VoxelRenderer.IsPaused = true;
 		Deferred3DRenderer.IsPaused = true;
 		Root = new UiRootRenderer("Root1", MainRoot);
@@ -93,7 +94,7 @@ public static class GeneralRenderer
 		// var qoiImage = QoiDecoder.Decode(bytes);
 
 		// var texture = CreateTextureFromBytes(qoiImage.Data, (ulong) qoiImage.Data.LongLength, (uint) qoiImage.Width, (uint) qoiImage.Height,
-			// (int) qoiImage.Channels, false);
+		// (int) qoiImage.Channels, false);
 		// TextureManager.RegisterTexture("ConsolasTexture", texture.ImageView);
 
 		// ExecuteOnce.InDevice.BeforeDispose(() => texture.Dispose());

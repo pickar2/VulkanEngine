@@ -1,6 +1,6 @@
 ﻿using System;
 using Core.VulkanData;
-using SimpleMath.Vectors;
+using SimplerMath;
 
 #pragma warning disable CS0618 // obsolete use
 
