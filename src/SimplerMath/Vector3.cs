@@ -537,7 +537,8 @@ public static class Vector3Extensions
 	public static bool IsCollinear<T>(this Vector3<T> left, Vector3<T> right) where T : struct, INumber<T>
 	{
 		var relation = left.X / right.X;
-		return relation == left.Y / right.Y && relation == left.Z / right.Z;
+		return relation == left.Y / right.Y &&
+		       relation == left.Z / right.Z;
 	}
 
 	public static T Dot<T>(this Vector3<T> left, Vector3<T> right) where T : struct, INumber<T> =>

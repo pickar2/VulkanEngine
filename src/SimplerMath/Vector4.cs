@@ -538,13 +538,15 @@ public static class Vector4Extensions
 	public static Span<T> AsSpan<T>(this ref Vector4<T> vector) where T : struct, INumber<T> =>
 		MemoryMarshal.CreateSpan(ref vector.X, Vector4<T>.ComponentCount);
 
-	public static T MinComponent<T>(this Vector4<T> vector) where T : struct, INumber<T> => T.Min(T.Min(vector.X, vector.Y), vector.Z);
-	public static T MaxComponent<T>(this Vector4<T> vector) where T : struct, INumber<T> => T.Max(T.Max(vector.X, vector.Y), vector.Z);
+	public static T MinComponent<T>(this Vector4<T> vector) where T : struct, INumber<T> => T.Min(T.Min(vector.X, vector.Y), T.Min(vector.Z, vector.W));
+	public static T MaxComponent<T>(this Vector4<T> vector) where T : struct, INumber<T> => T.Max(T.Max(vector.X, vector.Y), T.Max(vector.Z, vector.W));
 
 	public static bool IsCollinear<T>(this Vector4<T> left, Vector4<T> right) where T : struct, INumber<T>
 	{
 		var relation = left.X / right.X;
-		return relation == left.Y / right.Y && relation == left.Z / right.Z;
+		return relation == left.Y / right.Y &&
+		       relation == left.Z / right.Z &&
+		       relation == left.W / right.W;
 	}
 
 	public static T Dot<T>(this Vector4<T> left, Vector4<T> right) where T : struct, INumber<T> =>
